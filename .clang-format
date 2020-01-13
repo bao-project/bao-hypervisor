@@ -1,0 +1,11 @@
+---
+BasedOnStyle: Google
+BreakAfterJavaFieldAnnotations: 'false'
+BreakBeforeBraces: Linux
+IncludeBlocks: Preserve
+IndentWidth: '4'
+SortIncludes: 'false'
+AllowShortFunctionsOnASingleLine: 'Empty'
+AllowShortLoopsOnASingleLine: 'true'
+AlwaysBreakBeforeMultilineStrings: 'false'
+...

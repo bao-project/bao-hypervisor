@@ -1,0 +1,1 @@
+drivers-objs-y+=zynq_uart/zynq_uart.o
