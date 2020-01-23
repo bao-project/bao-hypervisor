@@ -79,6 +79,7 @@ int mem_map_dev(addr_space_t* as, void* va, uint64_t base, size_t n);
 
 /* Functions implemented in architecture dependent files */
 
+void mem_arch_init(uint64_t load_addr, uint64_t config_addr);
 void as_arch_init(addr_space_t* as);
 bool mem_translate(addr_space_t* as, void* va, uint64_t* pa);
 

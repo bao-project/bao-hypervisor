@@ -1329,6 +1329,8 @@ void mem_init(uint64_t load_addr, uint64_t config_addr)
 {
     as_init(&cpu.as, AS_HYP, 0, cpu.root_pt, 0);
 
+    mem_arch_init(load_addr, config_addr);
+
     static struct mem_region *root_mem_region = NULL;
 
     if (cpu.id == CPU_MASTER) {
