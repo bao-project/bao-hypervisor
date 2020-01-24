@@ -93,4 +93,26 @@ static inline bool list_empty(list_t* list)
     return (list->head == NULL);
 }
 
+static inline bool list_rm(list_t* list, node_t node)
+{
+    if (list != NULL && node != NULL) {
+        spin_lock(&list->lock);
+
+        node_t* temp = list->head;
+        node_t* temp_prev = NULL;
+        while (temp != NULL && temp != node) {
+            temp_prev = temp;
+            temp = *temp;
+        }
+        if (temp != NULL && temp == node) {
+            /* found the node, remove it */
+            *temp_prev = *temp;
+        }
+
+        spin_unlock(&list->lock);
+    }
+
+    return true;
+}
+
 #endif /* __LIST_H__ */

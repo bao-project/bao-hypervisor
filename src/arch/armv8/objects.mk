@@ -30,3 +30,5 @@ cpu-objs-y+=psci.o
 cpu-objs-y+=cpu.o
 cpu-objs-y+=platform.o
 cpu-objs-y+=relocate.o
+cpu-objs-y+=iommu.o
+cpu-objs-y+=smmuv2.o

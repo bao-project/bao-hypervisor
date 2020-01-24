@@ -29,6 +29,7 @@
 #include <objcache.h>
 #include <interrupts.h>
 #include <bitmap.h>
+#include <iommu.h>
 
 typedef struct vm {
     uint64_t id;
@@ -50,6 +51,8 @@ typedef struct vm {
     list_t emul_list;
     objcache_t emul_oc;
 
+    iommu_vm_t iommu;
+
     BITMAP_ALLOC(interrupt_bitmap, MAX_INTERRUPTS);
 } vm_t;
 
@@ -68,7 +71,7 @@ typedef struct vcpu {
 } vcpu_t;
 
 extern vm_t vm;
-extern struct vm_config* vm_config_ptr;
+extern struct config* vm_config_ptr;
 
 void vm_init(vm_t* vm, const vm_config_t* config, bool master, uint64_t vm_id);
 void vm_start(vm_t* vm, uint64_t entry);

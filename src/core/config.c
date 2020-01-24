@@ -15,7 +15,7 @@
 
 #include <config.h>
 
-void config_adjust_to_va(struct vm_config *config, uint64_t phys)
+void config_adjust_to_va(struct config *config, uint64_t phys)
 {
     for (int i = 0; i < config->vmlist_size; i++) {
         config->vmlist[i].image.load_addr =
@@ -30,6 +30,10 @@ void config_adjust_to_va(struct vm_config *config, uint64_t phys)
                 (void *)config->vmlist[i].platform.devs[j].interrupts +
                 (uint64_t)config;
         }
+
+        config->vmlist[i].platform.arch.smmu.smmu_groups =
+            (void *)config->vmlist[i].platform.arch.smmu.smmu_groups +
+            (uint64_t)config;
     }
 
     // TODO: maybe it might be needed an arch version of this method

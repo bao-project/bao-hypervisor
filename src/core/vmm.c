@@ -18,11 +18,12 @@
 #include <vm.h>
 #include <config.h>
 #include <cpu.h>
+#include <iommu.h>
 #include <spinlock.h>
 #include <fences.h>
 #include <string.h>
 
-struct vm_config* vm_config_ptr;
+struct config* vm_config_ptr;
 
 void vmm_init()
 {
@@ -38,6 +39,8 @@ void vmm_init()
 
     size_t vmass_npages = 0;
     if (cpu.id == CPU_MASTER) {
+        iommu_init();
+
         vmass_npages =
             ALIGN(sizeof(struct vm_assignment) * vm_config_ptr->vmlist_size,
                   PAGE_SIZE) /

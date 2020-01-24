@@ -45,6 +45,10 @@ struct platform_desc platform = {
 
         .generic_timer = {
             .base_addr = 0xFFF08000 /* SYS_CNT */
+        },
+
+        .smmu = {
+            .base = 0xE8DC0000
         }
     },
 

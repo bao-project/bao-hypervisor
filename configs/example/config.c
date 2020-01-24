@@ -26,13 +26,13 @@ VM_IMAGE(vm2, /path/to/vm2/binary.bin);
 /**
  * Config each VM.
  */
-struct vm_config vm_config = {
+struct config config = {
     
     /**
      * This macro must be always placed in the config struct, to initialize,
      * configuration independent fields.
      */
-    VM_CONFIG_HEADER
+    CONFIG_HEADER
 
     /**
      * This configuration has 2 VMs.

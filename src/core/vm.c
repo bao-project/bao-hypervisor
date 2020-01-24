@@ -195,6 +195,18 @@ static void vm_init_dev(vm_t* vm, const vm_config_t* config)
             interrupts_vm_assign(vm, dev->interrupts[j]);
         }
     }
+
+    /* iommu */
+    if (iommu_vm_init(vm, config) < 0) {
+        ERROR("Failed to initialize iommu for vm");
+    }
+
+    for (int i = 0; i < config->platform.dev_num; i++) {
+        struct dev_region* dev = &config->platform.devs[i];
+        if (dev->id) {
+            iommu_vm_add_device(vm, dev->id);
+        }
+    }
 }
 
 void vm_init(vm_t* vm, const vm_config_t* config, bool master, uint64_t vm_id)

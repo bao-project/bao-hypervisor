@@ -29,6 +29,19 @@ struct arch_platform {
     } gic;
 
     struct {
+        uint64_t base;
+        uint64_t interrupt_id;
+        uint16_t global_mask;
+
+        uint32_t group_num;
+        struct smmu_group {
+            uint16_t group_mask;
+            uint16_t group_id;
+        } *smmu_groups;
+
+    } smmu;
+
+    struct {
         uint64_t base_addr;
     } generic_timer;
 

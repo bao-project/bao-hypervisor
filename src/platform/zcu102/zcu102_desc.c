@@ -57,6 +57,11 @@ struct platform_desc platform = {
             .maintenance_id = 25
         },
 
+        .smmu = {
+            .base = 0xFD800000,
+            .interrupt_id = 187
+        },
+
         .generic_timer = {
             .base_addr = 0xFF260000
         }

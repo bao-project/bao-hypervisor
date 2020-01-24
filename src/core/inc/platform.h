@@ -29,6 +29,7 @@ struct mem_region {
 };
 
 struct dev_region {
+    uint32_t id; /* Can be utilized for streamId matching. */
     uint64_t pa;
     uint64_t va;
     size_t size;

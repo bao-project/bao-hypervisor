@@ -21,8 +21,8 @@
 
 extern uint64_t _config_end, _images_end;
 
-#define VM_CONFIG_HEADER_SIZE ((size_t)&_config_end)
-#define VM_CONFIG_SIZE ((size_t)&_images_end)
+#define CONFIG_HEADER_SIZE ((size_t)&_config_end)
+#define CONFIG_SIZE ((size_t)&_images_end)
 
 #define VM_IMAGE_OFFSET(vm_name) ((uint64_t)&_##vm_name##_vm_beg)
 #define VM_IMAGE_SIZE(vm_name) ((size_t)&_##vm_name##_vm_size)
@@ -39,7 +39,7 @@ extern uint64_t _config_end, _images_end;
         ".set _" #vm_name "_vm_size,  (_" #vm_name "_vm_end - _" #vm_name \
         "_vm_beg)\n\t");
 
-#define VM_CONFIG_HEADER                           \
+#define CONFIG_HEADER                              \
     .fdt_header =                                  \
         {                                          \
             .magic = 0xedfe0dd0,                   \
@@ -47,10 +47,10 @@ extern uint64_t _config_end, _images_end;
             .version = 0x11000000,                 \
             .last_comp_version = 0x2000000,        \
     },                                             \
-    .vmconfig_header_size = VM_CONFIG_HEADER_SIZE, \
-    .vmconfig_size = VM_CONFIG_SIZE,
+    .config_header_size = CONFIG_HEADER_SIZE, \
+    .config_size = CONFIG_SIZE,
 
-typedef struct {
+typedef struct vm_config {
     struct {
         /* Image load address in VM's address space */
         uint64_t base_addr;
@@ -97,7 +97,7 @@ struct fdt_header {
     uint32_t size_dt_struct;
 };
 
-extern struct vm_config {
+extern struct config {
     /**
      *  Faking the fdt header allows to boot using u-boot mechanisms passing
      * this configuration as the dtb.
@@ -105,9 +105,9 @@ extern struct vm_config {
     struct fdt_header fdt_header;
 
     /* The of this struct aligned to page size */
-    size_t vmconfig_header_size;
+    size_t config_header_size;
     /* The size of the full configuration binary, including VM images */
-    size_t vmconfig_size;
+    size_t config_size;
 
     /* Hypervisor colors */
     uint64_t hyp_colors;
@@ -118,8 +118,8 @@ extern struct vm_config {
     /* Array list with VM configuration */
     vm_config_t vmlist[];
 
-} vm_config __attribute__((section(".config")));
+} config __attribute__((section(".config")));
 
-void config_adjust_to_va(struct vm_config *config, uint64_t phys);
+void config_adjust_to_va(struct config *config, uint64_t phys);
 
 #endif /* __CONFIG_H__ */
