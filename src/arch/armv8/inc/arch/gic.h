@@ -252,9 +252,8 @@ typedef struct {
 extern volatile gicd_t gicd;
 extern volatile gicc_t gicc;
 extern volatile gich_t gich;
-extern volatile gich_t gich_alias[8];
 
-enum int_state { INV, PEND, ACT, PENDACT, IN_LR };
+enum { INV, PEND, ACT, PENDACT};
 
 typedef struct {
     uint32_t CTLR;

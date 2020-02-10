@@ -24,8 +24,6 @@
 volatile gicd_t gicd __attribute__((section(".devices"), aligned(PAGE_SIZE)));
 volatile gicc_t gicc __attribute__((section(".devices"), aligned(PAGE_SIZE)));
 volatile gich_t gich __attribute__((section(".devices"), aligned(PAGE_SIZE)));
-volatile gich_t gich_alias[8]
-    __attribute__((section(".devices"), aligned(PAGE_SIZE)));
 
 static spinlock_t gicd_lock;
 

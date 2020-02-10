@@ -31,9 +31,6 @@ void interrupts_arch_init()
                     NUM_PAGES(sizeof(gicc)));
         mem_map_dev(&cpu.as, (void *)&gich, platform.arch.gic.gich_addr,
                     NUM_PAGES(sizeof(gich)));
-        mem_map_dev(&cpu.as, (void *)gich_alias,
-                    platform.arch.gic.gich_alias_addr,
-                    NUM_PAGES(sizeof(gich) * 8));
         mem_map_dev(&cpu.as, (void *)&gicd, platform.arch.gic.gicd_addr,
                     NUM_PAGES(sizeof(gicd)));
     }

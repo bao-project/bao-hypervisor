@@ -48,6 +48,7 @@ typedef struct {
 
 typedef struct {
     gich_t gich;
+    int16_t curr_lrs[GIC_NUM_LIST_REGS];
     struct {
         uint8_t pend;
         uint8_t act;
