@@ -36,6 +36,7 @@ typedef struct {
     uint8_t state;
     uint8_t prio;
     uint8_t targets;
+    uint8_t cfg;
 } vgic_int_t;
 
 typedef struct {

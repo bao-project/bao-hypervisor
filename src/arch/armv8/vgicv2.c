@@ -378,7 +378,7 @@ void vgicd_emul_misc_access(emul_access_t *acc)
 
 void vgic_route(vcpu_t *vcpu, vgic_int_t *interrupt)
 {
-    if (!((interrupt->state & PEND) && interrupt->enabled)) {
+    if ((interrupt->state == INV) || !interrupt->enabled) {
         return;
     }
 
@@ -525,10 +525,7 @@ void vgicd_set_pend(vcpu_t *vcpu, uint64_t int_id, bool pend)
                            interrupt->state == PEND ? ACT : interrupt->state);
         }
 
-        if (interrupt->state != INV) {
-            vgic_route(vcpu, interrupt);
-        }
-
+        vgic_route(vcpu, interrupt);
         vgic_yield_ownership(vcpu, interrupt);
 
     } else {
@@ -540,7 +537,7 @@ void vgicd_set_pend(vcpu_t *vcpu, uint64_t int_id, bool pend)
     spin_unlock(&interrupt->lock);
 }
 
-void vgicd_emul_ispendr_access(emul_access_t *acc)
+void vgicd_emul_pendr_access(emul_access_t *acc, bool set)
 {
     uint64_t reg_ind = (acc->addr & 0x7F) / sizeof(uint32_t);
     uint32_t val = acc->write ? vcpu_readreg(cpu.vcpu, acc->reg) : 0;
@@ -549,33 +546,95 @@ void vgicd_emul_ispendr_access(emul_access_t *acc)
     if (acc->write) {
         for (int i = 0; i < 32; i++) {
             if (bit_get(val, i)) {
-                vgicd_set_pend(cpu.vcpu, i + first_int, true);
+                vgicd_set_pend(cpu.vcpu, i + first_int, set);
             }
         }
     } else {
-        // TODO
-        vcpu_writereg(cpu.vcpu, acc->reg, 0);
+        for (int i = 0; i < 32; i++) {
+            vgic_int_t* interrupt = vgic_get_int(cpu.vcpu, i + first_int);
+            if(vgic_get_state(interrupt) & PEND){
+                val |= 1 << i;
+            }
+        }
+        vcpu_writereg(cpu.vcpu, acc->reg, val);
     }
 }
 
-void vgicd_emul_icpendr_access(emul_access_t *acc)
+inline void vgicd_emul_ispendr_access(emul_access_t *acc)
 {
-    // TODO
+    vgicd_emul_pendr_access(acc, true);
 }
 
-void vgicd_set_actv(vcpu_t *vcpu, uint64_t int_id, bool pend)
+inline void vgicd_emul_icpendr_access(emul_access_t *acc)
 {
-    // TODO
+    vgicd_emul_pendr_access(acc, false);
+}
+
+void vgicd_set_actv(vcpu_t *vcpu, uint64_t int_id, bool act)
+{
+
+    vgic_int_t *interrupt = vgic_get_int(cpu.vcpu, int_id & 0x3ff);
+
+    spin_lock(&interrupt->lock);
+
+    if (vgic_get_ownership(vcpu, interrupt)) {
+
+        vgic_remove_lr(vcpu, interrupt);
+        uint8_t state = interrupt->state;
+        if (act && !(state & ACT)) {
+            interrupt->state = state | ACT;
+        } else if (!act && (state & ACT)) {
+            interrupt->state = state & ~ACT;
+        }
+
+        if (interrupt->hw) {
+            gicd_set_state(interrupt->id,
+                           interrupt->state == PEND ? ACT : interrupt->state);
+        }
+
+        vgic_route(vcpu, interrupt);
+        vgic_yield_ownership(vcpu, interrupt);
+
+    } else {
+        cpu_msg_t msg = {GICV2_IPI_ID, VGICD_SET_PEND,
+                         VGIC_MSG_DATA(vcpu->vm->id, interrupt->id, act)};
+        cpu_send_msg(interrupt->owner->phys_id, &msg);
+    }
+
+    spin_unlock(&interrupt->lock);
+}
+
+void vgicd_emul_activer_access(emul_access_t *acc, bool set)
+{
+    uint64_t reg_ind = (acc->addr & 0x7F) / sizeof(uint32_t);
+    uint32_t val = acc->write ? vcpu_readreg(cpu.vcpu, acc->reg) : 0;
+    uint64_t first_int = 32 * reg_ind;
+
+    if (acc->write) {
+        for (int i = 0; i < 32; i++) {
+            if (bit_get(val, i)) {
+                vgicd_set_actv(cpu.vcpu, i + first_int, set);
+            }
+        }
+    } else {
+        for (int i = 0; i < 32; i++) {
+            vgic_int_t* interrupt = vgic_get_int(cpu.vcpu, i + first_int);
+            if(vgic_get_state(interrupt) & ACT){
+                val |= 1 << i;
+            }
+        }
+        vcpu_writereg(cpu.vcpu, acc->reg, val);
+    }
 }
 
 void vgicd_emul_isactiver_access(emul_access_t *acc)
 {
-    // TODO
+    vgicd_emul_activer_access(acc, true);
 }
 
 void vgicd_emul_icativer_access(emul_access_t *acc)
 {
-    // TODO
+    vgicd_emul_activer_access(acc, false);
 }
 
 void vgicd_set_prio(vcpu_t *vcpu, uint64_t int_id, uint8_t prio)
@@ -696,9 +755,51 @@ void vgicd_emul_itargetr_access(emul_access_t *acc)
     }
 }
 
+uint8_t vgicd_get_icfgr(vcpu_t *vcpu, uint64_t int_id)
+{
+    return vgic_get_int(vcpu, int_id)->cfg;
+}
+
+void vgicd_set_icfgr(vcpu_t *vcpu, uint64_t int_id, uint8_t cfg)
+{
+    vgic_int_t *interrupt = vgic_get_int(vcpu, int_id);
+    spin_lock(&interrupt->lock);
+
+    if (vgic_get_ownership(vcpu, interrupt)) {
+        interrupt->cfg = cfg;
+        if (interrupt->hw) {
+            gicd_set_icfgr(interrupt->id, cfg);
+        }
+        vgic_yield_ownership(vcpu, interrupt);
+    } else {
+        cpu_msg_t msg = {GICV2_IPI_ID, VGICD_SET_CFG,
+                         VGIC_MSG_DATA(vcpu->vm->id, interrupt->id, cfg)};
+        cpu_send_msg(interrupt->owner->phys_id, &msg);
+    }
+
+    spin_unlock(&interrupt->lock);
+}
+
 void vgicd_emul_icfgr_access(emul_access_t *acc)
 {
-    // TODO
+    uint32_t cfg;
+    uint64_t first_int = (32 / GIC_CONFIG_BITS) * (acc->addr & 0x1ff) / 4;
+
+    if (acc->write) {
+        cfg = vcpu_readreg(cpu.vcpu, acc->reg);
+        for (int irq = first_int, bit = 0; bit < acc->width * 8;
+             bit += 2, irq++) {
+            vgicd_set_icfgr(cpu.vcpu, irq, (cfg & (0b11 << bit)) >> bit);
+        }
+    } else {
+        cfg = 0;
+        for (int irq = first_int, bit = 0; bit < acc->width * 8;
+             bit += 2, irq++) {
+            /* we assume vgicd_get_icfgr returns two bit values on the lsbits */
+            cfg |= vgicd_get_icfgr(cpu.vcpu, irq) << bit;
+        }
+        vcpu_writereg(cpu.vcpu, acc->reg, cfg);
+    }
 }
 
 void vgicd_emul_sgiregs_access(emul_access_t *acc)
@@ -1068,7 +1169,8 @@ void vgic_cpu_init(vcpu_t *vcpu)
         vcpu->arch.vgicd_priv.interrupts[i].enabled = false;
         vcpu->arch.vgicd_priv.interrupts[i].state = INV;
         vcpu->arch.vgicd_priv.interrupts[i].prio = 0xFF;
-        vcpu->arch.vgicd_priv.interrupts[i].targets = (1U << vcpu->phys_id);;
+        vcpu->arch.vgicd_priv.interrupts[i].targets = (1U << vcpu->phys_id);
+        ;
         vcpu->arch.vgicd_priv.interrupts[i].lock = 0;
         vcpu->arch.vgicd_priv.interrupts[i].in_lr = 0;
         vcpu->arch.vgicd_priv.interrupts[i].lr = 0;

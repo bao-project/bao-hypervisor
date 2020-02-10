@@ -253,7 +253,7 @@ extern volatile gicd_t gicd;
 extern volatile gicc_t gicc;
 extern volatile gich_t gich;
 
-enum { INV, PEND, ACT, PENDACT};
+enum int_state { INV, PEND, ACT, PENDACT};
 
 typedef struct {
     uint32_t CTLR;
@@ -281,6 +281,7 @@ void gicc_restore_state(gicc_state_t *state);
 
 void gicd_set_enable(uint64_t int_id, bool en);
 void gicd_set_prio(uint64_t int_id, uint8_t prio);
+void gicd_set_icfgr(uint64_t int_id, uint8_t cfg);
 void gicd_set_act(uint64_t int_id, bool act);
 void gicd_set_state(uint64_t int_id, enum int_state state);
 void gicd_set_trgt(uint64_t int_id, uint8_t trgt);
