@@ -72,6 +72,11 @@ bool interrupts_arch_check(uint64_t int_id)
     return gicd_get_state(int_id) & PEND;
 }
 
+inline bool interrupts_arch_conflict(bitmap_t interrupt_bitmap, uint64_t int_id)
+{
+    return (bitmap_get(interrupt_bitmap, int_id) && int_id > GIC_CPU_PRIV);
+}
+
 void interrupts_arch_clear(uint64_t int_id)
 {
     gicd_set_pend(int_id, false);

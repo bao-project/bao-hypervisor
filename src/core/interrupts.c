@@ -21,6 +21,7 @@
 #include <string.h>
 
 BITMAP_ALLOC(hyp_interrupt_bitmap, MAX_INTERRUPTS);
+BITMAP_ALLOC(global_interrupt_bitmap, MAX_INTERRUPTS);
 
 irq_handler_t interrupt_handlers[MAX_INTERRUPTS];
 
@@ -95,11 +96,14 @@ enum irq_res interrupts_handle(uint64_t int_id, uint64_t source)
 
 void interrupts_vm_assign(vm_t *vm, uint64_t id)
 {
-    // TODO: make sure a hardware interrupt is assigned to a single VM
+    if(interrupts_arch_conflict(global_interrupt_bitmap, id)) {
+        ERROR("Interrupts conflict, id = %d\n", id);
+    }
 
     interrupts_arch_vm_assign(vm, id);
 
     bitmap_set(vm->interrupt_bitmap, id);
+    bitmap_set(global_interrupt_bitmap, id);
 }
 
 void interrupts_reserve(uint64_t int_id, irq_handler_t handler)
@@ -107,5 +111,6 @@ void interrupts_reserve(uint64_t int_id, irq_handler_t handler)
     if (int_id < MAX_INTERRUPTS) {
         interrupt_handlers[int_id] = handler;
         bitmap_set(hyp_interrupt_bitmap, int_id);
+        bitmap_set(global_interrupt_bitmap, int_id);
     }
 }
