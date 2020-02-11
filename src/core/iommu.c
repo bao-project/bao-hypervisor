@@ -1,15 +1,17 @@
-/**
- * baohu separation kernel
+/** 
+ * Bao, a Lightweight Static Partitioning Hypervisor 
  *
- * Copyright (c) Jose Martins, Sandro Pinto, David Cerdeira
+ * Copyright (c) Bao Project (www.bao-project.org), 2019-
  *
  * Authors:
  *      David Cerdeira <davidmcerdeira@gmail.com>
+ *      Jose Martins <jose.martins@bao-project.org>
+ *      Angelo Ruocco <angeloruocco90@gmail.com>
  *
- * baohu is free software; you can redistribute it and/or modify it under the
+ * Bao is free software; you can redistribute it and/or modify it under the
  * terms of the GNU General Public License version 2 as published by the Free
  * Software Foundation, with a special exception exempting guest code from such
- * license. See the COPYING file in the top-level directory for details.
+ * license. See the COPYING file in the top-level directory for details. 
  *
  */
 
@@ -37,8 +39,7 @@ int iommu_vm_init(vm_t *vm, const vm_config_t *config)
     objcache_init(&vm->iommu.dev_oc, sizeof(struct iommu_dev_node),
                   SEC_HYP_GLOBAL, false);
 
-    iommu_arch_vm_init(vm, config);
-    return 0;
+    return iommu_arch_vm_init(vm, config);
 }
 
 /* Allows vms to add devices to their address space. */
@@ -57,10 +58,14 @@ int iommu_vm_add_device(vm_t *vm, int dev_id)
         res = iommu_arch_vm_add_device(vm, dev_id);
     }
 
-    struct iommu_dev_node *ptr = objcache_alloc(&vm->iommu.dev_oc);
-    if (ptr != NULL && res == 0) {
-        ptr->dev.id = dev_id;
-        list_push(&vm->iommu.dev_list, (void *)ptr);
+    if (res >= 0) {
+        struct iommu_dev_node *ptr = objcache_alloc(&vm->iommu.dev_oc);
+        if(ptr != NULL){
+            ptr->dev.id = dev_id;
+            list_push(&vm->iommu.dev_list, (void *)ptr);
+        } else {
+            res = -1;
+        }
     }
 
     return res;

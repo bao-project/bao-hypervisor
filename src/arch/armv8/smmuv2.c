@@ -1,16 +1,17 @@
-/**
- * baohu separation kernel
+/** 
+ * Bao, a Lightweight Static Partitioning Hypervisor 
  *
- * Copyright (c) Jose Martins, Sandro Pinto, David Cerdeira
+ * Copyright (c) Bao Project (www.bao-project.org), 2019-
  *
  * Authors:
  *      David Cerdeira <davidmcerdeira@gmail.com>
- *      Jose Martins <josemartins90@gmail.com>
+ *      Jose Martins <jose.martins@bao-project.org>
+ *      Angelo Ruocco <angeloruocco90@gmail.com>
  *
- * baohu is free software; you can redistribute it and/or modify it under the
+ * Bao is free software; you can redistribute it and/or modify it under the
  * terms of the GNU General Public License version 2 as published by the Free
  * Software Foundation, with a special exception exempting guest code from such
- * license. See the COPYING file in the top-level directory for details.
+ * license. See the COPYING file in the top-level directory for details. 
  *
  */
 
@@ -18,6 +19,7 @@
 #include <arch/spinlock.h>
 #include <bitmap.h>
 #include <bit.h>
+#include <arch/sysregs.h>
 
 #define SME_MAX_NUM 128
 #define CTX_MAX_NUM 128
@@ -43,7 +45,6 @@ typedef struct {
 } smmu_priv_t;
 
 smmu_priv_t smmu;
-
 
 /**
  * Iterate stream match entries.
@@ -80,6 +81,54 @@ inline uint16_t smmu_sme_get_mask(uint32_t sme)
     return SMMU_SMR_MASK(smmu.hw.glbl_rs0->SMR[sme]);
 }
 
+static void smmu_check_features()
+{
+    int version = bit_extract(smmu.hw.glbl_rs0->IDR7, SMMUV2_IDR7_MAJOR_OFF,
+                              SMMUV2_IDR7_MAJOR_LEN);
+    if (version != 2) {
+        ERROR("smmu unsupported version: %d", version);
+    }
+
+    if (!(smmu.hw.glbl_rs0->IDR0 & SMMUV2_IDR0_S2TS_BIT)) {
+        ERROR("smmuv2 does not support 2nd stage translation");
+    }
+
+    if (!(smmu.hw.glbl_rs0->IDR0 & SMMUV2_IDR0_SMS_BIT)) {
+        ERROR("smmuv2 does not support stream match");
+    }
+
+    /**
+     * TODO: the most common smmuv2 implementation (mmu-500) does not provide
+     * ptw coherency. So we must add some mechanism software-managed
+     * coherency mechanism for the vms using the smmu according to the
+     * result of this feature test.
+     */
+    if (!(smmu.hw.glbl_rs0->IDR0 & SMMUV2_IDR0_CTTW_BIT)) {
+        WARNING("smmuv2 does not support coherent page table walks");
+    }
+
+    if (!(smmu.hw.glbl_rs0->IDR0 & SMMUV2_IDR0_BTM_BIT)) {
+        ERROR("smmuv2 does not support tlb maintenance broadcast");
+    }
+
+    if (!(smmu.hw.glbl_rs0->IDR2 & SMMUV2_IDR2_PTFSv8_4kB_BIT)) {
+        ERROR("smmuv2 does not support 4kb page granule");
+    }
+
+    int pasize = bit_extract(smmu.hw.glbl_rs0->IDR2, SMMUV2_IDR2_OAS_OFF,
+                             SMMUV2_IDR2_OAS_LEN);
+    int ipasize = bit_extract(smmu.hw.glbl_rs0->IDR2, SMMUV2_IDR2_IAS_OFF,
+                              SMMUV2_IDR2_IAS_LEN);
+    int parange = 0;
+    MRS(parange, ID_AA64MMFR0_EL1);
+    parange &= ID_AA64MMFR0_PAR_MSK;
+
+    if (pasize < parange) {
+        ERROR("smmuv2 does not support the full available pa range");
+    } else if (ipasize < parange) {
+        ERROR("smmuv2 does not support the full available ipa range");
+    }
+}
 
 void smmu_init()
 {
@@ -98,7 +147,8 @@ void smmu_init()
         smmu_glbl_rs0->IDR1 & SMMUV2_IDR1_PAGESIZE_BIT ? 0x10000 : 0x1000;
     uint32_t num_page =
         1ULL << (bit_extract(smmu_glbl_rs0->IDR1, SMMUV2_IDR1_NUMPAGEDXB_OFF,
-                             SMMUV2_IDR1_NUMPAGEDXB_LEN) + 1);
+                             SMMUV2_IDR1_NUMPAGEDXB_LEN) +
+                 1);
     int32_t ctx_bank_num = bit_extract(
         smmu_glbl_rs0->IDR1, SMMUV2_IDR1_NUMCB_OFF, SMMUV2_IDR1_NUMCB_LEN);
 
@@ -117,6 +167,8 @@ void smmu_init()
     smmu.hw.glbl_rs0 = smmu_glbl_rs0;
     smmu.hw.glbl_rs1 = smmu_glbl_rs1;
     smmu.hw.cntxt = smmu_cntxt;
+
+    smmu_check_features();
 
     smmu.ctx_lock = SPINLOCK_INITVAL;
     smmu.ctx_num = ctx_bank_num;
@@ -143,7 +195,7 @@ void smmu_init()
     /* Enable IOMMU. */
     uint32_t cr0 = smmu.hw.glbl_rs0->CR0;
     cr0 = SMMUV2_CR0_CLEAR(cr0);
-    cr0 |= SMMUV2_CR0_DEFAULT;
+    cr0 |= SMMUV2_CR0_USFCFG | SMMUV2_CR0_SMCFCFG;
     cr0 &= ~SMMUV2_CR0_CLIENTPD;
     smmu.hw.glbl_rs0->CR0 = cr0;
 }
@@ -153,11 +205,10 @@ int smmu_alloc_ctxbnk()
     spin_lock(&smmu.ctx_lock);
     /* Find a free context bank. */
     int nth = bitmap_find_nth(smmu.ctxbank_bitmap, smmu.ctx_num, 1, 0, false);
-    spin_unlock(&smmu.ctx_lock);
-
-    if (nth < 0) {
-        ERROR("No free context bank available.");
+    if (nth >= 0) {
+        bitmap_set(smmu.ctxbank_bitmap, nth);
     }
+    spin_unlock(&smmu.ctx_lock);
 
     return nth;
 }
@@ -184,7 +235,7 @@ static int smmu_cb_ttba_offset(int t0sz)
 void smmu_write_ctxbnk(int32_t ctx_id, void *root_pt, uint32_t vm_id)
 {
     spin_lock(&smmu.ctx_lock);
-    if (bitmap_get(smmu.ctxbank_bitmap, ctx_id)) {
+    if (!bitmap_get(smmu.ctxbank_bitmap, ctx_id)) {
         ERROR("smmu ctx %d is already allocated", ctx_id);
     } else {
         /* Set type as stage 2 only. */
@@ -213,8 +264,6 @@ void smmu_write_ctxbnk(int32_t ctx_id, void *root_pt, uint32_t vm_id)
         sctlr = SMMUV2_SCTLR_CLEAR(sctlr);
         sctlr |= SMMUV2_SCTLR_DEFAULT;
         smmu.hw.cntxt[ctx_id].SCTLR |= sctlr;
-
-        bitmap_set(smmu.ctxbank_bitmap, ctx_id);
     }
     spin_unlock(&smmu.ctx_lock);
 }
@@ -225,10 +274,6 @@ int smmu_alloc_sme()
     /* Find a free sme. */
     int nth = bitmap_find_nth(smmu.sme_bitmap, smmu.sme_num, 1, 0, false);
     spin_unlock(&smmu.sme_lock);
-
-    if (nth < 0) {
-        ERROR("No free sme available.");
-    }
 
     return nth;
 }
@@ -254,17 +299,16 @@ bool smmu_compatible_sme_exists(uint16_t mask, uint16_t id, uint32_t ctx,
     uint32_t sme = 0;
 
     spin_lock(&smmu.sme_lock);
-    smmu_for_each_sme(sme) {
+    smmu_for_each_sme(sme)
+    {
         uint16_t sme_mask = smmu_sme_get_mask(sme);
         uint16_t mask_r = mask & sme_mask;
         uint16_t diff_id = (smmu_sme_get_id(sme) ^ id) & ~(mask | sme_mask);
 
         if (!diff_id) {
-
             /* Only group-to-group or device-to-group can be merged */
             if ((group || smmu_sme_is_group(sme)) &&
                 (mask_r == mask || mask_r == sme_mask)) {
-
                 if (ctx != smmu_sme_get_ctx(sme)) {
                     ERROR("SMMU conflicting context attributions");
                 }

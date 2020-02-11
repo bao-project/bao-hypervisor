@@ -1,16 +1,17 @@
-/**
- * baohu separation kernel
+/** 
+ * Bao, a Lightweight Static Partitioning Hypervisor 
  *
- * Copyright (c) Jose Martins, Sandro Pinto, David Cerdeira
+ * Copyright (c) Bao Project (www.bao-project.org), 2019-
  *
  * Authors:
  *      David Cerdeira <davidmcerdeira@gmail.com>
- *      Jose Martins <josemartins90@gmail.com>
+ *      Jose Martins <jose.martins@bao-project.org>
+ *      Angelo Ruocco <angeloruocco90@gmail.com>
  *
- * baohu is free software; you can redistribute it and/or modify it under the
+ * Bao is free software; you can redistribute it and/or modify it under the
  * terms of the GNU General Public License version 2 as published by the Free
  * Software Foundation, with a special exception exempting guest code from such
- * license. See the COPYING file in the top-level directory for details.
+ * license. See the COPYING file in the top-level directory for details. 
  *
  */
 
@@ -28,18 +29,30 @@
 #define SMMUV2_CR0_GCFGFIE  (0x1 << 5)
 #define SMMUV2_CR0_USFCFG   (0x1 << 10)
 #define SMMUV2_CR0_SMCFCFG  (0x1 << 21)
-#define SMMUV2_CR0_DEFAULT  (SMMUV2_CR0_USFCFG | SMMUV2_CR0_SMCFCFG)
 #define SMMUV2_CR0_CLIENTPD (0x1 << 0)
 
 #define SMMUV2_CR0_CLEAR(cr0)     (cr0 & (0x3 << 30 | 0x1 << 11))
 
-#define SMMUV2_IDR0_MASK    (0xFF)
+#define SMMUV2_IDR0_MASK         (0xFF)
+#define SMMUV2_IDR0_S2TS_BIT     (0x1 << 30)
+#define SMMUV2_IDR0_SMS_BIT      (0x1 << 27)
+#define SMMUV2_IDR0_CTTW_BIT     (0x1 << 14)
+#define SMMUV2_IDR0_BTM_BIT      (0x1 << 13)
 
 #define SMMUV2_IDR1_PAGESIZE_BIT    (0x1 << 31)
 #define SMMUV2_IDR1_NUMCB_OFF       (0)
 #define SMMUV2_IDR1_NUMCB_LEN       (8)
 #define SMMUV2_IDR1_NUMPAGEDXB_OFF  (28)
 #define SMMUV2_IDR1_NUMPAGEDXB_LEN  (3)
+
+#define SMMUV2_IDR2_PTFSv8_4kB_BIT (0x1 << 12)
+#define SMMUV2_IDR2_OAS_OFF         (4)
+#define SMMUV2_IDR2_OAS_LEN         (4)
+#define SMMUV2_IDR2_IAS_OFF         (0)
+#define SMMUV2_IDR2_IAS_LEN         (4)
+
+#define SMMUV2_IDR7_MAJOR_OFF       (4)
+#define SMMUV2_IDR7_MAJOR_LEN       (4)
 
 #define SMMU_SMR_ID_OFF 0
 #define SMMU_SMR_ID_LEN 15
@@ -199,8 +212,8 @@ typedef struct {
     uint32_t S2CR[128];
     uint8_t pad17[0xFD0 - 0xE00];
     uint8_t impl3[0x1000 - 0xFD0];
-} __attribute__((__packed__, __aligned__(PAGE_SIZE))) smmu_glbl_rs0_t;
 
+} __attribute__((__packed__, __aligned__(PAGE_SIZE))) smmu_glbl_rs0_t;
 #define SMMUV2_CBAR_TYPE_S2             (0)
 #define SMMUV2_CBAR_TYPE_S1_S2FAULT     (0x2 << 16)
 #define SMMUV2_CBAR_VMID_MASK           (0xFF)
