@@ -79,7 +79,7 @@ inline bool interrupts_arch_conflict(bitmap_t interrupt_bitmap, uint64_t int_id)
 
 void interrupts_arch_clear(uint64_t int_id)
 {
-    gicd_set_pend(int_id, false);
+    gicd_set_state(int_id, INV);
 }
 
 void interrupts_arch_vm_assign(vm_t *vm, uint64_t id)

@@ -30,7 +30,7 @@ static spinlock_t gicd_lock;
 
 uint64_t NUM_LRS;
 
-void gicc_init()
+static inline void gicc_init()
 {
     for (int i = 0; i < gich_num_lrs(); i++) {
         gich.LR[i] = 0;
@@ -101,11 +101,7 @@ void gic_cpu_init()
         gicd.CPENDSGIR[i] = -1;
     }
 
-    for (int i = 0; i < GIC_NUM_TARGET_REGS(GIC_CPU_PRIV); i++) {
-        gicd.IPRIORITYR[i] = -1;
-    }
-
-    for (int i = 0; i < GIC_NUM_TARGET_REGS(GIC_CPU_PRIV); i++) {
+    for (int i = 0; i < GIC_NUM_PRIO_REGS(GIC_CPU_PRIV); i++) {
         gicd.IPRIORITYR[i] = -1;
     }
 
@@ -131,11 +127,11 @@ void gic_init()
     }
 
     /* All interrupts have lowest priority possible by default */
-    for (int i = 0; i < GIC_NUM_PRIO_REGS(int_num); i++)
+    for (int i = GIC_CPU_PRIV; i < GIC_NUM_PRIO_REGS(int_num); i++)
         gicd.IPRIORITYR[i] = -1;
 
     /* No CPU targets for any interrupt by default */
-    for (int i = 0; i < GIC_NUM_TARGET_REGS(int_num); i++)
+    for (int i = GIC_CPU_PRIV; i < GIC_NUM_TARGET_REGS(int_num); i++)
         gicd.ITARGETSR[i] = 0;
 
     /* ICFGR are platform dependent, lets leave them as is */
@@ -172,13 +168,13 @@ void gicd_send_sgi(uint64_t cpu_target, uint64_t sgi_num)
 
 uint64_t gicd_get_prio(uint64_t int_id)
 {
+    uint64_t reg_ind = GIC_PRIO_REG(int_id);
+    uint64_t off = GIC_PRIO_OFF(int_id);
+
     spin_lock(&gicd_lock);
 
-    uint64_t reg_ind = (int_id * GIC_PRIO_BITS) / (sizeof(uint32_t) * 8);
-    uint64_t off = (int_id * GIC_PRIO_BITS) % (sizeof(uint32_t) * 8);
-
     uint64_t prio =
-        gicd.IPRIORITYR[reg_ind] >> off & ((1 << GIC_PRIO_BITS) - 1);
+        gicd.IPRIORITYR[reg_ind] >> off & BIT_MASK(off, GIC_PRIO_BITS);
 
     spin_unlock(&gicd_lock);
 
@@ -187,11 +183,11 @@ uint64_t gicd_get_prio(uint64_t int_id)
 
 void gicd_set_prio(uint64_t int_id, uint8_t prio)
 {
-    spin_lock(&gicd_lock);
+    uint64_t reg_ind = GIC_PRIO_REG(int_id);
+    uint64_t off = GIC_PRIO_OFF(int_id);
+    uint64_t mask = BIT_MASK(off, GIC_PRIO_BITS);
 
-    uint64_t reg_ind = (int_id * GIC_PRIO_BITS) / (sizeof(uint32_t) * 8);
-    uint64_t off = (int_id * GIC_PRIO_BITS) % (sizeof(uint32_t) * 8);
-    uint64_t mask = ((1U << GIC_PRIO_BITS) - 1) << off;
+    spin_lock(&gicd_lock);
 
     gicd.IPRIORITYR[reg_ind] =
         (gicd.IPRIORITYR[reg_ind] & ~mask) | ((prio << off) & mask);
@@ -199,86 +195,75 @@ void gicd_set_prio(uint64_t int_id, uint8_t prio)
     spin_unlock(&gicd_lock);
 }
 
-uint8_t gicd_get_state(uint64_t int_id)
+enum int_state gicd_get_state(uint64_t int_id)
 {
+    uint64_t reg_ind = GIC_INT_REG(int_id);
+    uint64_t mask = GIC_INT_MASK(int_id);
+
     spin_lock(&gicd_lock);
 
-    uint64_t reg_ind = int_id / (sizeof(uint32_t) * 8);
-    uint64_t mask = 1U << int_id % (sizeof(uint32_t) * 8);
-
-    uint64_t pend = (gicd.ISPENDR[reg_ind] & mask) ? 1 : 0;
-    uint64_t act = (gicd.ISACTIVER[reg_ind] & mask) ? 1 : 0;
+    enum int_state pend = (gicd.ISPENDR[reg_ind] & mask) ? PEND : 0;
+    enum int_state act = (gicd.ISACTIVER[reg_ind] & mask) ? ACT : 0;
 
     spin_unlock(&gicd_lock);
 
-    return pend | (act << 1);
+    return pend | act;
 }
 
-void gicd_set_pend(uint64_t int_id, bool pend)
+static void gicd_set_pend(uint64_t int_id, bool pend)
 {
+    spin_lock(&gicd_lock);
+
     if (gic_is_sgi(int_id)) {
-        uint64_t reg_ind = int_id / 4;
-        uint64_t off = (int_id % 4) * 8;
+        uint64_t reg_ind = GICD_SGI_REG(int_id);
+        uint64_t off = GICD_SGI_OFF(int_id);
 
         if (pend) {
             gicd.SPENDSGIR[reg_ind] = (1U) << (off + cpu.id);
         } else {
             gicd.CPENDSGIR[reg_ind] = BIT_MASK(off, 8);
         }
-
     } else {
-        uint64_t reg_ind = int_id / (sizeof(uint32_t) * 8);
-        uint64_t mask = 1U << int_id % (sizeof(uint32_t) * 8);
+        uint64_t reg_ind = GIC_INT_REG(int_id);
 
         if (pend) {
-            gicd.ISPENDR[reg_ind] = mask;
+            gicd.ISPENDR[reg_ind] = GIC_INT_MASK(int_id);
         } else {
-            gicd.ICPENDR[reg_ind] = mask;
+            gicd.ICPENDR[reg_ind] = GIC_INT_MASK(int_id);
         }
-    }
-}
-
-void gicd_set_act(uint64_t int_id, bool act)
-{
-    uint64_t reg_ind = int_id / (sizeof(uint32_t) * 8);
-    uint64_t mask = 1U << int_id % (sizeof(uint32_t) * 8);
-
-    if (act) {
-        gicd.ISACTIVER[reg_ind] = mask;
-    } else {
-        gicd.ICACTIVER[reg_ind] = mask;
-    }
-}
-
-void gicd_set_state(uint64_t int_id, uint8_t state)
-{
-    spin_lock(&gicd_lock);
-
-    uint64_t reg_ind = int_id / (sizeof(uint32_t) * 8);
-    uint64_t mask = 1U << int_id % (sizeof(uint32_t) * 8);
-
-    if (state & 0x2) {
-        gicd.ISACTIVER[reg_ind] = mask;
-    } else {
-        gicd.ICACTIVER[reg_ind] = mask;
-    }
-
-    if (state & 0x1) {
-        gicd.ISPENDR[reg_ind] = mask;
-    } else {
-        gicd.ICPENDR[reg_ind] = mask;
     }
 
     spin_unlock(&gicd_lock);
 }
 
-void gicd_set_trgt(uint64_t int_id, uint8_t trgt)
+void gicd_set_act(uint64_t int_id, bool act)
 {
+    uint64_t reg_ind = GIC_INT_REG(int_id);
+
     spin_lock(&gicd_lock);
 
-    uint64_t reg_ind = (int_id * GIC_TARGET_BITS) / (sizeof(uint32_t) * 8);
-    uint64_t off = (int_id * GIC_TARGET_BITS) % (sizeof(uint32_t) * 8);
-    uint32_t mask = ((1U << GIC_TARGET_BITS) - 1) << off;
+    if (act) {
+        gicd.ISACTIVER[reg_ind] = GIC_INT_MASK(int_id);
+    } else {
+        gicd.ICACTIVER[reg_ind] = GIC_INT_MASK(int_id);
+    }
+
+    spin_unlock(&gicd_lock);
+}
+
+void gicd_set_state(uint64_t int_id, enum int_state state)
+{
+    gicd_set_act(int_id, state & ACT);
+    gicd_set_pend(int_id, state & PEND);
+}
+
+void gicd_set_trgt(uint64_t int_id, uint8_t trgt)
+{
+    uint64_t reg_ind = GIC_TARGET_REG(int_id);
+    uint64_t off = GIC_TARGET_OFF(int_id);
+    uint32_t mask = BIT_MASK(off, GIC_TARGET_BITS);
+
+    spin_lock(&gicd_lock);
 
     gicd.ITARGETSR[reg_ind] =
         (gicd.ITARGETSR[reg_ind] & ~mask) | ((trgt << off) & mask);
@@ -288,8 +273,8 @@ void gicd_set_trgt(uint64_t int_id, uint8_t trgt)
 
 void gicd_set_enable(uint64_t int_id, bool en)
 {
-    uint64_t reg_ind = int_id / (sizeof(uint32_t) * 8);
-    uint64_t bit = (1UL << int_id % (sizeof(uint32_t) * 8));
+    uint64_t reg_ind = GIC_INT_REG(int_id);
+    uint64_t bit = GIC_INT_MASK(int_id);
 
     spin_lock(&gicd_lock);
 

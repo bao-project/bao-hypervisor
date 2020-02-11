@@ -33,17 +33,30 @@
 #define GIC_SEC_BITS 2
 #define GIC_SGI_BITS 8
 
-#define GIC_NUM_INT_REGS(NINT) (NINT / (sizeof(uint32_t) * 8))
+#define GIC_INT_REG(NINT) (NINT / (sizeof(uint32_t) * 8))
+#define GIC_INT_MASK(NINT) (1U << NINT % (sizeof(uint32_t) * 8))
+#define GIC_NUM_INT_REGS(NINT) GIC_INT_REG(NINT)
 #define GIC_NUM_PRIVINT_REGS (GIC_CPU_PRIV / (sizeof(uint32_t) * 8))
-#define GIC_NUM_PRIO_REGS(NINT) \
-    ((NINT * GIC_PRIO_BITS) / (sizeof(uint32_t) * 8))
-#define GIC_NUM_TARGET_REGS(NINT) \
-    ((NINT * GIC_TARGET_BITS) / (sizeof(uint32_t) * 8))
-#define GIC_NUM_CONFIG_REGS(NINT) \
-    ((NINT * GIC_CONFIG_BITS) / (sizeof(uint32_t) * 8))
+
+#define GIC_PRIO_REG(NINT) ((NINT * GIC_PRIO_BITS) / (sizeof(uint32_t) * 8))
+#define GIC_NUM_PRIO_REGS(NINT) GIC_PRIO_REG(NINT)
+#define GIC_PRIO_OFF(NINT) (NINT * GIC_PRIO_BITS) % (sizeof(uint32_t) * 8)
+
+#define GIC_TARGET_REG(NINT) ((NINT * GIC_TARGET_BITS) / (sizeof(uint32_t) * 8))
+#define GIC_NUM_TARGET_REGS(NINT) GIC_TARGET_REG(NINT)
+#define GIC_TARGET_OFF(NINT) (NINT * GIC_TARGET_BITS) % (sizeof(uint32_t) * 8)
+
+#define GIC_CONFIG_REG(NINT) ((NINT * GIC_CONFIG_BITS) / (sizeof(uint32_t) * 8))
+#define GIC_NUM_CONFIG_REGS(NINT) GIC_CONFIG_REG(NINT)
+#define GIC_CONFIG_OFF(NINT) (NINT * GIC_CONFIG_BITS) % (sizeof(uint32_t) * 8)
+
 #define GIC_NUM_SEC_REGS(NINT) ((NINT * GIC_SEC_BITS) / (sizeof(uint32_t) * 8))
+
 #define GIC_NUM_SGI_REGS \
     ((GIC_MAX_SGIS * GIC_SGI_BITS) / (sizeof(uint32_t) * 8))
+#define GICD_SGI_REG(NINT) (NINT / 4)
+#define GICD_SGI_OFF(NINT) ((NINT % 4) * 8)
+
 #define GIC_NUM_APR_REGS ((1UL << (GIC_PRIO_BITS - 1)) / (sizeof(uint32_t) * 8))
 #define GIC_NUM_LIST_REGS (64)
 
@@ -60,10 +73,6 @@
 #define GICD_TYPER_SECUREXT_BIT (1UL << 10)
 #define GICD_TYPER_LSPI_OFF (11)
 #define GICD_TYPER_LSPI_LEN (6)
-
-/* Distributor Implementer Identification Register, GICD_IIDR */
-
-//#define GICD_IIDR_
 
 /* Software Generated Interrupt Register, GICD_SGIR */
 
@@ -264,7 +273,6 @@ typedef struct {
 extern uint64_t NUM_LRS;
 
 void gic_init();
-void gicc_init();
 void gic_cpu_init();
 void gicd_send_sgi(uint64_t cpu_target, uint64_t sgi_num);
 
@@ -273,12 +281,11 @@ void gicc_restore_state(gicc_state_t *state);
 
 void gicd_set_enable(uint64_t int_id, bool en);
 void gicd_set_prio(uint64_t int_id, uint8_t prio);
-void gicd_set_pend(uint64_t int_id, bool pend);
 void gicd_set_act(uint64_t int_id, bool act);
-void gicd_set_state(uint64_t int_id, uint8_t state);
+void gicd_set_state(uint64_t int_id, enum int_state state);
 void gicd_set_trgt(uint64_t int_id, uint8_t trgt);
 uint64_t gicd_get_prio(uint64_t int_id);
-uint8_t gicd_get_state(uint64_t int_id);
+enum int_state gicd_get_state(uint64_t int_id);
 
 static inline uint64_t gic_num_irqs()
 {

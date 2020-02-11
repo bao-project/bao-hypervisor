@@ -985,7 +985,7 @@ void vgic_init(vm_t *vm, const struct gic_dscrp *gic_dscrp)
         (((vm->cpu_num - 1) << GICD_TYPER_CPUN_OFF) & GICD_TYPER_CPUN_MSK);
     vm->arch.vgicd.IIDR = gicd.IIDR;
 
-    size_t n = ALIGN(sizeof(gicc_t), PAGE_SIZE) / PAGE_SIZE;
+    size_t n = NUM_PAGES(sizeof(gicc_t));
     void *va =
         mem_alloc_vpage(&vm->as, SEC_VM_ANY, (void *)gic_dscrp->gicc_addr, n);
     if (va != (void *)gic_dscrp->gicc_addr)
