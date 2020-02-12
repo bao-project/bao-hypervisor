@@ -19,10 +19,12 @@
 #include <bao.h>
 #include <arch/cache.h>
 
+enum cache_type { UNIFIED, INSTRUCTION, DATA, SEPARATE };
+
 typedef struct {
     size_t lvls;
     size_t min_shared_lvl;
-    enum { UNIFIED, SEPARATE, DATA, INSTRUCTION } type[CACHE_MAX_LVL];
+    enum cache_type type[CACHE_MAX_LVL];
     enum { PIPT, VIPT } indexed[CACHE_MAX_LVL][2];
     size_t line_size[CACHE_MAX_LVL][2];
     size_t assoc[CACHE_MAX_LVL][2];
@@ -35,6 +37,5 @@ extern size_t COLOR_SIZE;
 void cache_enumerate();
 void cache_flush_range(void* base, uint64_t size);
 
-void cache_arch_enumerate(cache_t* dscrp);
-
+void cache_arch_enumerate();
 #endif /* __CACHE_H__ */
