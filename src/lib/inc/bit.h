@@ -22,8 +22,10 @@
 
 #ifndef __ASSEMBLER__
 
-size_t bit_ctz(uint64_t n);
-size_t bit_clz(uint64_t n);
+uint64_t bit_ctz64(uint64_t n);
+uint64_t bit_ctz64(uint64_t n);
+uint32_t bit_clz32(uint32_t n);
+uint32_t bit_clz32(uint32_t n);
 
 static inline uint64_t bit_get(uint64_t word, uint64_t off)
 {
