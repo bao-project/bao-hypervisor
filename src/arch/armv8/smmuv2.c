@@ -97,16 +97,6 @@ static void smmu_check_features()
         ERROR("smmuv2 does not support stream match");
     }
 
-    /**
-     * TODO: the most common smmuv2 implementation (mmu-500) does not provide
-     * ptw coherency. So we must add some mechanism software-managed
-     * coherency mechanism for the vms using the smmu according to the
-     * result of this feature test.
-     */
-    if (!(smmu.hw.glbl_rs0->IDR0 & SMMUV2_IDR0_CTTW_BIT)) {
-        WARNING("smmuv2 does not support coherent page table walks");
-    }
-
     if (!(smmu.hw.glbl_rs0->IDR0 & SMMUV2_IDR0_BTM_BIT)) {
         ERROR("smmuv2 does not support tlb maintenance broadcast");
     }
@@ -261,6 +251,15 @@ void smmu_write_ctxbnk(int32_t ctx_id, vm_t *vm)
         smmu.hw.cntxt[ctx_id].TCR = tcr;
         smmu.hw.cntxt[ctx_id].TTBR0 =
             rootpt & SMMUV2_CB_TTBA(smmu_cb_ttba_offset(t0sz));
+
+        if (!(smmu.hw.glbl_rs0->IDR0 & SMMUV2_IDR0_CTTW_BIT)) {
+            /*
+             * MMU and SMMU share page tables, if hardware doesn't provide page
+             * table walks coherency, it's necessary to force it.
+             */
+            vm->as.requires_coherency = true;
+            cache_cleanall(UNIFIED);
+        }
 
         uint32_t sctlr = smmu.hw.cntxt[ctx_id].SCTLR;
         sctlr = SMMUV2_SCTLR_CLEAR(sctlr);
