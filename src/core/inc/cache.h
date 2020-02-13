@@ -35,6 +35,7 @@ extern size_t COLOR_NUM;
 extern size_t COLOR_SIZE;
 
 void cache_enumerate();
+void cache_cleanall(enum cache_type type);
 void cache_flush_range(void* base, uint64_t size);
 
 void cache_arch_enumerate();

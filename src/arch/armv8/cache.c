@@ -110,6 +110,28 @@ void cache_arch_enumerate()
     }
 }
 
+void cache_cleanall(enum cache_type type)
+{
+    if (type > INSTRUCTION) return;
+
+    for (int i = 0; i < cache_dscr.lvls; i++) {
+        /* Fast log2 counting leading zeroes */
+        uint32_t way_position = bit_clz32(cache_dscr.assoc[i][type]);
+        uint64_t line_size = cache_dscr.line_size[i][type];
+
+        for (int j = 0; j < cache_dscr.assoc[i][type]; j++) {
+            for (int k = 0; k < cache_dscr.numset[i][type]; k++) {
+                uint64_t line = (j << way_position) | i; /* Way */
+                line |= (k << line_size);                /* Set */
+
+                asm volatile("dc csw, %0\n\t" ::"r"(line));
+            }
+        }
+    }
+
+    DMB(ish);
+}
+
 void cache_flush_range(void* base, uint64_t size)
 {
     uint64_t cache_addr = (uint64_t)base;
