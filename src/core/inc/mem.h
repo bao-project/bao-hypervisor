@@ -43,6 +43,7 @@ typedef struct {
     enum AS_TYPE type;
     uint64_t colors;
     uint64_t id;
+    bool requires_coherency;
     spinlock_t lock;
 } addr_space_t;
 
