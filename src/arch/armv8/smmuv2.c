@@ -232,14 +232,14 @@ static int smmu_cb_ttba_offset(int t0sz)
     return offset;
 }
 
-void smmu_write_ctxbnk(int32_t ctx_id, void *root_pt, uint32_t vm_id)
+void smmu_write_ctxbnk(int32_t ctx_id, vm_t *vm)
 {
     spin_lock(&smmu.ctx_lock);
     if (!bitmap_get(smmu.ctxbank_bitmap, ctx_id)) {
         ERROR("smmu ctx %d is already allocated", ctx_id);
     } else {
         /* Set type as stage 2 only. */
-        smmu.hw.glbl_rs1->CBAR[ctx_id] = SMMUV2_CBAR_VMID(vm_id);
+        smmu.hw.glbl_rs1->CBAR[ctx_id] = SMMUV2_CBAR_VMID(vm->id);
         smmu.hw.glbl_rs1->CBA2R[ctx_id] = SMMUV2_CBAR_VA64;
 
         /**
@@ -256,9 +256,11 @@ void smmu_write_ctxbnk(int32_t ctx_id, void *root_pt, uint32_t vm_id)
         tcr |= SMMUV2_TCR_SH0_IS;
         tcr |= ((parange_table[parange] < 44) ? SMMUV2_TCR_SL0_1
                                               : SMMUV2_TCR_SL0_0);
+        uint64_t rootpt;
+        mem_translate(&cpu.as, vm->as.pt.root, &rootpt);
         smmu.hw.cntxt[ctx_id].TCR = tcr;
         smmu.hw.cntxt[ctx_id].TTBR0 =
-            ((uint64_t)root_pt) & SMMUV2_CB_TTBA(smmu_cb_ttba_offset(t0sz));
+            rootpt & SMMUV2_CB_TTBA(smmu_cb_ttba_offset(t0sz));
 
         uint32_t sctlr = smmu.hw.cntxt[ctx_id].SCTLR;
         sctlr = SMMUV2_SCTLR_CLEAR(sctlr);
