@@ -60,7 +60,7 @@ static inline vgic_int_t *vgic_get_int(vcpu_t *vcpu, uint64_t int_id)
 
 bool vgic_owns(vcpu_t *vcpu, vgic_int_t *interrupt)
 {
-    return interrupt->owner == vcpu;
+    return interrupt->owner == vcpu || gic_is_priv(interrupt->id);
 }
 
 void vgic_set_hw(vm_t *vm, uint64_t id)
@@ -148,9 +148,12 @@ bool vgic_get_ownership(vcpu_t *vcpu, vgic_int_t *interrupt)
 
 void vgic_yield_ownership(vcpu_t *vcpu, vgic_int_t *interrupt)
 {
-    if (!vgic_owns(vcpu, interrupt) || interrupt->in_lr) return;
+    if (!vgic_owns(vcpu, interrupt) || gic_is_priv(interrupt->id) ||
+        interrupt->in_lr) {
+        return;
+    }
 
-    if (!(interrupt->id < GIC_CPU_PRIV) && !(vgic_get_state(interrupt) & ACT)) {
+    if (!(vgic_get_state(interrupt) & ACT)) {
         interrupt->owner = NULL;
     }
 }
@@ -172,10 +175,6 @@ static inline void vgic_write_lr(vcpu_t *vcpu, vgic_int_t *interrupt,
     }
 
     uint8_t state = vgic_get_state(interrupt);
-
-    if (state == INV || interrupt->in_lr) {
-        return;
-    }
 
     uint32_t lr =
         ((interrupt->id << GICH_LR_VID_OFF) & GICH_LR_VID_MSK) |
@@ -224,6 +223,7 @@ static inline void vgic_write_lr(vcpu_t *vcpu, vgic_int_t *interrupt,
         }
     }
 
+    interrupt->state = 0;
     interrupt->in_lr = true;
     interrupt->lr = lr_ind;
     vcpu->arch.vgicd_priv.curr_lrs[lr_ind] = interrupt->id;
@@ -272,7 +272,7 @@ bool vgic_add_lr(vcpu_t *vcpu, vgic_int_t *interrupt)
 {
     bool ret = false;
 
-    if (!interrupt->enabled && !interrupt->in_lr) {
+    if (!interrupt->enabled || interrupt->in_lr) {
         return ret;
     }
 
@@ -1096,10 +1096,10 @@ void vgic_handle_trapped_eoir(vcpu_t *vcpu)
 
         vgic_int_t *interrupt = vgic_get_int(vcpu, GICH_LR_VID(lr_val));
         spin_lock(&interrupt->lock);
+        interrupt->in_lr = false;
         if (interrupt->id < GIC_MAX_SGIS) {
             vgic_add_lr(vcpu, interrupt);
         } else {
-            interrupt->in_lr = false;
             vgic_yield_ownership(vcpu, interrupt);
         }
         spin_unlock(&interrupt->lock);
