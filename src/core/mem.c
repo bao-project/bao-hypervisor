@@ -781,8 +781,11 @@ int mem_map_reclr(addr_space_t *as, void *va, ppages_t *ppages, size_t n,
     /**
      * Free the uncolored pages of the original image.
      */
-    ppages_t unused_pages = *ppages;
-    unused_pages.colors = ~ppages->colors;
+    ppages_t unused_pages = {
+        .base = ppages->base,
+        .size = reclrd_num,
+        .colors = ~as->colors
+    };
     mem_free_ppages(&unused_pages);
 
     mem_free_vpage(&cpu.as, reclrd_va_base, reclrd_num, false);
