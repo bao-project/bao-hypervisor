@@ -36,7 +36,7 @@ struct platform_desc platform = {
             .gicc_addr = 0x08010000,
             .gich_addr = 0x08030000,
             .gicv_addr = 0x08040000,
-            .maintenance_id = 9
+            .maintenance_id = 25
         },
     }
 
