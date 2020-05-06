@@ -406,7 +406,7 @@ void vgicd_set_enable(vcpu_t *vcpu, uint64_t int_id, bool en)
     if (vgic_get_ownership(vcpu, interrupt)) {
         if (interrupt->enabled ^ en) {
             interrupt->enabled = en;
-            if (interrupt->enabled) {
+            if (!interrupt->enabled) {
                 vgic_remove_lr(vcpu, interrupt);
             } else {
                 vgic_route(vcpu, interrupt);
