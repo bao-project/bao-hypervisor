@@ -44,6 +44,11 @@
 #define SBI_EXTID_IPI (0x735049)
 #define SBI_SEND_IPI_FID (0x0)
 
+#define SBI_EXTID_HSM (0x48534D)
+#define SBI_HART_START_FID  (0)
+#define SBI_HART_STOP_FID   (1)
+#define SBI_HART_STATUS_FID   (2)
+
 #define SBI_EXTID_RFNC (0x52464E43)
 #define SBI_REMOTE_FENCE_I_FID (0)
 #define SBI_REMOTE_SFENCE_VMA_FID (1)
@@ -179,6 +184,25 @@ struct sbiret sbi_remote_hfence_vvma(const unsigned long hart_mask,
                      hart_mask_base, start_addr, size, 0, 0);
 }
 
+struct sbiret sbi_hart_start(unsigned long hartid, unsigned long start_addr,
+                             unsigned long priv)
+{
+    return sbi_ecall(SBI_EXTID_HSM, SBI_HART_START_FID, hartid,
+                     start_addr, priv, 0, 0, 0);    
+}
+
+struct sbiret sbi_hart_stop()
+{
+    return sbi_ecall(SBI_EXTID_HSM, SBI_HART_STOP_FID, 0,
+                     0, 0, 0, 0, 0);   
+}
+
+struct sbiret sbi_hart_status(unsigned long hartid)
+{
+    return sbi_ecall(SBI_EXTID_HSM, SBI_HART_STATUS_FID, hartid,
+                     0, 0, 0, 0, 0);   
+}
+
 static unsigned long ext_table[] = {SBI_LGCY_EXTID_SETTIMER,
                                     SBI_LGCY_EXTID_SENDIPI,
                                     SBI_LGCY_EXTID_REMFENCEI,
@@ -187,7 +211,8 @@ static unsigned long ext_table[] = {SBI_LGCY_EXTID_SETTIMER,
                                     SBI_EXTID_BASE,
                                     SBI_EXTID_TIME,
                                     SBI_EXTID_IPI,
-                                    SBI_EXTID_RFNC};
+                                    SBI_EXTID_RFNC,
+                                    SBI_EXTID_HSM};
 
 static const size_t NUM_EXT = sizeof(ext_table) / sizeof(unsigned long);
 
@@ -200,7 +225,7 @@ void sbi_msg_handler(uint32_t event, uint64_t data)
 {
     switch (event) {
         case SEND_IPI:
-            CSRS(CSR_HIP, HIP_VSSIP);
+            CSRS(CSR_HVIP, HIP_VSSIP);
             break;
         default:
             WARNING("unknown sbi msg");
@@ -214,9 +239,9 @@ struct sbiret sbi_time_handler(unsigned long fid)
 
     uint64_t stime_value = vcpu_readreg(cpu.vcpu, REG_A0);
 
-    CSRC(CSR_HIP, HIP_VSTIP);
+    CSRC(CSR_HVIP, HIP_VSTIP);
     sbi_set_timer(stime_value);  // assumes always success
-    CSRC(CSR_HIP, HIP_VSTIP);
+    CSRC(CSR_HVIP, HIP_VSTIP);
     CSRS(sie, SIE_STIE);
 
     return (struct sbiret){SBI_SUCCESS};
@@ -224,7 +249,7 @@ struct sbiret sbi_time_handler(unsigned long fid)
 
 void sbi_timer_irq_handler()
 {
-    CSRS(CSR_HIP, HIP_VSTIP);
+    CSRS(CSR_HVIP, HIP_VSTIP);
     CSRC(sie, SIE_STIE);
 }
 
@@ -326,7 +351,7 @@ void sbi_lgcy_sendipi_handler()
 
     unsigned long phart_mask = 0;
     vm_readmem(cpu.vcpu->vm, &phart_mask, (uintptr_t)hart_mask,
-               sizeof(unsigned long));
+               sizeof(unsigned long), false);
     phart_mask = vm_translate_to_pcpu_mask(cpu.vcpu->vm, phart_mask,
                                            sizeof(unsigned long));
 
@@ -349,7 +374,7 @@ void sbi_lgcy_rfence_handler(unsigned long extid)
 
     unsigned long phart_mask = 0;
     vm_readmem(cpu.vcpu->vm, &phart_mask, (uintptr_t)hart_mask,
-               sizeof(unsigned long));
+               sizeof(unsigned long), false);
     phart_mask = vm_translate_to_pcpu_mask(cpu.vcpu->vm, (uint64_t)hart_mask,
                                            sizeof(unsigned long));
 

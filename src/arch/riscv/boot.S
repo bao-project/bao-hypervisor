@@ -116,10 +116,30 @@ _reset_handler:
     csrw   sip, zero
     csrw   satp, zero 
 
+    /**
+     * The first hart to grab the lock is CPU_MASTER
+     */
+
+.pushsection .data
+_boot_lock:
+    .4byte 0
+.popsection
+    la      t0, _boot_lock
+    li      t1, 1
+1:
+    lr.w    t2, (t0)
+    bnez    t2, 2f
+    sc.w    t2, t1, (t0)   
+    bnez    t2, 1b 
+    la      t0, CPU_MASTER
+    sd      a0, 0(t0)
+2:
+
     /* Setup bootstrap page tables. Assuming sv39 support. */ 
 
  	/* Skip initialy global page tables setup if not hart */
-	bnez    a0, wait_for_bsp   
+    LD_SYM  t0, CPU_MASTER
+	bne     a0, t0, wait_for_bsp   
 
  	la	    a3, _page_tables_start	
 	la	    a4, _page_tables_end	
@@ -285,7 +305,8 @@ _enter_vas:
     .option pop
 
     /* clear bss if hart 0 */
-    bnez    a0, wait_for_bsp_2
+    LD_SYM  t0, CPU_MASTER
+    bne     a0, t0, wait_for_bsp_2
     la      a3, _bss_start_sym
     LOAD    a3, 0(a3)
     la      a4, _bss_end_sym

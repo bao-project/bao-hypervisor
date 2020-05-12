@@ -88,7 +88,7 @@ static void vplic_complete(vplic_t *vplic, int int_id)
 {
     plic_hart[cpu.arch.plic_cntxt].complete = int_id;
     if (vplic_next_pending(vplic) == 0) {
-        CSRC(CSR_HIP, HIP_VSEIP);
+        CSRC(CSR_HVIP, HIP_VSEIP);
     }
 }
 
@@ -96,7 +96,7 @@ void vplic_inject(vplic_t *vplic, int id)
 {
     if (id > 0 && id < PLIC_MAX_INTERRUPTS) {
         vplic_set_pend(vplic, id, true);
-        CSRS(CSR_HIP, HIP_VSEIP);
+        CSRS(CSR_HVIP, HIP_VSEIP);
     }
 }
 

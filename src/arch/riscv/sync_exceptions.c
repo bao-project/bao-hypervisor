@@ -23,16 +23,18 @@ static unsigned long read_ins(uintptr_t ins_addr)
 {
     unsigned long ins = 0;
 
-    /**
-     * TODO: make sure this is a valid instruction address
-     */
-
-    CSRS(sstatus, SSTATUS_MXR);
-    vm_readmem(cpu.vcpu->vm, &ins, ins_addr, 2);
-    if ((ins & 0x3) == 3) {
-        vm_readmem(cpu.vcpu->vm, &ins, ins_addr, 4);
+    bool succ = vm_readmem(cpu.vcpu->vm, &ins, ins_addr, 2, true);
+    if (succ && ((ins & 0x3) == 3)) {
+        succ = vm_readmem(cpu.vcpu->vm, &ins, ins_addr, 4, true);
     }
-    CSRC(sstatus, SSTATUS_MXR);
+
+    if(!succ){
+        ERROR("failed to read guest instruction");
+        /**
+         * TODO: maybe the best is to inject the instuction fault in the
+         * guest instead of stopping altogether
+         */
+    }
 
     return ins;
 }
@@ -73,7 +75,18 @@ static inline int ins_ldst_decode(uintptr_t ins, emul_access_t *emul)
 }
 
 size_t guest_page_fault_handler()
-{
+{   
+    /**
+     * If this was caused by an hypervisor access using hlv instructions, 
+     * just mark it as such, and return.
+     * TODO: should we proceed with emulation even if this is a hypervisor
+     * access? 
+     */
+    if(!(CSRR(CSR_HSTATUS) & HSTATUS_SPV)){
+        cpu.arch.hlv_except = true;
+        return 4;
+    }
+
     uintptr_t addr = CSRR(CSR_HTVAL) << 2;
 
     emul_handler_t handler = vm_get_emul(cpu.vcpu->vm, addr);
@@ -95,7 +108,7 @@ size_t guest_page_fault_handler()
         if (handler(&emul)) {
             return INS_SIZE(ins);
         } else {
-            ERROR("emulation handler failed");
+            ERROR("emulation handler failed (0x%x at 0x%x)", addr, CSRR(sepc));
         }
     } else {
         ERROR("no emulation handler for abort(0x%x at 0x%x)", addr, CSRR(sepc));

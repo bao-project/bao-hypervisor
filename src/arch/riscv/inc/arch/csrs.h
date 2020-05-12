@@ -36,6 +36,7 @@
 #define CSR_HGEIE 0x607
 #define CSR_HTVAL 0x643
 #define CSR_HIP 0x644
+#define CSR_HVIP 0x645
 #define CSR_HTINST 0x64A
 #define CSR_HGATP 0x680
 #define CSR_HGEIP 0xE07
@@ -176,11 +177,14 @@
 
 #define MISA_H (1ULL << 7)
 
-#define HSTATUS_SPRV (1ULL << 0)
 #define HSTATUS_VSBE (1ULL << 5)
+#define HSTATUS_GVA (1ULL << 5)
 #define HSTATUS_SPV (1ULL << 7)
-#define HSTATUS_SP2P (1ULL << 8)
-#define HSTATUS_SP2V (1ULL << 9)
+#define HSTATUS_SPVP (1ULL << 8)
+#define HSTATUS_HU (1ULL << 9)
+#define HSTATUS_VGEIN_OFF (12)
+#define HSTATUS_VGEIN_LEN (12)
+#define HSTATUS_VGEIN_MSK (BIT_MASK(HSTATUS_VGEIN_OFF, HSTATUS_VGEIN_LEN))
 #define HSTATUS_VTVM (1ULL << 20)
 #define HSTATUS_VTSR (1ULL << 22)
 #define HSTATUS_VSXL_OFF (32)

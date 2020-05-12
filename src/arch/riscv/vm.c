@@ -53,7 +53,7 @@ void vcpu_arch_reset(vcpu_t *vcpu, uint64_t entry)
     CSRW(CSR_VSEPC, 0);
     CSRW(CSR_VSCAUSE, 0);
     CSRW(CSR_VSTVAL, 0);
-    CSRW(CSR_HIP, 0);
+    CSRW(CSR_HVIP, 0);
     CSRW(CSR_VSATP, 0);
 }
 
@@ -91,55 +91,138 @@ static int find_max_alignment(uintptr_t addr)
     return 1;
 }
 
-#define VM_LOAD_TYPE(type, a)            \
-    ({                                   \
-        type __val;                      \
-        type *__addr = (void *)a;        \
-        CSRS(CSR_HSTATUS, HSTATUS_SPRV); \
-        __val = *__addr;                 \
-        CSRC(CSR_HSTATUS, HSTATUS_SPRV); \
-        __val;                           \
-    })
+static inline uint64_t hlvb(uintptr_t addr){
+    uint64_t value;
+    asm volatile(
+        ".insn r 0x73, 0x4, 0x30, %0, %1, x0\n\t"
+        : "=r"(value): "r"(addr) : "memory");
+    return value;
+}
+
+static inline uint64_t hlvbu(uintptr_t addr){
+    uint64_t value;
+    asm volatile(
+        ".insn r 0x73, 0x4, 0x30, %0, %1, x1\n\t"
+        : "=r"(value): "r"(addr) : "memory");
+    return value;
+}
+
+
+static inline uint64_t hlvh(uintptr_t addr){
+    uint64_t value;
+    asm volatile(
+        ".insn r 0x73, 0x4, 0x32, %0, %1, x0\n\t"
+        : "=r"(value): "r"(addr) : "memory");
+    return value;
+}
+
+static inline uint64_t hlvhu(uintptr_t addr){
+    uint64_t value;
+    asm volatile(
+        ".insn r 0x73, 0x4, 0x32, %0, %1, x1\n\t"
+        : "=r"(value): "r"(addr) : "memory");
+    return value;
+}
+
+static inline uint64_t hlvxhu(uintptr_t addr){
+    uint64_t value;
+    asm volatile(
+        ".insn r 0x73, 0x4, 0x32, %0, %1, x3\n\t"
+        : "=r"(value): "r"(addr) : "memory");
+    return value;
+}
+
+uint64_t hlvw(uintptr_t addr){
+    uint64_t value;
+    asm volatile(
+        ".insn r 0x73, 0x4, 0x34, %0, %1, x0\n\t"
+        : "=r"(value): "r"(addr) : "memory");
+    return value;
+}
+
+static inline uint64_t hlvwu(uintptr_t addr){
+    uint64_t value;
+    asm volatile(
+        ".insn r 0x73, 0x4, 0x34, %0, %1, x1\n\t"
+        : "=r"(value): "r"(addr) : "memory");
+    return value;
+}
+
+uint64_t hlvxwu(uintptr_t addr){
+    uint64_t value;
+    asm volatile(
+        ".insn r 0x73, 0x4, 0x34, %0, %1, x3\n\t"
+        : "=r"(value): "r"(addr) : "memory");
+    return value;
+}
+
+static inline uint64_t hlvd(uintptr_t addr){
+    uint64_t value;
+    asm volatile(
+        ".insn r 0x73, 0x4, 0x36, %0, %1, x0\n\t"
+        : "=r"(value): "r"(addr) : "memory");
+    return value;
+}
 
 #define VM_LOAD(width, d, s)                                                 \
-    {                                                                        \
+    ({                                                                       \
         switch (width) {                                                     \
             case 1:                                                          \
-                *((uint8_t *)d) = VM_LOAD_TYPE(uint8_t, s);                  \
+                *((uint8_t *)d) = hlvbu(s);                                  \
                 break;                                                       \
             case 2:                                                          \
-                *((uint16_t *)d) = VM_LOAD_TYPE(uint16_t, s);                \
+                *((uint16_t *)d) = hlvhu(s);                                 \
                 break;                                                       \
             case 4:                                                          \
-                *((uint32_t *)d) = VM_LOAD_TYPE(uint32_t, s);                \
+                *((uint32_t *)d) = hlvwu(s);                                 \
                 break;                                                       \
             case 8:                                                          \
-                *((uint64_t *)d) = VM_LOAD_TYPE(uint64_t, s);                \
+                *((uint64_t *)d) = hlvd(s);                                  \
                 break;                                                       \
                 /*default: WARNING("trying to perform unsoported vm load")*/ \
         }                                                                    \
-    }
+    })
 
-bool vm_readmem(vm_t *vm, void *dest, uintptr_t vmaddr, size_t n)
+#define VM_LOAD_EXEC(width, d, s)                                            \
+    ({                                                                       \
+        switch (width) {                                                     \
+            case 2:                                                          \
+                *((uint16_t *)d) = hlvxhu(s);                                \
+                break;                                                       \
+            case 4:                                                          \
+                *((uint32_t *)d) = hlvxwu(s);                                \
+                break;                                                       \
+                /*default: WARNING("trying to perform unsoported vm load")*/ \
+        }                                                                    \
+    })
+
+
+bool vm_readmem(vm_t *vm, void *dest, uintptr_t vmaddr, size_t n, bool exec)
 {
-    // TODO: check vmaddr is part of a vm region
+    if(n == 0) return true;
 
     if (vm == cpu.vcpu->vm) {
-        while (n > 0) {
+        while (n > 0 && !cpu.arch.hlv_except) {
             int width = find_max_alignment(((uintptr_t)dest) | vmaddr);
-            width = width > n ? PPOT(n) : width;
+            while(width > n) width = PPOT(width);
+            /**
+             * You can only load aligned halfword or word instructions.
+             */
+            if(exec && width == 8) width = 4;
+            if(exec && width == 1) break;
             size_t count = n / width;
             for (int i = 0; i < count; i++) {
-                VM_LOAD(width, dest, vmaddr);
+                if(exec) VM_LOAD_EXEC(width, dest, vmaddr);
+                else VM_LOAD(width, dest, vmaddr);
                 dest += width;
                 vmaddr += width;
             }
             n -= (count * width);
         }
-    } else {
-        // TODO
-        // ERROR("cant read memory of out-of-scope vm");
-    }
+    } 
 
-    return true;
+    bool hlv_except = cpu.arch.hlv_except;
+    cpu.arch.hlv_except = false; 
+
+    return n == 0 && !hlv_except;
 }

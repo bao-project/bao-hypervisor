@@ -105,7 +105,6 @@ uint64_t vcpu_readreg(vcpu_t* vcpu, uint64_t reg);
 void vcpu_writereg(vcpu_t* vcpu, uint64_t reg, uint64_t val);
 uint64_t vcpu_readpc(vcpu_t* vcpu);
 void vcpu_writepc(vcpu_t* vcpu, uint64_t pc);
-bool vm_readmem(vm_t* vm, void* dest, uintptr_t vmaddr, size_t n);
 void vcpu_arch_run(vcpu_t* vcpu);
 void vcpu_arch_reset(vcpu_t* vcpu, uint64_t entry);
 
