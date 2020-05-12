@@ -36,7 +36,7 @@ void aborts_data_lower(uint32_t iss, uint64_t far, uint64_t il)
     }
 
     uint64_t addr = far;
-    emul_handler_t handler = vm_get_emul(cpu.vcpu->vm, addr);
+    emul_handler_t handler = vm_emul_get_mem(cpu.vcpu->vm, addr);
     if (handler != NULL) {
         emul_access_t emul;
         emul.addr = addr;
@@ -56,7 +56,7 @@ void aborts_data_lower(uint32_t iss, uint64_t far, uint64_t il)
             uint64_t pc_step = 2 + (2 * il);
             cpu.vcpu->regs->elr_el2 += pc_step;
         } else {
-            ERROR("data abort emulation failed");
+            ERROR("data abort emulation failed (0x%x)", far);
         }
     } else {
         ERROR("no emulation handler for abort(0x%x at 0x%x)", far,
@@ -84,8 +84,34 @@ void smc64_handler(uint32_t iss, uint64_t far, uint64_t il)
     cpu.vcpu->regs->elr_el2 += pc_step;
 }
 
+void sysreg_handler(uint32_t iss, uint64_t far, uint64_t il)
+{
+    uint64_t reg_addr = iss & ESR_ISS_SYSREG_ADDR;
+    emul_handler_t handler = vm_emul_get_reg(cpu.vcpu->vm, reg_addr);
+    if(handler != NULL){
+        emul_access_t emul;
+        emul.addr = reg_addr;
+        emul.width = 8;
+        emul.write = iss & ESR_ISS_SYSREG_DIR ? false : true;
+        emul.reg = bit_extract(iss, ESR_ISS_SYSREG_REG_OFF, ESR_ISS_SYSREG_REG_LEN);
+        emul.reg_width = 8;
+        emul.sign_ext = false;
+
+        if (handler(&emul)) {
+            uint64_t pc_step = 2 + (2 * il);
+            cpu.vcpu->regs->elr_el2 += pc_step;
+        } else {
+            ERROR("register access emulation failed (0x%x)", reg_addr);
+        }
+    } else {
+        ERROR("no emulation handler for register access (0x%x at 0x%x)", reg_addr,
+              cpu.vcpu->regs->elr_el2);
+    }
+}
+
 abort_handler_t abort_handlers[64] = {[ESR_EC_DALEL] = aborts_data_lower,
-                                      [ESR_EC_SMC64] = smc64_handler};
+                                      [ESR_EC_SMC64] = smc64_handler,
+                                      [ESR_EC_SYSRG] = sysreg_handler};
 
 void aborts_sync_handler()
 {

@@ -29,6 +29,11 @@ static spinlock_t gicd_lock;
 
 uint64_t NUM_LRS;
 
+static inline uint64_t gich_num_lrs()
+{
+    return ((gich.VTR & GICH_VTR_MSK) >> GICH_VTR_OFF) + 1;
+}
+
 static inline void gicc_init()
 {
     for (int i = 0; i < gich_num_lrs(); i++) {
@@ -107,11 +112,15 @@ void gic_cpu_init()
     gicc_init();
 }
 
-void gic_maintenance_handler(uint64_t arg, uint64_t source);
+void gicd_init(){
 
-void gic_init()
-{
-    NUM_LRS = gich_num_lrs();
+    mem_map_dev(&cpu.as, (void *)&gicc, platform.arch.gic.gicc_addr,
+                NUM_PAGES(sizeof(gicc)));
+    mem_map_dev(&cpu.as, (void *)&gich, platform.arch.gic.gich_addr,
+                NUM_PAGES(sizeof(gich)));
+    mem_map_dev(&cpu.as, (void *)&gicd, platform.arch.gic.gicd_addr,
+                NUM_PAGES(sizeof(gicd)));
+
     size_t int_num = gic_num_irqs();
 
     /* Bring distributor to known state */
@@ -138,10 +147,28 @@ void gic_init()
     /* No need to setup gicd.NSACR as all interrupts are  setup to group 1 */
 
     interrupts_reserve(platform.arch.gic.maintenance_id,
-                       gic_maintenance_handler);
+                    gic_maintenance_handler);
 
     /* Enable distributor */
     gicd.CTLR |= GICD_CTLR_EN_BIT;
+}
+
+void gic_init()
+{
+    if(cpu.id == CPU_MASTER){
+        gicd_init();
+    }
+
+    /* Wait for core 0 to map interupt controller */
+    cpu_sync_barrier(&cpu_glb_sync);
+
+    gic_cpu_init();
+
+    if(cpu.id == CPU_MASTER){
+        NUM_LRS = gich_num_lrs();
+    }
+    
+    cpu_sync_barrier(&cpu_glb_sync);
 }
 
 void gic_handle()
@@ -159,13 +186,15 @@ void gic_handle()
     if (res == HANDLED_BY_HYP) gicc.DIR = ack;
 }
 
-void gicd_send_sgi(uint64_t cpu_target, uint64_t sgi_num)
+void gic_send_sgi(uint64_t cpu_target, uint64_t sgi_num)
 {
+    if (sgi_num < GIC_MAX_SGIS) return;
+
     gicd.SGIR = (1UL << (GICD_SGIR_CPUTRGLST_OFF + cpu_target)) |
                 (sgi_num & GICD_SGIR_SGIINTID_MSK);
 }
 
-uint64_t gicd_get_prio(uint64_t int_id)
+uint64_t gic_get_prio(uint64_t int_id)
 {
     uint64_t reg_ind = GIC_PRIO_REG(int_id);
     uint64_t off = GIC_PRIO_OFF(int_id);
@@ -180,7 +209,7 @@ uint64_t gicd_get_prio(uint64_t int_id)
     return prio;
 }
 
-void gicd_set_icfgr(uint64_t int_id, uint8_t cfg)
+void gic_set_icfgr(uint64_t int_id, uint8_t cfg)
 {   
     spin_lock(&gicd_lock);
 
@@ -194,7 +223,7 @@ void gicd_set_icfgr(uint64_t int_id, uint8_t cfg)
     spin_unlock(&gicd_lock);
 }
 
-void gicd_set_prio(uint64_t int_id, uint8_t prio)
+void gic_set_prio(uint64_t int_id, uint8_t prio)
 {
     uint64_t reg_ind = GIC_PRIO_REG(int_id);
     uint64_t off = GIC_PRIO_OFF(int_id);
@@ -208,7 +237,7 @@ void gicd_set_prio(uint64_t int_id, uint8_t prio)
     spin_unlock(&gicd_lock);
 }
 
-enum int_state gicd_get_state(uint64_t int_id)
+enum int_state gic_get_state(uint64_t int_id)
 {
     uint64_t reg_ind = GIC_INT_REG(int_id);
     uint64_t mask = GIC_INT_MASK(int_id);
@@ -223,7 +252,7 @@ enum int_state gicd_get_state(uint64_t int_id)
     return pend | act;
 }
 
-static void gicd_set_pend(uint64_t int_id, bool pend)
+static void gic_set_pend(uint64_t int_id, bool pend)
 {
     spin_lock(&gicd_lock);
 
@@ -249,7 +278,7 @@ static void gicd_set_pend(uint64_t int_id, bool pend)
     spin_unlock(&gicd_lock);
 }
 
-void gicd_set_act(uint64_t int_id, bool act)
+void gic_set_act(uint64_t int_id, bool act)
 {
     uint64_t reg_ind = GIC_INT_REG(int_id);
 
@@ -264,10 +293,10 @@ void gicd_set_act(uint64_t int_id, bool act)
     spin_unlock(&gicd_lock);
 }
 
-void gicd_set_state(uint64_t int_id, enum int_state state)
+void gic_set_state(uint64_t int_id, enum int_state state)
 {
-    gicd_set_act(int_id, state & ACT);
-    gicd_set_pend(int_id, state & PEND);
+    gic_set_act(int_id, state & ACT);
+    gic_set_pend(int_id, state & PEND);
 }
 
 void gicd_set_trgt(uint64_t int_id, uint8_t trgt)
@@ -284,7 +313,7 @@ void gicd_set_trgt(uint64_t int_id, uint8_t trgt)
     spin_unlock(&gicd_lock);
 }
 
-void gicd_set_enable(uint64_t int_id, bool en)
+void gic_set_enable(uint64_t int_id, bool en)
 {
     uint64_t reg_ind = GIC_INT_REG(int_id);
     uint64_t bit = GIC_INT_MASK(int_id);

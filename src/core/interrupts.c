@@ -26,11 +26,6 @@ BITMAP_ALLOC(global_interrupt_bitmap, MAX_INTERRUPTS);
 
 irq_handler_t interrupt_handlers[MAX_INTERRUPTS];
 
-inline void interrupts_cpu_glbenable(bool en)
-{
-    interrupts_arch_cpu_enable(en);
-}
-
 inline void interrupts_cpu_sendipi(uint64_t target_cpu, uint64_t ipi_id)
 {
     interrupts_arch_ipi_send(target_cpu, ipi_id);
@@ -67,20 +62,20 @@ static inline bool interrupt_is_reserved(int int_id)
     return bitmap_get(hyp_interrupt_bitmap, int_id);
 }
 
-inline void interrupts_vm_inject(vm_t *vm, uint64_t id, uint64_t source)
+inline void interrupts_vm_inject(vm_t *vm, uint64_t id)
 {
-    interrupts_arch_vm_inject(vm, id, source);
+    interrupts_arch_vm_inject(vm, id);
 }
 
-enum irq_res interrupts_handle(uint64_t int_id, uint64_t source)
+enum irq_res interrupts_handle(uint64_t int_id)
 {
     if (vm_has_interrupt(cpu.vcpu->vm, int_id)) {
-        interrupts_vm_inject(cpu.vcpu->vm, int_id, source);
+        interrupts_vm_inject(cpu.vcpu->vm, int_id);
 
         return FORWARD_TO_VM;
 
     } else if (interrupt_is_reserved(int_id)) {
-        interrupt_handlers[int_id](int_id, source);
+        interrupt_handlers[int_id](int_id);
 
         return HANDLED_BY_HYP;
 
@@ -91,7 +86,7 @@ enum irq_res interrupts_handle(uint64_t int_id, uint64_t source)
 
 void interrupts_vm_assign(vm_t *vm, uint64_t id)
 {
-    if(interrupts_arch_conflict(global_interrupt_bitmap, id)) {
+    if (interrupts_arch_conflict(global_interrupt_bitmap, id)) {
         ERROR("Interrupts conflict, id = %d\n", id);
     }
 

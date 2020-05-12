@@ -122,7 +122,7 @@ int64_t psci_cpu_on_handler(uint64_t target_cpu, uintptr_t entrypoint,
 {
     int64_t ret;
     vm_t* vm = cpu.vcpu->vm;
-    vcpu_t* target_vcpu = vm_get_vcpu_by_mpidr(vm,  target_cpu | MPIDR_RES1);
+    vcpu_t* target_vcpu = vm_get_vcpu_by_mpidr(vm, target_cpu);
 
     if (target_vcpu != NULL){
 

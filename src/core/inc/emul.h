@@ -35,7 +35,12 @@ typedef struct {
     uint64_t size;
     uint64_t flags;
     emul_handler_t handler;
-} emul_region_t;
+} emul_mem_t;
+
+typedef struct {
+    uint64_t addr;
+    emul_handler_t handler;
+} emul_reg_t;
 
 bool emul_passthrough(emul_access_t*);
 

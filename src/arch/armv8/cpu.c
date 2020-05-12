@@ -17,16 +17,18 @@
 #include <cpu.h>
 #include <platform.h>
 #include <page_table.h>
+#include <arch/sysregs.h>
 
 /* Perform architecture dependent cpu cores initializations */
 void cpu_arch_init(uint64_t cpuid, uint64_t load_addr)
-{
+{   
+    cpu.arch.mpidr = MRS(MPIDR_EL1);
     if (cpuid == CPU_MASTER) {
         /* power on necessary, but still sleeping, secondary cpu cores
          * Assumes CPU zero is doing this */
         for (int cpu_core_id = 1; cpu_core_id < platform.cpu_num;
              cpu_core_id++) {
-            uint64_t mpdir = cpu_id_to_mpdir(cpu_core_id);
+            uint64_t mpdir = cpu_id_to_mpidr(cpu_core_id);
             // TODO: pass config addr in contextid (x0 register)
             int result = psci_cpu_on(mpdir, load_addr, 0);
             if (!(result == PSCI_E_SUCCESS || result == PSCI_E_ALREADY_ON)) {
@@ -36,10 +38,17 @@ void cpu_arch_init(uint64_t cpuid, uint64_t load_addr)
     }
 }
 
-uint64_t cpu_id_to_mpdir(uint64_t id)
+uint64_t cpu_id_to_mpidr(uint64_t id)
 {
     return platform_arch_cpuid_to_mpdir(&platform, id);
 }
+
+
+int64_t cpu_mpidr_to_id(uint64_t mpidr)
+{
+    return platform_arch_mpidr_to_cpuid(&platform, mpidr);
+}
+    
 
 void cpu_arch_idle()
 {

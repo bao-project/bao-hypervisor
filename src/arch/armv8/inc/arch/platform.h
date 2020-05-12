@@ -24,6 +24,7 @@ struct arch_platform {
         uint64_t gich_addr;
         uint64_t gicv_addr;
         uint64_t gicd_addr;
+        uint64_t gicr_addr;
 
         uint64_t maintenance_id;
     } gic;
@@ -54,5 +55,6 @@ struct arch_platform {
 struct platform_desc;
 uint64_t platform_arch_cpuid_to_mpdir(const struct platform_desc* plat,
                                       uint64_t cpuid);
-
+int64_t platform_arch_mpidr_to_cpuid(const struct platform_desc* plat,
+                                      uint64_t mpidr);
 #endif /* __ARCH_PLATFORM_H__ */

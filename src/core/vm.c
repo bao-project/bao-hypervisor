@@ -19,9 +19,14 @@
 #include <mem.h>
 #include <cache.h>
 
+enum emul_type {EMUL_MEM, EMUL_REG};
 struct emul_node {
     node_t node;
-    emul_region_t emu;
+    enum emul_type type;
+    union {
+        emul_mem_t emu_mem;
+        emul_reg_t emu_reg;
+    };
 };
 
 static void vm_master_init(vm_t* vm, const vm_config_t* config, uint64_t vm_id)
@@ -227,17 +232,17 @@ void vm_init(vm_t* vm, const vm_config_t* config, bool master, uint64_t vm_id)
 
     cpu_sync_barrier(&vm->sync);
 
+    /*
+     *  Initialize each virtual core.
+     */
+    vm_vcpu_init(vm, config);
+
     /**
      * Perform architecture dependent initializations. This includes,
      * for example, setting the page table pointer and other virtualization
      * extensions specifics.
      */
     vm_arch_init(vm, config);
-
-    /*
-     *  Initialize each virtual core.
-     */
-    vm_vcpu_init(vm, config);
 
     /**
      * Create the VM's address space according to configuration and where
@@ -261,11 +266,12 @@ vcpu_t* vm_get_vcpu(vm_t* vm, uint64_t vcpuid)
     return NULL;
 }
 
-void vm_add_emul(vm_t* vm, emul_region_t* emu)
+void vm_emul_add_mem(vm_t* vm, emul_mem_t* emu)
 {
     struct emul_node* ptr = objcache_alloc(&vm->emul_oc);
     if (ptr != NULL) {
-        ptr->emu = *emu;
+        ptr->type = EMUL_MEM;
+        ptr->emu_mem = *emu;
         list_push(&vm->emul_list, (void*)ptr);
         // TODO: if we plan to grow the VM's PAS dynamically, after
         // inialization,
@@ -274,19 +280,52 @@ void vm_add_emul(vm_t* vm, emul_region_t* emu)
     }
 }
 
-emul_handler_t vm_get_emul(vm_t* vm, uint64_t addr)
+void vm_emul_add_reg(vm_t* vm, emul_reg_t* emu)
+{
+    struct emul_node* ptr = objcache_alloc(&vm->emul_oc);
+    if (ptr != NULL) {
+        ptr->type = EMUL_REG;
+        ptr->emu_reg = *emu;
+        list_push(&vm->emul_list, (void*)ptr);
+        // TODO: if we plan to grow the VM's PAS dynamically, after
+        // inialization,
+        // the pages for this emulation region must be reserved in the stage 2
+        // page table.
+    }
+
+}    
+
+static inline emul_handler_t vm_emul_get(vm_t* vm, enum emul_type type, uint64_t addr)
 {
     emul_handler_t handler = NULL;
     list_foreach(vm->emul_list, struct emul_node, node)
     {
-        emul_region_t* emu = &node->emu;
-        if (addr >= emu->va_base && (addr < (emu->va_base + emu->size))) {
-            handler = emu->handler;
-            break;
+        if (node->type == EMUL_MEM) {
+            emul_mem_t* emu = &node->emu_mem;
+            if (addr >= emu->va_base && (addr < (emu->va_base + emu->size))) {
+                handler = emu->handler;
+                break;
+            }
+        } else {
+            emul_reg_t *emu = &node->emu_reg;
+            if(emu->addr == addr) {
+                handler = emu->handler;
+                break; 
+            }
         }
     }
 
     return handler;
+}
+
+emul_handler_t vm_emul_get_mem(vm_t* vm, uint64_t addr)
+{
+    return vm_emul_get(vm, EMUL_MEM, addr);
+}
+
+emul_handler_t vm_emul_get_reg(vm_t* vm, uint64_t addr)
+{
+    return vm_emul_get(vm, EMUL_REG, addr);
 }
 
 void vm_msg_broadcast(vm_t* vm, cpu_msg_t* msg)

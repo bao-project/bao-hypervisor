@@ -24,8 +24,10 @@
 
 typedef struct cpu_arch {
     psci_off_state_t psci_off_state;
+    uint64_t mpidr;
 } cpu_arch_t;
 
-uint64_t cpu_id_to_mpdir(uint64_t id);
+uint64_t cpu_id_to_mpidr(uint64_t id);
+int64_t cpu_mpidr_to_id(uint64_t mpdir);
 
 #endif /* __ARCH_CPU_H__ */
