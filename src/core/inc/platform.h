@@ -26,6 +26,8 @@ struct mem_region {
 
     int place_phys;
     uint64_t phys;
+
+    int colored;
 };
 
 struct dev_region {
