@@ -21,10 +21,12 @@
 #include <cpu.h>
 #include <mem.h>
 #include <fences.h>
+#include <spinlock.h>
 
 volatile bao_uart_t uart
     __attribute__((section(".devices"), aligned(PAGE_SIZE)));
-static bool ready = false;
+bool ready = false;
+static spinlock_t print_lock = SPINLOCK_INITVAL;
 
 void console_init()
 {
@@ -42,5 +44,7 @@ void console_init()
 void console_write(char const* const str)
 {
     if (!ready) return;
+    spin_lock(&print_lock);
     uart_puts(&uart, str);
+    spin_unlock(&print_lock);
 }
