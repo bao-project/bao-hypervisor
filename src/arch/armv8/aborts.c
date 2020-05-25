@@ -89,13 +89,10 @@ abort_handler_t abort_handlers[64] = {[ESR_EC_DALEL] = aborts_data_lower,
 
 void aborts_sync_handler()
 {
-    uint32_t esr = 0;
-    uint64_t far = 0;
-    uint64_t hpfar = 0;
+    uint32_t esr = MRS(ESR_EL2);
+    uint64_t far = MRS(FAR_EL2);
+    uint64_t hpfar = MRS(HPFAR_EL2);
     uint64_t ipa_fault_addr = 0;
-    MRS(esr, ESR_EL2);
-    MRS(far, FAR_EL2);
-    MRS(hpfar, HPFAR_EL2);
 
     ipa_fault_addr = (far & 0xFFF) | (hpfar << 8);
 

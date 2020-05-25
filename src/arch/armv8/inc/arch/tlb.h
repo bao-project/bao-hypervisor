@@ -41,7 +41,7 @@ static inline void tlb_hyp_inv_all()
 static inline void tlb_vm_inv_va(uint64_t vmid, void* va)
 {
     uint64_t vttbr = 0;
-    MRS(vttbr, VTTBR_EL2);
+    vttbr = MRS(VTTBR_EL2);
     bool switch_vmid =
         bit_extract(vttbr, VTTBR_VMID_OFF, VTTBR_VMID_LEN) != vmid;
 
@@ -62,7 +62,7 @@ static inline void tlb_vm_inv_va(uint64_t vmid, void* va)
 static inline void tlb_vm_inv_all(uint64_t vmid)
 {
     uint64_t vttbr = 0;
-    MRS(vttbr, VTTBR_EL2);
+    vttbr = MRS(VTTBR_EL2);
     bool switch_vmid =
         bit_extract(vttbr, VTTBR_VMID_OFF, VTTBR_VMID_LEN) != vmid;
 

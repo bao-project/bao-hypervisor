@@ -26,7 +26,7 @@ void vmm_arch_init()
      */
 
     if (cpu.id == CPU_MASTER) {
-        MRS(parange, ID_AA64MMFR0_EL1);
+        parange = MRS(ID_AA64MMFR0_EL1);
         parange &= ID_AA64MMFR0_PAR_MSK;
 
         if (parange_table[parange] < 44) {

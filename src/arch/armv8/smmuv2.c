@@ -120,7 +120,7 @@ static void smmu_check_features()
     int ipasize = bit_extract(smmu.hw.glbl_rs0->IDR2, SMMUV2_IDR2_IAS_OFF,
                               SMMUV2_IDR2_IAS_LEN);
     int parange = 0;
-    MRS(parange, ID_AA64MMFR0_EL1);
+    parange = MRS(ID_AA64MMFR0_EL1);
     parange &= ID_AA64MMFR0_PAR_MSK;
 
     if (pasize < parange) {
