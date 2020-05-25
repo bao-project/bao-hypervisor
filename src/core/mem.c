@@ -215,12 +215,8 @@ static bool pp_alloc(page_pool_t *pool, size_t n, bool aligned,
      *  If we need a contigous segment aligned to its size, lets start
      * at an already aligned index.
      */
-    size_t start =
-        aligned ? (pool->last + n -
-                   (((pool->base + pool->last * PAGE_SIZE) / PAGE_SIZE) % n)) %
-                      n
-                : pool->last;
-    size_t curr = start;
+    size_t start = aligned ?  n - (pool->base / PAGE_SIZE % n) : 0;
+    size_t curr = pool->last + ((pool->last + start) % n);
 
     /**
      * Lets make two searches:
@@ -239,13 +235,13 @@ static bool pp_alloc(page_pool_t *pool, size_t n, bool aligned,
                  */
                 curr = aligned ? (n - ((pool->base / PAGE_SIZE) % n)) % n : 0;
                 break;
-            } else if (aligned && (((bit - start) % n) != 0)) {
+            } else if (aligned && (((bit + start) % n) != 0)) {
                 /**
                  *  If we're looking for an aligned segment and the found
                  * contigous segment is not aligned, start the search again
                  * from the last aligned index
                  */
-                curr = bit + ((bit - start + n) % n);
+                curr = bit + ((bit + start) % n);
             } else {
                 /**
                  * We've found our pages. Fill output argument info, mark

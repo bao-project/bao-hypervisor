@@ -49,7 +49,8 @@ void vm_cpu_init(vm_t* vm)
 void vm_vcpu_init(vm_t* vm, const vm_config_t* config)
 {
     size_t n = NUM_PAGES(sizeof(vcpu_t));
-    vcpu_t* vcpu = (vcpu_t*)mem_alloc_page(n, SEC_HYP_VM, true);
+    vcpu_t* vcpu = (vcpu_t*)mem_alloc_page(n, SEC_HYP_VM, false);
+    if(vcpu == NULL){ ERROR("failed to allocate vcpu"); }
     memset(vcpu, 0, n * PAGE_SIZE);
 
     cpu.vcpu = vcpu;
