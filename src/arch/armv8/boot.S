@@ -96,6 +96,7 @@ _reset_handler:
 	adr x4, platform
 	ldr x4, [x4, PLAT_ARCH_OFF+PLAT_ARCH_CLUSTERS_OFF+PLAT_CLUSTERS_CORES_NUM_OFF]
 	mov x5, xzr
+	mov x7, xzr
 1:
 	cmp x5, x3
 	b.ge	2f
