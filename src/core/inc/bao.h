@@ -28,23 +28,17 @@
 #include <printk.h>
 #include <util.h>
 
-#define INFO(args...)              \
-    {                              \
-        printk("BAO INFO: " args); \
-        printk("\n");              \
-    }
+#define INFO(args, ...) \
+    printk("BAO INFO: " args "\n" __VA_OPT__(, ) __VA_ARGS__);
 
-#define WARNING(args...)              \
-    {                                 \
-        printk("BAO WARNING: " args); \
-        printk("\n");                 \
-    }
+#define WARNING(args, ...) \
+    printk("BAO WARNING: " args "\n" __VA_OPT__(, ) __VA_ARGS__);
 
-#define ERROR(args...)              \
-    {                               \
-        printk("BAO ERROR: " args); \
-        printk("\n");               \
-        while (1);                  \
+#define ERROR(args, ...)                                            \
+    {                                                               \
+        printk("BAO ERROR: " args "\n" __VA_OPT__(, ) __VA_ARGS__); \
+        while (1)                                                   \
+            ;                                                       \
     }
 
 #endif /* __ASSEMBLER__ */
