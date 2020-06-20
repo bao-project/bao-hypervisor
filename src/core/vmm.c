@@ -27,6 +27,12 @@ struct config* vm_config_ptr;
 
 void vmm_init()
 {
+    if(vm_config_ptr->vmlist_size == 0){
+        if(cpu.id == CPU_MASTER)
+            INFO("No virtual machines to run.");
+        cpu_idle();
+    } 
+    
     vmm_arch_init();
 
     volatile static struct vm_assignment {
