@@ -157,7 +157,7 @@ _boot_lock:
     LD_SYM      t1, _image_start_sym
     PTE_PTR     t1, t0, 2, t1
     LD_SYM      t2, _image_end_sym
-    PTE_PTR     t2, t0, 2, t1
+    PTE_PTR     t2, t0, 2, t2
 
     la          t0, _image_start
     PTE_FILL    t0, t0, PTE_HYP_FLAGS | PTE_PAGE

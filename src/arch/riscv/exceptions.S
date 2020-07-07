@@ -22,6 +22,7 @@
 .macro VM_EXIT
     
     csrrw   x31, sscratch, x31 
+    add     x31, x31, -VCPU_REGS_SIZE
 
     STORE   x1, 0*REGLEN(x31)
     STORE   x2, 1*REGLEN(x31)
@@ -55,7 +56,7 @@
     STORE   x30, 29*REGLEN(x31)
     
     mv      sp, x31
-    csrr    x31, sscratch
+    csrrw   x31, sscratch, x31
     STORE   x31, 30*REGLEN(sp)
 
     csrr    t0, CSR_HSTATUS
@@ -81,7 +82,8 @@
 
 .macro VM_ENTRY
     GET_VCPU_REGS_PTR   x31
-    csrw   sscratch, x31
+    add    t0, x31, VCPU_REGS_SIZE
+    csrw   sscratch, t0
 
     LOAD   x1, 31*REGLEN(x31)
     csrw   CSR_HSTATUS, x1

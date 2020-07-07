@@ -1336,7 +1336,6 @@ void mem_init(uint64_t load_addr, uint64_t config_addr)
     if (cpu.id == CPU_MASTER) {
         cache_enumerate();
 
-        struct mem_region *root_mem_region;
         if (!mem_setup_root_pool(load_addr, &root_mem_region)) {
             ERROR("couldn't not initialize root pool");
         }

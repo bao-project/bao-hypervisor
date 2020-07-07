@@ -25,7 +25,7 @@ typedef volatile uint32_t __attribute__((aligned(4))) spinlock_t;
 static inline void spin_lock(spinlock_t* lock)
 {
     int const ONE = 1;
-    spinlock_t tmp;
+    spinlock_t tmp = SPINLOCK_INITVAL;
 
     asm volatile("1:\n\t"
                  "lr.w.aq  %0, %1 \n\t"

@@ -63,7 +63,7 @@ SECTIONS
 	
 	.bss (NOLOAD) :  {	
 		_bss_start = .;
-		*(.bss) 
+		*(.bss* .sbss*)  
 		*(COMMON)	
 		_bss_end = .;
 	} 
