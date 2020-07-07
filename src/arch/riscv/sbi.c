@@ -395,6 +395,12 @@ void sbi_lgcy_rfence_handler(unsigned long extid)
     }
 }
 
+void sbi_lgcy_putchar_handler() 
+{
+    char c = (char)vcpu_readreg(cpu.vcpu, REG_A0);
+    sbi_console_putchar(c);
+}
+
 void sbi_lgcy_handler(unsigned long extid)
 {
     switch (extid) {
@@ -408,6 +414,9 @@ void sbi_lgcy_handler(unsigned long extid)
         case SBI_LGCY_EXTID_REMSFENCEVMA:
         case SBI_LGCY_EXTID_REMSFENCEASID:
             sbi_lgcy_rfence_handler(extid);
+            break;
+        case SBI_LGCY_EXTID_PUTCHAR:
+            sbi_lgcy_putchar_handler();
             break;
         default:
             WARNING("guest issued unsupported sbi legacy extension call (%d)",
