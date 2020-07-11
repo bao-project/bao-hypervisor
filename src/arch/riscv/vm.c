@@ -32,7 +32,10 @@ void vm_arch_init(vm_t *vm, const vm_config_t *config)
     vplic_init(vm, platform.arch.plic_base);
 }
 
-void vcpu_arch_init(vcpu_t *vcpu, vm_t *vm) {}
+void vcpu_arch_init(vcpu_t *vcpu, vm_t *vm) {
+    vcpu->arch.sbi_ctx.lock = SPINLOCK_INITVAL;
+    vcpu->arch.sbi_ctx.state = vcpu->id == 0 ?  STARTED : STOPPED;
+}
 
 void vcpu_arch_reset(vcpu_t *vcpu, uint64_t entry)
 {
@@ -226,4 +229,14 @@ bool vm_readmem(vm_t *vm, void *dest, uintptr_t vmaddr, size_t n, bool exec)
     cpu.arch.hlv_except = false; 
 
     return n == 0 && !hlv_except;
+}
+
+void vcpu_arch_run(vcpu_t *vcpu){
+
+    if(vcpu->arch.sbi_ctx.state == STARTED){
+        vcpu_arch_entry();
+    } else {
+        cpu_idle();
+    }    
+
 }

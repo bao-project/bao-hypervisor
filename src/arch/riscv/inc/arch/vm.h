@@ -18,6 +18,7 @@
 
 #include <bao.h>
 #include <arch/vplic.h>
+#include <arch/sbi.h>
 
 #define REG_RA (1)
 #define REG_SP (2)
@@ -50,12 +51,14 @@
 #define REG_T4 (29)
 #define REG_T5 (30)
 #define REG_T6 (31)
+
 typedef struct {
     vplic_t vplic;
 } vm_arch_t;
 
 typedef struct {
     unsigned hart_id;
+    struct sbi_hsm sbi_ctx;
 } vcpu_arch_t;
 
 struct arch_regs {

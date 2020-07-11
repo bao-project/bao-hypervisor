@@ -139,6 +139,6 @@ _hyp_trap_vector:
 1:
     call    interrupts_arch_handle
 2:
-.global vcpu_arch_run
-vcpu_arch_run:
+.global vcpu_arch_entry
+vcpu_arch_entry:
     VM_ENTRY

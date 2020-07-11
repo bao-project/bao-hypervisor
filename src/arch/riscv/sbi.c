@@ -18,6 +18,7 @@
 #include <cpu.h>
 #include <vm.h>
 #include <bitmap.h>
+#include <fences.h>
 
 #define SBI_LGCY_EXTID_SETTIMER (0x0)
 #define SBI_LGCY_EXTID_PUTCHAR (0x1)
@@ -216,7 +217,7 @@ static unsigned long ext_table[] = {SBI_LGCY_EXTID_SETTIMER,
 
 static const size_t NUM_EXT = sizeof(ext_table) / sizeof(unsigned long);
 
-enum SBI_MSG_EVENTS { SEND_IPI };
+enum SBI_MSG_EVENTS { SEND_IPI, HART_START };
 
 void sbi_msg_handler(uint32_t event, uint64_t data);
 CPU_MSG_HANDLER(sbi_msg_handler, SBI_MSG_ID);
@@ -227,6 +228,15 @@ void sbi_msg_handler(uint32_t event, uint64_t data)
         case SEND_IPI:
             CSRS(CSR_HVIP, HIP_VSSIP);
             break;
+        case HART_START: {
+            spin_lock(&cpu.vcpu->arch.sbi_ctx.lock);
+            if(cpu.vcpu->arch.sbi_ctx.state == START_PENDING) {
+                vcpu_arch_reset(cpu.vcpu, cpu.vcpu->arch.sbi_ctx.start_addr);
+                vcpu_writereg(cpu.vcpu, REG_A1, cpu.vcpu->arch.sbi_ctx.priv); 
+                cpu.vcpu->arch.sbi_ctx.state = STARTED;
+            } 
+            spin_unlock(&cpu.vcpu->arch.sbi_ctx.lock);
+        } break;
         default:
             WARNING("unknown sbi msg");
             break;
@@ -260,22 +270,16 @@ struct sbiret sbi_ipi_handler(unsigned long fid)
     unsigned long hart_mask = vcpu_readreg(cpu.vcpu, REG_A0);
     unsigned long hart_mask_base = vcpu_readreg(cpu.vcpu, REG_A1);
 
-    /**
-     * For now we only support masks starting at 0. TODO: make this not true
-     */
-    if (hart_mask_base != 0) return (struct sbiret){SBI_ERR_INVALID_PARAM};
-
-    unsigned long phart_mask = vm_translate_to_pcpu_mask(
-        cpu.vcpu->vm, hart_mask, sizeof(hart_mask) * 8);
-
     cpu_msg_t msg = {
         .handler = SBI_MSG_ID,
         .event = SEND_IPI,
     };
 
-    for (size_t i = 0; i < sizeof(phart_mask) * 8; i++) {
-        if (bitmap_get((bitmap_t)&phart_mask, i)) {
-            cpu_send_msg(i, &msg);
+    for (size_t i = 0; i < sizeof(hart_mask) * 8; i++) {
+        if (bitmap_get((bitmap_t)&hart_mask, i)) {
+            uint64_t vhart_id = hart_mask_base + i;
+            int64_t phart_id = vm_translate_to_pcpuid(cpu.vcpu->vm, vhart_id); 
+            if(phart_id >= 0) cpu_send_msg(phart_id, &msg);
         }
     }
 
@@ -329,19 +333,95 @@ struct sbiret sbi_rfence_handler(unsigned long fid)
 
     switch (fid) {
         case SBI_REMOTE_FENCE_I_FID:
-            sbi_remote_fence_i(phart_mask, 0);
+            ret = sbi_remote_fence_i(phart_mask, 0);
             break;
         case SBI_REMOTE_SFENCE_VMA_FID:
-            sbi_remote_hfence_vvma(phart_mask, 0, start_addr, size);
+            ret = sbi_remote_hfence_vvma(phart_mask, 0, start_addr, size);
             break;
         case SBI_REMOTE_SFENCE_VMA_ASID_FID:
-            sbi_remote_hfence_vvma_asid(phart_mask, 0, start_addr, size, asid);
+            ret = sbi_remote_hfence_vvma_asid(phart_mask, 0, start_addr, size, asid);
             break;
         default:
             ret.error = SBI_ERR_NOT_SUPPORTED;
     }
 
     return ret;
+}
+
+struct sbiret sbi_hsm_start_handler() {
+    
+    struct sbiret ret;
+    uint64_t vhart_id = vcpu_readreg(cpu.vcpu, REG_A0);
+    
+    if(vhart_id == cpu.vcpu->id){
+        ret.error = SBI_ERR_ALREADY_AVAILABLE;
+    } else {
+        vcpu_t *vcpu = vm_get_vcpu(cpu.vcpu->vm, vhart_id);
+        if(vcpu == NULL) {
+            ret.error = SBI_ERR_INVALID_PARAM;
+        } else { 
+            spin_lock(&vcpu->arch.sbi_ctx.lock);
+            if (vcpu->arch.sbi_ctx.state == STARTED) {
+                ret.error = SBI_ERR_ALREADY_AVAILABLE;
+            } else if (vcpu->arch.sbi_ctx.state != STOPPED) {
+                ret.error = SBI_ERR_FAILURE;
+            } else {
+                uint64_t start_addr = vcpu_readreg(cpu.vcpu, REG_A1);
+                uint64_t priv = vcpu_readreg(cpu.vcpu, REG_A2);
+                vcpu->arch.sbi_ctx.state = START_PENDING;
+                vcpu->arch.sbi_ctx.start_addr = start_addr;
+                vcpu->arch.sbi_ctx.priv = priv;
+
+                fence_sync_write();
+
+                cpu_msg_t msg = {
+                    .handler = SBI_MSG_ID,
+                    .event = HART_START,
+                    .data = 0xdeadbeef
+                };
+                cpu_send_msg(vcpu->phys_id, &msg);
+               
+                ret.error = SBI_SUCCESS; 
+            }
+            spin_unlock(&vcpu->arch.sbi_ctx.lock);
+       }
+   }
+
+    return ret;
+}
+
+struct sbiret sbi_hsm_status_handler() {
+
+    struct sbiret ret;
+    uint64_t vhart_id = vcpu_readreg(cpu.vcpu, REG_A0);
+    vcpu_t *vhart = vm_get_vcpu(cpu.vcpu->vm, vhart_id);
+
+    if(vhart != NULL) { 
+        ret.error = SBI_SUCCESS;
+        ret.value = vhart->arch.sbi_ctx.state;
+    } else {
+        ret.error = SBI_ERR_INVALID_PARAM;
+    }
+
+    return ret;
+}
+
+struct sbiret sbi_hsm_handler(unsigned long fid){
+
+    struct sbiret ret;
+
+    switch(fid) {
+        case SBI_HART_START_FID:
+            ret = sbi_hsm_start_handler();
+        break;
+        case SBI_HART_STATUS_FID:
+            ret = sbi_hsm_status_handler(); 
+        break;
+        default:
+            ret.error = SBI_ERR_NOT_SUPPORTED;
+   }
+
+   return ret; 
 }
 
 void sbi_lgcy_sendipi_handler()
@@ -446,6 +526,9 @@ size_t sbi_vs_handler()
                 break;
             case SBI_EXTID_RFNC:
                 ret = sbi_rfence_handler(fid);
+                break;
+            case SBI_EXTID_HSM:
+                ret = sbi_hsm_handler(fid);
                 break;
             default:
                 WARNING("guest issued unsupport sbi extension call (%d)",

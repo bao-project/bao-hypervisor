@@ -17,6 +17,7 @@
 #define __SBI_H__
 
 #include <bao.h>
+#include <spinlock.h>
 
 /**
  * From https://github.com/riscv/riscv-sbi-doc
@@ -33,6 +34,13 @@
 struct sbiret {
     long error;
     long value;
+};
+
+struct sbi_hsm {
+    spinlock_t lock;
+    enum { STARTED, STOPPED, START_PENDING, STOP_PENDING } state;
+    uint64_t start_addr;
+    uint64_t priv; 
 };
 
 void sbi_init();
