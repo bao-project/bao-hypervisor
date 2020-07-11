@@ -54,12 +54,6 @@ void interrupts_init()
     interrupts_arch_init();
 
     if (cpu.id == CPU_MASTER) {
-        /**
-         * At this point interrupts must be in a known but disabled from
-         * the point of view of each cpu.
-         */
-        interrupts_cpu_glbenable(true);
-
         interrupts_reserve(IPI_CPU_MSG, cpu_msg_handler);
     }
 
