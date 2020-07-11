@@ -115,25 +115,10 @@ size_t guest_page_fault_handler()
     }
 }
 
-size_t illegal_ins_handler()
-{
-    // assuming the instruction is placed in stval
-    uintptr_t ins = CSRR(stval);
-
-    if ((ins & MASK_WFI) == MATCH_WFI) {
-        asm volatile("wfi" ::: "memory");
-    } else {
-        ERROR("unkown illegal instruction\n");
-    }
-
-    return INS_SIZE(ins);
-}
-
 sync_handler_t sync_handler_table[] = {
     [SCAUSE_CODE_ECV] = sbi_vs_handler,
     [SCAUSE_CODE_LGPF] = guest_page_fault_handler,
     [SCAUSE_CODE_SGPF] = guest_page_fault_handler,
-    [SCAUSE_CODE_ILI] = illegal_ins_handler,
 };
 
 static const size_t sync_handler_table_size =
