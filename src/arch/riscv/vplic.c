@@ -123,7 +123,7 @@ static void vplic_emul_pend_access(emul_access_t *acc)
     uint32_t val = 0;
     for (int i = 0; i < 32; i++) {
         if (vm_has_interrupt(cpu.vcpu->vm, first_int + i) &&
-            plic_get_pend(first_int + i)) {
+            vplic_get_pend(&cpu.vcpu->vm->arch.vplic, first_int + i)) {
             val |= (1ULL << i);
         }
     }
