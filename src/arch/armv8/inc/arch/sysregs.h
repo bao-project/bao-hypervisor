@@ -451,13 +451,6 @@
 #define ICH_LR14_EL2        S3_4_C12_C13_6
 #define ICH_LR15_EL2        S3_4_C12_C13_7
 
-#define ICC_SRE_ENB_BIT  (0x8)
-#define ICC_SRE_DIB_BIT  (0x4)
-#define ICC_SRE_DFB_BIT  (0x2)
-#define ICC_SRE_SRE_BIT  (0x1)
-
-#define ICC_IGRPEN_EL1_ENB_BIT (0x1)
-
 #ifndef __ASSEMBLER__
 
 #define STR(str) #str

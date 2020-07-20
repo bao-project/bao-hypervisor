@@ -44,15 +44,15 @@ void interrupts_arch_enable(uint64_t int_id, bool en)
     gic_set_enable(int_id, en);
     gic_set_prio(int_id, 0x01);
     if (GIC_VERSION == GICV2) {
-        gic_set_trgt(int_id, 1 << cpu.id);
+        gicd_set_trgt(int_id, 1 << cpu.id);
     } else {
-        gic_set_route(int_id, cpu.arch.mpidr);
+        gicd_set_route(int_id, cpu.arch.mpidr);
     }
 }
 
 bool interrupts_arch_check(uint64_t int_id)
 {
-    return gic_get_state(int_id) & PEND;
+    return gic_get_pend(int_id);
 }
 
 inline bool interrupts_arch_conflict(bitmap_t interrupt_bitmap, uint64_t int_id)
@@ -62,7 +62,8 @@ inline bool interrupts_arch_conflict(bitmap_t interrupt_bitmap, uint64_t int_id)
 
 void interrupts_arch_clear(uint64_t int_id)
 {
-    gic_set_state(int_id, INV);
+    gic_set_act(int_id, false);
+    gic_set_pend(int_id, false);
 }
 
 void interrupts_arch_vm_assign(vm_t *vm, uint64_t id)
@@ -72,5 +73,5 @@ void interrupts_arch_vm_assign(vm_t *vm, uint64_t id)
 
 void interrupts_arch_vm_inject(vm_t *vm, uint64_t id)
 {
-    vgic_inject(&vm->arch.vgicd, id);
+    vgic_inject(&vm->arch.vgicd, id, cpu.vcpu->id);
 }

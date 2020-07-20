@@ -22,7 +22,7 @@
 
 typedef struct {
     vgicd_t vgicd;
-    struct gic_dscrp* gic;
+    uintptr_t vgicr_addr;
 } vm_arch_t;
 
 typedef struct {

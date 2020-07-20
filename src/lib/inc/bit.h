@@ -18,7 +18,7 @@
 
 #include <bao.h>
 
-#define BIT_MASK(OFF, LEN) (((1UL << (OFF + LEN)) - 1) & ~((1UL << (OFF)) - 1))
+#define BIT_MASK(OFF, LEN) (((1ULL << (LEN))-1) << (OFF))
 
 #ifndef __ASSEMBLER__
 

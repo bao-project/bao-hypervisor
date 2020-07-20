@@ -32,7 +32,9 @@ vcpu_t* vm_get_vcpu_by_mpidr(vm_t* vm, uint64_t mpidr)
 {
     list_foreach(vm->vcpu_list, vcpu_t, vcpu)
     {
-        if ((vcpu->arch.vmpidr & MPIDR_AFF_MSK) == mpidr & MPIDR_AFF_MSK) return vcpu;
+        if ((vcpu->arch.vmpidr & MPIDR_AFF_MSK) == (mpidr & MPIDR_AFF_MSK))  {
+            return vcpu;
+        }
     }
 
     return NULL;

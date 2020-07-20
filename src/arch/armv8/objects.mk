@@ -30,6 +30,8 @@ cpu-objs-y+=platform.o
 cpu-objs-y+=relocate.o
 cpu-objs-y+=iommu.o
 cpu-objs-y+=smmuv2.o
+cpu-objs-y+=gic.o
+cpu-objs-y+=vgic.o
 
 ifeq ($(GIC_VERSION), GICV2)
 	cpu-objs-y+=vgicv2.o
