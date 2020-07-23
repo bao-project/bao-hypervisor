@@ -118,9 +118,8 @@ void vcpu_arch_run(vcpu_t* vcpu)
     // TODO: consider using TPIDR_EL2 to store vcpu pointer
     if (vcpu->arch.psci_ctx.state == ON) {
         vcpu_arch_entry();
-    } else if (vcpu->arch.psci_ctx.state == OFF) {
+    } else {
         cpu_idle();
     }
-
-    ERROR("inconsistent psci power state");
+    
 }
