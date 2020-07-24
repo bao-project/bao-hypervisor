@@ -23,7 +23,10 @@ typedef struct vm vm_t;
 typedef struct vcpu vcpu_t;
 struct gic_dscrp;
 
-typedef struct {
+/**
+ * TODO: optimize the vgic_int struct's size
+ */
+typedef struct vgic_int {
     vcpu_t *owner;
 #if (GIC_VERSION != GICV2)
     uint64_t route;
@@ -34,21 +37,28 @@ typedef struct {
 #endif
     spinlock_t lock;
     uint16_t id;
-#if (GIC_VERSION == GICV2)
-    uint8_t targets;
-#endif
     uint8_t state;
     uint8_t prio;
     uint8_t cfg;
     uint8_t lr;
-    bool in_lr;
+#if (GIC_VERSION == GICV2)
+    union {
+        uint8_t targets;
+        struct {
+            uint8_t act;
+            uint8_t pend;
+        } sgi;
+    };
+#endif
     bool hw;
+    bool in_lr;
     bool enabled;
 } vgic_int_t;
 
 typedef struct {
-    vgic_int_t interrupts[GIC_MAX_SPIS];
+    vgic_int_t *interrupts;
     spinlock_t lock;
+    size_t int_num;
     uint32_t CTLR;
     uint32_t TYPER;
     uint32_t IIDR;
@@ -62,12 +72,7 @@ typedef struct {
 } vgicr_t;
 
 typedef struct {
-#if (GIC_VERSION == GICV2)
-    struct {
-        uint8_t pend;
-        uint8_t act;
-    } sgis[GIC_MAX_SGIS];
-#else
+#if (GIC_VERSION != GICV2)
     vgicr_t vgicr;
 #endif
     int16_t curr_lrs[GIC_NUM_LIST_REGS];
@@ -119,7 +124,7 @@ void vgic_emul_generic_access(emul_access_t *, struct vgic_reg_handler_info *,
 void vgic_send_sgi_msg(vcpu_t *vcpu, uint64_t pcu_mask, uint64_t int_id);
 
 /* interface for version specific vgic */
-bool vgic_int_pcpu_is_target(vcpu_t *vcpu, vgic_int_t *interrupt);
+bool vgic_int_vcpu_is_target(vcpu_t *vcpu, vgic_int_t *interrupt);
 bool vgic_int_has_other_target(vcpu_t *vcpu, vgic_int_t *interrupt);
 uint64_t vgic_int_ptarget_mask(vcpu_t *vcpu, vgic_int_t *interrupt);
 void vgic_inject_sgi(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t source);

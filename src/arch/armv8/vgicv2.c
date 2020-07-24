@@ -105,7 +105,7 @@ struct vgic_reg_handler_info itargetr_info = {
     vgic_emul_generic_access,
     0b0101,
     VGIC_ITARGETSR_ID,
-    offsetof(gicd_t,ITARGETSR),
+    offsetof(gicd_t, ITARGETSR),
     8,
     vgicd_get_trgt,
     vgicd_set_trgt,
@@ -123,11 +123,11 @@ void vgic_inject_sgi(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t source)
 
     vgic_remove_lr(vcpu, interrupt);
 
-    uint8_t pendstate = vcpu->arch.vgic_priv.sgis[interrupt->id].pend;
+    uint8_t pendstate = interrupt->sgi.pend;
     uint8_t new_pendstate = pendstate | (1U << source);
 
     if (pendstate ^ new_pendstate) {
-        vcpu->arch.vgic_priv.sgis[interrupt->id].pend = new_pendstate;
+        interrupt->sgi.pend = new_pendstate;
         if (new_pendstate) {
             interrupt->state |= PEND;
         } else {
@@ -145,8 +145,11 @@ void vgic_inject_sgi(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t source)
 void vgic_init(vm_t *vm, const struct gic_dscrp *gic_dscrp)
 {
     vm->arch.vgicd.CTLR = 0;
+    uint64_t vtyper_itln =
+        bit_extract(gicd.TYPER, GICD_TYPER_ITLN_OFF, GICD_TYPER_ITLN_LEN);
+    vm->arch.vgicd.int_num = 32 * vtyper_itln + 1;
     vm->arch.vgicd.TYPER =
-        (gicd.TYPER & GICD_TYPER_ITLN_MSK) |
+        ((vtyper_itln << GICD_TYPER_ITLN_OFF) & GICD_TYPER_ITLN_MSK) |
         (((vm->cpu_num - 1) << GICD_TYPER_CPUNUM_OFF) & GICD_TYPER_CPUNUM_MSK);
     vm->arch.vgicd.IIDR = gicd.IIDR;
 
@@ -157,7 +160,14 @@ void vgic_init(vm_t *vm, const struct gic_dscrp *gic_dscrp)
         ERROR("failed to alloc vm address space to hold gicc");
     mem_map_dev(&vm->as, va, platform.arch.gic.gicv_addr, n);
 
-    for (int i = 0; i < GIC_MAX_SPIS; i++) {
+    size_t vgic_int_size = vm->arch.vgicd.int_num * sizeof(vgic_int_t);
+    vm->arch.vgicd.interrupts =
+        mem_alloc_page(NUM_PAGES(vgic_int_size), SEC_HYP_VM, false);
+    if (vm->arch.vgicd.interrupts == NULL) {
+        ERROR("failed to alloc vgic");
+    }
+
+    for (int i = 0; i < vm->arch.vgicd.int_num; i++) {
         vm->arch.vgicd.interrupts[i].id = i + GIC_CPU_PRIV;
         vm->arch.vgicd.interrupts[i].owner = NULL;
         vm->arch.vgicd.interrupts[i].hw = false;

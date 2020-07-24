@@ -50,11 +50,15 @@ static inline vgic_int_t *vgic_get_int(vcpu_t *vcpu, uint64_t int_id,
         vcpu_t *target_vcpu =
             vgicr_id == vcpu->id ? vcpu : vm_get_vcpu(vcpu->vm, vgicr_id);
         return &target_vcpu->arch.vgic_priv.interrupts[int_id];
-    } else if (int_id >= GIC_CPU_PRIV && int_id < GIC_MAX_INTERUPTS) {
+    } else if (int_id >= GIC_CPU_PRIV && int_id < vcpu->vm->arch.vgicd.int_num) {
         return &vcpu->vm->arch.vgicd.interrupts[int_id - GIC_CPU_PRIV];
     }
 
     return NULL;
+}
+
+static inline bool vgic_int_is_hw(vgic_int_t *interrupt) {
+    return !(interrupt->id < GIC_MAX_SGIS) && interrupt->hw;
 }
 
 static inline int64_t gich_get_lr(vgic_int_t *interrupt, uint64_t *lr)
@@ -85,8 +89,7 @@ static inline uint8_t vgic_get_state(vgic_int_t *interrupt)
     }
 
 #if (GIC_VERSION == GICV2)
-    if (interrupt->id < GIC_MAX_SGIS &&
-        interrupt->owner->arch.vgic_priv.sgis[interrupt->id].pend) {
+    if (interrupt->id < GIC_MAX_SGIS && interrupt->sgi.pend) {
         state |= PEND;
     }
 #endif
@@ -192,7 +195,7 @@ static inline void vgic_write_lr(vcpu_t *vcpu, vgic_int_t *interrupt,
           GICH_LR_GRP_BIT;
 #endif
 
-    if (interrupt->hw) {
+    if (vgic_int_is_hw(interrupt)) {
         lr |= GICH_LR_HW_BIT;
         lr |= (((uint64_t)interrupt->id) << GICH_LR_PID_OFF) & GICH_LR_PID_MSK;
         if (state == PENDACT) {
@@ -204,15 +207,14 @@ static inline void vgic_write_lr(vcpu_t *vcpu, vgic_int_t *interrupt,
 #if (GIC_VERSION == GICV2)
     else if (interrupt->id < GIC_MAX_SGIS) {
         if (state & ACT) {
-            lr |= (vcpu->arch.vgic_priv.sgis[interrupt->id].act
-                   << GICH_LR_CPUID_OFF) &
+            lr |= (interrupt->sgi.act << GICH_LR_CPUID_OFF) &
                   GICH_LR_CPUID_MSK;
             lr |= GICH_LR_STATE_ACT;
         } else {
             for (int i = GIC_MAX_TARGETS - 1; i >= 0; i--) {
-                if (vcpu->arch.vgic_priv.sgis[interrupt->id].pend & (1U << i)) {
+                if (interrupt->sgi.pend & (1U << i)) {
                     lr |= (i << GICH_LR_CPUID_OFF) & GICH_LR_CPUID_MSK;
-                    vcpu->arch.vgic_priv.sgis[interrupt->id].pend &= ~(1U << i);
+                    interrupt->sgi.pend &= ~(1U << i);
 
                     lr |= GICH_LR_STATE_PND;
                     break;
@@ -220,14 +222,14 @@ static inline void vgic_write_lr(vcpu_t *vcpu, vgic_int_t *interrupt,
             }
         }
 
-        if (vcpu->arch.vgic_priv.sgis[interrupt->id].pend) {
+        if (interrupt->sgi.pend) {
             lr |= GICH_LR_EOI_BIT;
         }
 
     }
 #endif
     else {
-        if (!gic_is_priv(interrupt->id) && !interrupt->hw) {
+        if (!gic_is_priv(interrupt->id) && !vgic_int_is_hw(interrupt)) {
             lr |= GICH_LR_EOI_BIT;
         }
 
@@ -262,11 +264,9 @@ bool vgic_remove_lr(vcpu_t *vcpu, vgic_int_t *interrupt)
 #if (GIC_VERSION == GICV2)
         if (interrupt->id < GIC_MAX_SGIS) {
             if (interrupt->state & ACT) {
-                vcpu->arch.vgic_priv.sgis[interrupt->id].act =
-                    GICH_LR_CPUID(lr_val);
+                interrupt->sgi.act = GICH_LR_CPUID(lr_val);
             } else if (interrupt->state & PEND) {
-                vcpu->arch.vgic_priv.sgis[interrupt->id].pend |=
-                    (1U << GICH_LR_CPUID(lr_val));
+                interrupt->sgi.pend |= (1U << GICH_LR_CPUID(lr_val));
             }
         }
 #endif
@@ -627,7 +627,7 @@ void vgic_int_set_field(struct vgic_reg_handler_info *handlers, vcpu_t *vcpu,
     if (vgic_get_ownership(vcpu, interrupt)) {
         vgic_remove_lr(vcpu, interrupt);
         if (handlers->update_field(vcpu, interrupt, data) &&
-            interrupt->hw) {
+            vgic_int_is_hw(interrupt)) {
             handlers->update_hw(vcpu, interrupt);
         }
         vgic_route(vcpu, interrupt);
@@ -884,7 +884,7 @@ void vgic_inject(vgicd_t *vgicd, uint64_t id, uint64_t source)
 {
     vgic_int_t *interrupt = vgic_get_int(cpu.vcpu, id, cpu.vcpu->id);
     if (interrupt != NULL) {
-        if (interrupt->hw) {
+        if (vgic_int_is_hw(interrupt)) {
             spin_lock(&interrupt->lock);
             interrupt->owner = cpu.vcpu;
             interrupt->state = PEND;
@@ -1039,7 +1039,7 @@ void vgic_eoir_highest_spilled_active(vcpu_t *vcpu)
 
     if (interrupt) {
         interrupt->state &= ~ACT;
-        if (interrupt->hw) {
+        if (vgic_int_is_hw(interrupt)) {
             gic_set_act(interrupt->id, false);
         } else {
             if (interrupt->state & PEND) {
@@ -1122,6 +1122,8 @@ void vgic_set_hw(vm_t *vm, uint64_t id)
             spin_lock(&interrupt->lock);
             interrupt->hw = true;
             spin_unlock(&interrupt->lock);
+        } else {
+            WARNING("trying to link non-existent virtual irq to physical irq")
         }
     }
 }

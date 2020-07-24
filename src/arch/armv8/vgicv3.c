@@ -137,7 +137,7 @@ struct vgic_reg_handler_info irouter_info = {
     vgic_emul_generic_access,
     0b1000,
     VGIC_IROUTER_ID,
-    offsetof(gicd_t,IROUTER),
+    offsetof(gicd_t, IROUTER),
     64,
     vgic_int_get_route,
     vgic_int_set_route,
@@ -254,15 +254,24 @@ bool vgic_icc_sre_handler(emul_access_t *acc)
 void vgic_init(vm_t *vm, const struct gic_dscrp *gic_dscrp)
 {
     vm->arch.vgicr_addr = gic_dscrp->gicr_addr;
-
     vm->arch.vgicd.CTLR = 0;
+    uint64_t vtyper_itln =
+        bit_extract(gicd.TYPER, GICD_TYPER_ITLN_OFF, GICD_TYPER_ITLN_LEN);
+    vm->arch.vgicd.int_num = 32 * vtyper_itln + 1;
     vm->arch.vgicd.TYPER =
-        (gicd.TYPER & GICD_TYPER_ITLN_MSK) |
+        ((vtyper_itln << GICD_TYPER_ITLN_OFF) & GICD_TYPER_ITLN_MSK) |
         (((vm->cpu_num - 1) << GICD_TYPER_CPUNUM_OFF) & GICD_TYPER_CPUNUM_MSK) |
         (((10 - 1) << GICD_TYPER_IDBITS_OFF) & GICD_TYPER_IDBITS_MSK);
     vm->arch.vgicd.IIDR = gicd.IIDR;
 
-    for (int i = 0; i < GIC_MAX_SPIS; i++) {
+    size_t vgic_int_size = vm->arch.vgicd.int_num * sizeof(vgic_int_t);
+    vm->arch.vgicd.interrupts =
+        mem_alloc_page(NUM_PAGES(vgic_int_size), SEC_HYP_VM, false);
+    if (vm->arch.vgicd.interrupts == NULL) {
+        ERROR("failed to alloc vgic");
+    }
+
+    for (int i = 0; i < vm->arch.vgicd.int_num; i++) {
         vm->arch.vgicd.interrupts[i].id = i + GIC_CPU_PRIV;
         vm->arch.vgicd.interrupts[i].owner = NULL;
         vm->arch.vgicd.interrupts[i].hw = false;
