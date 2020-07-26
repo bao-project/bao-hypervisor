@@ -240,8 +240,6 @@ void gic_set_enable(uint64_t int_id, bool en)
 
 void gic_set_pend(uint64_t int_id, bool pend)
 {
-    spin_lock(&gicd_lock);
-
     if (gic_is_sgi(int_id)) {
         uint64_t reg_ind = GICD_SGI_REG(int_id);
         uint64_t off = GICD_SGI_OFF(int_id);
@@ -254,6 +252,4 @@ void gic_set_pend(uint64_t int_id, bool pend)
     } else {
         gicd_set_pend(int_id, pend);
     }
-
-    spin_unlock(&gicd_lock);
 }
