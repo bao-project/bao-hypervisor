@@ -118,10 +118,11 @@ bool vgic_check_reg_alignment(emul_access_t *acc,
                               struct vgic_reg_handler_info *handlers);
 bool vgic_add_lr(vcpu_t *vcpu, vgic_int_t *interrupt);
 bool vgic_remove_lr(vcpu_t *vcpu, vgic_int_t *interrupt);
+bool vgic_get_ownership(vcpu_t *vcpu, vgic_int_t *interrupt);
 void vgic_yield_ownership(vcpu_t *vcpu, vgic_int_t *interrupt);
 void vgic_emul_generic_access(emul_access_t *, struct vgic_reg_handler_info *,
                               bool, uint64_t);
-void vgic_send_sgi_msg(vcpu_t *vcpu, uint64_t pcu_mask, uint64_t int_id);
+void vgic_send_sgi_msg(vcpu_t *vcpu, uint64_t pcpu_mask, uint64_t int_id);
 
 /* interface for version specific vgic */
 bool vgic_int_vcpu_is_target(vcpu_t *vcpu, vgic_int_t *interrupt);

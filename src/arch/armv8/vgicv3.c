@@ -272,16 +272,17 @@ void vgic_init(vm_t *vm, const struct gic_dscrp *gic_dscrp)
     }
 
     for (int i = 0; i < vm->arch.vgicd.int_num; i++) {
-        vm->arch.vgicd.interrupts[i].id = i + GIC_CPU_PRIV;
         vm->arch.vgicd.interrupts[i].owner = NULL;
-        vm->arch.vgicd.interrupts[i].hw = false;
-        vm->arch.vgicd.interrupts[i].enabled = false;
+        vm->arch.vgicd.interrupts[i].lock = SPINLOCK_INITVAL;
+        vm->arch.vgicd.interrupts[i].id = i + GIC_CPU_PRIV;
         vm->arch.vgicd.interrupts[i].state = INV;
-        vm->arch.vgicd.interrupts[i].prio = 0xFF;
+        vm->arch.vgicd.interrupts[i].prio = GIC_LOWEST_PRIO;
+        vm->arch.vgicd.interrupts[i].cfg = 0;
         vm->arch.vgicd.interrupts[i].route = GICD_IROUTER_INV;
         vm->arch.vgicd.interrupts[i].phys.route = GICD_IROUTER_INV;
+        vm->arch.vgicd.interrupts[i].hw = false;
         vm->arch.vgicd.interrupts[i].in_lr = false;
-        vm->arch.vgicd.interrupts[i].lock = SPINLOCK_INITVAL;
+        vm->arch.vgicd.interrupts[i].enabled = false;
     }
 
     emul_mem_t gicd_emu = {.va_base = gic_dscrp->gicd_addr,
@@ -322,17 +323,17 @@ void vgic_init(vm_t *vm, const struct gic_dscrp *gic_dscrp)
 void vgic_cpu_init(vcpu_t *vcpu)
 {
     for (int i = 0; i < GIC_CPU_PRIV; i++) {
-        vcpu->arch.vgic_priv.interrupts[i].id = i;
         vcpu->arch.vgic_priv.interrupts[i].owner = NULL;
-        vcpu->arch.vgic_priv.interrupts[i].hw = false;
-        vcpu->arch.vgic_priv.interrupts[i].enabled = false;
+        vcpu->arch.vgic_priv.interrupts[i].lock = SPINLOCK_INITVAL;
+        vcpu->arch.vgic_priv.interrupts[i].id = i;
         vcpu->arch.vgic_priv.interrupts[i].state = INV;
-        vcpu->arch.vgic_priv.interrupts[i].prio = 0xff;
+        vcpu->arch.vgic_priv.interrupts[i].prio = GIC_LOWEST_PRIO;
+        vcpu->arch.vgic_priv.interrupts[i].cfg = 0;
         vcpu->arch.vgic_priv.interrupts[i].route = GICD_IROUTER_INV;
-        vcpu->arch.vgic_priv.interrupts[i].phys.redist = vcpu->phys_id;
-        vcpu->arch.vgic_priv.interrupts[i].lock = 0;
-        vcpu->arch.vgic_priv.interrupts[i].in_lr = 0;
-        vcpu->arch.vgic_priv.interrupts[i].lr = SPINLOCK_INITVAL;
+        vcpu->arch.vgic_priv.interrupts[i].phys.redist = vcpu->phys_id;                              
+        vcpu->arch.vgic_priv.interrupts[i].hw = false;
+        vcpu->arch.vgic_priv.interrupts[i].in_lr = false;
+        vcpu->arch.vgic_priv.interrupts[i].enabled = false;
     }
 
     for (int i = 0; i < GIC_MAX_SGIS; i++) {
