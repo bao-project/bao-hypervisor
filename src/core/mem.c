@@ -29,7 +29,8 @@
 #include <tlb.h>
 
 extern uint8_t _image_start, _image_end, _dmem_phys_beg, _dmem_beg,
-    _cpu_private_beg, _cpu_private_end, _vm_beg, _vm_end;
+    _cpu_private_beg, _cpu_private_end, _vm_beg, _vm_end, _config_start,
+    _config_end;
 
 extern struct dev _dev_init_table_start, _dev_init_table_end;
 
@@ -880,14 +881,14 @@ void *mem_alloc_page(size_t n, enum AS_SEC sec, bool phys_aligned)
 bool root_pool_set_up_bitmap(uint64_t load_addr)
 {
     size_t image_size = (size_t)(&_image_end - &_image_start);
-    uint64_t cpu_size =
-        platform.cpu_num *
-        (ALIGN(sizeof(struct cpu), PAGE_SIZE) + (PT_SIZE * (PT_LVLS - 1)));
+    size_t config_size = (size_t)(&_config_end - &_config_start);
+    size_t cpu_size = platform.cpu_num * (ALIGN(sizeof(struct cpu), PAGE_SIZE) +
+                                          (PT_SIZE * (PT_LVLS - 1)));
 
     uint64_t bitmap_size = root_pool.size / (8 * PAGE_SIZE) +
                            ((root_pool.size % (8 * PAGE_SIZE) != 0) ? 1 : 0);
     if (root_pool.size <= bitmap_size) return false;
-    uint64_t bitmap_base = load_addr + image_size + cpu_size;
+    uint64_t bitmap_base = load_addr + image_size + config_size + cpu_size;
 
     ppages_t bitmap_pp = mem_ppages_get(bitmap_base, bitmap_size);
     bitmap_t root_bitmap =
@@ -904,13 +905,19 @@ bool root_pool_set_up_bitmap(uint64_t load_addr)
 bool pp_root_reserve_hyp_mem(uint64_t load_addr)
 {
     size_t image_size = (size_t)(&_image_end - &_image_start);
+    size_t config_size = (size_t)(&_config_end - &_config_start);
     uint64_t cpu_size =
         platform.cpu_num *
         (ALIGN(sizeof(struct cpu), PAGE_SIZE) + (PT_SIZE * (PT_LVLS - 1)));
+    uint64_t cpu_base_addr = load_addr + image_size + config_size;
 
-    size_t reserve_size = NUM_PAGES(image_size + cpu_size);
-    ppages_t ppages = mem_ppages_get(load_addr, reserve_size);
-    return mem_reserve_ppool_ppages(&root_pool, &ppages);
+    ppages_t images_ppages = mem_ppages_get(load_addr, NUM_PAGES(image_size));
+    ppages_t cpu_ppages = mem_ppages_get(cpu_base_addr, NUM_PAGES(cpu_size));
+
+    bool image_reserved = mem_reserve_ppool_ppages(&root_pool, &images_ppages);
+    bool cpu_reserved = mem_reserve_ppool_ppages(&root_pool, &cpu_ppages);
+
+    return image_reserved && cpu_reserved;
 }
 
 static bool pp_root_init(uint64_t load_addr, struct mem_region *root_region)
@@ -1102,8 +1109,7 @@ void *copy_space(void *base, const uint64_t size, ppages_t *pages)
 {
     *pages = mem_alloc_ppages(&cpu.as, NUM_PAGES(size), false);
     void *va = mem_alloc_vpage(&cpu.as, SEC_HYP_PRIVATE, NULL, NUM_PAGES(size));
-    mem_map(&cpu.as, va, pages, NUM_PAGES(size),
-            PTE_HYP_FLAGS);
+    mem_map(&cpu.as, va, pages, NUM_PAGES(size), PTE_HYP_FLAGS);
     memcpy(va, base, size);
 
     return va;
@@ -1134,6 +1140,7 @@ void color_hypervisor(const uint64_t load_addr, const uint64_t config_addr)
     size_t image_size = (size_t)(&_image_end - &_image_start);
     size_t cpu_boot_size =
         ALIGN(sizeof(cpu_t) + (PT_SIZE * (PT_LVLS - 1)), PAGE_SIZE);
+    size_t config_size = (size_t)(&_config_end - &_config_start);
     size_t bitmap_size = (root_pool.size / (8 * PAGE_SIZE) +
                           !!(root_pool.size % (8 * PAGE_SIZE) != 0)) *
                          PAGE_SIZE;
@@ -1285,9 +1292,9 @@ void color_hypervisor(const uint64_t load_addr, const uint64_t config_addr)
         memset(va, 0, p_image.size * PAGE_SIZE);
         mem_free_vpage(&cpu.as, va, p_image.size, true);
 
-        p_bitmap = mem_ppages_get(
-            load_addr + image_size + (cpu_boot_size * platform.cpu_num),
-            NUM_PAGES(bitmap_size));
+        p_bitmap = mem_ppages_get(load_addr + image_size + config_size +
+                                      (cpu_boot_size * platform.cpu_num),
+                                  NUM_PAGES(bitmap_size));
 
         va = mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL, NULL, p_bitmap.size);
         mem_map(&cpu.as, va, &p_bitmap, p_bitmap.size, PTE_HYP_FLAGS);
@@ -1295,8 +1302,9 @@ void color_hypervisor(const uint64_t load_addr, const uint64_t config_addr)
         mem_free_vpage(&cpu.as, va, p_bitmap.size, true);
     }
 
-    p_cpu = mem_ppages_get(load_addr + (cpu_boot_size * cpu.id),
-                           cpu_boot_size / PAGE_SIZE);
+    p_cpu = mem_ppages_get(
+        load_addr + image_size + config_size + (cpu_boot_size * cpu.id),
+        cpu_boot_size / PAGE_SIZE);
     va = mem_alloc_vpage(&cpu.as, SEC_HYP_PRIVATE, NULL, p_cpu.size);
     mem_map(&cpu.as, va, &p_cpu, p_cpu.size, PTE_HYP_FLAGS);
     memset(va, 0, p_cpu.size * PAGE_SIZE);
@@ -1341,6 +1349,11 @@ void mem_init(uint64_t load_addr, uint64_t config_addr)
         /* Insert root pool in pool list */
         list_init(&page_pool_list);
         list_push(&page_pool_list, &(root_pool.node));
+
+        if (config_is_builtin()) {
+            config_addr =
+                (uint64_t)(&_config_start - &_image_start) + load_addr;
+        }
 
         if (!mem_init_vm_config(config_addr)) {
             ERROR("couldn't init config");

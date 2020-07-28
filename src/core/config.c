@@ -38,3 +38,8 @@ void config_adjust_to_va(struct config *config, uint64_t phys)
 
     // TODO: maybe it might be needed an arch version of this method
 }
+
+bool config_is_builtin() {
+    extern uint8_t _config_start, _config_end;
+    return &_config_start != &_config_end;
+}

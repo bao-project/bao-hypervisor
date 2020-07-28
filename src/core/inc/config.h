@@ -19,7 +19,7 @@
 #include <bao.h>
 #include <platform.h>
 
-extern uint64_t _config_end, _images_end;
+extern uint8_t _config_end, _images_end;
 
 #define CONFIG_HEADER_SIZE ((size_t)&_config_end)
 #define CONFIG_SIZE ((size_t)&_images_end)
@@ -124,5 +124,6 @@ extern struct config {
 } config __attribute__((section(".config")));
 
 void config_adjust_to_va(struct config *config, uint64_t phys);
+bool config_is_builtin();
 
 #endif /* __CONFIG_H__ */

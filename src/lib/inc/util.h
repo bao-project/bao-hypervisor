@@ -35,6 +35,9 @@
 /* Previous Power Of Two */
 #define PPOT(VAL) (NPOT((VAL)) - (NPOT((VAL)) >> 1))
 
+#define STRINGIFY2(X) #X
+#define STRINGIFY(X) STRINGIFY2(X)
+
 #ifndef __ASSEMBLER__
 
 #define max(n1, n2) (((n1) > (n2)) ? (n1) : (n2))
