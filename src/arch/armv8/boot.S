@@ -468,7 +468,7 @@ warm_boot:
 	adrp x1, _image_start
 	PTE_INDEX_ASM x1, x1, 0 
 	add x3, x3, x1
-	dc cvac, x3  //we invalidated l1$, but make sure the pte is not in l2$
+	dc civac, x3  //we invalidated l1$, but make sure the pte is not in l2$
 	add x5, x5, #(PTE_HYP_FLAGS | PTE_TABLE)
 	str x5, [x3]
 
@@ -476,11 +476,14 @@ warm_boot:
 	ldr	x3, =_hyp_vector_table
 	msr	VBAR_EL2, x3
 
+    tlbi	alle2 
+	dsb	nsh
+	isb
+
 	/* Enable MMU and caches */
 	ldr x4, =(SCTLR_RES1 | SCTLR_M | SCTLR_C | SCTLR_I)
 	msr	SCTLR_EL2, x4
 
-    tlbi	alle2 
 	dsb	nsh
 	isb
 	
