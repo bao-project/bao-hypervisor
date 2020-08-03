@@ -18,25 +18,6 @@
 #include <arch/page_table.h>
 #include <asm_defs.h>
 
-.macro GET_LINEARIZED_CPUID
-	mov x3, x0, lsr #8 
-	and x3, x3, 0xff
-	adr x4, platform
-	ldr x4, [x4, PLAT_ARCH_OFF+PLAT_ARCH_CLUSTERS_OFF+PLAT_CLUSTERS_CORES_NUM_OFF]
-	mov x5, xzr
-_linearized_cpu1\@:
-	cmp x5, x3
-	b.ge	_linearized_cpu2\@
-	ldrb w6, [x4]
-	add x4, x4, #1
-	add x5, x5, #1
-	add x7, x7, x6
-	b 	_linearized_cpu1\@
-_linearized_cpu2\@:
-	and x0, x0, #0xff
-	add x0, x0, x7
-.endm
-
 .data 
 .align 3
 /**
@@ -95,6 +76,9 @@ _reset_handler:
 	and x3, x3, 0xff
 	adr x4, platform
 	ldr x4, [x4, PLAT_ARCH_OFF+PLAT_ARCH_CLUSTERS_OFF+PLAT_CLUSTERS_CORES_NUM_OFF]
+	ldr x5, =BAO_VAS_BASE
+	sub x4, x4, x5
+	add x4, x4, x1
 	mov x5, xzr
 	mov x7, xzr
 1:

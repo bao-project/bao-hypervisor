@@ -56,7 +56,7 @@ void platform_defines()
     DEFINE_OFFSET(PLAT_CPUNUM_OFF, struct platform_desc, cpu_num);
     DEFINE_OFFSET(PLAT_ARCH_OFF, struct platform_desc, arch);
     DEFINE_OFFSET(PLAT_ARCH_CLUSTERS_OFF, struct arch_platform, clusters);
-    DEFINE_OFFSET(PLAT_CLUSTERS_CORES_NUM_OFF, struct clusters, num);
+    DEFINE_OFFSET(PLAT_CLUSTERS_CORES_NUM_OFF, struct clusters, core_num);
 }
 
 void info_defines() __attribute__((used));
