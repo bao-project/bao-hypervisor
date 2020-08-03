@@ -318,9 +318,11 @@ void gicd_set_route(uint64_t int_id, uint64_t route)
 void gic_send_sgi(uint64_t cpu_target, uint64_t sgi_num)
 {
     if (sgi_num < GIC_MAX_SGIS) {
-        uint64_t sgi = (cpu_id_to_mpidr(cpu_target) & ~ICC_SGIR_TRGLSTFLT_MSK) |
-                       (1UL << (cpu_target & ICC_SGIR_TRGLSTFLT_MSK)) |
-                       (sgi_num << ICC_SGIR_SGIINTID_OFF);
+        uint64_t mpidr = cpu_id_to_mpidr(cpu_target) & MPIDR_AFF_MSK;
+        /* We only support two affinity levels */
+        uint64_t sgi = (MPIDR_AFF_LVL(mpidr, 1) << ICC_SGIR_AFF1_OFFSET) |
+                       (1UL << MPIDR_AFF_LVL(mpidr, 0)) |
+                       (sgi_num << ICC_SGIR_SGIINTID_OFF);             
         MSR(ICC_SGI1R_EL1, sgi);
     }
 }
