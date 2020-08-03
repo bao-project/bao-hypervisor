@@ -17,7 +17,7 @@
 #include <platform.h>
 
 struct platform_desc platform = {
-    .cpu_num = 4,
+    .cpu_num = 6,
     .region_num = 2,
     .regions =  (struct mem_region[]) {
         {
@@ -35,6 +35,12 @@ struct platform_desc platform = {
     },
 
     .arch = {
+
+        .clusters =  {
+            .num = 2,
+            .core_num = (uint8_t[]) {4, 2}
+        },
+
         .gic = {
             .gicd_addr = 0x51a00000,
             .gicr_addr = 0x51b00000,
