@@ -81,8 +81,8 @@ inline int iommu_arch_vm_add_device(vm_t *vm, int id)
 
 int iommu_arch_vm_init(vm_t *vm, const vm_config_t *config)
 {
-    uint32_t glbl_mask = config->platform.arch.smmu.global_mask;
-    vm->iommu.arch.global_mask = glbl_mask;
+    vm->iommu.arch.global_mask = 
+        config->platform.arch.smmu.global_mask | platform.arch.smmu.global_mask;
     vm->iommu.arch.ctx_id = -1;
 
     /* This section relates only to arm's iommu so we parse it here. */
