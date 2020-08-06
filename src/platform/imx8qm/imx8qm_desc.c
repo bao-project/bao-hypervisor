@@ -52,7 +52,8 @@ struct platform_desc platform = {
 
         .smmu = {
             .base = 0x51400000,
-            .interrupt_id = 187
+            .interrupt_id = 187,
+            .global_mask = 0x7fc0,
         },
 
     }
