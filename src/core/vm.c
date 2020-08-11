@@ -237,6 +237,8 @@ void vm_init(vm_t* vm, const vm_config_t* config, bool master, uint64_t vm_id)
      */
     vm_vcpu_init(vm, config);
 
+    cpu_sync_barrier(&vm->sync);
+
     /**
      * Perform architecture dependent initializations. This includes,
      * for example, setting the page table pointer and other virtualization
