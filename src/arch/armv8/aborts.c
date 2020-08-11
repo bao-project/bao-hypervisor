@@ -22,6 +22,18 @@
 
 typedef void (*abort_handler_t)(uint32_t, uint64_t, uint64_t);
 
+void internal_abort_handler(uint64_t gprs[]) {
+
+    for(int i = 0; i < 31; i++) {
+        printk("x%d:\t\t0x%0lx\n", i, gprs[i]);
+    }
+    printk("SP_EL2:\t\t0x%0lx\n", gprs[32]);
+    printk("ESR_EL2:\t0x%0lx\n", MRS(ESR_EL2));
+    printk("ELR_EL2:\t0x%0lx\n", MRS(ELR_EL2));
+    printk("FAR_EL2:\t0x%0lx\n", MRS(FAR_EL2));
+    ERROR("cpu%d internal hypervisor abort - PANIC\n", cpu.id);
+}
+
 void aborts_data_lower(uint32_t iss, uint64_t far, uint64_t il)
 {
     if (!(iss & ESR_ISS_DA_ISV_BIT) || (iss & ESR_ISS_DA_FnV_BIT)) {
