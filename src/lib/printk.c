@@ -5,6 +5,7 @@
  *
  * Authors:
  *      Sandro Pinto <sandro.pinto@bao-project.org>
+ *      Jose Martins <jose.martins@bao-project.org>
  *
  * Bao is free software; you can redistribute it and/or modify it under the
  * terms of the GNU General Public License version 2 as published by the Free
@@ -35,29 +36,24 @@ uint64_t vsprintk(char *buf, const char *fmt, va_list args)
         if (*fmt == '%') {
             ++fmt;
             uint64_t is_unsigned = 0;
-            uint64_t zero_padding = 1;
+            uint64_t zero_padding = 0;
+            uint64_t is_long = 0;
 
             if (*fmt == '0') {
                 ++fmt;
-                zero_padding = *fmt++;
-                if ((zero_padding < 0x31) || (zero_padding > 0x38)) {
-                    /* serial_puts("invalid padding bits.\0"); */
-                }
-                zero_padding -= 0x30;
+                zero_padding = 1;
             }
 
-            switch (*fmt) {
-                case 'l': {
-                    ++fmt;
-                    break;
-                }
-            }
+           if (*fmt == 'l') {
+                ++fmt;
+                is_long = 1;
+           }
 
             switch (*fmt) {
                 case 'x': {
-                    uint64_t number = va_arg(args, int);
-                    int length = 8;
-                    int length_in_bits = 32;
+                    uint64_t number = is_long ? va_arg(args, uint64_t) : va_arg(args, uint32_t);
+                    int length = is_long ? 16 : 8;
+                    int length_in_bits = is_long ? 64 : 32;
                     int byte = 0;
                     int i = 0;
                     bool keep_zeros = false;
@@ -65,33 +61,14 @@ uint64_t vsprintk(char *buf, const char *fmt, va_list args)
                     for (i = 0; i < length; i++) {
                         byte = number >> (length_in_bits - ((i + 1) * 4));
                         byte = byte & 0xF;
-                        if (byte != 0) {
+                        if (byte != 0 || i == length-1) {
                             keep_zeros = true;
                         }
-                        if (keep_zeros || i >= (7 - (zero_padding - 1))) {
+                        if (keep_zeros || zero_padding) {
                             if ((byte >= 0) && (byte <= 9)) {
-                                byte = byte + 0x30;
+                                byte += 0x30;
                             } else {
-                                switch (byte) {
-                                    case 0xa:
-                                        byte = 0x61;
-                                        break;
-                                    case 0xb:
-                                        byte = 0x62;
-                                        break;
-                                    case 0xc:
-                                        byte = 0x63;
-                                        break;
-                                    case 0xd:
-                                        byte = 0x64;
-                                        break;
-                                    case 0xe:
-                                        byte = 0x65;
-                                        break;
-                                    case 0xf:
-                                        byte = 0x66;
-                                        break;
-                                }
+                                byte += (0x61-0xa);
                             }
                             *str++ = byte;
                         }
@@ -103,20 +80,19 @@ uint64_t vsprintk(char *buf, const char *fmt, va_list args)
                 case 'i':
                 case 'd': {
                     uint64_t i, j, max_num_zeros, num_of_digits_uint64_t,
-                        number_uint64_t, divisor_value_uint64_t,
+                        number, divisor_value_uint64_t,
                         new_div_val = 1, sw_quotient_value = 0;
                     bool keep_zeros = false;
 
                     if (!is_unsigned) {
-                        int signed_num_32 = va_arg(args, int);
-                        if (signed_num_32 < 0) {
+                        int64_t number_signed = is_long ? va_arg(args, int64_t) : va_arg(args, int32_t);
+                        if (number_signed < 0) {
                             *str++ = 0x2d;
-                            signed_num_32 = -(signed_num_32);
+                            number_signed = -(number_signed);
                         }
-                        number_uint64_t = (uint64_t)signed_num_32;
+                        number = number_signed;
                     } else {
-                        uint64_t unsigned_value_32 = va_arg(args, unsigned int);
-                        number_uint64_t = unsigned_value_32;
+                        number = is_long ? va_arg(args, uint64_t) : va_arg(args, uint32_t);
                     }
 
                     divisor_value_uint64_t = 1000000000;
@@ -124,13 +100,12 @@ uint64_t vsprintk(char *buf, const char *fmt, va_list args)
                     max_num_zeros = num_of_digits_uint64_t - 1;
 
                     for (i = 0; i < max_num_zeros; i++) {
-                        while (number_uint64_t >= divisor_value_uint64_t) {
-                            number_uint64_t -= divisor_value_uint64_t;
+                        while (number >= divisor_value_uint64_t) {
+                            number -= divisor_value_uint64_t;
                             ++sw_quotient_value;
                         }
                         if (sw_quotient_value != 0) keep_zeros = true;
-                        if (keep_zeros ||
-                            i > ((max_num_zeros - 1) - (zero_padding - 1))) {
+                        if (keep_zeros || zero_padding) {
                             sw_quotient_value += 0x30;
                             *str++ = sw_quotient_value;
                         }
@@ -143,37 +118,7 @@ uint64_t vsprintk(char *buf, const char *fmt, va_list args)
                         divisor_value_uint64_t = new_div_val;
                         new_div_val = 1;
                     }
-                    *str++ = (number_uint64_t + 0x30);
-                    break;
-                }
-                case 'o': {
-                    uint64_t number, length = 10, length_in_bits = 32, byte = 0,
-                                     i = 0;
-                    bool keep_zeros = false;
-
-                    number = va_arg(args, int);
-                    byte = number >> 30;
-                    byte &= 0x3;
-                    if (byte != 0) {
-                        keep_zeros = true;
-                    }
-                    if (keep_zeros || zero_padding > length) {
-                        byte = byte + 0x30;
-                        *str++ = byte;
-                    }
-
-                    number <<= 2;
-                    for (i = 0; i < length; i++) {
-                        byte = number >> (length_in_bits - ((i + 1) * 3));
-                        byte &= 0x7;
-                        if (byte != 0) {
-                            keep_zeros = true;
-                        }
-                        if (keep_zeros || i >= (9 - (zero_padding - 1))) {
-                            byte = byte + 0x30;
-                            *str++ = byte;
-                        }
-                    }
+                    *str++ = (number + 0x30);
                     break;
                 }
                 case 's': {
