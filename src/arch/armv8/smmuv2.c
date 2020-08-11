@@ -307,11 +307,9 @@ bool smmu_compatible_sme_exists(uint16_t mask, uint16_t id, uint32_t ctx,
 
         if (!diff_id) {
             /* Only group-to-group or device-to-group can be merged */
-            if ((group || smmu_sme_is_group(sme)) &&
-                (mask_r == mask || mask_r == sme_mask)) {
-                if (ctx != smmu_sme_get_ctx(sme)) {
-                    ERROR("SMMU conflicting context attributions");
-                }
+            if ((group || (smmu_sme_is_group(sme) &&
+                (mask_r == mask || mask_r == sme_mask)) ||
+                (ctx == smmu_sme_get_ctx(sme)))) {
 
                 /* Compatible entry found.
                  *
