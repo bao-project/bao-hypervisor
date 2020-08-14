@@ -37,13 +37,13 @@ config: $(CONFIG_BLOB).bin
 $(CONFIG_DEP): $(CONFIG_SRC)
 	@$(cc) $(cppflags) -S $(patsubst %.d, %.c, $@) -o temp.S
 	@grep ".incbin" temp.S > $(patsubst %.d, %.S, $@) 
-	@$(as) -MD $@ $(patsubst %.d, %.S, $@)  -o $(patsubst %.d, %.o, $@)
+	@$(as) -I$(CONFIG_DIR) -MD $@ $(patsubst %.d, %.S, $@) -o $(patsubst %.d, %.o, $@)
 	@rm temp.S $(patsubst %.d, %.S, $@)
 	@$(cc) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(cppflags) $(filter %.c, $^) >> $@
 
 $(CONFIG_OBJ): $(CONFIG_SRC)
 	@echo "Compiling source	$(patsubst $(cur_dir)/%, %, $<)"
-	@$(cc) $(cflags) -c $< -o $@
+	@$(cc) -Wa,-I$(CONFIG_DIR) $(cflags) -c $< -o $@
 
 $(CONFIG_ASM): $(CONFIG_SRC)
 	@$(cc) $(cppflags) -S $< -o $@

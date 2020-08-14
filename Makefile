@@ -45,7 +45,7 @@ cpu_arch_dir=$(src_dir)/arch
 lib_dir=$(src_dir)/lib
 core_dir=$(src_dir)/core
 platforms_dir=$(src_dir)/platform
-configs_dir=$(cur_dir)/configs
+configs_dir?=$(cur_dir)/configs
 config:=$(configs_dir)/$(CONFIG)/$(CONFIG).bin
 
 ifeq ($(CONFIG_BUILTIN), y)
