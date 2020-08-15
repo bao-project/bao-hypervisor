@@ -63,8 +63,24 @@ uint64_t vgic_int_ptarget_mask(vcpu_t *vcpu, vgic_int_t *interrupt)
 
 bool vgic_int_set_route(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t route)
 {
-    if (gic_is_priv(interrupt->id)) return false;
+    uint64_t phys_route;
     uint64_t prev_route = interrupt->route;
+
+    if (gic_is_priv(interrupt->id)) return false;
+
+    if (route & GICD_IROUTER_IRM_BIT) {
+        phys_route = cpu_id_to_mpidr(vcpu->phys_id);
+    } else {
+        vcpu_t *tvcpu =
+            vm_get_vcpu_by_mpidr(vcpu->vm, interrupt->route & MPIDR_AFF_MSK);
+        if (tvcpu != NULL) {
+            phys_route = cpu_id_to_mpidr(tvcpu->phys_id) & MPIDR_AFF_MSK;
+        } else {
+            phys_route = GICD_IROUTER_INV;
+        }
+    }
+    interrupt->phys.route = phys_route;
+
     interrupt->route = route & GICD_IROUTER_RES0_MSK;
     return prev_route != interrupt->route;
 }
@@ -77,20 +93,7 @@ uint64_t vgic_int_get_route(vcpu_t *vcpu, vgic_int_t *interrupt)
 
 void vgic_int_set_route_hw(vcpu_t *vcpu, vgic_int_t *interrupt)
 {
-    uint64_t route;
-    if (interrupt->route & GICD_IROUTER_IRM_BIT) {
-        route = cpu_id_to_mpidr(vcpu->phys_id);
-    } else {
-        vcpu_t *tvcpu =
-            vm_get_vcpu_by_mpidr(vcpu->vm, interrupt->route & MPIDR_AFF_MSK);
-        if (tvcpu != NULL) {
-            route = cpu_id_to_mpidr(tvcpu->phys_id) & MPIDR_AFF_MSK;
-        } else {
-            route = GICD_IROUTER_INV;
-        }
-    }
-    interrupt->phys.route = route;
-    gicd_set_route(interrupt->id, route);
+    gicd_set_route(interrupt->id, interrupt->phys.route);
 }
 
 void vgicr_emul_ctrl_access(emul_access_t *acc,
