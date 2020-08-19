@@ -31,7 +31,7 @@ typedef struct {
     uint32_t prio[PLIC_NUM_PRIO_REGS];
     uint32_t pend[PLIC_NUM_PEND_REGS];
     uint32_t enbl[PLIC_PLAT_CNTXT_NUM][PLIC_NUM_ENBL_REGS];
-} __attribute__((__packed__)) plic_global_t;
+} __attribute__((__packed__, aligned(PAGE_SIZE))) plic_global_t;
 
 typedef struct {
     uint32_t threshold;
@@ -40,7 +40,7 @@ typedef struct {
         uint32_t complete;
     };
     uint8_t res[0x1000 - 0x0008];
-} __attribute__((__packed__)) plic_hart_t;
+} __attribute__((__packed__, aligned(PAGE_SIZE))) plic_hart_t;
 
 extern volatile plic_global_t plic_global;
 extern volatile plic_hart_t plic_hart[PLIC_PLAT_CNTXT_NUM];

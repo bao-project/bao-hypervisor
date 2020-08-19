@@ -20,10 +20,10 @@
 int PLIC_IMPL_INTERRUPTS;
 
 volatile plic_global_t plic_global
-    __attribute__((section(".devices"), aligned(PAGE_SIZE)));
+    __attribute__((section(".devices")));
 
 volatile plic_hart_t plic_hart[PLIC_PLAT_CNTXT_NUM]
-    __attribute__((section(".devices"), aligned(PAGE_SIZE)));
+    __attribute__((section(".devices")));
 
 static int plic_scan_max_int()
 {
