@@ -42,8 +42,7 @@ void vcpu_arch_reset(vcpu_t *vcpu, uint64_t entry)
     memset(vcpu->regs, 0, sizeof(struct arch_regs));
 
     vcpu->regs->hstatus = HSTATUS_SPV | HSTATUS_VSXL_64;
-    vcpu->regs->sstatus = SSTATUS_SIE_BIT | SSTATUS_SPP_BIT | SSTATUS_SPIE_BIT |
-                          SSTATUS_FS_DIRTY | SSTATUS_XS_DIRTY;
+    vcpu->regs->sstatus = SSTATUS_SPP_BIT | SSTATUS_FS_DIRTY | SSTATUS_XS_DIRTY;
     vcpu->regs->sepc = entry;
     vcpu->regs->a0 = vcpu->arch.hart_id = vcpu->id;
     vcpu->regs->a1 = 0;  // according to sbi it should be the dtb load address
