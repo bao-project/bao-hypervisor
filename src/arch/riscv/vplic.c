@@ -39,7 +39,7 @@ static int vplic_vcntxt_to_pcntxt(vm_t *vm, int vcntxt_id)
 static void vplic_set_pend(vplic_t *vplic, int id, bool set)
 {
     spin_lock(&vplic->lock);
-    if (id < PLIC_IMPL_INTERRUPTS) {
+    if (id <= PLIC_IMPL_INTERRUPTS) {
         if (set)
             bitmap_set(vplic->pend, id);
         else
@@ -52,7 +52,7 @@ static bool vplic_get_pend(vplic_t *vplic, int id)
 {
     bool ret = false;
     spin_lock(&vplic->lock);
-    if (id < PLIC_IMPL_INTERRUPTS) ret = bitmap_get(vplic->pend, id);
+    if (id <= PLIC_IMPL_INTERRUPTS) ret = bitmap_get(vplic->pend, id);
     spin_unlock(&vplic->lock);
     return ret;
 }
@@ -61,7 +61,7 @@ static int vplic_next_pending(vplic_t *vplic)
 {
     uint32_t max_prio = 0;
     uint32_t int_id = 0;
-    for (int i = 0; i < PLIC_IMPL_INTERRUPTS; i++) {
+    for (int i = 0; i <= PLIC_IMPL_INTERRUPTS; i++) {
         if (vplic_get_pend(vplic, i)) {
             uint32_t prio = plic_get_prio(i);
             if (prio > max_prio) {

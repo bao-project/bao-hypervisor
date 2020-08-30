@@ -65,10 +65,13 @@ void plic_set_enbl(int cntxt, int int_id, bool en)
     int reg_ind = int_id / (sizeof(uint32_t) * 8);
     uint32_t mask = 1U << (int_id % (sizeof(uint32_t) * 8));
 
-    if (en) {
-        plic_global.enbl[cntxt][reg_ind] |= mask;
-    } else {
-        plic_global.enbl[cntxt][reg_ind] &= ~mask;
+    
+    if (int_id > 0 && int_id <= PLIC_IMPL_INTERRUPTS) { 
+        if (en) {
+            plic_global.enbl[cntxt][reg_ind] |= mask;
+        } else {
+            plic_global.enbl[cntxt][reg_ind] &= ~mask;
+        }
     }
 }
 
@@ -77,17 +80,22 @@ bool plic_get_enbl(int cntxt, int int_id)
     int reg_ind = int_id / (sizeof(uint32_t) * 8);
     uint32_t mask = 1U << (int_id % (sizeof(uint32_t) * 8));
 
-    return plic_global.enbl[cntxt][reg_ind] & mask;
+    if (int_id > 0 && int_id <= PLIC_IMPL_INTERRUPTS)
+        return plic_global.enbl[cntxt][reg_ind] & mask;
+    else
+        return false;
 }
 
 void plic_set_prio(int int_id, int prio)
 {
-    if (int_id < PLIC_IMPL_INTERRUPTS) plic_global.prio[int_id] = prio;
+    if (int_id > 0 && int_id <= PLIC_IMPL_INTERRUPTS) {
+        plic_global.prio[int_id] = prio;
+    }
 }
 
 int plic_get_prio(int int_id)
 {
-    if (int_id < PLIC_IMPL_INTERRUPTS)
+    if (int_id > 0 && int_id <= PLIC_IMPL_INTERRUPTS)
         return plic_global.prio[int_id];
     else
         return 0;
@@ -98,7 +106,10 @@ bool plic_get_pend(int int_id)
     int reg_ind = int_id / 32;
     int mask = (1U << (int_id % 32));
 
-    return plic_global.pend[reg_ind] & mask;
+    if (int_id > 0 && int_id <= PLIC_IMPL_INTERRUPTS)
+        return plic_global.pend[reg_ind] & mask;
+    else
+        return false;
 }
 
 void plic_handle()
