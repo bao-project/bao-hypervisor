@@ -60,10 +60,21 @@ void switch_space(cpu_t *new_cpu, uint64_t new_rootpt_pa)
 
 bool mem_translate(addr_space_t *as, void *va, uint64_t *pa)
 {
-    pte_t *pte = pt_get_pte(&as->pt, as->pt.dscr->lvls - 1, va);
+    pte_t* pte = &(as->pt.root[PTE_INDEX(0, (uintptr_t)va)]);
+    size_t lvl = 0;
+    for (int i = 0; i < as->pt.dscr->lvls; i++) {
+        if (!pte_valid(pte) || !pte_table(&as->pt, pte, i)) {
+            lvl = i;
+            break;  
+        }
+        pte = (pte_t*)pte_addr(pte);
+        int index = PTE_INDEX(i + 1, (uintptr_t)va);
+        pte = &pte[index];
+    }
     if (pte && pte_valid(pte)) {
         *pa = pte_addr(pte);
-        *pa = (*pa & PAGE_ADDR_MSK) | ((uint64_t)va & ~PAGE_ADDR_MSK);
+        uint64_t mask = (1ULL << as->pt.dscr->lvl_off[lvl]) - 1;
+        *pa = (*pa & ~mask) | ((uint64_t)va & mask);
         return true;
     } else {
         return false;
