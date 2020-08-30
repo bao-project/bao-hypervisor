@@ -249,7 +249,6 @@ struct sbiret sbi_time_handler(unsigned long fid)
 
     uint64_t stime_value = vcpu_readreg(cpu.vcpu, REG_A0);
 
-    CSRC(CSR_HVIP, HIP_VSTIP);
     sbi_set_timer(stime_value);  // assumes always success
     CSRC(CSR_HVIP, HIP_VSTIP);
     CSRS(sie, SIE_STIE);
