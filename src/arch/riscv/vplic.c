@@ -108,7 +108,7 @@ static void vplic_emul_prio_access(emul_access_t *acc)
         if (acc->write) {
             plic_set_prio(int_id, vcpu_readreg(cpu.vcpu, acc->reg));
         } else {
-            plic_get_prio(int_id);
+            vcpu_writereg(cpu.vcpu, acc->reg, plic_get_prio(int_id));
         }
     }
 }
