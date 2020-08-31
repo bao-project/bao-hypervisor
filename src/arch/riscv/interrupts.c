@@ -105,7 +105,6 @@ void interrupts_arch_handle()
         case SCAUSE_CODE_SEI:
             plic_handle();
             break;
-            break;
         default:
             // WARNING("unkown interrupt");
             break;
@@ -136,9 +135,12 @@ void interrupts_arch_clear(uint64_t int_id)
     }
 }
 
-void interrupts_arch_vm_assign(vm_t *vm, uint64_t id) {}
+void interrupts_arch_vm_assign(vm_t *vm, uint64_t id)
+{
+    vplic_set_hw(vm, id);
+}
 
 void interrupts_arch_vm_inject(vm_t *vm, uint64_t id, uint64_t source)
 {
-    vplic_inject(&vm->arch.vplic, id);
+    vplic_inject(cpu.vcpu, id);
 }

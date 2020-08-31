@@ -43,7 +43,7 @@ void plic_init()
 {
     PLIC_IMPL_INTERRUPTS = plic_scan_max_int();
 
-    for (int i = 0; i < PLIC_IMPL_INTERRUPTS; i++) {
+    for (int i = 0; i <= PLIC_IMPL_INTERRUPTS; i++) {
         plic_global.prio[i] = 0;
     }
 
@@ -60,13 +60,18 @@ void plic_cpu_init()
     plic_hart[cpu.arch.plic_cntxt].threshold = 0;
 }
 
-void plic_set_enbl(int cntxt, int int_id, bool en)
+bool plic_cntxt_valid(unsigned cntxt_id) {
+    plic_cntxt_t cntxt = plic_plat_id_to_cntxt(cntxt_id);
+    return (cntxt_id < PLIC_PLAT_CNTXT_NUM) && (cntxt.mode <= PRIV_S);
+}
+
+void plic_set_enbl(unsigned cntxt, unsigned int_id, bool en)
 {
     int reg_ind = int_id / (sizeof(uint32_t) * 8);
     uint32_t mask = 1U << (int_id % (sizeof(uint32_t) * 8));
 
     
-    if (int_id > 0 && int_id <= PLIC_IMPL_INTERRUPTS) { 
+    if (int_id <= PLIC_IMPL_INTERRUPTS && plic_cntxt_valid(cntxt)) { 
         if (en) {
             plic_global.enbl[cntxt][reg_ind] |= mask;
         } else {
@@ -75,41 +80,57 @@ void plic_set_enbl(int cntxt, int int_id, bool en)
     }
 }
 
-bool plic_get_enbl(int cntxt, int int_id)
+bool plic_get_enbl(unsigned cntxt, unsigned int_id)
 {
     int reg_ind = int_id / (sizeof(uint32_t) * 8);
     uint32_t mask = 1U << (int_id % (sizeof(uint32_t) * 8));
 
-    if (int_id > 0 && int_id <= PLIC_IMPL_INTERRUPTS)
+    if (int_id <= PLIC_IMPL_INTERRUPTS && plic_cntxt_valid(cntxt))
         return plic_global.enbl[cntxt][reg_ind] & mask;
     else
         return false;
 }
 
-void plic_set_prio(int int_id, int prio)
+void plic_set_prio(unsigned int_id, uint32_t prio)
 {
-    if (int_id > 0 && int_id <= PLIC_IMPL_INTERRUPTS) {
+    if (int_id <= PLIC_IMPL_INTERRUPTS) {
         plic_global.prio[int_id] = prio;
     }
 }
 
-int plic_get_prio(int int_id)
+uint32_t plic_get_prio(unsigned int_id)
 {
-    if (int_id > 0 && int_id <= PLIC_IMPL_INTERRUPTS)
+    if (int_id <= PLIC_IMPL_INTERRUPTS)
         return plic_global.prio[int_id];
     else
         return 0;
 }
 
-bool plic_get_pend(int int_id)
+bool plic_get_pend(unsigned int_id)
 {
     int reg_ind = int_id / 32;
     int mask = (1U << (int_id % 32));
 
-    if (int_id > 0 && int_id <= PLIC_IMPL_INTERRUPTS)
+    if (int_id <= PLIC_IMPL_INTERRUPTS)
         return plic_global.pend[reg_ind] & mask;
     else
         return false;
+}
+
+void plic_set_threshold(unsigned cntxt, uint32_t threshold)
+{
+    if(plic_cntxt_valid(cntxt)) {
+        plic_hart[cntxt].threshold = threshold;
+    }
+}
+
+uint32_t plic_get_thrshold(unsigned cntxt)
+{
+    uint32_t threshold = 0;
+    if(plic_cntxt_valid(cntxt)) {
+        threshold = plic_hart[cntxt].threshold;
+    }
+    return threshold;
 }
 
 void plic_handle()
@@ -120,4 +141,27 @@ void plic_handle()
         enum irq_res res = interrupts_handle(id, 0);
         if (res == HANDLED_BY_HYP) plic_hart[cpu.arch.plic_cntxt].complete = id;
     }
+}
+
+/**
+ * Context organization is spec-out by the vendor, this is the default 
+ * mapping found in sifive's plic.
+ */
+
+__attribute__((weak))
+int plic_plat_cntxt_to_id(plic_cntxt_t cntxt){
+    if(cntxt.mode != PRIV_M && cntxt.mode != PRIV_S) return -1;
+    return (cntxt.hart_id*2) + (cntxt.mode == PRIV_M ? 0 : 1);
+}
+
+__attribute__((weak))
+plic_cntxt_t plic_plat_id_to_cntxt(int id){
+    plic_cntxt_t cntxt;
+    if(id < PLIC_PLAT_CNTXT_NUM){
+        cntxt.hart_id = id/2;
+        cntxt.mode = (id%2) == 0 ? PRIV_M : PRIV_S; 
+    } else {
+        return (plic_cntxt_t){-1};
+    }
+    return cntxt;
 }

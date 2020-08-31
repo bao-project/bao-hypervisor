@@ -49,11 +49,13 @@ extern int PLIC_IMPL_INTERRUPTS;
 void plic_init();
 void plic_cpu_init();
 void plic_handle();
-void plic_set_enbl(int cntxt, int int_id, bool en);
-bool plic_get_enbl(int cntxt, int int_id);
-void plic_set_prio(int int_id, int prio);
-int plic_get_prio(int int_id);
-bool plic_get_pend(int int_id);
+void plic_set_enbl(unsigned cntxt, unsigned int_id, bool en);
+bool plic_get_enbl(unsigned cntxt, unsigned int_id);
+void plic_set_prio(unsigned int_id, uint32_t prio);
+uint32_t plic_get_prio(unsigned int_id);
+void plic_set_threshold(unsigned cntxt, uint32_t threshold);
+uint32_t plic_get_threshold(unsigned int_id);
+bool plic_get_pend(unsigned int_id);
 
 typedef struct {
     int hart_id;
