@@ -19,6 +19,7 @@ SECTIONS
 
     .config : {
         KEEP(*(.config))
+        KEEP(*(COMMON))
     }
     _config_end = ALIGN(CONSTANT(COMMONPAGESIZE));
 

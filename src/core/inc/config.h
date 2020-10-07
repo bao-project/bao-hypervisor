@@ -30,14 +30,15 @@ extern uint8_t _config_end, _images_end;
 #define VM_IMAGE(vm_name, image)                                          \
     extern uint64_t _##vm_name##_vm_size;                                 \
     extern uint64_t _##vm_name##_vm_beg;                                  \
-    asm(".section .vm_image_" #vm_name ", \"a\"\n\t"                      \
+    asm(".pushsection .vm_image_" #vm_name ", \"a\"\n\t"                  \
         ".global _" #vm_name "_vm_beg\n\t"                                \
         "_" #vm_name "_vm_beg:\n\t"                                       \
-        ".incbin \"" #image "\"\n\t"                                          \
+        ".incbin \"" #image "\"\n\t"                                      \
         "_" #vm_name "_vm_end:\n\t"                                       \
         ".global _" #vm_name "_vm_size\n\t"                               \
         ".set _" #vm_name "_vm_size,  (_" #vm_name "_vm_end - _" #vm_name \
-        "_vm_beg)\n\t");
+        "_vm_beg)\n\t"\
+        ".popsection");
 
 #define CONFIG_HEADER                              \
     .fdt_header =                                  \
