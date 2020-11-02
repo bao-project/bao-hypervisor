@@ -322,10 +322,15 @@ struct sbiret sbi_rfence_handler(unsigned long fid)
     unsigned long size = vcpu_readreg(cpu.vcpu, REG_A3);
     unsigned long asid = vcpu_readreg(cpu.vcpu, REG_A4);
 
-    /**
-     * For now we only support masks starting at 0. TODO: make this not true
-     */
-    if (hart_mask_base != 0) return (struct sbiret){SBI_ERR_INVALID_PARAM};
+    const size_t hart_mask_width = sizeof(hart_mask) * 8;
+    if ((hart_mask_base != 0) && ((hart_mask_base >= hart_mask_width) ||
+        (bitmap_find_nth(&hart_mask, hart_mask_width, 1,
+                        hart_mask_width - hart_mask_base, true) > 0))) {
+        WARNING("sbi invalid hart_mask");
+        return (struct sbiret){SBI_ERR_INVALID_PARAM};
+    }
+
+    hart_mask = hart_mask >> hart_mask_base;
 
     unsigned long phart_mask = vm_translate_to_pcpu_mask(
         cpu.vcpu->vm, hart_mask, sizeof(hart_mask) * 8);
