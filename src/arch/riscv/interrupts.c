@@ -78,7 +78,8 @@ void interrupts_arch_enable(uint64_t int_id, bool en)
         else
             CSRC(sie, SIE_STIE);
     } else {
-        plic_set_enbl(cpu.arch.hart_id, int_id, en);
+        plic_set_enbl(cpu.arch.plic_cntxt, int_id, en);
+        plic_set_prio(int_id, 0xFE);
     }
 }
 
