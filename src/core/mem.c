@@ -447,36 +447,36 @@ void *mem_alloc_vpage(addr_space_t *as, enum AS_SEC section, void *at, size_t n)
         lvlsze = pt_lvlsize(&as->pt, lvl);
 
         while ((entry < nentries) && (count < n) && !failed) {
-            if (pte_allocable(as, pte, lvl, n - count, (uint64_t)addr)) {
-                if (!pte_valid(pte) && !pte_check_rsw(pte, PTE_RSW_RSRV)) {
+            if(pte_check_rsw(pte, PTE_RSW_RSRV) || 
+              (pte_valid(pte) && !pte_table(&as->pt, pte, lvl))) {
+                count = 0;
+                vpage = NULL;
+                if (at != NULL) {
+                    failed = true;
+                    break;
+                }
+            } else if(!pte_valid(pte)) {
+                if(pte_allocable(as, pte, lvl, n - count, (uint64_t)addr)) {
                     if (count == 0) vpage = (void *)addr;
                     count += (lvlsze / PAGE_SIZE);
                 } else {
-                    count = 0;
-                    vpage = NULL;
-                    if (at != NULL) {
-                        failed = true;
-                        break;
-                    }
-                }
-
-                addr += lvlsze;
-                pte++;
-                if (++entry >= nentries) {
-                    lvl = 0;
-                    break;
-                }
-
-            } else {
-                if (!pte_valid(pte)) {
                     if (mem_alloc_pt(as, pte, lvl, (uint64_t)addr) == NULL) {
                         ERROR("failed to alloc page table");
                     }
                 }
+            }
 
+            if(pte_table(&as->pt, pte, lvl)) {
                 lvl++;
                 break;
-            }
+            } else {
+                pte++;
+                addr += lvlsze;
+                if (++entry >= nentries) {
+                    lvl = 0;
+                    break;
+                }
+            }   
         }
     }
 
