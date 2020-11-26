@@ -27,6 +27,8 @@ extern spinlock_t gicd_lock;
 volatile gicc_t gicc __attribute__((section(".devices"), aligned(PAGE_SIZE)));
 volatile gich_t gich __attribute__((section(".devices"), aligned(PAGE_SIZE)));
 
+static uint64_t gic_cpu_map[GIC_MAX_TARGETS];
+
 uint64_t NUM_LRS;
 
 uint64_t gich_num_lrs()
@@ -91,6 +93,15 @@ static inline void gicc_init()
     gicc.CTLR |= GICC_CTLR_EN_BIT | GICC_CTLR_EOImodeNS_BIT;
 
     gich.HCR |= GICH_HCR_LRENPIE_BIT;
+    
+    uint64_t sgi_targets = gicd.ITARGETSR[0] & BIT_MASK(0, GIC_TARGET_BITS);
+    int64_t gic_cpu_id = 
+        bitmap_find_nth((bitmap_t)&sgi_targets, GIC_TARGET_BITS, 1, 0, true);
+    if(gic_cpu_id < 0) {
+        ERROR("cant find gic cpu id");
+    }
+
+    gic_cpu_map[cpu.id] = gic_cpu_id;
 }
 
 void gicc_save_state(gicc_state_t *state)
@@ -183,13 +194,24 @@ void gicc_dir(uint32_t dir) {
 
 void gic_send_sgi(uint64_t cpu_target, uint64_t sgi_num)
 {
-    if (sgi_num < GIC_MAX_SGIS) {
-        gicd.SGIR = (1UL << (GICD_SGIR_CPUTRGLST_OFF + cpu_target)) |
-                    (sgi_num & GICD_SGIR_SGIINTID_MSK);
+    if (sgi_num < GIC_MAX_SGIS && cpu_target < GIC_MAX_TARGETS) {
+        gicd.SGIR = 
+            (1UL << (GICD_SGIR_CPUTRGLST_OFF + gic_cpu_map[cpu_target])) |
+            (sgi_num & GICD_SGIR_SGIINTID_MSK);
     }
 }
 
-void gicd_set_trgt(uint64_t int_id, uint8_t trgt)
+static inline uint8_t gic_translate_cpu_to_trgt(uint8_t cpu_targets) {
+    uint8_t gic_targets = 0;
+    for(int i = 0; i < GIC_MAX_SPIS; i++) {
+        if((1 << i) & cpu_targets) {
+            gic_targets |= (1 << gic_cpu_map[i]);
+        }
+    }
+    return gic_targets;
+}
+
+void gicd_set_trgt(uint64_t int_id, uint8_t cpu_targets)
 {
     uint64_t reg_ind = GIC_TARGET_REG(int_id);
     uint64_t off = GIC_TARGET_OFF(int_id);
@@ -197,8 +219,8 @@ void gicd_set_trgt(uint64_t int_id, uint8_t trgt)
 
     spin_lock(&gicd_lock);
 
-    gicd.ITARGETSR[reg_ind] =
-        (gicd.ITARGETSR[reg_ind] & ~mask) | ((trgt << off) & mask);
+    gicd.ITARGETSR[reg_ind] = (gicd.ITARGETSR[reg_ind] & ~mask) | 
+        ((gic_translate_cpu_to_trgt(cpu_targets) << off) & mask);
 
     spin_unlock(&gicd_lock);
 }

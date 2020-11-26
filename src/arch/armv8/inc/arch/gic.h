@@ -430,7 +430,7 @@ void gicd_set_pend(uint64_t int_id, bool pend);
 void gicd_set_prio(uint64_t int_id, uint8_t prio);
 void gicd_set_icfgr(uint64_t int_id, uint8_t cfg);
 void gicd_set_act(uint64_t int_id, bool act);
-void gicd_set_trgt(uint64_t int_id, uint8_t trgt);
+void gicd_set_trgt(uint64_t int_id, uint8_t cpu_targets);
 void gicd_set_route(uint64_t int_id, uint64_t route);
 bool gicd_get_pend(uint64_t int_id);
 bool gicd_get_act(uint64_t int_id);
