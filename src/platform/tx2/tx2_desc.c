@@ -35,14 +35,13 @@ struct platform_desc platform = {
             .gicd_addr = 0x03881000,
             .gicc_addr = 0x03882000,
             .gich_addr = 0x03884000,
-//            .gich_alias_addr = 0,
             .gicv_addr = 0x03886000,
             .maintenance_id = 25
         },
 
 	.clusters = {
 		.num = 2,
-		.core_num = (uint8_t[]){ 4, 2 },
+		.core_num = (uint8_t[]){ 2, 4 },
 	}
     }
 
