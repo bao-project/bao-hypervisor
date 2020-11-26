@@ -22,7 +22,7 @@ CPU:=cortex-a57
 GIC_VERSION:=GICV2
 
 # TODO: Driver missing, should be 8250 compatible
-drivers = pl011_uart
+drivers = 8250_uart
 
 platform-cppflags =
 platform-cflags = -mcpu=$(CPU)
