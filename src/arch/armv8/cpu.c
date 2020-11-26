@@ -5,6 +5,7 @@
  *
  * Authors:
  *      Jose Martins <jose.martins@bao-project.org>
+ *      Gero Schwaericke <gero.schwaericke@tum.de>
  *
  * Bao is free software; you can redistribute it and/or modify it under the
  * terms of the GNU General Public License version 2 as published by the Free
@@ -19,6 +20,8 @@
 #include <page_table.h>
 #include <arch/sysregs.h>
 
+uint64_t CPU_MASTER __attribute__((section(".data")));
+
 /* Perform architecture dependent cpu cores initializations */
 void cpu_arch_init(uint64_t cpuid, uint64_t load_addr)
 {   
@@ -26,8 +29,9 @@ void cpu_arch_init(uint64_t cpuid, uint64_t load_addr)
     if (cpuid == CPU_MASTER) {
         /* power on necessary, but still sleeping, secondary cpu cores
          * Assumes CPU zero is doing this */
-        for (int cpu_core_id = 1; cpu_core_id < platform.cpu_num;
+        for (int cpu_core_id = 0; cpu_core_id < platform.cpu_num;
              cpu_core_id++) {
+            if(cpu_core_id == cpuid) continue;
             uint64_t mpdir = cpu_id_to_mpidr(cpu_core_id);
             // TODO: pass config addr in contextid (x0 register)
             int result = psci_cpu_on(mpdir, load_addr, 0);

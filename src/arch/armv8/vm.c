@@ -50,7 +50,7 @@ void vcpu_arch_init(vcpu_t* vcpu, vm_t* vm)
     vcpu->arch.vmpidr = vm_cpuid_to_mpidr(vm, vcpu->id);
     MSR(VMPIDR_EL2, vcpu->arch.vmpidr);
 
-    vcpu->arch.psci_ctx.state = vcpu->id == CPU_MASTER ? ON : OFF;
+    vcpu->arch.psci_ctx.state = vcpu->id == 0 ? ON : OFF;
 
     uint64_t root_pt_pa;
     mem_translate(&cpu.as, vm->as.pt.root, &root_pt_pa);

@@ -5,6 +5,7 @@
  *
  * Authors:
  *      Jose Martins <jose.martins@bao-project.org>
+ *      Gero Schwaericke <gero.schwaericke@tum.de>
  *
  * Bao is free software; you can redistribute it and/or modify it under the
  * terms of the GNU General Public License version 2 as published by the Free
@@ -52,6 +53,7 @@ _reset_handler:
 	 * 		x0 -> contains cpu id
 	 *		x1 -> contains image base load address
 	 *		x2 -> contains config binary load address (passed in x0) 
+	 * Register x9 is reserved to indicate if the current cpu is master (negated)
 	 */
 
 	mov x2, x0
@@ -93,6 +95,27 @@ _reset_handler:
 	and x0, x0, #0xff
 	add x0, x0, x7
 
+.pushsection .data
+_master_set:
+	.8byte 	0
+.popsection
+/**
+ * For setting the master cpu, we assume only one cpu is initially activated 
+ * which later will turn on all the others. Therefore, there is no concurrency 
+ * when setting CPU_MASTER and no atomic operations are needed.
+ * As a result x9 should be set to !is_cpu_master
+ */
+_set_master_cpu:
+	adr	x3, _master_set
+	ldr x9, [x3]
+	cbnz x9, 7f
+	mov	x9, #1
+	str x9, [x3]
+	mov x9, xzr
+	adr x3, CPU_MASTER
+	str x0, [x3]
+7: 
+
 	/** 
 	 * TODO: bring the system to a well known state. This includes disabling 
 	 * the MMU (done), all caches (missing i$), BP and others...
@@ -116,7 +139,7 @@ _reset_handler:
 
 	mov x0, #0
 	bl	cache_invalidate
-	cbnz x19, 1f
+	cbnz x9, 1f
 	mov x0, #2
 	bl	cache_invalidate
 1:
@@ -126,8 +149,8 @@ _reset_handler:
 
 	ic iallu
 
-	/* Skip initialy global page tables setup if not bsp (cpu 0) */
-	cbnz	x0, wait_for_bsp
+	/* Skip initialy global page tables setup if not bsp (boot cpu) */
+	cbnz	x9, wait_for_bsp
 
 	adr	x16, _page_tables_start	
 	adr	x17, _page_tables_end	
@@ -347,7 +370,7 @@ _enter_vas:
 	isb
 
 	/* If this is bsp (cpu 0) clear bss */
-	cbnz x0, 1f
+	cbnz x9, 1f
 	ldr	x16, =_bss_start	
 	ldr	x17, =_bss_end	
 	bl	clear	
