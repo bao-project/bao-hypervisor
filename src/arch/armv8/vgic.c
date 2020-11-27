@@ -28,7 +28,7 @@ extern volatile const uint64_t VGIC_IPI_ID;
     (((offset) >= offsetof(gicd_t, REG)) && \
      (offset) < (offsetof(gicd_t, REG) + sizeof(gicd.REG)))
 #define GICD_REG_GROUP(REG) ((offsetof(gicd_t, REG) & 0xff80) >> 7)
-#define GICD_REG_MASK(ADDR) ((ADDR)&0xffff)
+#define GICD_REG_MASK(ADDR) ((ADDR)&(GIC_VERSION == GICV2 ? 0xfffULL : 0xffffULL))
 #define GICD_REG_IND(REG) (offsetof(gicd_t, REG) & 0x7f)
 
 #define VGIC_MSG_DATA(VM_ID, VGICRID, INT_ID, REG, VAL)                 \
@@ -638,7 +638,7 @@ void vgic_emul_generic_access(emul_access_t *acc,
 {
     size_t field_width = handlers->field_width;
     uint64_t first_int =
-        ((acc->addr & 0xffff) - handlers->regroup_base) * 8 / field_width;
+        (GICD_REG_MASK(acc->addr) - handlers->regroup_base) * 8 / field_width;
     uint64_t val = acc->write ? vcpu_readreg(cpu.vcpu, acc->reg) : 0;
     uint64_t mask = (1ull << field_width) - 1;
     bool valid_access =
@@ -817,7 +817,7 @@ bool vgic_check_reg_alignment(emul_access_t *acc,
 bool vgicd_emul_handler(emul_access_t *acc)
 {
     struct vgic_reg_handler_info *handler_info = NULL;
-    switch ((acc->addr & 0xff80) >> 7) {
+    switch (GICD_REG_MASK(acc->addr) >> 7) {
         case GICD_REG_GROUP(CTLR):
             handler_info = &vgicd_misc_info;
             break;
