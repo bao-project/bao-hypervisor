@@ -39,10 +39,16 @@ struct platform_desc platform = {
             .maintenance_id = 25
         },
 
-	.clusters = {
-		.num = 2,
-		.core_num = (uint8_t[]){ 2, 4 },
-	}
+        .clusters = {
+            .num = 2,
+            .core_num = (uint8_t[]){ 2, 4 },
+        },
+
+        .smmu = {
+            .base = 0x12000000,
+            .interrupt_id = 187,
+            .global_mask = 0x7f80,
+        }
     }
 
 };
