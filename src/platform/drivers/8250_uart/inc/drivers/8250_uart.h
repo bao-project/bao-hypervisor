@@ -25,6 +25,10 @@
      #error "uart8259 reg width " UART8250_REG_WIDTH "not defined"
 #endif
 
+#ifndef UART8250_REG_WIDTH
+#define UART8250_REG_WIDTH 4
+#endif
+
 #if (UART8250_REG_WIDTH == 1)
     typedef uint8_t uart8250_reg_t;
 #elif (UART8250_REG_WIDTH == 4)
@@ -33,7 +37,13 @@
     #error "uart8250 reg width " UART8250_REG_WIDTH " not supported"
 #endif
 
+
+#ifndef UART8250_PAGE_OFFSET
+#define UART8250_PAGE_OFFSET 0
+#endif
+
 typedef struct {
+    uint8_t offset[UART8250_PAGE_OFFSET];
     union {
         uart8250_reg_t thr;
         uart8250_reg_t rbr;
