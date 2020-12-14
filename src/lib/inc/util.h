@@ -22,6 +22,7 @@
 /* align VAL to TO which must be power a two */
 #define ALIGN(VAL, TO) ((((VAL) + (TO)-1) / (TO)) * TO)
 #define NUM_PAGES(SZ) (ALIGN(SZ, PAGE_SIZE)/PAGE_SIZE)
+#define PAGE_MASK ((PAGE_SIZE)-1)
 
 #define SR_OR(VAL, SHIFT) (((VAL) >> (SHIFT)) | VAL)
 /* Next Power Of Two */

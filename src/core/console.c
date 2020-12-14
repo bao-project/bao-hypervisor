@@ -30,6 +30,10 @@ static spinlock_t print_lock = SPINLOCK_INITVAL;
 
 void console_init()
 {
+    if(!(platform.console.base & PAGE_MASK)) {
+        WARNING("console base must be page aligned");
+    }
+
     mem_map_dev(&cpu.as, (void*)&uart, platform.console.base,
                 NUM_PAGES(sizeof(uart)));
 
