@@ -18,14 +18,17 @@
 void uart_init(volatile uart8250_t *uart) {
     
     /* set baudrate */
-    // assumes fixed baud 115200 and clk freq 408 MHz in the tx2 platform
     uart->lcr |= UART8250_LCR_DLAB;
-    uart->dll = 221;
-    uart->dlh = 0;
+    /**
+     * should set dll and dlh, 
+     * to simplify instead lets assume the firmware did this for us.
+     * TODO: we should add uart clk and baudrate info to platform descrption
+     * and use this to calculate this values in runtime.
+     */
     uart->lcr &= ~UART8250_LCR_DLAB;
 
-	/* configure 8n1 */
-	uart->lcr = UART8250_LCR_8BIT;
+/* configure 8n1 */
+uart->lcr = UART8250_LCR_8BIT;
 
     /* disable interrupts */
     uart->ier = 0;
