@@ -57,14 +57,23 @@ int64_t cpu_mpidr_to_id(uint64_t mpidr)
 void cpu_arch_idle()
 {
     int64_t err = psci_power_down(PSCI_WAKEUP_IDLE);
-    if (err) {
-        ERROR("PSCI cpu%d power down failed with error %ld", cpu.id, err);
-    } else {
-        /**
-         * Power down was sucessful but did not jump to requested entry
-         * point. Manually rewind stack and jump to idle wake up.
-         */
-        asm volatile("mov sp, %0\n\r" ::"r"(&cpu.stack[STACK_SIZE]));
-        cpu_idle_wakeup();
+    if(err) {
+        switch (err) {
+            case PSCI_E_NOT_SUPPORTED:
+                /**
+                 * If power down is not supported let's just wait for an interrupt
+                 */
+                asm volatile("wfi");
+                break;
+            default:
+                ERROR("PSCI cpu%d power down failed with error %ld", cpu.id, err);
+        }
     }
+
+    /**
+     * Power down was sucessful but did not jump to requested entry
+     * point. Manually rewind stack and jump to idle wake up.
+     */
+    asm volatile("mov sp, %0\n\r" ::"r"(&cpu.stack[STACK_SIZE]));
+    cpu_idle_wakeup();
 }
