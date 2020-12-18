@@ -1000,6 +1000,19 @@ bool mem_reserve_vm_cfg(page_pool_t *pool)
             }
         }
     }
+
+    for (int i = 0; i < vm_config_ptr->shmemlist_size; i++) {
+        shmem_t *shmem = &vm_config_ptr->shmemlist[i];
+        if(shmem->place_phys) {
+            size_t n_pg = NUM_PAGES(shmem->size);
+            ppages_t ppages = mem_ppages_get(shmem->phys, n_pg);
+            if (!mem_reserve_ppool_ppages(pool, &ppages)) {
+                return false;
+            }           
+            shmem->phys = ppages.base;
+        }
+    }
+
     return true;
 }
 

@@ -5,6 +5,7 @@
  *
  * Authors:
  *      Jose Martins <jose.martins@bao-project.org>
+ *      David Cerdeira <davidmcerdeira@gmail.com>
  *
  * Bao is free software; you can redistribute it and/or modify it under the
  * terms of the GNU General Public License version 2 as published by the Free
@@ -13,34 +14,24 @@
  *
  */
 
-#ifndef __PLATFORM_H__
-#define __PLATFORM_H__
+#ifndef IPC_H
+#define IPC_H
 
 #include <bao.h>
-#include <arch/platform.h>
-#include <plat/platform.h>
 #include <mem.h>
-#include <ipc.h>
 
-struct platform_desc {
-    uint64_t cpu_num;
+typedef struct ipc {
+    uint64_t base;
+    size_t size;
+    uint64_t shmem_id;
+    size_t interrupt_num;
+    uint64_t *interrupts;
+} ipc_t;
 
-    uint64_t region_num;
-    struct mem_region *regions;
+typedef struct vm_config vm_config_t;
 
-    uint64_t ipc_num;
-    struct ipc *ipcs;
+int64_t ipc_hypercall(uint64_t arg0, uint64_t arg1, uint64_t arg2);
+void ipc_init(const vm_config_t* vm_config, bool vm_master);
+shmem_t* ipc_get_shmem(uint64_t shmem_id);
 
-    uint64_t dev_num;
-    struct dev_region *devs;
-
-    struct {
-        uint64_t base;
-    } console;
-
-    struct arch_platform arch;
-};
-
-extern struct platform_desc platform;
-
-#endif /* __PLATFORM_H__ */
+#endif /* IPC_H */

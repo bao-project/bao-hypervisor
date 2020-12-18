@@ -116,6 +116,10 @@ extern struct config {
     /* Hypervisor colors */
     uint64_t hyp_colors;
 
+    /* Definition of shared memory regions to be used by VMs */
+    size_t shmemlist_size;
+    shmem_t *shmemlist;
+
     /* The number of VMs specified by this configuration */
     size_t vmlist_size;
 

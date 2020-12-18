@@ -30,6 +30,7 @@
 #include <interrupts.h>
 #include <bitmap.h>
 #include <iommu.h>
+#include <ipc.h>
 
 typedef struct vm {
     uint64_t id;
@@ -54,6 +55,9 @@ typedef struct vm {
     iommu_vm_t iommu;
 
     BITMAP_ALLOC(interrupt_bitmap, MAX_INTERRUPTS);
+
+    size_t ipc_num;
+    ipc_t *ipcs;
 } vm_t;
 
 typedef struct vcpu {

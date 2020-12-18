@@ -19,6 +19,7 @@
 #include <vm.h>
 #include <emul.h>
 #include <arch/psci.h>
+#include <hypercall.h>
 
 typedef void (*abort_handler_t)(uint32_t, uint64_t, uint64_t);
 
@@ -96,6 +97,23 @@ void smc64_handler(uint32_t iss, uint64_t far, uint64_t il)
     cpu.vcpu->regs->elr_el2 += pc_step;
 }
 
+void hvc64_handler(uint32_t iss, uint64_t far, uint64_t il)
+{
+    uint64_t hvc_fid = cpu.vcpu->regs->x[0];
+    uint64_t x1 = cpu.vcpu->regs->x[1];
+    uint64_t x2 = cpu.vcpu->regs->x[2];
+    uint64_t x3 = cpu.vcpu->regs->x[3];
+
+    int64_t ret = -HC_E_INVAL_ID;
+    switch(hvc_fid){
+        case HC_IPC:
+            ret = ipc_hypercall(x1, x2, x3);
+        break;
+    }
+
+    vcpu_writereg(cpu.vcpu, 0, ret);
+}
+
 void sysreg_handler(uint32_t iss, uint64_t far, uint64_t il)
 {
     uint64_t reg_addr = iss & ESR_ISS_SYSREG_ADDR;
@@ -123,7 +141,8 @@ void sysreg_handler(uint32_t iss, uint64_t far, uint64_t il)
 
 abort_handler_t abort_handlers[64] = {[ESR_EC_DALEL] = aborts_data_lower,
                                       [ESR_EC_SMC64] = smc64_handler,
-                                      [ESR_EC_SYSRG] = sysreg_handler};
+                                      [ESR_EC_SYSRG] = sysreg_handler,
+                                      [ESR_EC_HVC64] = hvc64_handler};
 
 void aborts_sync_handler()
 {

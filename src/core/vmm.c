@@ -22,6 +22,7 @@
 #include <spinlock.h>
 #include <fences.h>
 #include <string.h>
+#include <ipc.h>
 
 struct config* vm_config_ptr;
 
@@ -61,6 +62,7 @@ void vmm_init()
     bool master = false;
     bool assigned = false;
     size_t vm_id = 0;
+    vm_config_t *vm_config = NULL;
 
     /**
      * Assign cpus according to vm affinity.
@@ -117,6 +119,7 @@ void vmm_init()
     cpu_sync_barrier(&cpu_glb_sync);
 
     if (assigned) {
+        vm_config = &vm_config_ptr->vmlist[vm_id];
         if (master) {
             size_t vm_npages = NUM_PAGES(sizeof(vm_t));
             void* va = mem_alloc_vpage(&cpu.as, SEC_HYP_VM, (void*)BAO_VM_BASE,
@@ -140,9 +143,10 @@ void vmm_init()
         mem_free_vpage(&cpu.as, (void*)vm_assign, vmass_npages, true);
     }
 
+    ipc_init(vm_config, master);
+
     if (assigned) {
-        vm_init((void*)BAO_VM_BASE, &vm_config_ptr->vmlist[vm_id], master,
-                vm_id);
+        vm_init((void*)BAO_VM_BASE, vm_config, master, vm_id);
         vcpu_run(cpu.vcpu);
     } else {
         cpu_idle();

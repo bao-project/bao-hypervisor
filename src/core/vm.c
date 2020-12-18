@@ -187,6 +187,34 @@ static void vm_init_mem_regions(vm_t* vm, const vm_config_t* config)
     }
 }
 
+static void vm_init_ipc(vm_t* vm, const vm_config_t* config)
+{
+    vm->ipc_num = config->platform.ipc_num;
+    vm->ipcs = config->platform.ipcs;
+    for (int i = 0; i < config->platform.ipc_num; i++) {
+        ipc_t *ipc = &config->platform.ipcs[i];
+        shmem_t *shmem = ipc_get_shmem(ipc->shmem_id);
+        if(shmem == NULL) {
+            WARNING("Invalid shmem id in configuration. Ignored.");
+            continue;
+        }
+        size_t size = ipc->size;
+        if(ipc->size > shmem->size) {
+            size = shmem->size;
+            WARNING("Trying to map region to smaller shared memory. Truncated");
+        }
+        struct mem_region reg = {
+            .base = ipc->base,
+            .size = size,
+            .place_phys = true,
+            .phys = shmem->phys,
+            .colors = shmem->colors
+        };
+
+        vm_map_mem_region(vm, &reg);
+    }
+}
+
 static void vm_init_dev(vm_t* vm, const vm_config_t* config)
 {
     for (int i = 0; i < config->platform.dev_num; i++) {
@@ -253,6 +281,7 @@ void vm_init(vm_t* vm, const vm_config_t* config, bool master, uint64_t vm_id)
     if (master) {
         vm_init_mem_regions(vm, config);
         vm_init_dev(vm, config);
+        vm_init_ipc(vm, config);
     }
 
     cpu_sync_barrier(&vm->sync);

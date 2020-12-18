@@ -13,34 +13,20 @@
  *
  */
 
-#ifndef __PLATFORM_H__
-#define __PLATFORM_H__
+#ifndef HYPERCALL_H
+#define HYPERCALL_H
 
-#include <bao.h>
-#include <arch/platform.h>
-#include <plat/platform.h>
-#include <mem.h>
-#include <ipc.h>
-
-struct platform_desc {
-    uint64_t cpu_num;
-
-    uint64_t region_num;
-    struct mem_region *regions;
-
-    uint64_t ipc_num;
-    struct ipc *ipcs;
-
-    uint64_t dev_num;
-    struct dev_region *devs;
-
-    struct {
-        uint64_t base;
-    } console;
-
-    struct arch_platform arch;
+enum {
+    HC_INVAL = 0,
+    HC_IPC = 1
 };
 
-extern struct platform_desc platform;
+enum {
+    HC_E_SUCCESS = 0,
+    HC_E_INVAL_ID = 1,
+    HC_E_INVAL_ARGS = 2
+};
 
-#endif /* __PLATFORM_H__ */
+typedef int64_t (*hypercall_handler)(uint64_t arg0, uint64_t arg1, uint64_t arg2);
+
+#endif /* HYPERCALL_H */
