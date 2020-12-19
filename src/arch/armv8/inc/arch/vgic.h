@@ -123,6 +123,7 @@ void vgic_yield_ownership(vcpu_t *vcpu, vgic_int_t *interrupt);
 void vgic_emul_generic_access(emul_access_t *, struct vgic_reg_handler_info *,
                               bool, uint64_t);
 void vgic_send_sgi_msg(vcpu_t *vcpu, uint64_t pcpu_mask, uint64_t int_id);
+uint64_t vgic_get_itln(const struct gic_dscrp *gic_dscrp);
 
 /* interface for version specific vgic */
 bool vgic_int_vcpu_is_target(vcpu_t *vcpu, vgic_int_t *interrupt);

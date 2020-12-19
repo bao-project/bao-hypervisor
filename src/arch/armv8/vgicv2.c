@@ -145,9 +145,8 @@ void vgic_inject_sgi(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t source)
 void vgic_init(vm_t *vm, const struct gic_dscrp *gic_dscrp)
 {
     vm->arch.vgicd.CTLR = 0;
-    uint64_t vtyper_itln =
-        bit_extract(gicd.TYPER, GICD_TYPER_ITLN_OFF, GICD_TYPER_ITLN_LEN);
-    vm->arch.vgicd.int_num = 32 * vtyper_itln + 1;
+    uint64_t vtyper_itln = vgic_get_itln(gic_dscrp);
+    vm->arch.vgicd.int_num = 32 * (vtyper_itln + 1);
     vm->arch.vgicd.TYPER =
         ((vtyper_itln << GICD_TYPER_ITLN_OFF) & GICD_TYPER_ITLN_MSK) |
         (((vm->cpu_num - 1) << GICD_TYPER_CPUNUM_OFF) & GICD_TYPER_CPUNUM_MSK);

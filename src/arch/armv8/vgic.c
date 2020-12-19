@@ -1088,6 +1088,26 @@ void gic_maintenance_handler(uint64_t arg)
     }
 }
 
+uint64_t vgic_get_itln(const struct gic_dscrp *gic_dscrp) {
+
+    /**
+     * By default the guest sees the real platforms interrupt line number
+     * in the virtual gic. However a user can control this using the 
+     * interrupt_num in the platform description configuration which be at
+     * least the number os ppis and a multiple of 32.
+     */
+
+    uint64_t vtyper_itln =
+        bit_extract(gicd.TYPER, GICD_TYPER_ITLN_OFF, GICD_TYPER_ITLN_LEN);
+
+    if(gic_dscrp->interrupt_num > GIC_MAX_PPIS) {
+        vtyper_itln = (ALIGN(gic_dscrp->interrupt_num, 32)/32 - 1) & 
+            BIT_MASK(0, GICD_TYPER_ITLN_LEN);
+    }
+
+    return vtyper_itln;
+}
+
 void vgic_set_hw(vm_t *vm, uint64_t id)
 {
     if (id < GIC_MAX_SGIS) return;

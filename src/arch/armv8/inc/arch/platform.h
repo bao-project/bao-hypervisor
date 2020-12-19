@@ -27,6 +27,8 @@ struct arch_platform {
         uint64_t gicr_addr;
 
         uint64_t maintenance_id;
+
+        uint64_t interrupt_num;
     } gic;
 
     struct {
