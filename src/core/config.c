@@ -37,11 +37,9 @@ void config_adjust_to_va(struct config *config, uint64_t phys)
 	    	    adjust_ptr(config->vmlist[i].platform.ipcs[j].interrupts, config);
 	        }
 	    }
-
-	    adjust_ptr(config->vmlist[i].platform.arch.smmu.smmu_groups, config);
     }
 
-    // TODO: maybe it might be needed an arch version of this method
+    config_arch_adjust_to_va(config, phys);
 }
 
 bool config_is_builtin() {

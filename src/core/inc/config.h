@@ -129,6 +129,10 @@ extern struct config {
 } config __attribute__((section(".config")));
 
 void config_adjust_to_va(struct config *config, uint64_t phys);
+void config_arch_adjust_to_va(struct config *config, uint64_t phys);
 bool config_is_builtin();
+
+#define adjust_ptr(p, o)\
+    ((p) = (p) ? (typeof(p))(  (void*)(p) + (uint64_t)(o)) : (p))
 
 #endif /* __CONFIG_H__ */
