@@ -17,6 +17,10 @@
 #include <cpu.h>
 #include <arch/sysregs.h>
 
+void mem_arch_init(uint64_t load_addr, uint64_t config_addr){
+
+}
+
 void as_arch_init(addr_space_t* as)
 {
     uint64_t index;
