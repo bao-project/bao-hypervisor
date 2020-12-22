@@ -19,6 +19,7 @@
 #include <vm.h>
 #include <bitmap.h>
 #include <fences.h>
+#include <hypercall.h>
 
 #define SBI_LGCY_EXTID_SETTIMER (0x0)
 #define SBI_LGCY_EXTID_PUTCHAR (0x1)
@@ -58,6 +59,12 @@
 #define SBI_REMOTE_HFENCE_GVMA_VMID_FID (4)
 #define SBI_REMOTE_HFENCE_VVMA_FID (5)
 #define SBI_REMOTE_HFENCE_VVMA_ASID_FID (6)
+
+/**
+ * For now we're defining bao specific ecalls, ie, hypercall, under the
+ * experimental extension id space.
+ */
+#define SBI_EXTID_BAO (0x08000ba0)
 
 static inline struct sbiret sbi_ecall(long eid, long fid, long a0, long a1,
                                       long a2, long a3, long a4, long a5)
@@ -428,6 +435,26 @@ struct sbiret sbi_hsm_handler(unsigned long fid){
    return ret; 
 }
 
+
+struct sbiret sbi_bao_handler(unsigned long fid){
+
+    struct sbiret ret;
+
+    uint64_t arg0 = vcpu_readreg(cpu.vcpu, REG_A0);
+    uint64_t arg1 = vcpu_readreg(cpu.vcpu, REG_A1);
+    uint64_t arg2 = vcpu_readreg(cpu.vcpu, REG_A2);
+
+    switch(fid) {
+        case HC_IPC:
+                ret.error = ipc_hypercall(arg0, arg1, arg2);
+            break;
+        default:
+            ret.error = -HC_E_INVAL_ID;
+   }
+
+   return ret;
+}
+
 void sbi_lgcy_sendipi_handler()
 {
     unsigned long *hart_mask = (unsigned long *)vcpu_readreg(cpu.vcpu, REG_A0);
@@ -508,6 +535,8 @@ void sbi_lgcy_handler(unsigned long extid)
     }
 }
 
+
+
 size_t sbi_vs_handler()
 {
     unsigned long extid = vcpu_readreg(cpu.vcpu, REG_A7);
@@ -533,6 +562,9 @@ size_t sbi_vs_handler()
                 break;
             case SBI_EXTID_HSM:
                 ret = sbi_hsm_handler(fid);
+                break;
+            case SBI_EXTID_BAO:
+                ret = sbi_bao_handler(fid);
                 break;
             default:
                 WARNING("guest issued unsupport sbi extension call (%d)",
