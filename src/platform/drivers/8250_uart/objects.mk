@@ -1,0 +1,1 @@
+drivers-objs-y+=8250_uart/8250_uart.o

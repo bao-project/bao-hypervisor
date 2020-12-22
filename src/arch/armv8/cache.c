@@ -27,7 +27,7 @@ void cache_arch_enumerate(cache_t *dscrp)
 
     dscrp->lvls = 0;
 
-    MRS(clidr, CLIDR_EL1);
+    clidr = MRS(CLIDR_EL1);
     for(int i = 0; i < CLIDR_CTYPE_NUM; i++){
         if((temp = bit_extract(clidr, i*CLIDR_CTYPE_LEN, CLIDR_CTYPE_LEN)) != 0){
             dscrp->lvls++;
@@ -65,7 +65,7 @@ void cache_arch_enumerate(cache_t *dscrp)
         if(dscrp->type[lvl] != INSTRUCTION){
             csselr = bit_clear(csselr, CSSELR_IND_BIT);
             MSR(CSSELR_EL1, csselr);
-            MRS(ccsidr, CCSIDR_EL1);
+            ccsidr = MRS(CCSIDR_EL1);
 
             dscrp->line_size[lvl][0] = 1UL << (bit_extract(ccsidr, 
                 CCSIDR_LINESIZE_OFF, CCSIDR_LINESIZE_LEN) + 4);
@@ -80,7 +80,7 @@ void cache_arch_enumerate(cache_t *dscrp)
         if(dscrp->type[lvl] == SEPARATE || dscrp->type[lvl] == INSTRUCTION){
             csselr = bit_set(csselr, CSSELR_IND_BIT);
             MSR(CSSELR_EL1, csselr);
-            MRS(ccsidr, CCSIDR_EL1);
+            ccsidr = MRS(CCSIDR_EL1);
 
             dscrp->line_size[lvl][1] = 1UL << (bit_extract(ccsidr, 
                 CCSIDR_LINESIZE_OFF, CCSIDR_LINESIZE_LEN) + 4);
@@ -89,7 +89,7 @@ void cache_arch_enumerate(cache_t *dscrp)
             dscrp->numset[lvl][1] = bit_extract(ccsidr, CCSIDR_NUMSETS_OFF, 
                 CCSIDR_NUMSETS_LEN) + 1;
 
-            MRS(ctr, CTR_EL0);
+            ctr = MRS(CTR_EL0);
             if((ctr & BIT_MASK(CTR_L1LP_OFF, CTR_L1LP_LEN)) == CTR_L1LP_PIPT){
                 dscrp->indexed[lvl][1] = PIPT;
             } else {
@@ -103,14 +103,13 @@ void cache_arch_enumerate(cache_t *dscrp)
 void cache_flush_range(void* base, uint64_t size)
 {
     uint64_t cache_addr = (uint64_t)base;
-    uint64_t ctr;
-    MRS(ctr, CTR_EL0);
+    uint64_t ctr = MRS(CTR_EL0);
     uint64_t min_line_size = 1UL << bit_extract(ctr, CTR_DMINLINE_OFF, 
         CTR_DMINLINE_LEN);
 
     while(cache_addr < ((uint64_t)base + size)){
         asm volatile (
-            "dc cvac, %0\n\t" 
+            "dc civac, %0\n\t" 
             :: "r"(cache_addr));
         cache_addr += min_line_size;
     }

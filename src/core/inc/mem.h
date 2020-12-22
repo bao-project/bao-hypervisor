@@ -52,6 +52,31 @@ typedef struct {
     uint64_t colors;
 } ppages_t;
 
+struct mem_region {
+    uint64_t base;
+    size_t size;
+    uint64_t colors;
+    bool place_phys;
+    uint64_t phys;
+};
+
+struct dev_region {
+    uint64_t pa;
+    uint64_t va;
+    size_t size;
+    size_t interrupt_num;
+    uint64_t *interrupts;
+    uint32_t id; /* bus master id for iommu effects */
+};
+
+typedef struct shmem {
+    uint64_t size;
+    uint64_t colors;
+    bool place_phys;
+    uint64_t phys;
+    uint64_t cpu_masters;
+} shmem_t;
+
 static inline ppages_t mem_ppages_get(uint64_t base, uint64_t size)
 {
     return (ppages_t){.colors = 0, .base = base, .size = size};
@@ -67,7 +92,7 @@ void mem_init(uint64_t load_addr, uint64_t config_addr);
 void as_init(addr_space_t* as, enum AS_TYPE type, uint64_t id, void* root_pt,
              uint64_t colors);
 void* mem_alloc_page(size_t n, enum AS_SEC sec, bool phys_aligned);
-ppages_t mem_alloc_ppages(addr_space_t* as, size_t n, bool aligned);
+ppages_t mem_alloc_ppages(uint64_t colors, size_t n, bool aligned);
 void* mem_alloc_vpage(addr_space_t* as, enum AS_SEC section, void* at,
                       size_t n);
 void mem_free_vpage(addr_space_t* as, void* at, size_t n, bool free_ppages);

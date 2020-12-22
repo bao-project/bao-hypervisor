@@ -358,20 +358,20 @@ static bool vplic_hart_emul_handler(emul_access_t *acc)
 void vplic_init(vm_t *vm, uintptr_t vplic_base)
 {
     if (cpu.id == vm->master) {
-        emul_region_t plic_global_emu = {.va_base = vplic_base,
+        emul_mem_t plic_global_emu = {.va_base = vplic_base,
                                          .pa_base = (uint64_t)&plic_global,
                                          .size = sizeof(plic_global),
                                          .handler = vplic_global_emul_handler};
 
-        vm_add_emul(vm, &plic_global_emu);
+        vm_emul_add_mem(vm, &plic_global_emu);
 
-        emul_region_t plic_claimcomplte_emu = {
+        emul_mem_t plic_claimcomplte_emu = {
             .va_base = vplic_base + PLIC_CLAIMCMPLT_OFF,
             .pa_base = (uint64_t)plic_hart,
             .size = sizeof(plic_hart),
             .handler = vplic_hart_emul_handler};
 
-        vm_add_emul(vm, &plic_claimcomplte_emu);
+        vm_emul_add_mem(vm, &plic_claimcomplte_emu);
 
         /* assumes 2 contexts per hart */
         vm->arch.vplic.cntxt_num = vm->cpu_num * 2; 

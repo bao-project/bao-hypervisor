@@ -12,3 +12,5 @@ cpu-objs-y+=sync_exceptions.o
 cpu-objs-y+=vplic.o
 cpu-objs-y+=cpu.o
 cpu-objs-y+=cache.o
+cpu-objs-y+=config.o
+cpu-objs-y+=iommu.o

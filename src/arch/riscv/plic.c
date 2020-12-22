@@ -138,7 +138,7 @@ void plic_handle()
     uint32_t id = plic_hart[cpu.arch.plic_cntxt].claim;
 
     if (id != 0) {
-        enum irq_res res = interrupts_handle(id, 0);
+        enum irq_res res = interrupts_handle(id);
         if (res == HANDLED_BY_HYP) plic_hart[cpu.arch.plic_cntxt].complete = id;
     }
 }

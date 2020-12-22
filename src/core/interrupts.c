@@ -5,6 +5,7 @@
  *
  * Authors:
  *      Jose Martins <jose.martins@bao-project.org>
+ *      Angelo Ruocco <angeloruocco90@gmail.com>
  *
  * Bao is free software; you can redistribute it and/or modify it under the
  * terms of the GNU General Public License version 2 as published by the Free
@@ -21,35 +22,31 @@
 #include <string.h>
 
 BITMAP_ALLOC(hyp_interrupt_bitmap, MAX_INTERRUPTS);
+BITMAP_ALLOC(global_interrupt_bitmap, MAX_INTERRUPTS);
 
 irq_handler_t interrupt_handlers[MAX_INTERRUPTS];
 
-void interrupts_cpu_glbenable(bool en)
-{
-    interrupts_arch_cpu_enable(en);
-}
-
-void interrupts_cpu_sendipi(uint64_t target_cpu, uint64_t ipi_id)
+inline void interrupts_cpu_sendipi(uint64_t target_cpu, uint64_t ipi_id)
 {
     interrupts_arch_ipi_send(target_cpu, ipi_id);
 }
 
-void interrupts_cpu_enable(uint64_t int_id, bool en)
+inline void interrupts_cpu_enable(uint64_t int_id, bool en)
 {
     interrupts_arch_enable(int_id, en);
 }
 
-bool interrupts_check(uint64_t int_id)
+inline bool interrupts_check(uint64_t int_id)
 {
     return interrupts_arch_check(int_id);
 }
 
-void interrupts_clear(uint64_t int_id)
+inline void interrupts_clear(uint64_t int_id)
 {
     interrupts_arch_clear(int_id);
 }
 
-void interrupts_init()
+inline void interrupts_init()
 {
     interrupts_arch_init();
 
@@ -65,20 +62,20 @@ static inline bool interrupt_is_reserved(int int_id)
     return bitmap_get(hyp_interrupt_bitmap, int_id);
 }
 
-inline void interrupts_vm_inject(vm_t *vm, uint64_t id, uint64_t source)
+inline void interrupts_vm_inject(vm_t *vm, uint64_t id)
 {
-    interrupts_arch_vm_inject(vm, id, source);
+    interrupts_arch_vm_inject(vm, id);
 }
 
-enum irq_res interrupts_handle(uint64_t int_id, uint64_t source)
+enum irq_res interrupts_handle(uint64_t int_id)
 {
     if (vm_has_interrupt(cpu.vcpu->vm, int_id)) {
-        interrupts_vm_inject(cpu.vcpu->vm, int_id, source);
+        interrupts_vm_inject(cpu.vcpu->vm, int_id);
 
         return FORWARD_TO_VM;
 
     } else if (interrupt_is_reserved(int_id)) {
-        interrupt_handlers[int_id](int_id, source);
+        interrupt_handlers[int_id](int_id);
 
         return HANDLED_BY_HYP;
 
@@ -89,11 +86,14 @@ enum irq_res interrupts_handle(uint64_t int_id, uint64_t source)
 
 void interrupts_vm_assign(vm_t *vm, uint64_t id)
 {
-    // TODO: make sure a hardware interrupt is assigned to a single VM
+    if (interrupts_arch_conflict(global_interrupt_bitmap, id)) {
+        ERROR("Interrupts conflict, id = %d\n", id);
+    }
 
     interrupts_arch_vm_assign(vm, id);
 
     bitmap_set(vm->interrupt_bitmap, id);
+    bitmap_set(global_interrupt_bitmap, id);
 }
 
 void interrupts_reserve(uint64_t int_id, irq_handler_t handler)
@@ -101,5 +101,6 @@ void interrupts_reserve(uint64_t int_id, irq_handler_t handler)
     if (int_id < MAX_INTERRUPTS) {
         interrupt_handlers[int_id] = handler;
         bitmap_set(hyp_interrupt_bitmap, int_id);
+        bitmap_set(global_interrupt_bitmap, int_id);
     }
 }

@@ -29,6 +29,8 @@
 #include <objcache.h>
 #include <interrupts.h>
 #include <bitmap.h>
+#include <iommu.h>
+#include <ipc.h>
 
 typedef struct vm {
     uint64_t id;
@@ -50,31 +52,39 @@ typedef struct vm {
     list_t emul_list;
     objcache_t emul_oc;
 
+    iommu_vm_t iommu;
+
     BITMAP_ALLOC(interrupt_bitmap, MAX_INTERRUPTS);
+
+    size_t ipc_num;
+    ipc_t *ipcs;
 } vm_t;
 
 typedef struct vcpu {
     node_t node;
+
+    struct arch_regs* regs;
+    vcpu_arch_t arch;
 
     uint64_t id;
     uint32_t phys_id;
     bool active;
 
     vm_t* vm;
-    vcpu_arch_t arch;
-    struct arch_regs* regs;
 
     uint8_t stack[STACK_SIZE] __attribute__((aligned(STACK_SIZE)));
 } vcpu_t;
 
 extern vm_t vm;
-extern struct vm_config* vm_config_ptr;
+extern struct config* vm_config_ptr;
 
 void vm_init(vm_t* vm, const vm_config_t* config, bool master, uint64_t vm_id);
 void vm_start(vm_t* vm, uint64_t entry);
 vcpu_t* vm_get_vcpu(vm_t* vm, uint64_t vcpuid);
-void vm_add_emul(vm_t* vm, emul_region_t* emu);
-emul_handler_t vm_get_emul(vm_t* vm, uint64_t addr);
+void vm_emul_add_mem(vm_t* vm, emul_mem_t* emu);
+void vm_emul_add_reg(vm_t* vm, emul_reg_t* emu);
+emul_handler_t vm_emul_get_mem(vm_t* vm, uint64_t addr);
+emul_handler_t vm_emul_get_reg(vm_t* vm, uint64_t addr);
 void vcpu_init(vcpu_t* vcpu, vm_t* vm, uint64_t entry);
 void vm_msg_broadcast(vm_t* vm, cpu_msg_t* msg);
 uint64_t vm_translate_to_pcpu_mask(vm_t* vm, uint64_t mask, size_t len);

@@ -5,6 +5,7 @@
  *
  * Authors:
  *      Jose Martins <jose.martins@bao-project.org>
+ *      Angelo Ruocco <angeloruocco90@gmail.com>
  *
  * Bao is free software; you can redistribute it and/or modify it under the
  * terms of the GNU General Public License version 2 as published by the Free
@@ -20,26 +21,87 @@
 #include <interrupts.h>
 #include <vm.h>
 
-volatile gicd_t gicd __attribute__((section(".devices"), aligned(PAGE_SIZE)));
+extern volatile gicd_t gicd;
+extern spinlock_t gicd_lock;
+
 volatile gicc_t gicc __attribute__((section(".devices"), aligned(PAGE_SIZE)));
 volatile gich_t gich __attribute__((section(".devices"), aligned(PAGE_SIZE)));
-volatile gich_t gich_alias[8]
-    __attribute__((section(".devices"), aligned(PAGE_SIZE)));
 
-static spinlock_t gicd_lock;
+static uint64_t gic_cpu_map[GIC_MAX_TARGETS];
 
 uint64_t NUM_LRS;
 
-void gicc_init()
+uint64_t gich_num_lrs()
+{
+    return ((gich.VTR & GICH_VTR_MSK) >> GICH_VTR_OFF) + 1;
+}
+
+inline uint64_t gich_read_lr(size_t i)
+{
+    if (i < NUM_LRS) {
+        return gich.LR[i];
+    } else {
+        ERROR("gic: trying to read inexistent list register");
+    }
+}
+
+inline void gich_write_lr(size_t i, uint64_t val)
+{
+    if (i < NUM_LRS) {
+        gich.LR[i] = val;
+    } else {
+        ERROR("gic: trying to write inexistent list register");
+    }
+}
+
+uint32_t gich_get_hcr()
+{
+    return gich.HCR;
+}
+
+void gich_set_hcr(uint32_t hcr)
+{
+    gich.HCR = hcr;
+}
+
+uint32_t gich_get_misr()
+{
+    return gich.MISR;
+}
+
+uint64_t gich_get_eisr()
+{
+    uint64_t eisr = gich.EISR[0];
+    if (NUM_LRS > 32) eisr |= (((uint64_t)gich.EISR[1] << 32));
+    return eisr;
+}
+
+uint64_t gich_get_elrsr()
+{
+    uint64_t elsr = gich.ELSR[0];
+    if (NUM_LRS > 32) elsr |= (((uint64_t)gich.ELSR[1] << 32));
+    return elsr;
+}
+
+static inline void gicc_init()
 {
     for (int i = 0; i < gich_num_lrs(); i++) {
         gich.LR[i] = 0;
     }
 
-    gicc.PMR = -1;
+    gicc.PMR = GIC_LOWEST_PRIO;
     gicc.CTLR |= GICC_CTLR_EN_BIT | GICC_CTLR_EOImodeNS_BIT;
 
     gich.HCR |= GICH_HCR_LRENPIE_BIT;
+    
+    uint64_t sgi_targets = gicd.ITARGETSR[0] & BIT_MASK(0, GIC_TARGET_BITS);
+    int64_t gic_cpu_id = 
+        bitmap_find_nth((bitmap_t)&sgi_targets, GIC_TARGET_BITS, 1, 0, true);
+    if(gic_cpu_id < 0) {
+        ERROR("cant find gic cpu id");
+    }
+
+    gic_cpu_map[cpu.id] = gic_cpu_id;
 }
 
 void gicc_save_state(gicc_state_t *state)
@@ -101,203 +163,115 @@ void gic_cpu_init()
         gicd.CPENDSGIR[i] = -1;
     }
 
-    for (int i = 0; i < GIC_NUM_TARGET_REGS(GIC_CPU_PRIV); i++) {
-        gicd.IPRIORITYR[i] = -1;
-    }
-
-    for (int i = 0; i < GIC_NUM_TARGET_REGS(GIC_CPU_PRIV); i++) {
+    for (int i = 0; i < GIC_NUM_PRIO_REGS(GIC_CPU_PRIV); i++) {
         gicd.IPRIORITYR[i] = -1;
     }
 
     gicc_init();
 }
 
-void gic_maintenance_handler(uint64_t arg, uint64_t source);
-
-void gic_init()
+void gic_map_mmio()
 {
-    NUM_LRS = gich_num_lrs();
-    size_t int_num = gic_num_irqs();
+    mem_map_dev(&cpu.as, (void *)&gicc, platform.arch.gic.gicc_addr,
+                NUM_PAGES(sizeof(gicc)));
+    mem_map_dev(&cpu.as, (void *)&gich, platform.arch.gic.gich_addr,
+                NUM_PAGES(sizeof(gich)));
+    mem_map_dev(&cpu.as, (void *)&gicd, platform.arch.gic.gicd_addr,
+                NUM_PAGES(sizeof(gicd)));
+}
 
-    /* Bring distributor to known state */
-    for (int i = GIC_NUM_PRIVINT_REGS; i < GIC_NUM_INT_REGS(int_num); i++) {
-        /**
-         * Make sure all interrupts are not enabled, non pending,
-         * non active.
-         */
-        gicd.ICENABLER[i] = -1;
-        gicd.ICPENDR[i] = -1;
-        gicd.ICACTIVER[i] = -1;
+uint32_t gicc_iar() {
+    return gicc.IAR;
+}
+
+void gicc_eoir(uint32_t eoir) {
+     gicc.EOIR = eoir;
+}
+
+void gicc_dir(uint32_t dir) {
+     gicc.DIR = dir;
+}
+
+void gic_send_sgi(uint64_t cpu_target, uint64_t sgi_num)
+{
+    if (sgi_num < GIC_MAX_SGIS && cpu_target < GIC_MAX_TARGETS) {
+        gicd.SGIR = 
+            (1UL << (GICD_SGIR_CPUTRGLST_OFF + gic_cpu_map[cpu_target])) |
+            (sgi_num & GICD_SGIR_SGIINTID_MSK);
     }
-
-    /* All interrupts have lowest priority possible by default */
-    for (int i = 0; i < GIC_NUM_PRIO_REGS(int_num); i++)
-        gicd.IPRIORITYR[i] = -1;
-
-    /* No CPU targets for any interrupt by default */
-    for (int i = 0; i < GIC_NUM_TARGET_REGS(int_num); i++)
-        gicd.ITARGETSR[i] = 0;
-
-    /* ICFGR are platform dependent, lets leave them as is */
-
-    /* No need to setup gicd.NSACR as all interrupts are  setup to group 1 */
-
-    interrupts_reserve(platform.arch.gic.maintenance_id,
-                       gic_maintenance_handler);
-
-    /* Enable distributor */
-    gicd.CTLR |= GICD_CTLR_EN_BIT;
 }
 
-void gic_handle()
-{
-    uint64_t ack = gicc.IAR;
-    uint64_t id = bit_extract(ack, GICC_IAR_ID_OFF, GICC_IAR_ID_LEN);
-    uint64_t src = bit_extract(ack, GICC_IAR_CPU_OFF, GICC_IAR_CPU_LEN);
-
-    if (id >= 1022) return;
-
-    enum irq_res res = interrupts_handle(id, src);
-
-    gicc.EOIR = ack;
-
-    if (res == HANDLED_BY_HYP) gicc.DIR = ack;
+static inline uint8_t gic_translate_cpu_to_trgt(uint8_t cpu_targets) {
+    uint8_t gic_targets = 0;
+    for(int i = 0; i < GIC_MAX_SPIS; i++) {
+        if((1 << i) & cpu_targets) {
+            gic_targets |= (1 << gic_cpu_map[i]);
+        }
+    }
+    return gic_targets;
 }
 
-void gicd_send_sgi(uint64_t cpu_target, uint64_t sgi_num)
+void gicd_set_trgt(uint64_t int_id, uint8_t cpu_targets)
 {
-    gicd.SGIR = (1UL << (GICD_SGIR_CPUTRGLST_OFF + cpu_target)) |
-                (sgi_num & GICD_SGIR_SGIINTID_MSK);
-}
+    uint64_t reg_ind = GIC_TARGET_REG(int_id);
+    uint64_t off = GIC_TARGET_OFF(int_id);
+    uint32_t mask = BIT_MASK(off, GIC_TARGET_BITS);
 
-uint64_t gicd_get_prio(uint64_t int_id)
-{
     spin_lock(&gicd_lock);
 
-    uint64_t reg_ind = (int_id * GIC_PRIO_BITS) / (sizeof(uint32_t) * 8);
-    uint64_t off = (int_id * GIC_PRIO_BITS) % (sizeof(uint32_t) * 8);
-
-    uint64_t prio =
-        gicd.IPRIORITYR[reg_ind] >> off & ((1 << GIC_PRIO_BITS) - 1);
-
-    spin_unlock(&gicd_lock);
-
-    return prio;
-}
-
-void gicd_set_prio(uint64_t int_id, uint8_t prio)
-{
-    spin_lock(&gicd_lock);
-
-    uint64_t reg_ind = (int_id * GIC_PRIO_BITS) / (sizeof(uint32_t) * 8);
-    uint64_t off = (int_id * GIC_PRIO_BITS) % (sizeof(uint32_t) * 8);
-    uint64_t mask = ((1U << GIC_PRIO_BITS) - 1) << off;
-
-    gicd.IPRIORITYR[reg_ind] =
-        (gicd.IPRIORITYR[reg_ind] & ~mask) | ((prio << off) & mask);
+    gicd.ITARGETSR[reg_ind] = (gicd.ITARGETSR[reg_ind] & ~mask) | 
+        ((gic_translate_cpu_to_trgt(cpu_targets) << off) & mask);
 
     spin_unlock(&gicd_lock);
 }
 
-uint8_t gicd_get_state(uint64_t int_id)
+void gic_set_prio(uint64_t int_id, uint8_t prio)
 {
-    spin_lock(&gicd_lock);
-
-    uint64_t reg_ind = int_id / (sizeof(uint32_t) * 8);
-    uint64_t mask = 1U << int_id % (sizeof(uint32_t) * 8);
-
-    uint64_t pend = (gicd.ISPENDR[reg_ind] & mask) ? 1 : 0;
-    uint64_t act = (gicd.ISACTIVER[reg_ind] & mask) ? 1 : 0;
-
-    spin_unlock(&gicd_lock);
-
-    return pend | (act << 1);
+    gicd_set_prio(int_id, prio);
 }
 
-void gicd_set_pend(uint64_t int_id, bool pend)
+uint64_t gic_get_prio(uint64_t int_id)
+{
+    return gicd_get_prio(int_id);
+}
+
+void gic_set_icfgr(uint64_t int_id, uint8_t cfg)
+{
+    gicd_set_icfgr(int_id, cfg);
+}
+
+bool gic_get_pend(uint64_t int_id)
+{
+    return gicd_get_pend(int_id);
+}
+
+void gic_set_act(uint64_t int_id, bool act)
+{
+    gicd_set_act(int_id, act);
+}
+
+bool gic_get_act(uint64_t int_id)
+{
+    return gicd_get_act(int_id);
+}
+
+void gic_set_enable(uint64_t int_id, bool en)
+{
+    gicd_set_enable(int_id, en);
+}
+
+void gic_set_pend(uint64_t int_id, bool pend)
 {
     if (gic_is_sgi(int_id)) {
-        uint64_t reg_ind = int_id / 4;
-        uint64_t off = (int_id % 4) * 8;
+        uint64_t reg_ind = GICD_SGI_REG(int_id);
+        uint64_t off = GICD_SGI_OFF(int_id);
 
         if (pend) {
             gicd.SPENDSGIR[reg_ind] = (1U) << (off + cpu.id);
         } else {
             gicd.CPENDSGIR[reg_ind] = BIT_MASK(off, 8);
         }
-
     } else {
-        uint64_t reg_ind = int_id / (sizeof(uint32_t) * 8);
-        uint64_t mask = 1U << int_id % (sizeof(uint32_t) * 8);
-
-        if (pend) {
-            gicd.ISPENDR[reg_ind] = mask;
-        } else {
-            gicd.ICPENDR[reg_ind] = mask;
-        }
+        gicd_set_pend(int_id, pend);
     }
-}
-
-void gicd_set_act(uint64_t int_id, bool act)
-{
-    uint64_t reg_ind = int_id / (sizeof(uint32_t) * 8);
-    uint64_t mask = 1U << int_id % (sizeof(uint32_t) * 8);
-
-    if (act) {
-        gicd.ISACTIVER[reg_ind] = mask;
-    } else {
-        gicd.ICACTIVER[reg_ind] = mask;
-    }
-}
-
-void gicd_set_state(uint64_t int_id, uint8_t state)
-{
-    spin_lock(&gicd_lock);
-
-    uint64_t reg_ind = int_id / (sizeof(uint32_t) * 8);
-    uint64_t mask = 1U << int_id % (sizeof(uint32_t) * 8);
-
-    if (state & 0x2) {
-        gicd.ISACTIVER[reg_ind] = mask;
-    } else {
-        gicd.ICACTIVER[reg_ind] = mask;
-    }
-
-    if (state & 0x1) {
-        gicd.ISPENDR[reg_ind] = mask;
-    } else {
-        gicd.ICPENDR[reg_ind] = mask;
-    }
-
-    spin_unlock(&gicd_lock);
-}
-
-void gicd_set_trgt(uint64_t int_id, uint8_t trgt)
-{
-    spin_lock(&gicd_lock);
-
-    uint64_t reg_ind = (int_id * GIC_TARGET_BITS) / (sizeof(uint32_t) * 8);
-    uint64_t off = (int_id * GIC_TARGET_BITS) % (sizeof(uint32_t) * 8);
-    uint32_t mask = ((1U << GIC_TARGET_BITS) - 1) << off;
-
-    gicd.ITARGETSR[reg_ind] =
-        (gicd.ITARGETSR[reg_ind] & ~mask) | ((trgt << off) & mask);
-
-    spin_unlock(&gicd_lock);
-}
-
-void gicd_set_enable(uint64_t int_id, bool en)
-{
-    uint64_t reg_ind = int_id / (sizeof(uint32_t) * 8);
-    uint64_t bit = (1UL << int_id % (sizeof(uint32_t) * 8));
-
-    spin_lock(&gicd_lock);
-
-    if (en) {
-        gicd.ISENABLER[reg_ind] = bit;
-    } else {
-        gicd.ICENABLER[reg_ind] = bit;
-    }
-
-    spin_unlock(&gicd_lock);
 }

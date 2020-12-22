@@ -26,7 +26,8 @@ SECTIONS
 
 	.boot : {
 		*(.boot)
-        ASSERT((SIZEOF(.boot) <= PAGE_SIZE), "boot section must fit in one page");
+        ASSERT((SIZEOF(.boot) <= PAGE_SIZE), 
+			"boot section must fit in one page");
 	}
 
 	.text :  {
@@ -34,7 +35,6 @@ SECTIONS
 	}
 
 	.rodata :  {
-
 		*(.rdata .rodata .rodata.*)
 		_dev_init_table_start = .;
 		*(.dev_init_table)
@@ -76,9 +76,25 @@ SECTIONS
 	
 	. = ALIGN(PAGE_SIZE);
 	_image_end = ABSOLUTE(.);
-	_dmem_phys_beg =  ABSOLUTE(.);
 
-	.devices (NOLOAD) : ALIGN(PAGE_SIZE) {
+	/* Sections to be allocated only in physical memory, not in VA space */
+
+	.config : ALIGN(PAGE_SIZE) {
+		_config_start = .;
+		*(.config)
+	}
+	. = ALIGN(PAGE_SIZE);
+	_config_end = .;
+
+	_dmem_phys_beg = ABSOLUTE(.);
+
+	/**
+	 * Rewind LC to reuse VMA addresses occupied by config and make VA 
+	 * start immediately after image.
+	 * Also, force start address of next section to enforce this.
+	 */
+	. = _image_end;
+	.devices _image_end (NOLOAD) : ALIGN(PAGE_SIZE) {
 		*(.devices)
 	}
 

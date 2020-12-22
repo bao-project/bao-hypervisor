@@ -56,13 +56,5 @@ void platform_defines()
     DEFINE_OFFSET(PLAT_CPUNUM_OFF, struct platform_desc, cpu_num);
     DEFINE_OFFSET(PLAT_ARCH_OFF, struct platform_desc, arch);
     DEFINE_OFFSET(PLAT_ARCH_CLUSTERS_OFF, struct arch_platform, clusters);
-    DEFINE_OFFSET(PLAT_CLUSTERS_CORES_NUM_OFF, struct clusters, num);
-}
-
-void info_defines() __attribute__((used));
-void info_defines()
-{
-    DEFINE_SIZE(VGICD_SIZE, vgicd_t);
-    DEFINE_SIZE(VGICH_SIZE, gich_t);
-    DEFINE_SIZE(VGIC_IRQ, vgic_int_t);
+    DEFINE_OFFSET(PLAT_CLUSTERS_CORES_NUM_OFF, struct clusters, core_num);
 }

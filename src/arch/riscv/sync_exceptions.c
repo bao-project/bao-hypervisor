@@ -89,7 +89,7 @@ size_t guest_page_fault_handler()
 
     uintptr_t addr = CSRR(CSR_HTVAL) << 2;
 
-    emul_handler_t handler = vm_get_emul(cpu.vcpu->vm, addr);
+    emul_handler_t handler = vm_emul_get_mem(cpu.vcpu->vm, addr);
     if (handler != NULL) {
         uintptr_t ins_addr = CSRR(sepc);
         unsigned long ins = read_ins(ins_addr);

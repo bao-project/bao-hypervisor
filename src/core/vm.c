@@ -19,9 +19,14 @@
 #include <mem.h>
 #include <cache.h>
 
+enum emul_type {EMUL_MEM, EMUL_REG};
 struct emul_node {
     node_t node;
-    emul_region_t emu;
+    enum emul_type type;
+    union {
+        emul_mem_t emu_mem;
+        emul_reg_t emu_reg;
+    };
 };
 
 static void vm_master_init(vm_t* vm, const vm_config_t* config, uint64_t vm_id)
@@ -49,7 +54,8 @@ void vm_cpu_init(vm_t* vm)
 void vm_vcpu_init(vm_t* vm, const vm_config_t* config)
 {
     size_t n = NUM_PAGES(sizeof(vcpu_t));
-    vcpu_t* vcpu = (vcpu_t*)mem_alloc_page(n, SEC_HYP_VM, true);
+    vcpu_t* vcpu = (vcpu_t*)mem_alloc_page(n, SEC_HYP_VM, false);
+    if(vcpu == NULL){ ERROR("failed to allocate vcpu"); }
     memset(vcpu, 0, n * PAGE_SIZE);
 
     cpu.vcpu = vcpu;
@@ -181,6 +187,34 @@ static void vm_init_mem_regions(vm_t* vm, const vm_config_t* config)
     }
 }
 
+static void vm_init_ipc(vm_t* vm, const vm_config_t* config)
+{
+    vm->ipc_num = config->platform.ipc_num;
+    vm->ipcs = config->platform.ipcs;
+    for (int i = 0; i < config->platform.ipc_num; i++) {
+        ipc_t *ipc = &config->platform.ipcs[i];
+        shmem_t *shmem = ipc_get_shmem(ipc->shmem_id);
+        if(shmem == NULL) {
+            WARNING("Invalid shmem id in configuration. Ignored.");
+            continue;
+        }
+        size_t size = ipc->size;
+        if(ipc->size > shmem->size) {
+            size = shmem->size;
+            WARNING("Trying to map region to smaller shared memory. Truncated");
+        }
+        struct mem_region reg = {
+            .base = ipc->base,
+            .size = size,
+            .place_phys = true,
+            .phys = shmem->phys,
+            .colors = shmem->colors
+        };
+
+        vm_map_mem_region(vm, &reg);
+    }
+}
+
 static void vm_init_dev(vm_t* vm, const vm_config_t* config)
 {
     for (int i = 0; i < config->platform.dev_num; i++) {
@@ -195,6 +229,19 @@ static void vm_init_dev(vm_t* vm, const vm_config_t* config)
             interrupts_vm_assign(vm, dev->interrupts[j]);
         }
     }
+
+    /* iommu */
+    if (iommu_vm_init(vm, config) >= 0) {
+        for (int i = 0; i < config->platform.dev_num; i++) {
+            struct dev_region* dev = &config->platform.devs[i];
+            if (dev->id) {
+                if(iommu_vm_add_device(vm, dev->id) < 0){
+                    ERROR("Failed to add device to iommu");
+                }
+            }
+        }
+    }
+      
 }
 
 void vm_init(vm_t* vm, const vm_config_t* config, bool master, uint64_t vm_id)
@@ -213,17 +260,19 @@ void vm_init(vm_t* vm, const vm_config_t* config, bool master, uint64_t vm_id)
 
     cpu_sync_barrier(&vm->sync);
 
+    /*
+     *  Initialize each virtual core.
+     */
+    vm_vcpu_init(vm, config);
+
+    cpu_sync_barrier(&vm->sync);
+
     /**
      * Perform architecture dependent initializations. This includes,
      * for example, setting the page table pointer and other virtualization
      * extensions specifics.
      */
     vm_arch_init(vm, config);
-
-    /*
-     *  Initialize each virtual core.
-     */
-    vm_vcpu_init(vm, config);
 
     /**
      * Create the VM's address space according to configuration and where
@@ -232,6 +281,7 @@ void vm_init(vm_t* vm, const vm_config_t* config, bool master, uint64_t vm_id)
     if (master) {
         vm_init_mem_regions(vm, config);
         vm_init_dev(vm, config);
+        vm_init_ipc(vm, config);
     }
 
     cpu_sync_barrier(&vm->sync);
@@ -247,11 +297,12 @@ vcpu_t* vm_get_vcpu(vm_t* vm, uint64_t vcpuid)
     return NULL;
 }
 
-void vm_add_emul(vm_t* vm, emul_region_t* emu)
+void vm_emul_add_mem(vm_t* vm, emul_mem_t* emu)
 {
     struct emul_node* ptr = objcache_alloc(&vm->emul_oc);
     if (ptr != NULL) {
-        ptr->emu = *emu;
+        ptr->type = EMUL_MEM;
+        ptr->emu_mem = *emu;
         list_push(&vm->emul_list, (void*)ptr);
         // TODO: if we plan to grow the VM's PAS dynamically, after
         // inialization,
@@ -260,19 +311,52 @@ void vm_add_emul(vm_t* vm, emul_region_t* emu)
     }
 }
 
-emul_handler_t vm_get_emul(vm_t* vm, uint64_t addr)
+void vm_emul_add_reg(vm_t* vm, emul_reg_t* emu)
+{
+    struct emul_node* ptr = objcache_alloc(&vm->emul_oc);
+    if (ptr != NULL) {
+        ptr->type = EMUL_REG;
+        ptr->emu_reg = *emu;
+        list_push(&vm->emul_list, (void*)ptr);
+        // TODO: if we plan to grow the VM's PAS dynamically, after
+        // inialization,
+        // the pages for this emulation region must be reserved in the stage 2
+        // page table.
+    }
+
+}    
+
+static inline emul_handler_t vm_emul_get(vm_t* vm, enum emul_type type, uint64_t addr)
 {
     emul_handler_t handler = NULL;
     list_foreach(vm->emul_list, struct emul_node, node)
     {
-        emul_region_t* emu = &node->emu;
-        if (addr >= emu->va_base && (addr < (emu->va_base + emu->size))) {
-            handler = emu->handler;
-            break;
+        if (node->type == EMUL_MEM) {
+            emul_mem_t* emu = &node->emu_mem;
+            if (addr >= emu->va_base && (addr < (emu->va_base + emu->size))) {
+                handler = emu->handler;
+                break;
+            }
+        } else {
+            emul_reg_t *emu = &node->emu_reg;
+            if(emu->addr == addr) {
+                handler = emu->handler;
+                break; 
+            }
         }
     }
 
     return handler;
+}
+
+emul_handler_t vm_emul_get_mem(vm_t* vm, uint64_t addr)
+{
+    return vm_emul_get(vm, EMUL_MEM, addr);
+}
+
+emul_handler_t vm_emul_get_reg(vm_t* vm, uint64_t addr)
+{
+    return vm_emul_get(vm, EMUL_REG, addr);
 }
 
 void vm_msg_broadcast(vm_t* vm, cpu_msg_t* msg)

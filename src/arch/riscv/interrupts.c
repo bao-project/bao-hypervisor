@@ -89,11 +89,11 @@ void interrupts_arch_handle()
 
     switch (_scause) {
         case SCAUSE_CODE_SSI:
-            interrupts_handle(SOFT_INT_ID, 0);
+            interrupts_handle(SOFT_INT_ID);
             CSRC(sip, SIP_SSIP);
             break;
         case SCAUSE_CODE_STI:
-            interrupts_handle(TIMR_INT_ID, 0);
+            interrupts_handle(TIMR_INT_ID);
             /**
              * Clearing the timer pending bit actually has no
              * effect. We should call sbi_set_timer(-1), but at
@@ -135,12 +135,17 @@ void interrupts_arch_clear(uint64_t int_id)
     }
 }
 
+inline bool interrupts_arch_conflict(bitmap_t interrupt_bitmap, uint64_t int_id)
+{
+    return bitmap_get(interrupt_bitmap, int_id);
+}
+
 void interrupts_arch_vm_assign(vm_t *vm, uint64_t id)
 {
     vplic_set_hw(vm, id);
 }
 
-void interrupts_arch_vm_inject(vm_t *vm, uint64_t id, uint64_t source)
+void interrupts_arch_vm_inject(vm_t *vm, uint64_t id)
 {
     vplic_inject(cpu.vcpu, id);
 }
