@@ -72,7 +72,7 @@ bool vgic_int_set_route(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t route)
         phys_route = cpu_id_to_mpidr(vcpu->phys_id);
     } else {
         vcpu_t *tvcpu =
-            vm_get_vcpu_by_mpidr(vcpu->vm, interrupt->route & MPIDR_AFF_MSK);
+            vm_get_vcpu_by_mpidr(vcpu->vm, route & MPIDR_AFF_MSK);
         if (tvcpu != NULL) {
             phys_route = cpu_id_to_mpidr(tvcpu->phys_id) & MPIDR_AFF_MSK;
         } else {
