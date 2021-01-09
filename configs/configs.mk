@@ -21,7 +21,7 @@ ifeq ($(CONFIG),)
 $(error Configuration (CONFIG) not defined.)
 endif
 
-CONFIG_DIR:=$(configs_dir)/$(CONFIG)
+CONFIG_DIR:=$(CONFIG_REPO)/$(CONFIG)
 CONFIG_LD:=$(configs_dir)/linker.ld
 CONFIG_SRC:=$(CONFIG_DIR)/config.c
 CONFIG_ASM:=$(CONFIG_SRC:%.c=%.S)
