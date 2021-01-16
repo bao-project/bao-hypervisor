@@ -20,6 +20,7 @@
 #include <arch/platform.h>
 #include <plat/platform.h>
 #include <mem.h>
+#include <cache.h>
 #include <ipc.h>
 
 struct platform_desc {
@@ -37,6 +38,8 @@ struct platform_desc {
     struct {
         uint64_t base;
     } console;
+
+    struct cache cache;
 
     struct arch_platform arch;
 };

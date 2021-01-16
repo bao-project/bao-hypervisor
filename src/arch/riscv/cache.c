@@ -14,25 +14,32 @@
  */
 
 #include <cache.h>
+#include <platform.h>
+
+/**
+ * The riscv spec does not include cache maintenance. There are current
+ * efforts to define and standardize a set of cache management instructions,
+ * but for now this is platform dependent.
+ */
 
 void cache_arch_enumerate(cache_t* dscrp)
 {
-    dscrp->lvls = 0;  // no cache
-
     /**
-     * TODO: In riscv cache description will probably be part of a dtb
-     * passed by the bootloader. For now we have no support for dtb
-     * parsing, but this means we might have to. An alternative would be
-     * to add it to our platform description (which could be done for all
-     * architectures).
+     * Currently the typical of way for system software to discover cache
+     * topology is to read it of a dtb passed by the bootloader. As we are not
+     * implementing an fdt parser, a platform port must add it to the platform
+     * description.
      */
+    *dscrp = platform.cache;
 }
 
-void cache_flush_range(void* base, uint64_t size)
+__attribute__((weak)) void cache_flush_range(void* base, uint64_t size)
 {
     /**
-     * TODO: the spec does not include cache maintenance. In riscv, in the
-     * future this function might have to be implemented by platform or
-     * through an sbi call.
+     * A platform must define its custom cache flush operation, otherwise
+     * certain mechanisms such as coloring and hypervisor relocation will
+     * most probably fail.
      */
+    WARNING("trying to flush caches but the operation is not defined for this "
+            "platform");
 }
