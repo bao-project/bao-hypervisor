@@ -1200,7 +1200,7 @@ void color_hypervisor(const uint64_t load_addr, const uint64_t config_addr)
 
         mem_map(&cpu_new->as, va, &p_image,
                 NUM_PAGES(image_size), PTE_HYP_FLAGS);
-        shared_pte = *pt_get_pte(&cpu_new->as.pt, 0, &_image_start);
+        shared_pte = pte_addr(pt_get_pte(&cpu_new->as.pt, 0, &_image_start));
     } else {
         pte_t *image_pte = pt_get_pte(&cpu_new->as.pt, 0, &_image_start);
 
@@ -1215,7 +1215,7 @@ void color_hypervisor(const uint64_t load_addr, const uint64_t config_addr)
      * virtual page into global space to allow communication.
      */
     uint64_t p_intferface_addr;
-    mem_translate(&cpu_new->as, &cpu_new->interface, &p_intferface_addr);
+    mem_translate(&cpu.as, &cpu_new->interface, &p_intferface_addr);
     p_interface = mem_ppages_get(
         p_intferface_addr,
         NUM_PAGES(sizeof(cpu_new->interface)));
@@ -1262,7 +1262,7 @@ void color_hypervisor(const uint64_t load_addr, const uint64_t config_addr)
     cpu_sync_barrier(&cpu_glb_sync);
 
     uint64_t p_root_pt_addr;
-    mem_translate(&cpu_new->as, cpu_new->root_pt, &p_root_pt_addr);
+    mem_translate(&cpu.as, cpu_new->root_pt, &p_root_pt_addr);
     switch_space(cpu_new, p_root_pt_addr);
 
     /**
@@ -1336,8 +1336,9 @@ void as_init(addr_space_t *as, enum AS_TYPE type, uint64_t id, void *root_pt,
 
     if (root_pt == NULL) {
         size_t n = pt_size(&as->pt, 0) / PAGE_SIZE;
-        root_pt = mem_alloc_page(
-            n, type == AS_HYP ? SEC_HYP_PRIVATE : SEC_HYP_VM, true);
+        root_pt = mem_alloc_page(n, 
+            type == AS_HYP || type == AS_HYP_CPY ? SEC_HYP_PRIVATE : SEC_HYP_VM, 
+            true);
         memset(root_pt, 0, n * PAGE_SIZE);
     }
     as->pt.root_flags = 0;
