@@ -53,12 +53,6 @@ void as_arch_init(addr_space_t *as) {
 
 }
 
-typedef struct cpu cpu_t;
-void switch_space(cpu_t *new_cpu, uint64_t new_rootpt_pa)
-{
-    ERROR("switch address space not implemented");
-}
-
 bool mem_translate(addr_space_t *as, void *va, uint64_t *pa)
 {
     pte_t* pte = &(as->pt.root[PTE_INDEX(0, (uintptr_t)va)]);
