@@ -18,14 +18,11 @@
 #include <platform.h>
 #include <cpu.h>
 
-void as_arch_init(addr_space_t *as) {}
-
-void mem_arch_init(uint64_t load_addr, uint64_t config_addr)
-{
+static inline void as_map_physical_identity(addr_space_t *as) {
     const int lvl = 0;
-    size_t lvl_size = pt_lvlsize(&cpu.as.pt, lvl);
+    size_t lvl_size = pt_lvlsize(&as->pt, lvl);
     uintptr_t lvl_mask = ~(lvl_size - 1);
-    pte_t *pt = cpu.as.pt.root;
+    pte_t *pt = as->pt.root;
 
     /**
      *  Create identity mapping of existing physical memory regions using
@@ -46,6 +43,14 @@ void mem_arch_init(uint64_t load_addr, uint64_t config_addr)
             addr += lvl_size;
         }
     }
+}
+
+void as_arch_init(addr_space_t *as) {
+
+    if(as->type == AS_HYP) {
+        as_map_physical_identity(as);
+    }
+
 }
 
 typedef struct cpu cpu_t;
