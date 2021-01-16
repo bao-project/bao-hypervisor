@@ -30,7 +30,7 @@ static spinlock_t print_lock = SPINLOCK_INITVAL;
 
 void console_init()
 {
-    if(!(platform.console.base & PAGE_MASK)) {
+    if((platform.console.base & PAGE_OFFSET_MASK) != 0) {
         WARNING("console base must be page aligned");
     }
 
