@@ -680,14 +680,6 @@ int mem_map_reclr(addr_space_t *as, void *va, ppages_t *ppages, size_t n,
     }
 
     /**
-     * If the address space was not assigned any specific color,
-     * defer to vanilla mapping.
-     */
-    if (all_clrs(as->colors)) {
-        return mem_map(as, va, ppages, n, flags);
-    }
-
-    /**
      * Count how many pages are not colored in original images.
      * Allocate the necessary colored pages.
      * Mapped onto hypervisor address space.
@@ -701,6 +693,15 @@ int mem_map_reclr(addr_space_t *as, void *va, ppages_t *ppages, size_t n,
                         (i + clr_offset) / COLOR_SIZE % COLOR_NUM))
             reclrd_num++;
     }
+
+   /**
+     * If the address space was not assigned any specific color,
+     * or there are no pages to recolor defer to vanilla mapping.
+     */
+    if (all_clrs(as->colors) || (reclrd_num == 0)) {
+        return mem_map(as, va, ppages, n, flags);
+    }
+
     void *reclrd_va_base =
         mem_alloc_vpage(&cpu.as, SEC_HYP_VM, NULL, reclrd_num);
     ppages_t reclrd_ppages = mem_alloc_ppages(as->colors, reclrd_num, false);
