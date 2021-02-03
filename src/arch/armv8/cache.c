@@ -17,6 +17,7 @@
 #include <arch/sysregs.h>
 #include <fences.h>
 #include <bit.h>
+#include <platform.h>
 
 void cache_arch_enumerate(cache_t *dscrp)
 {
@@ -25,7 +26,7 @@ void cache_arch_enumerate(cache_t *dscrp)
          * No need to probe cache registers, cache topology is described
          * in the platform descrption.
          */
-        *dscrp = platform.cache.lvls;
+        *dscrp = platform.cache;
     }
 
     uint64_t clidr = 0;
