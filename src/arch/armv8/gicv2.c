@@ -203,7 +203,7 @@ void gic_send_sgi(uint64_t cpu_target, uint64_t sgi_num)
 
 static inline uint8_t gic_translate_cpu_to_trgt(uint8_t cpu_targets) {
     uint8_t gic_targets = 0;
-    for(int i = 0; i < GIC_MAX_SPIS; i++) {
+    for(int i = 0; i < GIC_MAX_TARGETS; i++) {
         if((1 << i) & cpu_targets) {
             gic_targets |= (1 << gic_cpu_map[i]);
         }
