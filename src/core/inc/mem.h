@@ -58,7 +58,7 @@ struct mem_region {
     uint64_t colors;
     bool place_phys;
     uint64_t phys;
-    int colored;
+    bool phys_colored;
 };
 
 struct dev_region {
