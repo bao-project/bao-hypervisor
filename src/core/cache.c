@@ -22,6 +22,11 @@ size_t COLOR_SIZE = 1;
 
 static void cache_calc_colors(cache_t* dscrp, int page_size)
 {
+    if (dscrp->lvls == 0) {
+        /* No cache? */
+        return;
+    }
+
     size_t llc = dscrp->min_shared_lvl;
 
     if ((dscrp->type[llc] != UNIFIED) || (dscrp->indexed[llc][0] != PIPT))

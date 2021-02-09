@@ -31,6 +31,7 @@ size=		$(CROSS_COMPILE)size
 #Makefile arguments and default values
 DEBUG:=y
 OPTIMIZATIONS:=2
+CONFIG_BUILTIN=n
 CONFIG=
 PLATFORM=
 
@@ -45,6 +46,14 @@ lib_dir=$(src_dir)/lib
 core_dir=$(src_dir)/core
 platforms_dir=$(src_dir)/platform
 configs_dir=$(cur_dir)/configs
+CONFIG_REPO?=$(configs_dir)
+config:=$(CONFIG_REPO)/$(CONFIG)/$(CONFIG).bin
+
+ifeq ($(CONFIG_BUILTIN), y)
+ifeq ($(CONFIG),)
+ $(error Buil-in configuration enabled but no configuration (CONFIG) specified)
+endif
+endif
 
 #Plataform must be defined excpet for clean target
 ifeq ($(PLATFORM),) 
@@ -67,8 +76,12 @@ cpu_impl_dir=$(cpu_arch_dir)/impl/$(CPU)
 
 
 build_dir:=$(cur_dir)/build/$(PLATFORM)
+builtin_build_dir:=$(cur_dir)/build/builtin-configs
 bin_dir:=$(cur_dir)/bin/$(PLATFORM)
-directories:=$(build_dir) $(bin_dir)
+ifeq ($(CONFIG_BUILTIN), y)
+bin_dir:=$(bin_dir)/builtin-configs/$(CONFIG)
+endif
+directories:=$(build_dir) $(bin_dir) $(builtin_build_dir) 
 
 SRC_DIRS:= $(cpu_arch_dir) $(cpu_impl_dir) $(lib_dir) $(core_dir)\
 	$(platform_dir) $(addprefix $(drivers_dir)/, $(drivers))
@@ -83,6 +96,10 @@ objs-y+=$(addprefix $(lib_dir)/, $(lib-objs-y))
 objs-y+=$(addprefix $(core_dir)/, $(core-objs-y))
 objs-y+=$(addprefix $(platform_dir)/, $(boards-objs-y))
 objs-y+=$(addprefix $(drivers_dir)/, $(drivers-objs-y))
+ifeq ($(CONFIG_BUILTIN), y)
+builtin-config-obj:=$(builtin_build_dir)/$(CONFIG).o
+objs-y+=$(builtin-config-obj)
+endif
 
 deps+=$(patsubst %.o,%.d,$(objs-y))
 objs-y:=$(patsubst $(src_dir)%, $(build_dir)%, $(objs-y))
@@ -178,15 +195,16 @@ $(ASM_DEFS_HDR).d: $(ASM_DEFS_SRC)
 	@$(cc) -MM -MT "$(patsubst %.d,%, $@)" $(addprefix -I, $(INC_DIRS)) $< > $@	
 endif
 
-#build configuration binary if CONFIG target is defined
-ifdef CONFIG
-export
-all: config
-clean: config
+ifeq ($(CONFIG_BUILTIN), y)
+cppflags+=-DCONFIG_BIN=$(config)
+builtin-config-src:=$(core_dir)/builtin-config.S
+$(builtin-config-obj): $(builtin-config-src) $(config)
 endif
 
-config: 
-	@$(MAKE) -C $(configs_dir) $(MAKECMDGOALS)
+ifdef CONFIG
+all: $(config)
+include $(configs_dir)/configs.mk
+endif
 
 #Generate directories for object, dependency and generated files
 

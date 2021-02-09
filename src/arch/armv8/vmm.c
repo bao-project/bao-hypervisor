@@ -23,12 +23,27 @@ void vmm_arch_init()
      * Check available physical address range which will limit
      * IPA size. Patch 2-stage page table descriptors if this forces
      * the initial lookup to level 1.
+     *
+     * In multi-cluster heterogenous we only support the minimum parange 
+     * for a vm's physicall adress space.
+     * TODO: we could make this more dynamic and adapt it to each virtual 
+     * machine.
      */
 
-    if (cpu.id == CPU_MASTER) {
-        MRS(parange, ID_AA64MMFR0_EL1);
-        parange &= ID_AA64MMFR0_PAR_MSK;
+    static uint64_t min_parange = 0b111;
+    static spinlock_t lock = SPINLOCK_INITVAL;
 
+    uint64_t temp_parange = MRS(ID_AA64MMFR0_EL1) & ID_AA64MMFR0_PAR_MSK;
+    spin_lock(&lock);
+    if(temp_parange < min_parange) {
+        min_parange = temp_parange;
+    }
+    spin_unlock(&lock);
+
+    cpu_sync_barrier(&cpu_glb_sync);
+
+    if (cpu.id == CPU_MASTER) {
+        parange = min_parange;
         if (parange_table[parange] < 44) {
             for (int i = 0; i < PT_LVLS - 1; i++) {
                 vm_pt_dscr->lvl_wdt[i] = vm_pt_dscr->lvl_wdt[i + 1];

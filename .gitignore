@@ -6,7 +6,7 @@ build/*
 *.d
 
 configs/*
-!configs/Makefile
+!configs/configs.mk
 !configs/linker.ld 
 !configs/example/
 

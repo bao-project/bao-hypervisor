@@ -15,22 +15,34 @@
 
 #include <config.h>
 
-void config_adjust_to_va(struct vm_config *config, uint64_t phys)
-{
-    for (int i = 0; i < config->vmlist_size; i++) {
-        config->vmlist[i].image.load_addr =
-            config->vmlist[i].image.load_addr + phys;
-        config->vmlist[i].platform.regions =
-            (void *)config->vmlist[i].platform.regions + (uint64_t)config;
-        config->vmlist[i].platform.devs =
-            (void *)config->vmlist[i].platform.devs + (uint64_t)config;
+#define adjust_ptr(p, o) ((p) = (p) ? (typeof(p))(  (void*)(p) + (uint64_t)(o)) : (p))
 
-        for (int j = 0; j < config->vmlist[i].platform.dev_num; j++) {
-            config->vmlist[i].platform.devs[j].interrupts =
-                (void *)config->vmlist[i].platform.devs[j].interrupts +
-                (uint64_t)config;
-        }
+void config_adjust_to_va(struct config *config, uint64_t phys)
+{
+    adjust_ptr(config->shmemlist, config);
+
+    for (int i = 0; i < config->vmlist_size; i++) {
+        adjust_ptr(config->vmlist[i].image.load_addr, phys);
+
+	    adjust_ptr(config->vmlist[i].platform.regions, config);
+
+	    if(adjust_ptr(config->vmlist[i].platform.devs, config)){
+	        for (int j = 0; j < config->vmlist[i].platform.dev_num; j++) {
+	    	    adjust_ptr(config->vmlist[i].platform.devs[j].interrupts, config);
+	        }
+	    }
+
+	    if(adjust_ptr(config->vmlist[i].platform.ipcs, config)){
+	        for (int j = 0; j < config->vmlist[i].platform.ipc_num; j++) {
+	    	    adjust_ptr(config->vmlist[i].platform.ipcs[j].interrupts, config);
+	        }
+	    }
     }
 
-    // TODO: maybe it might be needed an arch version of this method
+    config_arch_adjust_to_va(config, phys);
+}
+
+bool config_is_builtin() {
+    extern uint8_t _config_start, _config_end;
+    return &_config_start != &_config_end;
 }

@@ -23,3 +23,5 @@ core-objs-y+=vmm.o
 core-objs-y+=vm.o
 core-objs-y+=config.o
 core-objs-y+=console.o
+core-objs-y+=iommu.o
+core-objs-y+=ipc.o

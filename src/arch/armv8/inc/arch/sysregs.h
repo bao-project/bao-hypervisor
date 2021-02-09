@@ -33,11 +33,11 @@
 /* MPIDR_EL1, Multiprocessor Affinity Register */
 
 #define MPIDR_RES1 (0x80000000)
-#define MPIDR_CPU_MASK MPIDR_AFFLVL_MASK
-#define MPIDR_CLUSTER_MASK (MPIDR_AFFLVL_MASK << MPIDR_AFFINITY_BITS)
+#define MPIDR_RES0_MSK  ~((0xffffffull << 49) | (0x1full << 25))
 #define MPIDR_AFFINITY_BITS (8)
-#define MPIDR_AFFLVL_MASK (0xff)
 #define MPIDR_U_BIT (1UL << 30)
+#define MPIDR_AFF_MSK (0xffff) //we are only supporting 2 affinity levels
+#define MPIDR_AFF_LVL(MPIDR, LVL)  (((MPIDR) >> (8*(LVL))) & 0xff) 
 
 /* SPSR - Saved Program Status Register */
 
@@ -93,8 +93,8 @@
 #define TCR_ORGN0_WB_RA_NWA (3 << 10)
 #define TCR_SH0_MSK (0x3 << 12)
 #define TCR_SH0_NS (0 << 12)
-#define TCR_SH0_IS (2 << 12)
-#define TCR_SH0_OS (3 << 12)
+#define TCR_SH0_OS (2 << 12)
+#define TCR_SH0_IS (3 << 12)
 #define TCR_TG0_MSK (0x3 << 14)
 #define TCR_TG0_4K (0 << 14)
 #define TCR_TG0_16K (2 << 14)
@@ -141,8 +141,8 @@
 #define VTCR_ORGN0_WB_RA_NWA (3 << 10)
 #define VTCR_SH0_MSK (0x3 << 12)
 #define VTCR_SH0_NS (0 << 12)
-#define VTCR_SH0_IS (2 << 12)
-#define VTCR_SH0_OS (3 << 12)
+#define VTCR_SH0_OS (2 << 12)
+#define VTCR_SH0_IS (3 << 12)
 #define VTCR_TG0_MSK (0x3 << 14)
 #define VTCR_TG0_4K (0 << 14)
 #define VTCR_TG0_16K (2 << 14)
@@ -343,6 +343,7 @@
 #define ESR_EC_SVC64 (0x15)
 #define ESR_EC_HVC64 (0x16)
 #define ESR_EC_SMC64 (0x17)
+#define ESR_EC_SYSRG (0x18)
 #define ESR_EC_IALEL (0x20)
 #define ESR_EC_IASEL (0x21)
 #define ESR_EC_PCALG (0x22)
@@ -386,6 +387,11 @@
 #define ESR_ISS_DA_DSFC_ACCESS (0x8)
 #define ESR_ISS_DA_DSFC_PERMIS (0xC)
 
+#define ESR_ISS_SYSREG_ADDR ((0xfff << 10) | (0xf << 1))
+#define ESR_ISS_SYSREG_DIR (0x1)
+#define ESR_ISS_SYSREG_REG_OFF (5)
+#define ESR_ISS_SYSREG_REG_LEN (5)
+
 /* VTTBR_EL2, Virtualization Translation Table Base Register */
 
 #define VTTBR_VMID_OFF 48
@@ -394,10 +400,76 @@
 
 #define CPUACTLR_EL1 S3_1_C15_C2_0
 
+/* GICC System Register Interface Definitions */
+
+#define ICC_PMR_EL1         S3_0_C4_C6_0           
+#define ICC_IAR0_EL1        S3_0_C12_C8_0        
+#define ICC_EOIR0_EL1       S3_0_C12_C8_1        
+#define ICC_HPPIR0_EL1      S3_0_C12_C8_2        
+#define ICC_BPR0_EL1        S3_0_C12_C8_3        
+// #define ICC_AP0R<n>_EL1     S3_0_C12_C8_        
+#define ICC_AP1R_EL1(N)     S3_0_C12_C9_ ## N        
+#define ICC_DIR_EL1         S3_0_C12_C11_1    
+#define ICC_RPR_EL1         S3_0_C12_C11_3    
+#define ICC_SGI1R_EL1       S3_0_C12_C11_5        
+#define ICC_ASGI1R_EL1      S3_0_C12_C11_6        
+#define ICC_SGI0R_EL1       S3_0_C12_C11_7        
+#define ICC_IAR1_EL1        S3_0_C12_C12_0        
+#define ICC_EOIR1_EL1       S3_0_C12_C12_1        
+#define ICC_HPPIR1_EL1      S3_0_C12_C12_2        
+#define ICC_BPR1_EL1        S3_0_C12_C12_3        
+#define ICC_CTLR_EL1        S3_0_C12_C12_4        
+#define ICC_SRE_EL1         S3_0_C12_C12_5    
+#define ICC_IGRPEN0_EL1     S3_0_C12_C12_6        
+#define ICC_IGRPEN1_EL1     S3_0_C12_C12_7        
+#define ICC_SRE_EL2         S3_4_C12_C9_5    
+#define ICC_CTLR_EL3        S3_6_C12_C12_4 
+#define ICC_SRE_EL3         S3_6_C12_C12_5
+#define ICC_IGRPEN1_EL3     S3_6_C12_C12_7
+
+// #define ICH_AP0R<n>_EL2     S3_4_C12_C8 _0-3
+// #define ICH_AP1R<n>_EL2     S3_4_C12_C9 _0-3
+#define ICH_HCR_EL2         S3_4_C12_C11_0
+#define ICH_VTR_EL2         S3_4_C12_C11_1
+#define ICH_MISR_EL2        S3_4_C12_C11_2
+#define ICH_EISR_EL2        S3_4_C12_C11_3
+#define ICH_ELRSR_EL2       S3_4_C12_C11_5
+#define ICH_VMCR_EL2        S3_4_C12_C11_7
+#define ICH_LR0_EL2         S3_4_C12_C12_0
+#define ICH_LR1_EL2         S3_4_C12_C12_1
+#define ICH_LR2_EL2         S3_4_C12_C12_2
+#define ICH_LR3_EL2         S3_4_C12_C12_3
+#define ICH_LR4_EL2         S3_4_C12_C12_4
+#define ICH_LR5_EL2         S3_4_C12_C12_5
+#define ICH_LR6_EL2         S3_4_C12_C12_6
+#define ICH_LR7_EL2         S3_4_C12_C12_7
+#define ICH_LR8_EL2         S3_4_C12_C13_0
+#define ICH_LR9_EL2         S3_4_C12_C13_1
+#define ICH_LR10_EL2        S3_4_C12_C13_2
+#define ICH_LR11_EL2        S3_4_C12_C13_3
+#define ICH_LR12_EL2        S3_4_C12_C13_4
+#define ICH_LR13_EL2        S3_4_C12_C13_5
+#define ICH_LR14_EL2        S3_4_C12_C13_6
+#define ICH_LR15_EL2        S3_4_C12_C13_7
+
 #ifndef __ASSEMBLER__
 
-#define MRS(var, reg) asm volatile("mrs %0, " #reg "\n\r" : "=r"(var))
-#define MSR(reg, var) asm volatile("msr " #reg ", %0\n\r" ::"r"(var))
+#define STR(str) #str
+
+#define MRS(reg) ({\
+    uint64_t _temp;\
+    asm volatile("mrs %0, " STR(reg) "\n\r" : "=r"(_temp));\
+    _temp;\
+})
+
+#define MSR(reg, var) asm volatile("msr " STR(reg)  ", %0\n\r" ::"r"(var))
+
+#define SYSREG_ENC_ADDR(Op0, Op1, CRn, CRm, Op2) \
+    ((((Op0) & 0x3) << 20) | \
+    (((Op2) & 0x7) << 17) | \
+    (((Op1) & 0x7) << 14) | \
+    (((CRn) & 0xf) << 10) | \
+    (((CRm) & 0xf) << 1))
 
 #endif /* |__ASSEMBLER__ */
 

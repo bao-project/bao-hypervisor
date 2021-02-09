@@ -19,7 +19,7 @@
 #include <bao.h>
 #include <arch/cache.h>
 
-typedef struct {
+typedef struct cache {
     size_t lvls;
     size_t min_shared_lvl;
     enum { UNIFIED, SEPARATE, DATA, INSTRUCTION } type[CACHE_MAX_LVL];

@@ -42,14 +42,14 @@ bool mem_translate(addr_space_t* as, void* va, uint64_t* pa)
      * TODO: are barriers needed in this operation?
      */
 
-    MRS(par_saved, PAR_EL1);
+    par_saved = MRS(PAR_EL1);
 
     if (as->type == AS_HYP || as->type == AS_HYP_CPY)
         asm volatile("AT S1E2W, %0" ::"r"(va));
     else
         asm volatile("AT S12E1W, %0" ::"r"(va));
 
-    MRS(par, PAR_EL1);
+    par = MRS(PAR_EL1);
     MSR(PAR_EL1, par_saved);
     if (par & PAR_F) {
         return false;
