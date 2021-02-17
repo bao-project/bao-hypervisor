@@ -16,6 +16,8 @@
 #ifndef __ARCH_CSR_H__
 #define __ARCH_CSR_H__
 
+#include <bao.h>
+
 #define CSR_VSSTATUS 0x200
 #define CSR_VSIE 0x204
 #define CSR_VSTVEC 0x205
@@ -201,22 +203,20 @@
 
 #ifndef __ASSEMBLER__
 
-#define CSR_STR(s) #s
-
 #define CSRR(csr)                                     \
     ({                                                \
         uint64_t _temp;                               \
-        asm volatile("csrr  %0, " CSR_STR(csr) "\n\r" \
+        asm volatile("csrr  %0, " XSTR(csr) "\n\r" \
                      : "=r"(_temp)::"memory");        \
         _temp;                                        \
     })
 
 #define CSRW(csr, rs) \
-    asm volatile("csrw  " CSR_STR(csr) ", %0\n\r" ::"rK"(rs) : "memory")
+    asm volatile("csrw  " XSTR(csr) ", %0\n\r" ::"rK"(rs) : "memory")
 #define CSRS(csr, rs) \
-    asm volatile("csrs  " CSR_STR(csr) ", %0\n\r" ::"rK"(rs) : "memory")
+    asm volatile("csrs  " XSTR(csr) ", %0\n\r" ::"rK"(rs) : "memory")
 #define CSRC(csr, rs) \
-    asm volatile("csrc  " CSR_STR(csr) ", %0\n\r" ::"rK"(rs) : "memory")
+    asm volatile("csrc  " XSTR(csr) ", %0\n\r" ::"rK"(rs) : "memory")
 
 #endif /* __ASSEMBLER__ */
 

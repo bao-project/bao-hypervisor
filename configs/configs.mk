@@ -21,48 +21,48 @@ ifeq ($(CONFIG),)
 $(error Configuration (CONFIG) not defined.)
 endif
 
-CONFIG_DIR:=$(CONFIG_REPO)/$(CONFIG)
-CONFIG_LD:=$(configs_dir)/linker.ld
-CONFIG_SRC:=$(CONFIG_DIR)/config.c
-CONFIG_ASM:=$(CONFIG_SRC:%.c=%.S)
-CONFIG_OBJ:=$(CONFIG_SRC:%.c=%.o)
-CONFIG_DEP:=$(CONFIG_SRC:%.c=%.d)
-CONFIG_BIN:=$(CONFIG_DIR)/$(CONFIG).bin
-CONFIG_ELF=$(CONFIG_BIN:%.bin=%.elf)
+config_dir:=$(CONFIG_REPO)/$(CONFIG)
+config_ld:=$(configs_dir)/linker.ld
+config_src:=$(config_dir)/config.c
+config_asm:=$(config_src:%.c=%.S)
+config_obj:=$(config_src:%.c=%.o)
+config_dep:=$(config_src:%.c=%.d)
+CONFIG_BIN:=$(config_dir)/$(CONFIG).bin
+config_elf=$(CONFIG_BIN:%.bin=%.elf)
 
 config: $(CONFIG_BIN)
 
--include $(CONFIG_DEP)
+-include $(config_dep)
 
-$(CONFIG_DEP): $(CONFIG_SRC)
-	@$(cc) $(cppflags) -S $< -o temp.S
-	@grep ".incbin" temp.S > $(patsubst %.d, %.S, $@) 
+$(config_dep): $(config_src)
+	@$(cc) $(CPPFLAGS) -S $< -o temp.S
+	-@grep ".incbin" temp.S > $(patsubst %.d, %.S, $@) 
 	@$(as) -MD $@ $(patsubst %.d, %.S, $@)  -o $(patsubst %.d, %.o, $@)
 	@rm temp.S $(patsubst %.d, %.S, $@)
-	@$(cc) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(cppflags) $(filter %.c, $^) >> $@
+	@$(cc) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $(filter %.c, $^) >> $@
 
-$(CONFIG_OBJ): $(CONFIG_SRC)
+$(config_obj): $(config_src)
 	@echo "Compiling source	$(patsubst $(cur_dir)/%, %, $<)"
-	@$(cc) $(cflags) -c $< -o $@
+	@$(cc) $(CFLAGS) -c $< -o $@
 
-$(CONFIG_ASM): $(CONFIG_SRC)
-	@$(cc) $(cppflags) -S $< -o $@
+$(config_asm): $(config_src)
+	@$(cc) $(CPPFLAGS) -S $< -o $@
 
-$(CONFIG_ELF): $(CONFIG_LD) $(CONFIG_OBJ)
+$(config_elf): $(config_ld) $(config_obj)
 	@echo "Linking			$(patsubst $(cur_dir)/%, %, $@)"
-	@$(ld) $(ldflags) -T$(CONFIG_LD) $(CONFIG_OBJ) -o $@
+	@$(ld) $(LDFLAGS) -T$(config_ld) $(config_obj) -o $@
 
-$(CONFIG_BIN): $(CONFIG_ELF)
+$(CONFIG_BIN): $(config_elf)
 	@echo "Generating		$(patsubst $(cur_dir)/%, %, $@)"
 	@$(objcopy) -S -O binary $< $@
 
 clean-config:
 	@echo "Erasing config..."
-	-rm -rf $(CONFIG_ASM)
-	-rm -rf $(CONFIG_OBJ)
-	-rm -rf $(CONFIG_DEP)
+	-rm -rf $(config_asm)
+	-rm -rf $(config_obj)
+	-rm -rf $(config_dep)
 	-rm -rf $(CONFIG_BIN)
-	-rm -rf $(CONFIG_ELF)
+	-rm -rf $(config_elf)
 
 clean: clean-config
 

@@ -16,9 +16,11 @@
 #ifndef __FENCES_ARCH_H__
 #define __FENCES_ARCH_H__
 
-#define DMB(shdmn) asm volatile("dmb " #shdmn "\n\t" ::: "memory")
+#include <bao.h>
 
-#define DSB(shdmn) asm volatile("dsb " #shdmn "\n\t" ::: "memory")
+#define DMB(shdmn) asm volatile("dmb " XSTR(shdmn) "\n\t" ::: "memory")
+
+#define DSB(shdmn) asm volatile("dsb " XSTR(shdmn) "\n\t" ::: "memory")
 
 #define ISB() asm volatile("isb\n\t" ::: "memory")
 

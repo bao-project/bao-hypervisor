@@ -27,17 +27,17 @@ extern uint8_t _config_end, _images_end;
 #define VM_IMAGE_OFFSET(vm_name) ((uint64_t)&_##vm_name##_vm_beg)
 #define VM_IMAGE_SIZE(vm_name) ((size_t)&_##vm_name##_vm_size)
 
-#define VM_IMAGE(vm_name, image)                                          \
-    extern uint64_t _##vm_name##_vm_size;                                 \
-    extern uint64_t _##vm_name##_vm_beg;                                  \
-    asm(".pushsection .vm_image_" #vm_name ", \"a\"\n\t"                  \
-        ".global _" #vm_name "_vm_beg\n\t"                                \
-        "_" #vm_name "_vm_beg:\n\t"                                       \
-        ".incbin " #image "\n\t"                                          \
-        "_" #vm_name "_vm_end:\n\t"                                       \
-        ".global _" #vm_name "_vm_size\n\t"                               \
-        ".set _" #vm_name "_vm_size,  (_" #vm_name "_vm_end - _" #vm_name \
-        "_vm_beg)\n\t"\
+#define VM_IMAGE(vm_name, image)                                            \
+    extern uint64_t _##vm_name##_vm_size;                                   \
+    extern uint64_t _##vm_name##_vm_beg;                                    \
+    asm(".pushsection .vm_image_" XSTR(vm_name) ", \"a\"\n\t"               \
+        ".global _" XSTR(vm_name) "_vm_beg\n\t"                             \
+        "_" XSTR(vm_name) "_vm_beg:\n\t"                                    \
+        ".incbin " XSTR(image) "\n\t"                                       \
+        "_" XSTR(vm_name) "_vm_end:\n\t"                                    \
+        ".global _" XSTR(vm_name) "_vm_size\n\t"                            \
+        ".set _" XSTR(vm_name) "_vm_size,  (_" XSTR(vm_name) "_vm_end - _"  \
+        #vm_name "_vm_beg)\n\t"                                             \
         ".popsection");
 
 #define CONFIG_HEADER                              \

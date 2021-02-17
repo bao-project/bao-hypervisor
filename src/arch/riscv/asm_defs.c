@@ -1,13 +1,8 @@
+#include <bao.h>
 #include <cpu.h>
 #include <vm.h>
 #include <platform.h>
 #include <arch/plic.h>
-
-#define DEFINE_OFFSET(SYMBOL, STRUCT, FIELD) \
-    asm volatile("\n-> " #SYMBOL " %0 \n" : : "i"(offsetof(STRUCT, FIELD)))
-
-#define DEFINE_SIZE(SYMBOL, TYPE) \
-    asm volatile("\n-> " #SYMBOL " %0 \n" : : "i"(sizeof(TYPE)))
 
 void cpu_defines() __attribute__((used));
 void cpu_defines()

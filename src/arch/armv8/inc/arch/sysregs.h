@@ -16,6 +16,7 @@
 #ifndef __ARCH_SYSREGS_H__
 #define __ARCH_SYSREGS_H__
 
+#include <bao.h>
 #include <bit.h>
 
 /* ID_AA64MMFR0_EL1, AArch64 Memory Model Feature Register 0 */
@@ -454,15 +455,13 @@
 
 #ifndef __ASSEMBLER__
 
-#define STR(str) #str
-
 #define MRS(reg) ({\
     uint64_t _temp;\
-    asm volatile("mrs %0, " STR(reg) "\n\r" : "=r"(_temp));\
+    asm volatile("mrs %0, " XSTR(reg) "\n\r" : "=r"(_temp));\
     _temp;\
 })
 
-#define MSR(reg, var) asm volatile("msr " STR(reg)  ", %0\n\r" ::"r"(var))
+#define MSR(reg, var) asm volatile("msr " XSTR(reg)  ", %0\n\r" ::"r"(var))
 
 #define SYSREG_ENC_ADDR(Op0, Op1, CRn, CRm, Op2) \
     ((((Op0) & 0x3) << 20) | \

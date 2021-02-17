@@ -37,10 +37,16 @@
 /* Previous Power Of Two */
 #define PPOT(VAL) (NPOT((VAL)) - (NPOT((VAL)) >> 1))
 
-#define STRINGIFY2(X) #X
-#define STRINGIFY(X) STRINGIFY2(X)
+#define STR(s)  #s
+#define XSTR(s)  STR(s)
 
 #ifndef __ASSEMBLER__
+
+#define DEFINE_OFFSET(SYMBOL, STRUCT, FIELD) \
+    asm volatile("\n-> " XSTR(SYMBOL) " %0 \n" : : "i"(offsetof(STRUCT, FIELD)))
+
+#define DEFINE_SIZE(SYMBOL, TYPE) \
+    asm volatile("\n-> " XSTR(SYMBOL) " %0 \n" : : "i"(sizeof(TYPE)))
 
 #define max(n1, n2) (((n1) > (n2)) ? (n1) : (n2))
 #define min(n1, n2) (((n1) < (n2)) ? (n1) : (n2))
