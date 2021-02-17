@@ -30,12 +30,12 @@ CONFIG_DEP:=$(CONFIG_SRC:%.c=%.d)
 CONFIG_BIN:=$(CONFIG_DIR)/$(CONFIG).bin
 CONFIG_ELF=$(CONFIG_BIN:%.bin=%.elf)
 
-config: $(CONFIG_BLOB).bin
+config: $(CONFIG_BIN)
 
 -include $(CONFIG_DEP)
 
 $(CONFIG_DEP): $(CONFIG_SRC)
-	@$(cc) $(cppflags) -S $(patsubst %.d, %.c, $@) -o temp.S
+	@$(cc) $(cppflags) -S $< -o temp.S
 	@grep ".incbin" temp.S > $(patsubst %.d, %.S, $@) 
 	@$(as) -MD $@ $(patsubst %.d, %.S, $@)  -o $(patsubst %.d, %.o, $@)
 	@rm temp.S $(patsubst %.d, %.S, $@)
