@@ -47,7 +47,6 @@ core_dir=$(src_dir)/core
 platforms_dir=$(src_dir)/platform
 configs_dir=$(cur_dir)/configs
 CONFIG_REPO?=$(configs_dir)
-config:=$(CONFIG_REPO)/$(CONFIG)/$(CONFIG).bin
 
 ifeq ($(CONFIG_BUILTIN), y)
 ifeq ($(CONFIG),)
@@ -193,15 +192,15 @@ $(asm_defs_hdr).d: $(asm_defs_src)
 	@$(cc) -MM -MT "$(patsubst %.d,%, $@)" $(addprefix -I, $(inc_dirs)) $< > $@	
 endif
 
-ifeq ($(CONFIG_BUILTIN), y)
-override CPPFLAGS+=-DCONFIG_BIN=$(config)
-builtin-config-src:=$(core_dir)/builtin-config.S
-$(builtin-config-obj): $(builtin-config-src) $(config)
+ifdef CONFIG
+include $(configs_dir)/configs.mk
+all: config
 endif
 
-ifdef CONFIG
-all: $(config)
-include $(configs_dir)/configs.mk
+ifeq ($(CONFIG_BUILTIN), y)
+override CPPFLAGS+=-DCONFIG_BIN=$(CONFIG_BIN)
+builtin-config-src:=$(core_dir)/builtin-config.S
+$(builtin-config-obj): $(builtin-config-src) $(CONFIG_BIN)
 endif
 
 #Generate directories for object, dependency and generated files

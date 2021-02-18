@@ -21,9 +21,17 @@ ifeq ($(CONFIG),)
 $(error Configuration (CONFIG) not defined.)
 endif
 
+config_dir:=$(CONFIG_REPO)
+config_src:=$(wildcard $(config_dir)/$(CONFIG).c)
+ifeq ($(config_src),)
 config_dir:=$(CONFIG_REPO)/$(CONFIG)
+config_src:=$(wildcard $(config_dir)/config.c)
+endif
+ifeq ($(config_src),)
+$(error Cant find file for $(CONFIG) config!)
+endif
+
 config_ld:=$(configs_dir)/linker.ld
-config_src:=$(config_dir)/config.c
 config_asm:=$(config_src:%.c=%.S)
 config_obj:=$(config_src:%.c=%.o)
 config_dep:=$(config_src:%.c=%.d)
