@@ -1377,7 +1377,7 @@ void mem_init(uint64_t load_addr, uint64_t config_addr)
 
     cpu_sync_barrier(&cpu_glb_sync);
 
-    if (vm_config_ptr->hyp_colors) {
+    if (!all_clrs(vm_config_ptr->hyp_colors)) {
         color_hypervisor(load_addr, config_addr);
     }
 
