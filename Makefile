@@ -129,8 +129,8 @@ gens+=$(asm_defs_hdr)
 # Toolchain flags
 override CPPFLAGS+=$(addprefix -I, $(inc_dirs)) $(arch-cppflags) $(platform-cppflags)
 vpath:.=CPPFLAGS
-override CFLAGS+=-O$(OPTIMIZATIONS) -Wall -ffreestanding -std=gnu11 $(arch-cflags)\
-	$(platform-cflags) $(CPPFLAGS)
+override CFLAGS+=-O$(OPTIMIZATIONS) -Wall -Werror -ffreestanding -std=gnu11\
+	$(arch-cflags) $(platform-cflags) $(CPPFLAGS)
 ifeq ($(DEBUG), y)
 	CFLAGS += -g
 endif

@@ -92,7 +92,7 @@ typedef struct {
     uint64_t wakeup_reason;
     uint64_t flat_map;
     gicc_state_t gicc_state;
-} __attribute__((packed)) psci_off_state_t;
+} __attribute__((packed, aligned(8))) psci_off_state_t;
 
 enum wakeup_reason {
     PSCI_WAKEUP_CPU_OFF,
