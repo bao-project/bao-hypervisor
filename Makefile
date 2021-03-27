@@ -75,7 +75,7 @@ cpu_impl_dir=$(cpu_arch_dir)/impl/$(CPU)
 
 
 build_dir:=$(cur_dir)/build/$(PLATFORM)
-builtin_build_dir:=$(cur_dir)/build/builtin-configs
+builtin_build_dir:=$(build_dir)/builtin-configs
 bin_dir:=$(cur_dir)/bin/$(PLATFORM)
 ifeq ($(CONFIG_BUILTIN), y)
 bin_dir:=$(bin_dir)/builtin-configs/$(CONFIG)
