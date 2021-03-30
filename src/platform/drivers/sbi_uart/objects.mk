@@ -1,0 +1,1 @@
+drivers-objs-y+=sbi_uart/sbi_uart.o

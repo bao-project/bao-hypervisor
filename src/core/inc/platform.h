@@ -19,22 +19,9 @@
 #include <bao.h>
 #include <arch/platform.h>
 #include <plat/platform.h>
-
-struct mem_region {
-    uint64_t base;
-    size_t size;
-
-    int place_phys;
-    uint64_t phys;
-};
-
-struct dev_region {
-    uint64_t pa;
-    uint64_t va;
-    size_t size;
-    uint64_t *interrupts;
-    size_t interrupt_num;
-};
+#include <mem.h>
+#include <cache.h>
+#include <ipc.h>
 
 struct platform_desc {
     uint64_t cpu_num;
@@ -42,12 +29,17 @@ struct platform_desc {
     uint64_t region_num;
     struct mem_region *regions;
 
+    uint64_t ipc_num;
+    struct ipc *ipcs;
+
     uint64_t dev_num;
     struct dev_region *devs;
 
     struct {
         uint64_t base;
     } console;
+
+    struct cache cache;
 
     struct arch_platform arch;
 };

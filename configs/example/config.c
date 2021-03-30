@@ -26,13 +26,23 @@ VM_IMAGE(vm2, /path/to/vm2/binary.bin);
 /**
  * Config each VM.
  */
-struct vm_config vm_config = {
+struct config config = {
     
     /**
      * This macro must be always placed in the config struct, to initialize,
      * configuration independent fields.
      */
-    VM_CONFIG_HEADER
+    CONFIG_HEADER
+
+    /**
+     * This defines an array of shared memory objects that may be associated
+     * with inter-partition communication objects in the VM platform definition
+     * below using the shared memory object ID, ie, its index in the list.
+     */
+    .shmemlist_size = 1,
+    .shmemlist = (struct shmem[]) {
+        [0] = {.size = 0x1000,}
+    },
 
     /**
      * This configuration has 2 VMs.
@@ -75,6 +85,17 @@ struct vm_config vm_config = {
                         .size = 0x10000,
                         .interrupt_num = 1,
                         .interrupts = (uint64_t[]) {38} 
+                    }
+                },
+
+                .ipc_num = 1,
+                .ipcs = (struct ipc[]) {
+                    {
+                        .base = 0x80100000,
+                        .size = 0x1000,
+                        .shmem_id = 0,
+                        .interrupt_num = 1,
+                        .interrupts = (uint64_t[]) {42}
                     }
                 },
 
@@ -129,6 +150,17 @@ struct vm_config vm_config = {
                         /* Timer interrupt */
                         .interrupt_num = 1,
                         .interrupts = (uint64_t[]) {27}
+                    }
+                },
+
+                .ipc_num = 1,
+                .ipcs = (struct ipc[]) {
+                    {
+                        .base = 0x90000000,
+                        .size = 0x1000,
+                        .shmem_id = 0,
+                        .interrupt_num = 1,
+                        .interrupts = (uint64_t[]) {112}
                     }
                 },
 

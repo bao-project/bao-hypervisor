@@ -13,9 +13,9 @@
  #
 ##
 
-CROSS_COMPILE := aarch64-elf-
+CROSS_COMPILE ?= aarch64-none-elf-
 
-arch-cppflags =
+arch-cppflags = -DGIC_VERSION=$(GIC_VERSION)
 arch-cflags = -mcmodel=large -mgeneral-regs-only
 arch-asflags =
 arch-ldflags =

@@ -122,7 +122,7 @@ int64_t psci_cpu_on_handler(uint64_t target_cpu, uintptr_t entrypoint,
 {
     int64_t ret;
     vm_t* vm = cpu.vcpu->vm;
-    vcpu_t* target_vcpu = vm_get_vcpu_by_mpidr(vm,  target_cpu | MPIDR_RES1);
+    vcpu_t* target_vcpu = vm_get_vcpu_by_mpidr(vm, target_cpu);
 
     if (target_vcpu != NULL){
 
@@ -242,14 +242,14 @@ extern uint8_t root_l1_flat_pt;
 
 static void psci_save_state(uint64_t wakeup_reason){
 
-    MRS(cpu.arch.psci_off_state.tcr_el2, TCR_EL2);
-    MRS(cpu.arch.psci_off_state.ttbr0_el2, TTBR0_EL2);
-    MRS(cpu.arch.psci_off_state.mair_el2, MAIR_EL2);
-    MRS(cpu.arch.psci_off_state.cptr_el2, CPTR_EL2);
-    MRS(cpu.arch.psci_off_state.hcr_el2, HCR_EL2);
-    MRS(cpu.arch.psci_off_state.vmpidr_el2, VMPIDR_EL2);
-    MRS(cpu.arch.psci_off_state.vtcr_el2, VTCR_EL2);
-    MRS(cpu.arch.psci_off_state.vttbr_el2, VTTBR_EL2);
+    cpu.arch.psci_off_state.tcr_el2 = MRS(TCR_EL2);
+    cpu.arch.psci_off_state.ttbr0_el2 = MRS(TTBR0_EL2);
+    cpu.arch.psci_off_state.mair_el2 = MRS(MAIR_EL2);
+    cpu.arch.psci_off_state.cptr_el2 = MRS(CPTR_EL2);
+    cpu.arch.psci_off_state.hcr_el2 = MRS(HCR_EL2);
+    cpu.arch.psci_off_state.vmpidr_el2 = MRS(VMPIDR_EL2);
+    cpu.arch.psci_off_state.vtcr_el2 = MRS(VTCR_EL2);
+    cpu.arch.psci_off_state.vttbr_el2 = MRS(VTTBR_EL2);
     mem_translate(&cpu.as, &root_l1_flat_pt, &cpu.arch.psci_off_state.flat_map);
     cpu.arch.psci_off_state.wakeup_reason = wakeup_reason;
 

@@ -17,16 +17,17 @@
 #define __ARCH_VM_H__
 
 #include <bao.h>
-#include <arch/vgicv2.h>
+#include <arch/vgic.h>
 #include <arch/psci.h>
 
 typedef struct {
     vgicd_t vgicd;
+    uintptr_t vgicr_addr;
 } vm_arch_t;
 
 typedef struct {
     uint64_t vmpidr;
-    vgic_priv_t vgicd_priv;
+    vgic_priv_t vgic_priv;
     psci_ctx_t psci_ctx;
 } vcpu_arch_t;
 
@@ -34,8 +35,8 @@ struct arch_regs {
     uint64_t x[31];
     uint64_t elr_el2;
     uint64_t spsr_el2;
-} __attribute__((aligned(16))); // makes size always aligned to 16 to respect
-                                // stack alignment
+} __attribute__((aligned(16)));  // makes size always aligned to 16 to respect
+                                 // stack alignment
 
 vcpu_t* vm_get_vcpu_by_mpidr(vm_t* vm, uint64_t mpidr);
 void vcpu_arch_entry();

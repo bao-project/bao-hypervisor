@@ -32,7 +32,9 @@ vcpu_t* vm_get_vcpu_by_mpidr(vm_t* vm, uint64_t mpidr)
 {
     list_foreach(vm->vcpu_list, vcpu_t, vcpu)
     {
-        if (vcpu->arch.vmpidr == mpidr) return vcpu;
+        if ((vcpu->arch.vmpidr & MPIDR_AFF_MSK) == (mpidr & MPIDR_AFF_MSK))  {
+            return vcpu;
+        }
     }
 
     return NULL;
@@ -48,7 +50,7 @@ void vcpu_arch_init(vcpu_t* vcpu, vm_t* vm)
     vcpu->arch.vmpidr = vm_cpuid_to_mpidr(vm, vcpu->id);
     MSR(VMPIDR_EL2, vcpu->arch.vmpidr);
 
-    vcpu->arch.psci_ctx.state = vcpu->id == CPU_MASTER ? ON : OFF;
+    vcpu->arch.psci_ctx.state = vcpu->id == 0 ? ON : OFF;
 
     uint64_t root_pt_pa;
     mem_translate(&cpu.as, vm->as.pt.root, &root_pt_pa);
@@ -118,9 +120,8 @@ void vcpu_arch_run(vcpu_t* vcpu)
     // TODO: consider using TPIDR_EL2 to store vcpu pointer
     if (vcpu->arch.psci_ctx.state == ON) {
         vcpu_arch_entry();
-    } else if (vcpu->arch.psci_ctx.state == OFF) {
+    } else {
         cpu_idle();
     }
-
-    ERROR("inconsistent psci power state");
+    
 }
