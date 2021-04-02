@@ -113,7 +113,7 @@ targets-y+=$(bin_dir)/$(PROJECT_NAME).bin
 
 # Generated files variables
 
-ld_script:= $(cur_dir)/linker.ld
+ld_script:= $(src_dir)/linker.ld
 ld_script_temp:= $(build_dir)/linker_temp.ld
 deps+=$(ld_script_temp).d
 
