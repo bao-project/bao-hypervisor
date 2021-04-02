@@ -169,7 +169,7 @@ $(build_dir)/%.d : $(src_dir)/%.[c,S]
 	@echo "Creating dependecy	$(patsubst $(cur_dir)/%, %, $<)"
 	@$(cc) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $< > $@	
 
-$(objs-y):
+$(objs-y): | $(gens)
 	@echo "Compiling source	$(patsubst $(cur_dir)/%, %, $<)"
 	@$(cc) $(CFLAGS) -c $< -o $@
 
