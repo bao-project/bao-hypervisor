@@ -22,8 +22,8 @@ Bao has no external dependencies, such as on privileged VMs running untrustable,
 large monolithic general-purpose operating systems (e.g., Linux), and, as such, 
 encompasses a much smaller TCB.
 
-Bao originally targets the Armv8-A architecture, but there is already support
-for the RISC-V architecture. 
+**NOTE**: This is work in progress! Don't expect things to be complete. 
+Use at your own risk.
 
 
 Supported Platforms
@@ -48,11 +48,6 @@ platforms is presented below:
 **RISC-V**
 - [x] QEMU virt (rv64)
 - [ ] Rocket w/ H-extension (rv64) - soon
-
-
-**NOTE**: This is work in progress! Don't expect things to be complete. 
-Use at your own risk.
-
 
 
 Community Resources
