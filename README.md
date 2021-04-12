@@ -23,24 +23,31 @@ large monolithic general-purpose operating systems (e.g., Linux), and, as such,
 encompasses a much smaller TCB.
 
 Bao originally targets the Armv8-A architecture, but there is already support
-for the RISC-V architecture. The full list of supported (and work in progress) 
+for the RISC-V architecture. 
+
+
+Supported Platforms
+-------------------
+
+The full list of supported (and work in progress) 
 platforms is presented below:
 
-- [x] Xilinx Zynq UltraScale+ MPSoC ZCU102 (Armv8-A)
-- [x] Xilinx Zynq UltraScale+ MPSoC ZCU104 (Armv8-A)
-- [x] Ultra96 Zynq UltraScale+ ZU3EG (Armv8-A)
-- [x] NXP MCIMX8QM-CPU (Armv8-A)
-- [x] NVIDIA Jetson TX2 (Armv8-A)
-- [x] 96Boards HiKey 960 (Armv8-A)
-- [x] Raspberry Pi 4 (Armv8-A)
-- [x] QEMU virt (Armv8-A)
-- [x] QEMU virt (RISC-V rv64)
-- [ ] Rocket w/ H-extension (RISC-V rv64) - soon
+**Armv8-A**
+- [x] Xilinx Zynq UltraScale+ MPSoC ZCU102
+- [x] Xilinx Zynq UltraScale+ MPSoC ZCU104
+- [x] Ultra96 Zynq UltraScale+ ZU3EG
+- [x] NXP MCIMX8QM-CPU
+- [x] NVIDIA Jetson TX2
+- [x] 96Boards HiKey 960
+- [x] Raspberry Pi 4
+- [x] QEMU virt
 - [ ] NXP MCIMX8M-EVK (Armv8-A) - soon
 - [ ] 96Boards ROCK960 (Armv8-A) - wip
 
 
-
+**RISC-V**
+- [x] QEMU virt (rv64)
+- [ ] Rocket w/ H-extension (rv64) - soon
 
 
 **NOTE**: This is work in progress! Don't expect things to be complete. 
@@ -69,9 +76,10 @@ Source code:
 Demos
 ------------
 
-A tutorial providing a step-by-step guide on how to run different demo
-configurations of the Bao hypervisor featuring multiple guest operating
-systems and targeting several supported platforms will be released soon!
+For a step-by-step guide on how to run different demo configurations 
+of the Bao hypervisor featuring multiple guest operating systems and 
+targeting several platforms please refer to:
+[**Bao Hypervisor Demo Guide**](https://github.com/bao-project/bao-demos)
 
 
 
