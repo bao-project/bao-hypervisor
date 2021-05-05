@@ -54,11 +54,6 @@ void pt_set_recursive(page_table_t* pt, uint64_t index)
         (index << PT_ROOT_FLAGS_REC_IND_OFF) & PT_ROOT_FLAGS_REC_IND_MSK;
 }
 
-void pt_arch_init()
-{
-    pt_set_recursive(&cpu.as.pt, PT_CPU_REC_IND);
-}
-
 pte_t* pt_get_pte(page_table_t* pt, uint64_t lvl, void* va)
 {
     page_table_t* cpu_pt = &cpu.as.pt;

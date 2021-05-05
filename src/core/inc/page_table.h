@@ -64,8 +64,6 @@ static inline bool pt_lvl_terminal(page_table_t* pt, size_t lvl)
 
 /* Functions implemented in architecture dependent files */
 
-void pt_arch_init();
-
 pte_t* pt_get_pte(page_table_t* pt, uint64_t lvl, void* va);
 pte_t* pt_get(page_table_t* pt, uint64_t lvl, void* va);
 void pte_set(pte_t* pte, uint64_t addr, uint64_t type, uint64_t flags);

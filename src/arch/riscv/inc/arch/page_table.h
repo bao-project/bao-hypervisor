@@ -87,8 +87,6 @@ typedef uint64_t pte_t;
 
 typedef struct page_table page_table_t;
 
-void pt_arch_init();
-
 static inline void pte_set(pte_t* pte, uint64_t addr, uint64_t type,
                            uint64_t flags)
 {

@@ -19,6 +19,4 @@
 #include <bao.h>
 #include <page_table.h>
 
-void pt_arch_init();
-
 #endif /* __ARCH_MEM_H__ */
