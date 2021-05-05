@@ -23,7 +23,6 @@
 void vm_arch_init(vm_t* vm, const vm_config_t* config)
 {
     if (vm->master == cpu.id) {
-        pt_set_recursive(&vm->as.pt, PT_VM_REC_IND);
         vgic_init(vm, &config->platform.arch.gic);
     }
 }
