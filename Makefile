@@ -168,11 +168,11 @@ $(ld_script_temp).d: $(ld_script)
 	@$(cc) -x assembler-with-cpp  -MM -MT "$(ld_script_temp) $@" \
 		$(addprefix -I, $(inc_dirs))  $< > $@
 
-$(build_dir)/%.d : $(src_dir)/%.[c,S]
+$(build_dir)/%.d : $(src_dir)/%.[c,S] | $(gens)
 	@echo "Creating dependecy	$(patsubst $(cur_dir)/%, %, $<)"
 	@$(cc) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $< > $@	
 
-$(objs-y): | $(gens)
+$(objs-y):
 	@echo "Compiling source	$(patsubst $(cur_dir)/%, %, $<)"
 	@$(cc) $(CFLAGS) -c $< -o $@
 
