@@ -16,6 +16,6 @@
 CROSS_COMPILE ?= aarch64-none-elf-
 
 arch-cppflags = -DGIC_VERSION=$(GIC_VERSION)
-arch-cflags = -mcmodel=large -mgeneral-regs-only
+arch-cflags = -march=armv8-a -mcmodel=large -mgeneral-regs-only
 arch-asflags =
 arch-ldflags =
