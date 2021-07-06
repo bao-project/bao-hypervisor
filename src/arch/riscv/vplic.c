@@ -45,7 +45,7 @@ static bool vplic_get_pend(vcpu_t* vcpu, int id)
 {
     bool ret = false;
     vplic_t * vplic = &vcpu->vm->arch.vplic;
-    if (id <= PLIC_IMPL_INTERRUPTS) ret = bitmap_get(vplic->pend, id);
+    if (id <= PLIC_MAX_INTERRUPTS) ret = bitmap_get(vplic->pend, id);
     return ret;
 }
 
@@ -53,7 +53,7 @@ static bool vplic_get_act(vcpu_t* vcpu, int id)
 {
     bool ret = false;
     vplic_t * vplic = &vcpu->vm->arch.vplic;
-    if (id <= PLIC_IMPL_INTERRUPTS) ret = bitmap_get(vplic->act, id);
+    if (id <= PLIC_MAX_INTERRUPTS) ret = bitmap_get(vplic->act, id);
     return ret;
 }
 
@@ -61,7 +61,7 @@ static bool vplic_get_enbl(vcpu_t* vcpu, int vcntxt, int id)
 {
     bool ret = false;
     vplic_t * vplic = &vcpu->vm->arch.vplic;
-    if (id <= PLIC_IMPL_INTERRUPTS) ret = !!bitmap_get(vplic->enbl[vcntxt], id);
+    if (id <= PLIC_MAX_INTERRUPTS) ret = !!bitmap_get(vplic->enbl[vcntxt], id);
     return ret;
 }
 
@@ -70,14 +70,14 @@ static uint32_t vplic_get_prio(vcpu_t *vcpu, int id)
 {
     uint32_t ret = 0;
     vplic_t * vplic = &vcpu->vm->arch.vplic;
-    if (id <= PLIC_IMPL_INTERRUPTS) ret = vplic->prio[id];
+    if (id <= PLIC_MAX_INTERRUPTS) ret = vplic->prio[id];
     return ret;
 }
 
 
 void vplic_set_hw(vm_t *vm, int id)
 {
-    if (id <= PLIC_IMPL_INTERRUPTS) {
+    if (id <= PLIC_MAX_INTERRUPTS) {
         bitmap_set(vm->arch.vplic.hw,id);
     }
 }
@@ -86,7 +86,7 @@ static bool vplic_get_hw(vcpu_t* vcpu, int id)
 {
     bool ret = false;
     vplic_t * vplic = &vcpu->vm->arch.vplic;
-    if (id <= PLIC_IMPL_INTERRUPTS) ret = bitmap_get(vplic->hw, id);
+    if (id <= PLIC_MAX_INTERRUPTS) ret = bitmap_get(vplic->hw, id);
     return ret;
 }
 
@@ -101,7 +101,7 @@ static int vplic_next_pending(vcpu_t *vcpu, int vcntxt)
     uint32_t max_prio = 0;
     uint32_t int_id = 0;
 
-    for (int i = 0; i <= PLIC_IMPL_INTERRUPTS; i++) {
+    for (int i = 0; i <= PLIC_MAX_INTERRUPTS; i++) {
         if (vplic_get_pend(vcpu, i) && !vplic_get_act(vcpu, i) && 
             vplic_get_enbl(vcpu, vcntxt, i)) {
 
@@ -165,7 +165,7 @@ static void vplic_set_enbl(vcpu_t* vcpu, int vcntxt, int id, bool set)
 {
     vplic_t * vplic = &vcpu->vm->arch.vplic;
     spin_lock(&vplic->lock);
-    if (id <= PLIC_IMPL_INTERRUPTS && vplic_get_enbl(vcpu, vcntxt, id) != set) {
+    if (id <= PLIC_MAX_INTERRUPTS && vplic_get_enbl(vcpu, vcntxt, id) != set) {
         if(set){
             bitmap_set(vplic->enbl[vcntxt],id);
         } else {
@@ -186,7 +186,7 @@ static void vplic_set_prio(vcpu_t *vcpu, int id, uint32_t prio)
 {
     vplic_t *vplic = &vcpu->vm->arch.vplic;
     spin_lock(&vplic->lock);
-    if (id <= PLIC_IMPL_INTERRUPTS && vplic_get_prio(vcpu, id) != prio) {
+    if (id <= PLIC_MAX_INTERRUPTS && vplic_get_prio(vcpu, id) != prio) {
         vplic->prio[id] = prio;
         if(vplic_get_hw(vcpu,id)){
             plic_set_prio(id, prio);
@@ -231,7 +231,7 @@ void vplic_inject(vcpu_t *vcpu, int id)
 {
     vplic_t * vplic = &vcpu->vm->arch.vplic;
     spin_lock(&vplic->lock);
-    if (id > 0 && id <= PLIC_IMPL_INTERRUPTS && !vplic_get_pend(vcpu, id)) {
+    if (id > 0 && id <= PLIC_MAX_INTERRUPTS && !vplic_get_pend(vcpu, id)) {
         
         bitmap_set(vplic->pend, id);
 
