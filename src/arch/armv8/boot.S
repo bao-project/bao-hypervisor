@@ -128,7 +128,7 @@ _set_master_cpu:
 
 	/* Disable caches and MMU */
 	mrs x3, SCTLR_EL2 
-	bic x3, x0, #0x7	
+	bic x3, x3, #0x7	
 	msr SCTLR_EL2, x3 
 
 	/* Invalidate caches */
