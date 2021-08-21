@@ -41,7 +41,7 @@
     stp x26, x27, [sp, #(8*26)]
     stp x28, x29, [sp, #(8*28)]
     mov x29, sp 
-    sub x29, x29, 32*8
+    add x29, x29, 32*8
     stp x30, x29, [sp, #(8*30)]
 
 .endm
