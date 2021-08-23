@@ -24,7 +24,7 @@ VM_IMAGE(vm1, /path/to/vm1/binary.bin);
 VM_IMAGE(vm2, /path/to/vm2/binary.bin);
 
 /**
- * Config each VM.
+ * The configuration itself is a struct config that MUST be named config.
  */
 struct config config = {
     
