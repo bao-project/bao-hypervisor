@@ -18,6 +18,7 @@
 #include <vm.h>
 #include <arch/encoding.h>
 #include <arch/csrs.h>
+#include <arch/instructions.h>
 
 void internal_exception_handler(unsigned long gprs[]) {
 
@@ -30,21 +31,21 @@ void internal_exception_handler(unsigned long gprs[]) {
     ERROR("cpu%d internal hypervisor abort - PANIC\n", cpu.id);
 }
 
-static unsigned long read_ins(uintptr_t ins_addr)
+static uint32_t read_ins(uintptr_t ins_addr)
 {
-    unsigned long ins = 0;
+    uint32_t ins = 0;
 
-    bool succ = vm_readmem(cpu.vcpu->vm, &ins, ins_addr, 2, true);
-    if (succ && ((ins & 0x3) == 3)) {
-        succ = vm_readmem(cpu.vcpu->vm, &ins, ins_addr, 4, true);
+    if(ins_addr & 0b1) {
+        ERROR("trying to read guest unaligned instruction");
     }
 
-    if(!succ){
-        ERROR("failed to read guest instruction");
-        /**
-         * TODO: maybe the best is to inject the instuction fault in the
-         * guest instead of stopping altogether
-         */
+    /**
+     * Read 16 bits at a time to make sure the access is aligned. If
+     * the instruction is not compressed, read the following 16-bits.
+     */
+    ins = hlvxhu(ins_addr);
+    if ((ins & 0b11) == 3) {
+        ins |= ((uint32_t)hlvxhu(ins_addr)) << 16;
     }
 
     return ins;
