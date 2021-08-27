@@ -19,6 +19,17 @@
 #include <arch/encoding.h>
 #include <arch/csrs.h>
 
+void internal_exception_handler(unsigned long gprs[]) {
+
+    for(int i = 0; i < 31; i++) {
+        printk("x%d:\t\t0x%0lx\n", i, gprs[i]);
+    }
+    printk("sstatus:\t0x%0lx\n", CSRR(sstatus));
+    printk("stval:\t\t0x%0lx\n", CSRR(stval));
+    printk("sepc:\t\t0x%0lx\n", CSRR(sepc));
+    ERROR("cpu%d internal hypervisor abort - PANIC\n", cpu.id);
+}
+
 static unsigned long read_ins(uintptr_t ins_addr)
 {
     unsigned long ins = 0;
@@ -128,6 +139,10 @@ void sync_exception_handler()
 {
     size_t pc_step = 0;
     unsigned long _scause = CSRR(scause);
+
+    if(!(CSRR(CSR_HSTATUS) & HSTATUS_SPV)) {
+        internal_exception_handler(&cpu.vcpu->regs->x[0]);
+    }
 
     // TODO: Do we need to check call comes from VS-mode and not VU-mode
     // or U-mode ?
