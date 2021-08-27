@@ -86,18 +86,7 @@ static inline int ins_ldst_decode(uintptr_t ins, emul_access_t *emul)
 }
 
 size_t guest_page_fault_handler()
-{   
-    /**
-     * If this was caused by an hypervisor access using hlv instructions, 
-     * just mark it as such, and return.
-     * TODO: should we proceed with emulation even if this is a hypervisor
-     * access? 
-     */
-    if(!(CSRR(CSR_HSTATUS) & HSTATUS_SPV)){
-        cpu.arch.hlv_except = true;
-        return 4;
-    }
-
+{
     uintptr_t addr = CSRR(CSR_HTVAL) << 2;
 
     emul_handler_t handler = vm_emul_get_mem(cpu.vcpu->vm, addr);

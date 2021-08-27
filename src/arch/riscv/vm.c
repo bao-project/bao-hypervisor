@@ -205,7 +205,7 @@ bool vm_readmem(vm_t *vm, void *dest, uintptr_t vmaddr, size_t n, bool exec)
     if(n == 0) return true;
 
     if (vm == cpu.vcpu->vm) {
-        while (n > 0 && !cpu.arch.hlv_except) {
+        while (n > 0) {
             int width = find_max_alignment(((uintptr_t)dest) | vmaddr);
             while(width > n) width = PPOT(width);
             /**
@@ -222,12 +222,9 @@ bool vm_readmem(vm_t *vm, void *dest, uintptr_t vmaddr, size_t n, bool exec)
             }
             n -= (count * width);
         }
-    } 
+    }
 
-    bool hlv_except = cpu.arch.hlv_except;
-    cpu.arch.hlv_except = false; 
-
-    return n == 0 && !hlv_except;
+    return n == 0;
 }
 
 void vcpu_arch_run(vcpu_t *vcpu){
