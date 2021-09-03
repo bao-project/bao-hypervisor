@@ -45,7 +45,7 @@ static uint32_t read_ins(uintptr_t ins_addr)
      */
     ins = hlvxhu(ins_addr);
     if ((ins & 0b11) == 3) {
-        ins |= ((uint32_t)hlvxhu(ins_addr)) << 16;
+        ins |= ((uint32_t)hlvxhu(ins_addr + 2)) << 16;
     }
 
     return ins;
