@@ -86,14 +86,40 @@ static inline int ins_ldst_decode(uintptr_t ins, emul_access_t *emul)
     return 0;
 }
 
+static inline bool is_pseudo_ins(uint32_t ins) {
+    return ins == TINST_PSEUDO_STORE || ins == TINST_PSEUDO_LOAD;
+}
+
 size_t guest_page_fault_handler()
 {
     uintptr_t addr = CSRR(CSR_HTVAL) << 2;
 
     emul_handler_t handler = vm_emul_get_mem(cpu.vcpu->vm, addr);
     if (handler != NULL) {
-        uintptr_t ins_addr = CSRR(sepc);
-        unsigned long ins = read_ins(ins_addr);
+
+        uint64_t ins = CSRR(CSR_HTINST);
+        uint64_t ins_size;
+        if(ins == 0) {
+            /**
+             * If htinst does not provide information about the trap,
+             * we must read the instruction from the guest's memory
+             * manually.
+             */
+            uintptr_t ins_addr = CSRR(sepc);
+            ins = read_ins(ins_addr);
+            ins_size = INS_SIZE(ins);
+        } else if (is_pseudo_ins(ins)) {
+            //TODO: we should reinject this in the guest as a fault access
+            ERROR("fault on 1st stage page table walk");
+        } else {
+            /**
+             * If htinst is valid and is not a pseudo isntruction make sure
+             * the opcode is valid even if it was a compressed instruction,
+             * but before save the real instruction size.
+             */
+            ins_size = TINST_INS_SIZE(ins);
+            ins = ins | 0b10;
+        }
 
         emul_access_t emul;
         if (ins_ldst_decode(ins, &emul) < 0) {
@@ -107,7 +133,7 @@ size_t guest_page_fault_handler()
          */
 
         if (handler(&emul)) {
-            return INS_SIZE(ins);
+            return ins_size;
         } else {
             ERROR("emulation handler failed (0x%x at 0x%x)", addr, CSRR(sepc));
         }
