@@ -204,9 +204,8 @@ static bool pp_alloc(page_pool_t *pool, size_t n, bool aligned,
     ppages->size = 0;
 
     bool ok = false;
-    uint64_t base = -1;
 
-    if (n == 0) return base;
+    if (n == 0) return false;
 
     spin_lock(&pool->lock);
 
