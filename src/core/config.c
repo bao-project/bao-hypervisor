@@ -15,8 +15,6 @@
 
 #include <config.h>
 
-#define adjust_ptr(p, o) ((p) = (p) ? (typeof(p))(  (void*)(p) + (uint64_t)(o)) : (p))
-
 void config_adjust_to_va(struct config *config, uint64_t phys)
 {
     adjust_ptr(config->shmemlist, config);
