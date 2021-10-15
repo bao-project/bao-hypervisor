@@ -106,7 +106,7 @@ static void mem_free_ppages(ppages_t *ppages)
                 uint64_t index = 0;
                 for (int i = 0; i < ppages->size; i++) {
                     index = pp_next_clr(pool->base, index, ppages->colors);
-                    bitmap_set(pool->bitmap, index++);
+                    bitmap_clear(pool->bitmap, index++);
                 }
             } else {
                 bitmap_clear_consecutive(pool->bitmap, index, ppages->size);
