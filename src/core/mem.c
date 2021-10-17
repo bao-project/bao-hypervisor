@@ -876,12 +876,19 @@ void *mem_alloc_page(size_t n, enum AS_SEC sec, bool phys_aligned)
     return vpage;
 }
 
+static size_t cpu_boot_alloc_size() {
+    size_t size = ALIGN(sizeof(cpu_t), PAGE_SIZE);
+    for (size_t i = 1; i < cpu.as.pt.dscr->lvls; i++) {
+        size += pt_size(&cpu.as.pt, i);
+    }
+    return size;
+}
+
 bool root_pool_set_up_bitmap(uint64_t load_addr)
 {
     size_t image_size = (size_t)(&_image_end - &_image_start);
     size_t config_size = (size_t)(&_config_end - &_config_start);
-    size_t cpu_size = platform.cpu_num * (ALIGN(sizeof(struct cpu), PAGE_SIZE) +
-                                          (PT_SIZE * (PT_LVLS - 1)));
+    size_t cpu_size = platform.cpu_num * cpu_boot_alloc_size();
 
     uint64_t bitmap_size = root_pool.size / (8 * PAGE_SIZE) +
                            ((root_pool.size % (8 * PAGE_SIZE) != 0) ? 1 : 0);
@@ -904,9 +911,7 @@ bool pp_root_reserve_hyp_mem(uint64_t load_addr)
 {
     size_t image_size = (size_t)(&_image_end - &_image_start);
     size_t config_size = (size_t)(&_config_end - &_config_start);
-    uint64_t cpu_size =
-        platform.cpu_num *
-        (ALIGN(sizeof(struct cpu), PAGE_SIZE) + (PT_SIZE * (PT_LVLS - 1)));
+    uint64_t cpu_size = platform.cpu_num * cpu_boot_alloc_size();
     uint64_t cpu_base_addr = load_addr + image_size + config_size;
 
     ppages_t images_ppages = mem_ppages_get(load_addr, NUM_PAGES(image_size));
@@ -1149,8 +1154,7 @@ void color_hypervisor(const uint64_t load_addr, const uint64_t config_addr)
     ppages_t p_interface;
 
     size_t image_size = (size_t)(&_image_end - &_image_start);
-    size_t cpu_boot_size =
-        ALIGN(sizeof(cpu_t) + (PT_SIZE * (PT_LVLS - 1)), PAGE_SIZE);
+    size_t cpu_boot_size = cpu_boot_alloc_size();
     size_t config_size = (size_t)(&_config_end - &_config_start);
     size_t bitmap_size = (root_pool.size / (8 * PAGE_SIZE) +
                           !!(root_pool.size % (8 * PAGE_SIZE) != 0)) *

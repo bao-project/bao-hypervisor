@@ -38,7 +38,7 @@ static inline void as_map_physical_identity(addr_space_t *as) {
 
         uintptr_t addr = base;
         for (int j = 0; j < num_entries; j++) {
-            int index = PTE_INDEX(lvl, addr);
+            int index = pt_getpteindex_by_va(&as->pt, (void*)addr, lvl);
             pte_set(&pt[index], addr, PTE_SUPERPAGE, PTE_HYP_FLAGS);
             addr += lvl_size;
         }
@@ -55,7 +55,8 @@ void as_arch_init(addr_space_t *as) {
 
 bool mem_translate(addr_space_t *as, void *va, uint64_t *pa)
 {
-    pte_t* pte = &(as->pt.root[PTE_INDEX(0, (uintptr_t)va)]);
+    size_t pte_index = pt_getpteindex_by_va(&as->pt, va, 0);
+    pte_t* pte = &(as->pt.root[pte_index]);
     size_t lvl = 0;
     for (int i = 0; i < as->pt.dscr->lvls; i++) {
         if (!pte_valid(pte) || !pte_table(&as->pt, pte, i)) {
@@ -63,7 +64,7 @@ bool mem_translate(addr_space_t *as, void *va, uint64_t *pa)
             break;  
         }
         pte = (pte_t*)pte_addr(pte);
-        int index = PTE_INDEX(i + 1, (uintptr_t)va);
+        int index = pt_getpteindex_by_va(&as->pt, va, i+1);
         pte = &pte[index];
     }
     if (pte && pte_valid(pte)) {

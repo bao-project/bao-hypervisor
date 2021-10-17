@@ -47,14 +47,21 @@ static inline uint64_t pt_lvlsize(page_table_t* pt, size_t lvl)
     return 1ULL << pt->dscr->lvl_off[lvl];
 }
 
-static inline uint64_t pt_getpteindex(page_table_t* pt, pte_t* pte, size_t lvl)
-{
-    return (uint64_t)(((uint64_t)pte) & (PT_SIZE - 1)) / sizeof(pte_t);
-}
-
 static inline uint64_t pt_size(page_table_t* pt, size_t lvl)
 {
     return pt_nentries(pt, lvl) * sizeof(pte_t);
+}
+
+static inline uint64_t pt_getpteindex(page_table_t* pt, pte_t* pte, size_t lvl)
+{
+    return (uint64_t)(((uint64_t)pte) & (pt_size(pt, lvl) - 1)) / sizeof(pte_t);
+}
+
+static inline uint64_t pt_getpteindex_by_va(page_table_t* pt, void* va, 
+    size_t lvl)
+{
+    return (((uint64_t)va) >> pt->dscr->lvl_off[lvl]) &
+        (pt_nentries(pt, lvl) - 1);
 }
 
 static inline bool pt_lvl_terminal(page_table_t* pt, size_t lvl)

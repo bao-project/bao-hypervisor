@@ -17,6 +17,10 @@
 #include <arch/page_table.h>
 #include <asm_defs.h>
 
+#define PT_SIZE PAGE_SIZE
+#define PT_LVLS 3
+#define PTE_INDEX_SHIFT(LEVEL) ((9 * (PT_LVLS - 1 - (LEVEL))) + 12)
+
 /**
  *  Calculates the index or offset of a page table entry for given virtual 
  * address(addr) at a given level of page table.

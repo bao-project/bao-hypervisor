@@ -45,7 +45,7 @@ typedef struct cpu {
 
     cpu_arch_t arch;
 
-    uint8_t root_pt[PT_SIZE] __attribute__((aligned(PT_SIZE)));
+    uint8_t root_pt[HYP_ROOT_PT_SIZE] __attribute__((aligned(HYP_ROOT_PT_SIZE)));
 
     uint8_t stack[STACK_SIZE] __attribute__((aligned(PAGE_SIZE)));
 
