@@ -15,6 +15,8 @@
  */
 
 #include <arch/gic.h>
+#include <arch/gicv3.h>
+
 #include <cpu.h>
 #include <mem.h>
 #include <platform.h>
@@ -29,87 +31,9 @@ static spinlock_t gicr_lock;
 
 uint64_t NUM_LRS;
 
-uint64_t gich_num_lrs()
+inline uint64_t gich_num_lrs()
 {
     return ((MRS(ICH_VTR_EL2) & ICH_VTR_MSK) >> ICH_VTR_OFF) + 1;
-}
-
-inline uint64_t gich_read_lr(size_t i)
-{
-    if (i >= NUM_LRS) {
-        ERROR("gic: trying to read inexistent list register");
-    }
-
-    switch (i) {
-        case 0: return MRS(ICH_LR0_EL2);
-        case 1: return MRS(ICH_LR1_EL2);
-        case 2: return MRS(ICH_LR2_EL2);
-        case 3: return MRS(ICH_LR3_EL2);
-        case 4: return MRS(ICH_LR4_EL2);
-        case 5: return MRS(ICH_LR5_EL2);
-        case 6: return MRS(ICH_LR6_EL2);
-        case 7: return MRS(ICH_LR7_EL2);
-        case 8: return MRS(ICH_LR8_EL2);
-        case 9: return MRS(ICH_LR9_EL2);
-        case 10: return MRS(ICH_LR10_EL2);
-        case 11: return MRS(ICH_LR11_EL2);
-        case 12: return MRS(ICH_LR12_EL2);
-        case 13: return MRS(ICH_LR13_EL2);
-        case 14: return MRS(ICH_LR14_EL2);
-        case 15: return MRS(ICH_LR15_EL2);
-        default: return 0;
-    }
-}
-
-inline void gich_write_lr(size_t i, uint64_t val)
-{
-    if (i >= NUM_LRS) {
-        ERROR("gic: trying to write inexistent list register");
-    }
-
-    switch (i) {
-        case 0: MSR(ICH_LR0_EL2, val);   break;        
-        case 1: MSR(ICH_LR1_EL2, val);   break;         
-        case 2: MSR(ICH_LR2_EL2, val);   break;         
-        case 3: MSR(ICH_LR3_EL2, val);   break;         
-        case 4: MSR(ICH_LR4_EL2, val);   break;         
-        case 5: MSR(ICH_LR5_EL2, val);   break;         
-        case 6: MSR(ICH_LR6_EL2, val);   break;         
-        case 7: MSR(ICH_LR7_EL2, val);   break;         
-        case 8: MSR(ICH_LR8_EL2, val);   break;         
-        case 9: MSR(ICH_LR9_EL2, val);   break;         
-        case 10: MSR(ICH_LR10_EL2, val); break;           
-        case 11: MSR(ICH_LR11_EL2, val); break;           
-        case 12: MSR(ICH_LR12_EL2, val); break;           
-        case 13: MSR(ICH_LR13_EL2, val); break;           
-        case 14: MSR(ICH_LR14_EL2, val); break;           
-        case 15: MSR(ICH_LR15_EL2, val); break;
-    }
-}
-
-uint32_t gich_get_hcr()
-{
-    return MRS(ICH_HCR_EL2);
-}
-
-void gich_set_hcr(uint32_t hcr)
-{
-    MSR(ICH_HCR_EL2, hcr);
-}
-
-uint32_t gich_get_misr()
-{
-    return MRS(ICH_MISR_EL2);
-}
-
-uint64_t gich_get_eisr()
-{
-    return MRS(ICH_EISR_EL2);
-}
-
-uint64_t gich_get_elrsr()
-{
-    return MRS(ICH_ELRSR_EL2);
 }
 
 static inline void gicc_init()
@@ -188,18 +112,6 @@ void gic_map_mmio()
     size_t gicr_size = NUM_PAGES(sizeof(gicr_t)) * platform.cpu_num;
     gicr = (gicr_t *)mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL, NULL, gicr_size);
     mem_map_dev(&cpu.as, (void *)gicr, platform.arch.gic.gicr_addr, gicr_size);
-}
-
-uint32_t gicc_iar() {
-    return MRS(ICC_IAR1_EL1);
-}
-
-void gicc_eoir(uint32_t eoir) {
-    MSR(ICC_EOIR1_EL1, eoir);
-}
-
-void gicc_dir(uint32_t dir) {
-    MSR(ICC_DIR_EL1, dir);
 }
 
 void gicr_set_prio(uint64_t int_id, uint8_t prio, uint32_t gicr_id)

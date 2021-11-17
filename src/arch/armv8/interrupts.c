@@ -70,8 +70,3 @@ void interrupts_arch_vm_assign(vm_t *vm, uint64_t id)
 {
     vgic_set_hw(vm, id);
 }
-
-void interrupts_arch_vm_inject(vm_t *vm, uint64_t id)
-{
-    vgic_inject(&vm->arch.vgicd, id, cpu.vcpu->id);
-}

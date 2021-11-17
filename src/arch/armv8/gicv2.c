@@ -15,6 +15,8 @@
  */
 
 #include <arch/gic.h>
+#include <arch/gicv2.h>
+
 #include <bit.h>
 #include <spinlock.h>
 #include <cpu.h>
@@ -34,53 +36,6 @@ uint64_t NUM_LRS;
 uint64_t gich_num_lrs()
 {
     return ((gich.VTR & GICH_VTR_MSK) >> GICH_VTR_OFF) + 1;
-}
-
-inline uint64_t gich_read_lr(size_t i)
-{
-    if (i < NUM_LRS) {
-        return gich.LR[i];
-    } else {
-        ERROR("gic: trying to read inexistent list register");
-    }
-}
-
-inline void gich_write_lr(size_t i, uint64_t val)
-{
-    if (i < NUM_LRS) {
-        gich.LR[i] = val;
-    } else {
-        ERROR("gic: trying to write inexistent list register");
-    }
-}
-
-uint32_t gich_get_hcr()
-{
-    return gich.HCR;
-}
-
-void gich_set_hcr(uint32_t hcr)
-{
-    gich.HCR = hcr;
-}
-
-uint32_t gich_get_misr()
-{
-    return gich.MISR;
-}
-
-uint64_t gich_get_eisr()
-{
-    uint64_t eisr = gich.EISR[0];
-    if (NUM_LRS > 32) eisr |= (((uint64_t)gich.EISR[1] << 32));
-    return eisr;
-}
-
-uint64_t gich_get_elrsr()
-{
-    uint64_t elsr = gich.ELSR[0];
-    if (NUM_LRS > 32) elsr |= (((uint64_t)gich.ELSR[1] << 32));
-    return elsr;
 }
 
 static inline void gicc_init()
@@ -178,18 +133,6 @@ void gic_map_mmio()
                 NUM_PAGES(sizeof(gich)));
     mem_map_dev(&cpu.as, (void *)&gicd, platform.arch.gic.gicd_addr,
                 NUM_PAGES(sizeof(gicd)));
-}
-
-uint32_t gicc_iar() {
-    return gicc.IAR;
-}
-
-void gicc_eoir(uint32_t eoir) {
-     gicc.EOIR = eoir;
-}
-
-void gicc_dir(uint32_t dir) {
-     gicc.DIR = dir;
 }
 
 void gic_send_sgi(uint64_t cpu_target, uint64_t sgi_num)

@@ -62,15 +62,10 @@ static inline bool interrupt_is_reserved(int int_id)
     return bitmap_get(hyp_interrupt_bitmap, int_id);
 }
 
-inline void interrupts_vm_inject(vm_t *vm, uint64_t id)
-{
-    interrupts_arch_vm_inject(vm, id);
-}
-
 enum irq_res interrupts_handle(uint64_t int_id)
 {
     if (vm_has_interrupt(cpu.vcpu->vm, int_id)) {
-        interrupts_vm_inject(cpu.vcpu->vm, int_id);
+        vcpu_inject_hw_irq(cpu.vcpu, int_id);
 
         return FORWARD_TO_VM;
 

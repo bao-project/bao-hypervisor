@@ -14,6 +14,16 @@
  */
 
 #include <arch/gic.h>
+
+#if (GIC_VERSION == GICV2)
+#include <arch/gicv2.h>
+#elif (GIC_VERSION == GICV3)
+#include <arch/gicv3.h>
+#else 
+#error "unknown GIV version " GIC_VERSION
+#endif
+
+
 #include <interrupts.h>
 #include <cpu.h>
 #include <spinlock.h>

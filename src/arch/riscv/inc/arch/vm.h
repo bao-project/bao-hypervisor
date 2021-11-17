@@ -117,4 +117,15 @@ struct arch_regs {
 
 void vcpu_arch_entry();
 
+typedef struct vcpu vcpu_t;
+static inline void vcpu_arch_inject_hw_irq(vcpu_t *vcpu, uint64_t id)
+{
+    vplic_inject(vcpu, id);
+}
+
+static inline void vcpu_arch_inject_irq(vcpu_t *vcpu, uint64_t id)
+{
+    vplic_inject(vcpu, id);
+}
+
 #endif /* __ARCH_VM_H__ */

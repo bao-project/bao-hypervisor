@@ -14,19 +14,13 @@
  */
 
 #include <arch/vgic.h>
+#include <arch/vgicv2.h>
 
 #include <bit.h>
 #include <spinlock.h>
 #include <cpu.h>
 #include <interrupts.h>
 #include <vm.h>
-
-bool vgic_int_vcpu_is_target(vcpu_t *vcpu, vgic_int_t *interrupt)
-{
-    bool priv = gic_is_priv(interrupt->id);
-    bool target = interrupt->targets & (1 << cpu.id);
-    return priv || target;
-}
 
 bool vgic_int_has_other_target(vcpu_t *vcpu, vgic_int_t *interrupt)
 {

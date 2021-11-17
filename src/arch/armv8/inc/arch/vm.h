@@ -41,5 +41,16 @@ struct arch_regs {
 vcpu_t* vm_get_vcpu_by_mpidr(vm_t* vm, uint64_t mpidr);
 void vcpu_arch_entry();
 
+typedef struct vcpu vcpu_t;
+
+static inline void vcpu_arch_inject_hw_irq(vcpu_t* vcpu, uint64_t id)
+{
+    vgic_inject_hw(vcpu, id);
+}
+
+static inline void vcpu_arch_inject_irq(vcpu_t* vcpu, uint64_t id)
+{
+    vgic_inject(vcpu, id, 0);
+}
 
 #endif /* __ARCH_VM_H__ */

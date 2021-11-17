@@ -106,6 +106,16 @@ static inline int vm_has_interrupt(vm_t* vm, int int_id)
     return bitmap_get(vm->interrupt_bitmap, int_id);
 }
 
+static inline void vcpu_inject_hw_irq(vcpu_t *vcpu, uint64_t id)
+{
+    vcpu_arch_inject_hw_irq(vcpu, id);
+}
+
+static inline void vcpu_inject_irq(vcpu_t *vcpu, uint64_t id)
+{
+    vcpu_arch_inject_irq(vcpu, id);
+}
+
 /* ------------------------------------------------------------*/
 
 void vm_arch_init(vm_t* vm, const vm_config_t* config);

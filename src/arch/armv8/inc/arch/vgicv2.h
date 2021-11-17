@@ -13,12 +13,17 @@
  *
  */
 
-#ifndef __ARCH_INTERRUPTS_H__
-#define __ARCH_INTERRUPTS_H__
+#ifndef __VGICV2_H__
+#define __VGICV2_H__
 
-#include <bao.h>
+#include <arch/vgic.h>
+#include <vm.h>
 
-#define IPI_CPU_MSG 1
-#define MAX_INTERRUPTS GIC_MAX_INTERUPTS
+static inline bool vgic_int_vcpu_is_target(vcpu_t *vcpu, vgic_int_t *interrupt)
+{
+    bool priv = gic_is_priv(interrupt->id);
+    bool target = interrupt->targets & (1 << vcpu->phys_id);
+    return priv || target;
+}
 
-#endif /* __ARCH_INTERRUPTS_H__ */
+#endif /* __VGICV2_H__ */

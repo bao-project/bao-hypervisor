@@ -444,23 +444,12 @@ void gicr_set_icfgr(uint64_t int_id, uint8_t cfg, uint32_t gicr_id);
 void gicr_set_act(uint64_t int_id, bool act, uint32_t gicr_id);
 uint64_t gicr_get_prio(uint64_t int_id, uint32_t gicr_id);
 
-uint64_t gich_read_lr(size_t i);
-void gich_write_lr(size_t i, uint64_t val);
-uint32_t gich_get_hcr();
-void gich_set_hcr(uint32_t);
-uint32_t gich_get_misr();
-uint64_t gich_get_eisr();
-uint64_t gich_get_elrsr();
-
 void gic_maintenance_handler(uint64_t arg);
 
 extern volatile gicd_t gicd;
 extern volatile gicr_t *gicr;
 
 uint64_t gich_num_lrs();
-uint32_t gicc_iar();
-void gicc_eoir(uint32_t eoir);
-void gicc_dir(uint32_t dir);
 
 static inline uint64_t gic_num_irqs()
 {

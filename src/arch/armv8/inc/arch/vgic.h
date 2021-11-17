@@ -82,7 +82,8 @@ typedef struct {
 void vgic_init(vm_t *vm, const struct gic_dscrp *gic_dscrp);
 void vgic_cpu_init(vcpu_t *vcpu);
 void vgic_set_hw(vm_t *vm, uint64_t id);
-void vgic_inject(vgicd_t *vgicd, uint64_t id, uint64_t source);
+void vgic_inject(vcpu_t *vcpu, uint64_t id, uint64_t source);
+void vgic_inject_hw(vcpu_t* vcpu, uint64_t id);
 
 /* VGIC INTERNALS */
 
@@ -126,7 +127,6 @@ void vgic_send_sgi_msg(vcpu_t *vcpu, uint64_t pcpu_mask, uint64_t int_id);
 uint64_t vgic_get_itln(const struct gic_dscrp *gic_dscrp);
 
 /* interface for version specific vgic */
-bool vgic_int_vcpu_is_target(vcpu_t *vcpu, vgic_int_t *interrupt);
 bool vgic_int_has_other_target(vcpu_t *vcpu, vgic_int_t *interrupt);
 uint64_t vgic_int_ptarget_mask(vcpu_t *vcpu, vgic_int_t *interrupt);
 void vgic_inject_sgi(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t source);

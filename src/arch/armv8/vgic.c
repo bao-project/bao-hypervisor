@@ -15,6 +15,16 @@
 
 #include <arch/vgic.h>
 
+#if (GIC_VERSION == GICV2)
+#include <arch/gicv2.h>
+#include <arch/vgicv2.h>
+#elif (GIC_VERSION == GICV3)
+#include <arch/gicv3.h>
+#include <arch/vgicv3.h>
+#else 
+#error "unknown GIV version " GIC_VERSION
+#endif
+
 #include <bit.h>
 #include <spinlock.h>
 #include <cpu.h>
@@ -871,23 +881,26 @@ bool vgicd_emul_handler(emul_access_t *acc)
     }
 }
 
-void vgic_inject(vgicd_t *vgicd, uint64_t id, uint64_t source)
+void vgic_inject_hw(vcpu_t* vcpu, uint64_t id) {
+    vgic_int_t *interrupt = vgic_get_int(vcpu, id, vcpu->id);
+    spin_lock(&interrupt->lock);
+    interrupt->owner = vcpu;
+    interrupt->state = PEND;
+    interrupt->in_lr = false;
+    vgic_add_lr(vcpu, interrupt);
+    spin_unlock(&interrupt->lock);
+}
+
+void vgic_inject(vcpu_t* vcpu, uint64_t id, uint64_t source)
 {
-    vgic_int_t *interrupt = vgic_get_int(cpu.vcpu, id, cpu.vcpu->id);
+    vgic_int_t *interrupt = vgic_get_int(vcpu, id, vcpu->id);
     if (interrupt != NULL) {
         if (vgic_int_is_hw(interrupt)) {
-            spin_lock(&interrupt->lock);
-            interrupt->owner = cpu.vcpu;
-            interrupt->state = PEND;
-            interrupt->in_lr = false;
-            vgic_route(cpu.vcpu, interrupt);
-            spin_unlock(&interrupt->lock);
+            vgic_inject_hw(vcpu, id);
+        } else if (GIC_VERSION == GICV2 && gic_is_sgi(id)) {
+            vgic_inject_sgi(vcpu, interrupt, source);
         } else {
-            if (GIC_VERSION == GICV2 && gic_is_sgi(id)) {
-                vgic_inject_sgi(cpu.vcpu, interrupt, source);
-            } else {
-                vgic_int_set_field(&ispendr_info, cpu.vcpu, interrupt, true);
-            }
+            vgic_int_set_field(&ispendr_info, vcpu, interrupt, true);
         }
     }
 }
@@ -926,7 +939,7 @@ void vgic_ipi_handler(uint32_t event, uint64_t data)
         } break;
 
         case VGIC_INJECT: {
-            vgic_inject(&cpu.vcpu->vm->arch.vgicd, int_id, val);
+            vgic_inject(cpu.vcpu, int_id, val);
         } break;
 
         case VGIC_SET_REG: {

@@ -14,6 +14,7 @@
  */
 
 #include <arch/vgic.h>
+#include <arch/vgicv3.h>
 
 #include <bit.h>
 #include <spinlock.h>
@@ -27,20 +28,6 @@
 #define GICR_REG_OFF(REG) (offsetof(gicr_t, REG) & 0x1ffff)
 #define GICR_REG_MASK(ADDR) ((ADDR)&0x1ffff)
 
-static inline bool vgic_broadcast(vcpu_t *vcpu, vgic_int_t *interrupt)
-{
-    return (interrupt->route & GICD_IROUTER_IRM_BIT);
-}
-
-bool vgic_int_vcpu_is_target(vcpu_t *vcpu, vgic_int_t *interrupt)
-{
-    bool priv = gic_is_priv(interrupt->id);
-    bool local = priv && (interrupt->phys.redist == vcpu->phys_id);
-    bool routed_here =
-        !priv && !(interrupt->phys.route ^ (MRS(MPIDR_EL1) & MPIDR_AFF_MSK));
-    bool any = !priv && vgic_broadcast(vcpu, interrupt);
-    return local || routed_here || any;
-}
 
 bool vgic_int_has_other_target(vcpu_t *vcpu, vgic_int_t *interrupt)
 {
