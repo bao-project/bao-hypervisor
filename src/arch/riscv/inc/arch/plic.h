@@ -27,23 +27,23 @@
 #define PLIC_ENBL_OFF (0x002000)
 #define PLIC_CLAIMCMPLT_OFF (0x200000)
 
-typedef struct {
+struct plic_global {
     uint32_t prio[PLIC_NUM_PRIO_REGS];
     uint32_t pend[PLIC_NUM_PEND_REGS];
     uint32_t enbl[PLIC_PLAT_CNTXT_NUM][PLIC_NUM_ENBL_REGS];
-} __attribute__((__packed__, aligned(PAGE_SIZE))) plic_global_t;
+} __attribute__((__packed__, aligned(PAGE_SIZE)));
 
-typedef struct {
+struct plic_hart {
     uint32_t threshold;
     union {
         uint32_t claim;
         uint32_t complete;
     };
     uint8_t res[0x1000 - 0x0008];
-} __attribute__((__packed__, aligned(PAGE_SIZE))) plic_hart_t;
+} __attribute__((__packed__, aligned(PAGE_SIZE)));
 
-extern volatile plic_global_t plic_global;
-extern volatile plic_hart_t plic_hart[PLIC_PLAT_CNTXT_NUM];
+extern volatile struct plic_global plic_global;
+extern volatile struct plic_hart plic_hart[PLIC_PLAT_CNTXT_NUM];
 extern size_t PLIC_IMPL_INTERRUPTS;
 
 void plic_init();
@@ -57,12 +57,12 @@ void plic_set_threshold(unsigned cntxt, uint32_t threshold);
 uint32_t plic_get_threshold(unsigned int_id);
 bool plic_get_pend(unsigned int_id);
 
-typedef struct {
+struct plic_cntxt {
     int hart_id;
     enum { PRIV_M = 3, PRIV_S = 2, PRIV_U = 0 } mode;
-} plic_cntxt_t;
+};
 
-int plic_plat_cntxt_to_id(plic_cntxt_t cntxt);
-plic_cntxt_t plic_plat_id_to_cntxt(int id);
+int plic_plat_cntxt_to_id(struct plic_cntxt cntxt);
+struct plic_cntxt plic_plat_id_to_cntxt(int id);
 
 #endif /* __PLIC_H__ */

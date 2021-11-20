@@ -16,11 +16,11 @@
 #include <objcache.h>
 #include <string.h>
 
-typedef union slab {
+union slab {
     union {
         struct {
             node_t next;
-            list_t free;
+            struct list free;
             size_t objsize;
             size_t objnum;
             size_t objcount;
@@ -31,18 +31,18 @@ typedef union slab {
 
     uint8_t slab[SLAB_SIZE];
 
-} slab_t;
+};
 
 // TODO
 // static size_t std_objcache_sizes[] = {32, 64, 128, 256, 512, 1024};
-// static objcache_t
+// static struct objcache
 // std_objcache_list[sizeof(std_objcache_sizes)/sizeof(size_t)];
 
-static slab_t* slab_create(objcache_t* oc, enum AS_SEC sec)
+static union slab* slab_create(struct objcache* oc, enum AS_SEC sec)
 {
-    slab_t* slab = NULL;
+    union slab* slab = NULL;
     if (oc != NULL) {
-        slab = (slab_t*)mem_alloc_page(1, sec, false);
+        slab = (union slab*)mem_alloc_page(1, sec, false);
 
         if (slab != NULL) {
             memset(slab, 0, PAGE_SIZE);
@@ -50,10 +50,10 @@ static slab_t* slab_create(objcache_t* oc, enum AS_SEC sec)
             slab->header.objsize =
                 ALIGN((sizeof(node_t) + oc->osize), sizeof(size_t));
             slab->header.objnum =
-                (PAGE_SIZE - sizeof(((slab_t*)NULL)->header)) /
+                (PAGE_SIZE - sizeof(((union slab*)NULL)->header)) /
                 slab->header.objsize;
             slab->header.objcount = slab->header.objnum;
-            list_t* obj_lst = &(slab->header.free);
+            struct list* obj_lst = &(slab->header.free);
             list_init(obj_lst);
             void* obj = &(slab->slab[sizeof(slab->header)]);
             for (size_t i = 0; i < slab->header.objnum; i++) {
@@ -65,7 +65,7 @@ static slab_t* slab_create(objcache_t* oc, enum AS_SEC sec)
     return slab;
 }
 
-static void* slab_alloc(slab_t* slab)
+static void* slab_alloc(union slab* slab)
 {
     void* obj = NULL;
     if (slab != NULL) {
@@ -79,7 +79,7 @@ static void* slab_alloc(slab_t* slab)
     return obj;
 }
 
-static bool slab_free(slab_t* slab, void* obj)
+static bool slab_free(union slab* slab, void* obj)
 {
     void* obj_addr = obj - sizeof(node_t);
 
@@ -102,22 +102,22 @@ static bool slab_free(slab_t* slab, void* obj)
 
     return false;
 }
-static slab_t* slab_get(void* obj)
+static union slab* slab_get(void* obj)
 {
-    return (slab_t*)(((uint64_t)obj) & ~(PAGE_SIZE - 1));
+    return (union slab*)(((uint64_t)obj) & ~(PAGE_SIZE - 1));
 }
 
-static bool slab_full(slab_t* slab)
+static bool slab_full(union slab* slab)
 {
     return slab->header.objcount == 0;
 }
 
-static bool slab_empty(slab_t* slab)
+static bool slab_empty(union slab* slab)
 {
     return slab->header.objnum == slab->header.objcount;
 }
 
-void objcache_init(objcache_t* oc, size_t osize, enum AS_SEC sec, bool prime)
+void objcache_init(struct objcache* oc, size_t osize, enum AS_SEC sec, bool prime)
 {
     oc->osize = osize;
     list_init(&oc->slabs);
@@ -126,22 +126,22 @@ void objcache_init(objcache_t* oc, size_t osize, enum AS_SEC sec, bool prime)
     oc->section = sec;
 
     if (prime) {
-        slab_t* slab = slab_create(oc, sec);
+        union slab* slab = slab_create(oc, sec);
         list_push(&oc->slabs, &slab->header.next);
         oc->last_free = slab;
     }
 }
 
-void* objcache_alloc(objcache_t* oc)
+void* objcache_alloc(struct objcache* oc)
 {
     void* object = NULL;
-    slab_t* slab = NULL;
+    union slab* slab = NULL;
 
     if (oc != NULL) {
         spin_lock(&oc->lock);
 
         if (oc->last_free == NULL) {
-            list_foreach(oc->slabs, slab_t, islab)
+            list_foreach(oc->slabs, union slab, islab)
             {
                 if (!slab_full(islab)) {
                     slab = islab;
@@ -169,9 +169,9 @@ void* objcache_alloc(objcache_t* oc)
     return object;
 }
 
-bool objcache_free(objcache_t* oc, void* obj)
+bool objcache_free(struct objcache* oc, void* obj)
 {
-    slab_t* slab = NULL;
+    union slab* slab = NULL;
     bool ret = false;
 
     if (oc != NULL) {

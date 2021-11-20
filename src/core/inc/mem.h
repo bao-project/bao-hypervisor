@@ -38,19 +38,19 @@ enum AS_SEC {
     SEC_VM_ANY = 0, /* must be last */
 };
 
-typedef struct {
-    page_table_t pt;
+struct addr_space {
+    struct page_table pt;
     enum AS_TYPE type;
     uint64_t colors;
     uint64_t id;
     spinlock_t lock;
-} addr_space_t;
+};
 
-typedef struct {
+struct ppages {
     uint64_t base;
     size_t size;
     uint64_t colors;
-} ppages_t;
+};
 
 struct mem_region {
     uint64_t base;
@@ -69,17 +69,17 @@ struct dev_region {
     uint32_t id; /* bus master id for iommu effects */
 };
 
-typedef struct shmem {
+struct shmem {
     size_t size;
     uint64_t colors;
     bool place_phys;
     uint64_t phys;
     uint64_t cpu_masters;
-} shmem_t;
+};
 
-static inline ppages_t mem_ppages_get(uint64_t base, size_t size)
+static inline struct ppages mem_ppages_get(uint64_t base, size_t size)
 {
-    return (ppages_t){.colors = 0, .base = base, .size = size};
+    return (struct ppages){.colors = 0, .base = base, .size = size};
 }
 
 static inline bool all_clrs(uint64_t clrs)
@@ -89,23 +89,23 @@ static inline bool all_clrs(uint64_t clrs)
 }
 
 void mem_init(uint64_t load_addr, uint64_t config_addr);
-void as_init(addr_space_t* as, enum AS_TYPE type, uint64_t id, void* root_pt,
+void as_init(struct addr_space* as, enum AS_TYPE type, uint64_t id, void* root_pt,
              uint64_t colors);
 void* mem_alloc_page(size_t n, enum AS_SEC sec, bool phys_aligned);
-ppages_t mem_alloc_ppages(uint64_t colors, size_t n, bool aligned);
-void* mem_alloc_vpage(addr_space_t* as, enum AS_SEC section, void* at,
+struct ppages mem_alloc_ppages(uint64_t colors, size_t n, bool aligned);
+void* mem_alloc_vpage(struct addr_space* as, enum AS_SEC section, void* at,
                       size_t n);
-void mem_free_vpage(addr_space_t* as, void* at, size_t n, bool free_ppages);
-int mem_map(addr_space_t* as, void* va, ppages_t* ppages, size_t n,
+void mem_free_vpage(struct addr_space* as, void* at, size_t n, bool free_ppages);
+int mem_map(struct addr_space* as, void* va, struct ppages* ppages, size_t n,
             uint64_t flags);
-int mem_map_reclr(addr_space_t* as, void* va, ppages_t* ppages, size_t n,
+int mem_map_reclr(struct addr_space* as, void* va, struct ppages* ppages, size_t n,
                   uint64_t flags);
-int mem_map_dev(addr_space_t* as, void* va, uint64_t base, size_t n);
+int mem_map_dev(struct addr_space* as, void* va, uint64_t base, size_t n);
 
 /* Functions implemented in architecture dependent files */
 
-void as_arch_init(addr_space_t* as);
-bool mem_translate(addr_space_t* as, void* va, uint64_t* pa);
+void as_arch_init(struct addr_space* as);
+bool mem_translate(struct addr_space* as, void* va, uint64_t* pa);
 
 #endif /* |__ASSEMBLER__ */
 

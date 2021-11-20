@@ -19,10 +19,10 @@
 
 size_t PLIC_IMPL_INTERRUPTS;
 
-volatile plic_global_t plic_global
+volatile struct plic_global plic_global
     __attribute__((section(".devices")));
 
-volatile plic_hart_t plic_hart[PLIC_PLAT_CNTXT_NUM]
+volatile struct plic_hart plic_hart[PLIC_PLAT_CNTXT_NUM]
     __attribute__((section(".devices")));
 
 static size_t plic_scan_max_int()
@@ -56,12 +56,12 @@ void plic_init()
 
 void plic_cpu_init()
 {
-    cpu.arch.plic_cntxt = plic_plat_cntxt_to_id((plic_cntxt_t){cpu.id, PRIV_S});
+    cpu.arch.plic_cntxt = plic_plat_cntxt_to_id((struct plic_cntxt){cpu.id, PRIV_S});
     plic_hart[cpu.arch.plic_cntxt].threshold = 0;
 }
 
 bool plic_cntxt_valid(unsigned cntxt_id) {
-    plic_cntxt_t cntxt = plic_plat_id_to_cntxt(cntxt_id);
+    struct plic_cntxt cntxt = plic_plat_id_to_cntxt(cntxt_id);
     return (cntxt_id < PLIC_PLAT_CNTXT_NUM) && (cntxt.mode <= PRIV_S);
 }
 
@@ -149,19 +149,19 @@ void plic_handle()
  */
 
 __attribute__((weak))
-int plic_plat_cntxt_to_id(plic_cntxt_t cntxt){
+int plic_plat_cntxt_to_id(struct plic_cntxt cntxt){
     if(cntxt.mode != PRIV_M && cntxt.mode != PRIV_S) return -1;
     return (cntxt.hart_id*2) + (cntxt.mode == PRIV_M ? 0 : 1);
 }
 
 __attribute__((weak))
-plic_cntxt_t plic_plat_id_to_cntxt(int id){
-    plic_cntxt_t cntxt;
+struct plic_cntxt plic_plat_id_to_cntxt(int id){
+    struct plic_cntxt cntxt;
     if(id < PLIC_PLAT_CNTXT_NUM){
         cntxt.hart_id = id/2;
         cntxt.mode = (id%2) == 0 ? PRIV_M : PRIV_S; 
     } else {
-        return (plic_cntxt_t){-1};
+        return (struct plic_cntxt){-1};
     }
     return cntxt;
 }

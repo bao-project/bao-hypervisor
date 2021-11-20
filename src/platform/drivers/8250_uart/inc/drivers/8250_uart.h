@@ -42,7 +42,7 @@
 #define UART8250_PAGE_OFFSET 0
 #endif
 
-typedef struct {
+struct uart8250 {
     uint8_t offset[UART8250_PAGE_OFFSET];
     union {
         uart8250_reg_t thr;
@@ -62,7 +62,7 @@ typedef struct {
     uart8250_reg_t lsr;
     uart8250_reg_t msr;
     uart8250_reg_t sr;
-} volatile uart8250_t;
+};
 
 #define UART8250_LCR_DLAB   (0x1 << 7)
 #define UART8250_LCR_8BIT   (0x3 << 0)
@@ -71,10 +71,10 @@ typedef struct {
 #define UART8250_FCR_RX_CLR     (0x1 << 1)
 #define UART8250_FCR_EN         (0x1 << 0)
 
-typedef uart8250_t bao_uart_t;
+typedef struct uart8250 bao_uart_t;
 
-void uart_enable(volatile uart8250_t *uart);
-void uart_init(volatile uart8250_t *uart);
-void uart_puts(volatile uart8250_t *uart, const char* str);
+void uart_enable(volatile struct uart8250 *uart);
+void uart_init(volatile struct uart8250 *uart);
+void uart_puts(volatile struct uart8250 *uart, const char* str);
 
 #endif /* UART8250_H */

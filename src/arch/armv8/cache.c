@@ -19,7 +19,7 @@
 #include <bit.h>
 #include <platform.h>
 
-void cache_arch_enumerate(cache_t *dscrp)
+void cache_arch_enumerate(struct cache *dscrp)
 {
     if(platform.cache.lvls != 0 ) {
         /**

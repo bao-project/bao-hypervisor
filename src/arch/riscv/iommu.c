@@ -24,12 +24,12 @@ int iommu_arch_init()
     return 0;
 }
 
-inline int iommu_arch_vm_add_device(vm_t *vm, int id)
+inline int iommu_arch_vm_add_device(struct vm *vm, int id)
 {
     return 0;
 }
 
-int iommu_arch_vm_init(vm_t *vm, const vm_config_t *config)
+int iommu_arch_vm_init(struct vm *vm, const struct vm_config *config)
 {
     return 0;
 }

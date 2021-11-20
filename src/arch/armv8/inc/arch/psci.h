@@ -73,14 +73,14 @@
 #define is_psci_fid(_fid) \
     (is_smc_stdsrvc_fid(_fid) && (((_fid)&PSCI_FID_MASK) == PSCI_FID_VALUE))
 
-typedef struct {
+struct psci_ctx {
     spinlock_t lock;
     uintptr_t entrypoint;
     uintptr_t context_id;
     enum { ON, OFF, ON_PENDING } state;
-} psci_ctx_t;
+};
 
-typedef struct {
+struct psci_off_state {
     uint64_t tcr_el2;
     uint64_t ttbr0_el2;
     uint64_t mair_el2;
@@ -91,8 +91,8 @@ typedef struct {
     uint64_t vttbr_el2;
     uint64_t wakeup_reason;
     uint64_t flat_map;
-    gicc_state_t gicc_state;
-} __attribute__((packed, aligned(8))) psci_off_state_t;
+    struct gicc_state gicc_state;
+} __attribute__((packed, aligned(8)));
 
 enum wakeup_reason {
     PSCI_WAKEUP_CPU_OFF,

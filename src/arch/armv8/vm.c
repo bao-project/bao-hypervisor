@@ -20,16 +20,16 @@
 #include <arch/tlb.h>
 #include <string.h>
 
-void vm_arch_init(vm_t* vm, const vm_config_t* config)
+void vm_arch_init(struct vm* vm, const struct vm_config* config)
 {
     if (vm->master == cpu.id) {
         vgic_init(vm, &config->platform.arch.gic);
     }
 }
 
-vcpu_t* vm_get_vcpu_by_mpidr(vm_t* vm, uint64_t mpidr)
+struct vcpu* vm_get_vcpu_by_mpidr(struct vm* vm, uint64_t mpidr)
 {
-    list_foreach(vm->vcpu_list, vcpu_t, vcpu)
+    list_foreach(vm->vcpu_list, struct vcpu, vcpu)
     {
         if ((vcpu->arch.vmpidr & MPIDR_AFF_MSK) == (mpidr & MPIDR_AFF_MSK))  {
             return vcpu;
@@ -39,12 +39,12 @@ vcpu_t* vm_get_vcpu_by_mpidr(vm_t* vm, uint64_t mpidr)
     return NULL;
 }
 
-static uint64_t vm_cpuid_to_mpidr(vm_t* vm, uint64_t cpuid)
+static uint64_t vm_cpuid_to_mpidr(struct vm* vm, uint64_t cpuid)
 {
     return platform_arch_cpuid_to_mpdir(&vm->config->platform, cpuid);
 }
 
-void vcpu_arch_init(vcpu_t* vcpu, vm_t* vm)
+void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm)
 {
     vcpu->arch.vmpidr = vm_cpuid_to_mpidr(vm, vcpu->id);
     MSR(VMPIDR_EL2, vcpu->arch.vmpidr);
@@ -62,7 +62,7 @@ void vcpu_arch_init(vcpu_t* vcpu, vm_t* vm)
     vgic_cpu_init(vcpu);
 }
 
-void vcpu_arch_reset(vcpu_t* vcpu, uint64_t entry)
+void vcpu_arch_reset(struct vcpu* vcpu, uint64_t entry)
 {
     memset(vcpu->regs, 0, sizeof(struct arch_regs));
 
@@ -85,36 +85,36 @@ void vcpu_arch_reset(vcpu_t* vcpu, uint64_t entry)
      */
 }
 
-uint64_t vcpu_readreg(vcpu_t* vcpu, uint64_t reg)
+uint64_t vcpu_readreg(struct vcpu* vcpu, uint64_t reg)
 {
     if (reg > 30) return 0;
     return vcpu->regs->x[reg];
 }
 
-void vcpu_writereg(vcpu_t* vcpu, uint64_t reg, uint64_t val)
+void vcpu_writereg(struct vcpu* vcpu, uint64_t reg, uint64_t val)
 {
     if (reg > 30) return;
     vcpu->regs->x[reg] = val;
 }
 
-uint64_t vcpu_readpc(vcpu_t* vcpu)
+uint64_t vcpu_readpc(struct vcpu* vcpu)
 {
     return vcpu->regs->elr_el2;
 }
 
-void vcpu_writepc(vcpu_t* vcpu, uint64_t pc)
+void vcpu_writepc(struct vcpu* vcpu, uint64_t pc)
 {
     vcpu->regs->elr_el2 = pc;
 }
 
-bool vm_readmem(vm_t* vm, void* dest, uintptr_t vmaddr, size_t n)
+bool vm_readmem(struct vm* vm, void* dest, uintptr_t vmaddr, size_t n)
 {
     // TODO
 
     return false;
 }
 
-void vcpu_arch_run(vcpu_t* vcpu)
+void vcpu_arch_run(struct vcpu* vcpu)
 {
     // TODO: consider using TPIDR_EL2 to store vcpu pointer
     if (vcpu->arch.psci_ctx.state == ON) {

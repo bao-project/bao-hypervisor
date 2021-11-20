@@ -276,7 +276,7 @@ struct sbiret sbi_ipi_handler(unsigned long fid)
     unsigned long hart_mask = vcpu_readreg(cpu.vcpu, REG_A0);
     unsigned long hart_mask_base = vcpu_readreg(cpu.vcpu, REG_A1);
 
-    cpu_msg_t msg = {
+    struct cpu_msg msg = {
         .handler = SBI_MSG_ID,
         .event = SEND_IPI,
     };
@@ -367,7 +367,7 @@ struct sbiret sbi_hsm_start_handler() {
     if(vhart_id == cpu.vcpu->id){
         ret.error = SBI_ERR_ALREADY_AVAILABLE;
     } else {
-        vcpu_t *vcpu = vm_get_vcpu(cpu.vcpu->vm, vhart_id);
+        struct vcpu *vcpu = vm_get_vcpu(cpu.vcpu->vm, vhart_id);
         if(vcpu == NULL) {
             ret.error = SBI_ERR_INVALID_PARAM;
         } else { 
@@ -385,7 +385,7 @@ struct sbiret sbi_hsm_start_handler() {
 
                 fence_sync_write();
 
-                cpu_msg_t msg = {
+                struct cpu_msg msg = {
                     .handler = SBI_MSG_ID,
                     .event = HART_START,
                     .data = 0xdeadbeef
@@ -405,7 +405,7 @@ struct sbiret sbi_hsm_status_handler() {
 
     struct sbiret ret;
     uint64_t vhart_id = vcpu_readreg(cpu.vcpu, REG_A0);
-    vcpu_t *vhart = vm_get_vcpu(cpu.vcpu->vm, vhart_id);
+    struct vcpu *vhart = vm_get_vcpu(cpu.vcpu->vm, vhart_id);
 
     if(vhart != NULL) { 
         ret.error = SBI_SUCCESS;
@@ -466,7 +466,7 @@ void sbi_lgcy_sendipi_handler()
     phart_mask = vm_translate_to_pcpu_mask(cpu.vcpu->vm, phart_mask,
                                            sizeof(unsigned long));
 
-    cpu_msg_t msg = {
+    struct cpu_msg msg = {
         .handler = SBI_MSG_ID,
         .event = SEND_IPI,
     };

@@ -22,7 +22,7 @@
  * but for now this is platform dependent.
  */
 
-void cache_arch_enumerate(cache_t* dscrp)
+void cache_arch_enumerate(struct cache* dscrp)
 {
     /**
      * Currently the typical of way for system software to discover cache

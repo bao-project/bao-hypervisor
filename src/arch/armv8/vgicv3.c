@@ -22,17 +22,17 @@
 #include <vm.h>
 
 #define GICR_IS_REG(REG, offset)            \
-    (((offset) >= offsetof(gicr_t, REG)) && \
-     (offset) < (offsetof(gicr_t, REG) + sizeof(gicr[0].REG)))
-#define GICR_REG_OFF(REG) (offsetof(gicr_t, REG) & 0x1ffff)
+    (((offset) >= offsetof(struct gicr, REG)) && \
+     (offset) < (offsetof(struct gicr, REG) + sizeof(gicr[0].REG)))
+#define GICR_REG_OFF(REG) (offsetof(struct gicr, REG) & 0x1ffff)
 #define GICR_REG_MASK(ADDR) ((ADDR)&0x1ffff)
 
-static inline bool vgic_broadcast(vcpu_t *vcpu, vgic_int_t *interrupt)
+static inline bool vgic_broadcast(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     return (interrupt->route & GICD_IROUTER_IRM_BIT);
 }
 
-bool vgic_int_vcpu_is_target(vcpu_t *vcpu, vgic_int_t *interrupt)
+bool vgic_int_vcpu_is_target(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     bool priv = gic_is_priv(interrupt->id);
     bool local = priv && (interrupt->phys.redist == vcpu->phys_id);
@@ -42,7 +42,7 @@ bool vgic_int_vcpu_is_target(vcpu_t *vcpu, vgic_int_t *interrupt)
     return local || routed_here || any;
 }
 
-bool vgic_int_has_other_target(vcpu_t *vcpu, vgic_int_t *interrupt)
+bool vgic_int_has_other_target(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     bool priv = gic_is_priv(interrupt->id);
     bool routed_here =
@@ -52,7 +52,7 @@ bool vgic_int_has_other_target(vcpu_t *vcpu, vgic_int_t *interrupt)
     return any || (!routed_here && route_valid);
 }
 
-uint64_t vgic_int_ptarget_mask(vcpu_t *vcpu, vgic_int_t *interrupt)
+uint64_t vgic_int_ptarget_mask(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     if (vgic_broadcast(vcpu, interrupt)) {
         return cpu.vcpu->vm->cpus & ~(1U << cpu.vcpu->phys_id);
@@ -61,7 +61,7 @@ uint64_t vgic_int_ptarget_mask(vcpu_t *vcpu, vgic_int_t *interrupt)
     }
 }
 
-bool vgic_int_set_route(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t route)
+bool vgic_int_set_route(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t route)
 {
     uint64_t phys_route;
     uint64_t prev_route = interrupt->route;
@@ -71,7 +71,7 @@ bool vgic_int_set_route(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t route)
     if (route & GICD_IROUTER_IRM_BIT) {
         phys_route = cpu_id_to_mpidr(vcpu->phys_id);
     } else {
-        vcpu_t *tvcpu =
+        struct vcpu *tvcpu =
             vm_get_vcpu_by_mpidr(vcpu->vm, route & MPIDR_AFF_MSK);
         if (tvcpu != NULL) {
             phys_route = cpu_id_to_mpidr(tvcpu->phys_id) & MPIDR_AFF_MSK;
@@ -85,18 +85,18 @@ bool vgic_int_set_route(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t route)
     return prev_route != interrupt->route;
 }
 
-uint64_t vgic_int_get_route(vcpu_t *vcpu, vgic_int_t *interrupt)
+uint64_t vgic_int_get_route(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     if (gic_is_priv(interrupt->id)) return 0;
     return interrupt->route;
 }
 
-void vgic_int_set_route_hw(vcpu_t *vcpu, vgic_int_t *interrupt)
+void vgic_int_set_route_hw(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     gicd_set_route(interrupt->id, interrupt->phys.route);
 }
 
-void vgicr_emul_ctrl_access(emul_access_t *acc,
+void vgicr_emul_ctrl_access(struct emul_access *acc,
                             struct vgic_reg_handler_info *handlers,
                             bool gicr_access, uint64_t vgicr_id)
 {
@@ -105,17 +105,17 @@ void vgicr_emul_ctrl_access(emul_access_t *acc,
     }
 }
 
-void vgicr_emul_typer_access(emul_access_t *acc,
+void vgicr_emul_typer_access(struct emul_access *acc,
                              struct vgic_reg_handler_info *handlers,
                              bool gicr_access, uint64_t vgicr_id)
 {
     if (!acc->write) {
-        vcpu_t *vcpu = vm_get_vcpu(cpu.vcpu->vm, vgicr_id);
+        struct vcpu *vcpu = vm_get_vcpu(cpu.vcpu->vm, vgicr_id);
         vcpu_writereg(cpu.vcpu, acc->reg, vcpu->arch.vgic_priv.vgicr.TYPER);
     }
 }
 
-void vgicr_emul_pidr_access(emul_access_t *acc,
+void vgicr_emul_pidr_access(struct emul_access *acc,
                             struct vgic_reg_handler_info *handlers,
                             bool gicr_access, uint64_t vgicr_id)
 {
@@ -140,7 +140,7 @@ struct vgic_reg_handler_info irouter_info = {
     vgic_emul_generic_access,
     0b1000,
     VGIC_IROUTER_ID,
-    offsetof(gicd_t, IROUTER),
+    offsetof(struct gicd, IROUTER),
     64,
     vgic_int_get_route,
     vgic_int_set_route,
@@ -160,12 +160,12 @@ struct vgic_reg_handler_info vgicr_pidr_info = {
     0b0100,
 };
 
-static inline uint32_t vgicr_get_id(emul_access_t *acc)
+static inline uint32_t vgicr_get_id(struct emul_access *acc)
 {
-    return (acc->addr - cpu.vcpu->vm->arch.vgicr_addr) / sizeof(gicr_t);
+    return (acc->addr - cpu.vcpu->vm->arch.vgicr_addr) / sizeof(struct gicr);
 }
 
-bool vgicr_emul_handler(emul_access_t *acc)
+bool vgicr_emul_handler(struct emul_access *acc)
 {
     struct vgic_reg_handler_info *handler_info = NULL;
     switch (GICR_REG_MASK(acc->addr)) {
@@ -212,7 +212,7 @@ bool vgicr_emul_handler(emul_access_t *acc)
 
     if (vgic_check_reg_alignment(acc, handler_info)) {
         uint64_t vgicr_id = vgicr_get_id(acc);
-        vcpu_t *vcpu = vgicr_id == cpu.vcpu->id
+        struct vcpu *vcpu = vgicr_id == cpu.vcpu->id
                            ? cpu.vcpu
                            : vm_get_vcpu(cpu.vcpu->vm, vgicr_id);
         spin_lock(&vcpu->arch.vgic_priv.vgicr.lock);
@@ -224,7 +224,7 @@ bool vgicr_emul_handler(emul_access_t *acc)
     }
 }
 
-bool vgic_icc_sgir_handler(emul_access_t *acc)
+bool vgic_icc_sgir_handler(struct emul_access *acc)
 {
     if (acc->write) {
         uint64_t sgir = vcpu_readreg(cpu.vcpu, acc->reg);
@@ -246,7 +246,7 @@ bool vgic_icc_sgir_handler(emul_access_t *acc)
     return true;
 }
 
-bool vgic_icc_sre_handler(emul_access_t *acc)
+bool vgic_icc_sre_handler(struct emul_access *acc)
 {
     if (!acc->write) {
         vcpu_writereg(cpu.vcpu, acc->reg, 0x1);
@@ -254,7 +254,7 @@ bool vgic_icc_sre_handler(emul_access_t *acc)
     return true;
 }
 
-void vgic_init(vm_t *vm, const struct gic_dscrp *gic_dscrp)
+void vgic_init(struct vm *vm, const struct gic_dscrp *gic_dscrp)
 {
     vm->arch.vgicr_addr = gic_dscrp->gicr_addr;
     vm->arch.vgicd.CTLR = 0;
@@ -266,7 +266,7 @@ void vgic_init(vm_t *vm, const struct gic_dscrp *gic_dscrp)
         (((10 - 1) << GICD_TYPER_IDBITS_OFF) & GICD_TYPER_IDBITS_MSK);
     vm->arch.vgicd.IIDR = gicd.IIDR;
 
-    size_t vgic_int_size = vm->arch.vgicd.int_num * sizeof(vgic_int_t);
+    size_t vgic_int_size = vm->arch.vgicd.int_num * sizeof(struct vgic_int);
     vm->arch.vgicd.interrupts =
         mem_alloc_page(NUM_PAGES(vgic_int_size), SEC_HYP_VM, false);
     if (vm->arch.vgicd.interrupts == NULL) {
@@ -287,19 +287,19 @@ void vgic_init(vm_t *vm, const struct gic_dscrp *gic_dscrp)
         vm->arch.vgicd.interrupts[i].enabled = false;
     }
 
-    emul_mem_t gicd_emu = {.va_base = gic_dscrp->gicd_addr,
+    struct emul_mem gicd_emu = {.va_base = gic_dscrp->gicd_addr,
                            .pa_base = (uint64_t)&gicd,
-                           .size = ALIGN(sizeof(gicd_t), PAGE_SIZE),
+                           .size = ALIGN(sizeof(struct gicd), PAGE_SIZE),
                            .handler = vgicd_emul_handler};
     vm_emul_add_mem(vm, &gicd_emu);
 
-    list_foreach(vm->vcpu_list, vcpu_t, vcpu)
+    list_foreach(vm->vcpu_list, struct vcpu, vcpu)
     {
         uint64_t phy_cpuid = vcpu->phys_id;
-        emul_mem_t gicr_emu = {
-            .va_base = gic_dscrp->gicr_addr + sizeof(gicr_t) * vcpu->id,
+        struct emul_mem gicr_emu = {
+            .va_base = gic_dscrp->gicr_addr + sizeof(struct gicr) * vcpu->id,
             .pa_base = (uint64_t) & (gicr[phy_cpuid]),
-            .size = ALIGN(sizeof(gicr_t), PAGE_SIZE),
+            .size = ALIGN(sizeof(struct gicr), PAGE_SIZE),
             .handler = vgicr_emul_handler};
         vm_emul_add_mem(vm, &gicr_emu);
 
@@ -313,16 +313,16 @@ void vgic_init(vm_t *vm, const struct gic_dscrp *gic_dscrp)
         vcpu->arch.vgic_priv.vgicr.IIDR = gicr[cpu.id].IIDR;
     }
 
-    emul_reg_t icc_sgir_emu = {.addr = SYSREG_ENC_ADDR(3, 0, 12, 11, 5),
+    struct emul_reg icc_sgir_emu = {.addr = SYSREG_ENC_ADDR(3, 0, 12, 11, 5),
                                .handler = vgic_icc_sgir_handler};
     vm_emul_add_reg(vm, &icc_sgir_emu);
 
-    emul_reg_t icc_sre_emu = {.addr = SYSREG_ENC_ADDR(3, 0, 12, 12, 5),
+    struct emul_reg icc_sre_emu = {.addr = SYSREG_ENC_ADDR(3, 0, 12, 12, 5),
                               .handler = vgic_icc_sre_handler};
     vm_emul_add_reg(vm, &icc_sre_emu);
 }
 
-void vgic_cpu_init(vcpu_t *vcpu)
+void vgic_cpu_init(struct vcpu *vcpu)
 {
     for (size_t i = 0; i < GIC_CPU_PRIV; i++) {
         vcpu->arch.vgic_priv.interrupts[i].owner = NULL;

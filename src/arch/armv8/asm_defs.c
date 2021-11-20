@@ -40,7 +40,7 @@ void cpu_defines()
 void vcpu_defines() __attribute__((used));
 void vcpu_defines()
 {
-    DEFINE_SIZE(VCPU_ARCH_SIZE, vcpu_arch_t);
+    DEFINE_SIZE(VCPU_ARCH_SIZE, struct vcpu_arch);
     DEFINE_OFFSET(VCPU_REGS_OFF, struct vcpu, regs);
     DEFINE_SIZE(VCPU_REGS_SIZE, struct arch_regs);
 }

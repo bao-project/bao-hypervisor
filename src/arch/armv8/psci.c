@@ -121,8 +121,8 @@ int64_t psci_cpu_on_handler(uint64_t target_cpu, uintptr_t entrypoint,
                                                          uint64_t context_id)
 {
     int64_t ret;
-    vm_t* vm = cpu.vcpu->vm;
-    vcpu_t* target_vcpu = vm_get_vcpu_by_mpidr(vm, target_cpu);
+    struct vm* vm = cpu.vcpu->vm;
+    struct vcpu* target_vcpu = vm_get_vcpu_by_mpidr(vm, target_cpu);
 
     if (target_vcpu != NULL){
 
@@ -143,7 +143,7 @@ int64_t psci_cpu_on_handler(uint64_t target_cpu, uintptr_t entrypoint,
 
         uint64_t pcpuid = vm_translate_to_pcpuid(vm, target_vcpu->id);
 
-        cpu_msg_t msg = {PSCI_CPUSMG_ID, PSCI_MSG_ON};
+        struct cpu_msg msg = {PSCI_CPUSMG_ID, PSCI_MSG_ON};
         cpu_send_msg(pcpuid, &msg);
 
         ret = PSCI_E_SUCCESS;

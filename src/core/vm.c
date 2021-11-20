@@ -24,12 +24,12 @@ struct emul_node {
     node_t node;
     enum emul_type type;
     union {
-        emul_mem_t emu_mem;
-        emul_reg_t emu_reg;
+        struct emul_mem emu_mem;
+        struct emul_reg emu_reg;
     };
 };
 
-static void vm_master_init(vm_t* vm, const vm_config_t* config, uint64_t vm_id)
+static void vm_master_init(struct vm* vm, const struct vm_config* config, uint64_t vm_id)
 {
     vm->master = cpu.id;
     vm->config = config;
@@ -44,17 +44,17 @@ static void vm_master_init(vm_t* vm, const vm_config_t* config, uint64_t vm_id)
     objcache_init(&vm->emul_oc, sizeof(struct emul_node), SEC_HYP_VM, false);
 }
 
-void vm_cpu_init(vm_t* vm)
+void vm_cpu_init(struct vm* vm)
 {
     spin_lock(&vm->lock);
     vm->cpus |= (1UL << cpu.id);
     spin_unlock(&vm->lock);
 }
 
-void vm_vcpu_init(vm_t* vm, const vm_config_t* config)
+void vm_vcpu_init(struct vm* vm, const struct vm_config* config)
 {
-    size_t n = NUM_PAGES(sizeof(vcpu_t));
-    vcpu_t* vcpu = (vcpu_t*)mem_alloc_page(n, SEC_HYP_VM, false);
+    size_t n = NUM_PAGES(sizeof(struct vcpu));
+    struct vcpu* vcpu = (struct vcpu*)mem_alloc_page(n, SEC_HYP_VM, false);
     if(vcpu == NULL){ ERROR("failed to allocate vcpu"); }
     memset(vcpu, 0, n * PAGE_SIZE);
 
@@ -84,12 +84,12 @@ void vm_vcpu_init(vm_t* vm, const vm_config_t* config)
     list_push(&vm->vcpu_list, &vcpu->node);
 }
 
-static void vm_copy_img_to_rgn(vm_t* vm, const vm_config_t* config,
+static void vm_copy_img_to_rgn(struct vm* vm, const struct vm_config* config,
                                struct mem_region* reg)
 {
     /* map original img address */
     size_t n_img = NUM_PAGES(config->image.size);
-    ppages_t src_pa_img = mem_ppages_get(config->image.load_addr, n_img);
+    struct ppages src_pa_img = mem_ppages_get(config->image.load_addr, n_img);
     void* src_va = mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL, NULL, n_img);
     if (mem_map(&cpu.as, src_va, &src_pa_img, n_img, PTE_HYP_FLAGS)) {
         ERROR("mem_map failed %s", __func__);
@@ -98,7 +98,7 @@ static void vm_copy_img_to_rgn(vm_t* vm, const vm_config_t* config,
     /* map new address */
     size_t offset = config->image.base_addr - reg->base;
     size_t dst_phys = reg->phys + offset;
-    ppages_t dst_pp = mem_ppages_get(dst_phys, n_img);
+    struct ppages dst_pp = mem_ppages_get(dst_phys, n_img);
     void* dst_va = mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL, NULL, n_img);
     if (mem_map(&cpu.as, dst_va, &dst_pp, n_img, PTE_HYP_FLAGS)) {
         ERROR("mem_map failed %s", __func__);
@@ -109,7 +109,7 @@ static void vm_copy_img_to_rgn(vm_t* vm, const vm_config_t* config,
     /*TODO: unmap */
 }
 
-void vm_map_mem_region(vm_t* vm, struct mem_region* reg)
+void vm_map_mem_region(struct vm* vm, struct mem_region* reg)
 {
     size_t n = NUM_PAGES(reg->size);
     void* va = mem_alloc_vpage(&vm->as, SEC_VM_ANY, (void*)reg->base, n);
@@ -118,14 +118,14 @@ void vm_map_mem_region(vm_t* vm, struct mem_region* reg)
     }
 
     if (reg->place_phys) {
-        ppages_t pa_reg = mem_ppages_get(reg->phys, n);
+        struct ppages pa_reg = mem_ppages_get(reg->phys, n);
         mem_map(&vm->as, va, &pa_reg, n, PTE_VM_FLAGS);
     } else {
         mem_map(&vm->as, va, NULL, n, PTE_VM_FLAGS);
     }
 }
 
-static void vm_map_img_rgn_inplace(vm_t* vm, const vm_config_t* config,
+static void vm_map_img_rgn_inplace(struct vm* vm, const struct vm_config* config,
                                    struct mem_region* reg)
 {
     /* mem region pages before the img */
@@ -140,7 +140,7 @@ static void vm_map_img_rgn_inplace(vm_t* vm, const vm_config_t* config,
     size_t n_total = n_before + n_aft + n_img;
 
     /* map img in place */
-    ppages_t pa_img = mem_ppages_get(config->image.load_addr, n_img);
+    struct ppages pa_img = mem_ppages_get(config->image.load_addr, n_img);
     void* va = mem_alloc_vpage(&vm->as, SEC_VM_ANY, (void*)reg->base, n_total);
 
     /* map pages before img */
@@ -162,7 +162,7 @@ static void vm_map_img_rgn_inplace(vm_t* vm, const vm_config_t* config,
             PTE_VM_FLAGS);
 }
 
-static void vm_map_img_rgn(vm_t* vm, const vm_config_t* config,
+static void vm_map_img_rgn(struct vm* vm, const struct vm_config* config,
                            struct mem_region* reg)
 {
     if (reg->place_phys) {
@@ -173,7 +173,7 @@ static void vm_map_img_rgn(vm_t* vm, const vm_config_t* config,
     }
 }
 
-static void vm_init_mem_regions(vm_t* vm, const vm_config_t* config)
+static void vm_init_mem_regions(struct vm* vm, const struct vm_config* config)
 {
     for (size_t i = 0; i < config->platform.region_num; i++) {
         struct mem_region* reg = &config->platform.regions[i];
@@ -187,13 +187,13 @@ static void vm_init_mem_regions(vm_t* vm, const vm_config_t* config)
     }
 }
 
-static void vm_init_ipc(vm_t* vm, const vm_config_t* config)
+static void vm_init_ipc(struct vm* vm, const struct vm_config* config)
 {
     vm->ipc_num = config->platform.ipc_num;
     vm->ipcs = config->platform.ipcs;
     for (size_t i = 0; i < config->platform.ipc_num; i++) {
-        ipc_t *ipc = &config->platform.ipcs[i];
-        shmem_t *shmem = ipc_get_shmem(ipc->shmem_id);
+        struct ipc *ipc = &config->platform.ipcs[i];
+        struct shmem *shmem = ipc_get_shmem(ipc->shmem_id);
         if(shmem == NULL) {
             WARNING("Invalid shmem id in configuration. Ignored.");
             continue;
@@ -215,7 +215,7 @@ static void vm_init_ipc(vm_t* vm, const vm_config_t* config)
     }
 }
 
-static void vm_init_dev(vm_t* vm, const vm_config_t* config)
+static void vm_init_dev(struct vm* vm, const struct vm_config* config)
 {
     for (size_t i = 0; i < config->platform.dev_num; i++) {
         struct dev_region* dev = &config->platform.devs[i];
@@ -244,7 +244,7 @@ static void vm_init_dev(vm_t* vm, const vm_config_t* config)
       
 }
 
-void vm_init(vm_t* vm, const vm_config_t* config, bool master, uint64_t vm_id)
+void vm_init(struct vm* vm, const struct vm_config* config, bool master, uint64_t vm_id)
 {
     /**
      * Before anything else, initialize vm structure.
@@ -287,9 +287,9 @@ void vm_init(vm_t* vm, const vm_config_t* config, bool master, uint64_t vm_id)
     cpu_sync_barrier(&vm->sync);
 }
 
-vcpu_t* vm_get_vcpu(vm_t* vm, uint64_t vcpuid)
+struct vcpu* vm_get_vcpu(struct vm* vm, uint64_t vcpuid)
 {
-    list_foreach(vm->vcpu_list, vcpu_t, vcpu)
+    list_foreach(vm->vcpu_list, struct vcpu, vcpu)
     {
         if (vcpu->id == vcpuid) return vcpu;
     }
@@ -297,7 +297,7 @@ vcpu_t* vm_get_vcpu(vm_t* vm, uint64_t vcpuid)
     return NULL;
 }
 
-void vm_emul_add_mem(vm_t* vm, emul_mem_t* emu)
+void vm_emul_add_mem(struct vm* vm, struct emul_mem* emu)
 {
     struct emul_node* ptr = objcache_alloc(&vm->emul_oc);
     if (ptr != NULL) {
@@ -311,7 +311,7 @@ void vm_emul_add_mem(vm_t* vm, emul_mem_t* emu)
     }
 }
 
-void vm_emul_add_reg(vm_t* vm, emul_reg_t* emu)
+void vm_emul_add_reg(struct vm* vm, struct emul_reg* emu)
 {
     struct emul_node* ptr = objcache_alloc(&vm->emul_oc);
     if (ptr != NULL) {
@@ -326,19 +326,19 @@ void vm_emul_add_reg(vm_t* vm, emul_reg_t* emu)
 
 }    
 
-static inline emul_handler_t vm_emul_get(vm_t* vm, enum emul_type type, uint64_t addr)
+static inline emul_handler_t vm_emul_get(struct vm* vm, enum emul_type type, uint64_t addr)
 {
     emul_handler_t handler = NULL;
     list_foreach(vm->emul_list, struct emul_node, node)
     {
         if (node->type == EMUL_MEM) {
-            emul_mem_t* emu = &node->emu_mem;
+            struct emul_mem* emu = &node->emu_mem;
             if (addr >= emu->va_base && (addr < (emu->va_base + emu->size))) {
                 handler = emu->handler;
                 break;
             }
         } else {
-            emul_reg_t *emu = &node->emu_reg;
+            struct emul_reg *emu = &node->emu_reg;
             if(emu->addr == addr) {
                 handler = emu->handler;
                 break; 
@@ -349,17 +349,17 @@ static inline emul_handler_t vm_emul_get(vm_t* vm, enum emul_type type, uint64_t
     return handler;
 }
 
-emul_handler_t vm_emul_get_mem(vm_t* vm, uint64_t addr)
+emul_handler_t vm_emul_get_mem(struct vm* vm, uint64_t addr)
 {
     return vm_emul_get(vm, EMUL_MEM, addr);
 }
 
-emul_handler_t vm_emul_get_reg(vm_t* vm, uint64_t addr)
+emul_handler_t vm_emul_get_reg(struct vm* vm, uint64_t addr)
 {
     return vm_emul_get(vm, EMUL_REG, addr);
 }
 
-void vm_msg_broadcast(vm_t* vm, cpu_msg_t* msg)
+void vm_msg_broadcast(struct vm* vm, struct cpu_msg* msg)
 {
     for (size_t i = 0, n = 0; n < vm->cpu_num - 1; i++) {
         if (((1U << i) & vm->cpus) && (i != cpu.id)) {
@@ -369,7 +369,7 @@ void vm_msg_broadcast(vm_t* vm, cpu_msg_t* msg)
     }
 }
 
-__attribute__((weak)) uint64_t vm_translate_to_pcpu_mask(vm_t* vm,
+__attribute__((weak)) uint64_t vm_translate_to_pcpu_mask(struct vm* vm,
                                                          uint64_t mask,
                                                          size_t len)
 {
@@ -384,7 +384,7 @@ __attribute__((weak)) uint64_t vm_translate_to_pcpu_mask(vm_t* vm,
     return pmask;
 }
 
-__attribute__((weak)) uint64_t vm_translate_to_vcpu_mask(vm_t* vm,
+__attribute__((weak)) uint64_t vm_translate_to_vcpu_mask(struct vm* vm,
                                                          uint64_t mask,
                                                          size_t len)
 {
@@ -399,7 +399,7 @@ __attribute__((weak)) uint64_t vm_translate_to_vcpu_mask(vm_t* vm,
     return pmask;
 }
 
-void vcpu_run(vcpu_t* vcpu)
+void vcpu_run(struct vcpu* vcpu)
 {
     cpu.vcpu->active = true;
     vcpu_arch_run(vcpu);

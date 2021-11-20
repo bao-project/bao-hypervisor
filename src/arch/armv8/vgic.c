@@ -25,11 +25,11 @@ enum VGIC_EVENTS { VGIC_UPDATE_ENABLE, VGIC_ROUTE, VGIC_INJECT, VGIC_SET_REG };
 extern volatile const uint64_t VGIC_IPI_ID;
 
 #define GICD_IS_REG(REG, offset)            \
-    (((offset) >= offsetof(gicd_t, REG)) && \
-     (offset) < (offsetof(gicd_t, REG) + sizeof(gicd.REG)))
-#define GICD_REG_GROUP(REG) ((offsetof(gicd_t, REG) & 0xff80) >> 7)
+    (((offset) >= offsetof(struct gicd, REG)) && \
+     (offset) < (offsetof(struct gicd, REG) + sizeof(gicd.REG)))
+#define GICD_REG_GROUP(REG) ((offsetof(struct gicd, REG) & 0xff80) >> 7)
 #define GICD_REG_MASK(ADDR) ((ADDR)&(GIC_VERSION == GICV2 ? 0xfffULL : 0xffffULL))
-#define GICD_REG_IND(REG) (offsetof(gicd_t, REG) & 0x7f)
+#define GICD_REG_IND(REG) (offsetof(struct gicd, REG) & 0x7f)
 
 #define VGIC_MSG_DATA(VM_ID, VGICRID, INT_ID, REG, VAL)                 \
     (((uint64_t)(VM_ID) << 48) | (((uint64_t)(VGICRID)&0xffff) << 32) | \
@@ -43,11 +43,11 @@ extern volatile const uint64_t VGIC_IPI_ID;
 void vgic_ipi_handler(uint32_t event, uint64_t data);
 CPU_MSG_HANDLER(vgic_ipi_handler, VGIC_IPI_ID);
 
-static inline vgic_int_t *vgic_get_int(vcpu_t *vcpu, uint64_t int_id,
+static inline struct vgic_int *vgic_get_int(struct vcpu *vcpu, uint64_t int_id,
                                        uint64_t vgicr_id)
 {
     if (int_id < GIC_CPU_PRIV) {
-        vcpu_t *target_vcpu =
+        struct vcpu *target_vcpu =
             vgicr_id == vcpu->id ? vcpu : vm_get_vcpu(vcpu->vm, vgicr_id);
         return &target_vcpu->arch.vgic_priv.interrupts[int_id];
     } else if (int_id < vcpu->vm->arch.vgicd.int_num) {
@@ -57,12 +57,12 @@ static inline vgic_int_t *vgic_get_int(vcpu_t *vcpu, uint64_t int_id,
     return NULL;
 }
 
-static inline bool vgic_int_is_hw(vgic_int_t *interrupt)
+static inline bool vgic_int_is_hw(struct vgic_int *interrupt)
 {
     return !(interrupt->id < GIC_MAX_SGIS) && interrupt->hw;
 }
 
-static inline int64_t gich_get_lr(vgic_int_t *interrupt, uint64_t *lr)
+static inline int64_t gich_get_lr(struct vgic_int *interrupt, uint64_t *lr)
 {
     if (!interrupt->in_lr || interrupt->owner->phys_id != cpu.id) {
         return -1;
@@ -78,7 +78,7 @@ static inline int64_t gich_get_lr(vgic_int_t *interrupt, uint64_t *lr)
     return -1;
 }
 
-static inline uint8_t vgic_get_state(vgic_int_t *interrupt)
+static inline uint8_t vgic_get_state(struct vgic_int *interrupt)
 {
     uint8_t state = 0;
 
@@ -98,7 +98,7 @@ static inline uint8_t vgic_get_state(vgic_int_t *interrupt)
     return state;
 }
 
-bool vgic_get_ownership(vcpu_t *vcpu, vgic_int_t *interrupt)
+bool vgic_get_ownership(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     bool ret = false;
 
@@ -112,12 +112,12 @@ bool vgic_get_ownership(vcpu_t *vcpu, vgic_int_t *interrupt)
     return ret;
 }
 
-bool vgic_owns(vcpu_t *vcpu, vgic_int_t *interrupt)
+bool vgic_owns(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     return interrupt->owner == vcpu;
 }
 
-void vgic_yield_ownership(vcpu_t *vcpu, vgic_int_t *interrupt)
+void vgic_yield_ownership(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     if ((GIC_VERSION == GICV2 && gic_is_priv(interrupt->id)) ||
         !vgic_owns(vcpu, interrupt) || interrupt->in_lr ||
@@ -128,9 +128,9 @@ void vgic_yield_ownership(vcpu_t *vcpu, vgic_int_t *interrupt)
     interrupt->owner = NULL;
 }
 
-void vgic_send_sgi_msg(vcpu_t *vcpu, uint64_t pcpu_mask, uint64_t int_id)
+void vgic_send_sgi_msg(struct vcpu *vcpu, uint64_t pcpu_mask, uint64_t int_id)
 {
-    cpu_msg_t msg = {
+    struct cpu_msg msg = {
         VGIC_IPI_ID, VGIC_INJECT,
         VGIC_MSG_DATA(cpu.vcpu->vm->id, 0, int_id, 0, cpu.vcpu->id)};
 
@@ -141,7 +141,7 @@ void vgic_send_sgi_msg(vcpu_t *vcpu, uint64_t pcpu_mask, uint64_t int_id)
     }
 }
 
-void vgic_route(vcpu_t *vcpu, vgic_int_t *interrupt)
+void vgic_route(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     if ((interrupt->state == INV) || !interrupt->enabled) {
         return;
@@ -152,7 +152,7 @@ void vgic_route(vcpu_t *vcpu, vgic_int_t *interrupt)
     }
 
     if (!interrupt->in_lr && vgic_int_has_other_target(vcpu, interrupt)) {
-        cpu_msg_t msg = {
+        struct cpu_msg msg = {
             VGIC_IPI_ID, VGIC_ROUTE,
             VGIC_MSG_DATA(vcpu->vm->id, vcpu->id, interrupt->id, 0, 0)};
         vgic_yield_ownership(vcpu, interrupt);
@@ -166,13 +166,13 @@ void vgic_route(vcpu_t *vcpu, vgic_int_t *interrupt)
     }
 }
 
-static inline void vgic_write_lr(vcpu_t *vcpu, vgic_int_t *interrupt,
+static inline void vgic_write_lr(struct vcpu *vcpu, struct vgic_int *interrupt,
                                  size_t lr_ind)
 {
     uint64_t prev_int_id = vcpu->arch.vgic_priv.curr_lrs[lr_ind];
 
     if ((prev_int_id != interrupt->id) && !gic_is_priv(prev_int_id)) {
-        vgic_int_t *prev_interrupt = vgic_get_int(vcpu, prev_int_id, vcpu->id);
+        struct vgic_int *prev_interrupt = vgic_get_int(vcpu, prev_int_id, vcpu->id);
         if (prev_interrupt != NULL) {
             spin_lock(&prev_interrupt->lock);
             if (vgic_owns(vcpu, prev_interrupt) && prev_interrupt->in_lr &&
@@ -243,7 +243,7 @@ static inline void vgic_write_lr(vcpu_t *vcpu, vgic_int_t *interrupt,
     gich_write_lr(lr_ind, lr);
 }
 
-bool vgic_remove_lr(vcpu_t *vcpu, vgic_int_t *interrupt)
+bool vgic_remove_lr(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     bool ret = false;
 
@@ -280,7 +280,7 @@ bool vgic_remove_lr(vcpu_t *vcpu, vgic_int_t *interrupt)
     return ret;
 }
 
-bool vgic_add_lr(vcpu_t *vcpu, vgic_int_t *interrupt)
+bool vgic_add_lr(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     bool ret = false;
 
@@ -329,7 +329,7 @@ bool vgic_add_lr(vcpu_t *vcpu, vgic_int_t *interrupt)
         }
 
         if (lr_ind >= 0) {
-            vgic_int_t *spilled_int =
+            struct vgic_int *spilled_int =
                 vgic_get_int(vcpu, GICH_LR_VID(gich_read_lr(lr_ind)), vcpu->id);
 
             if (spilled_int != NULL) {
@@ -358,7 +358,7 @@ bool vgic_add_lr(vcpu_t *vcpu, vgic_int_t *interrupt)
 #define VGIC_ENABLE_MASK \
     ((GIC_VERSION == GICV2) ? GICD_CTLR_EN_BIT : GICD_CTLR_ENA_BIT)
 
-static inline void vgic_update_enable(vcpu_t *vcpu)
+static inline void vgic_update_enable(struct vcpu *vcpu)
 {
     if (cpu.vcpu->vm->arch.vgicd.CTLR & VGIC_ENABLE_MASK) {
         gich_set_hcr(gich_get_hcr() | GICH_HCR_En_BIT);
@@ -367,11 +367,11 @@ static inline void vgic_update_enable(vcpu_t *vcpu)
     }
 }
 
-void vgicd_emul_misc_access(emul_access_t *acc,
+void vgicd_emul_misc_access(struct emul_access *acc,
                             struct vgic_reg_handler_info *handlers,
                             bool gicr_access, uint64_t vgicr_id)
 {
-    vgicd_t *vgicd = &cpu.vcpu->vm->arch.vgicd;
+    struct vgicd *vgicd = &cpu.vcpu->vm->arch.vgicd;
     uint64_t reg = acc->addr & 0x7F;
 
     switch (reg) {
@@ -382,7 +382,7 @@ void vgicd_emul_misc_access(emul_access_t *acc,
                     vcpu_readreg(cpu.vcpu, acc->reg) & VGIC_ENABLE_MASK;
                 if (prev_ctrl ^ vgicd->CTLR) {
                     vgic_update_enable(cpu.vcpu);
-                    cpu_msg_t msg = {
+                    struct cpu_msg msg = {
                         VGIC_IPI_ID, VGIC_UPDATE_ENABLE,
                         VGIC_MSG_DATA(cpu.vcpu->vm->id, 0, 0, 0, 0)};
                     vm_msg_broadcast(cpu.vcpu->vm, &msg);
@@ -405,7 +405,7 @@ void vgicd_emul_misc_access(emul_access_t *acc,
     }
 }
 
-void vgicd_emul_pidr_access(emul_access_t *acc,
+void vgicd_emul_pidr_access(struct emul_access *acc,
                             struct vgic_reg_handler_info *handlers,
                             bool gicr_access, uint64_t vgicr_id)
 {
@@ -415,7 +415,7 @@ void vgicd_emul_pidr_access(emul_access_t *acc,
     }
 }
 
-bool vgic_int_update_enable(vcpu_t *vcpu, vgic_int_t *interrupt, bool enable)
+bool vgic_int_update_enable(struct vcpu *vcpu, struct vgic_int *interrupt, bool enable)
 {
     if (GIC_VERSION == GICV2 && gic_is_sgi(interrupt->id)) {
         return false;
@@ -429,7 +429,7 @@ bool vgic_int_update_enable(vcpu_t *vcpu, vgic_int_t *interrupt, bool enable)
     }
 }
 
-void vgic_int_enable_hw(vcpu_t *vcpu, vgic_int_t *interrupt)
+void vgic_int_enable_hw(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
 #if (GIC_VERSION != GICV2)
     if (gic_is_priv(interrupt->id)) {
@@ -443,7 +443,7 @@ void vgic_int_enable_hw(vcpu_t *vcpu, vgic_int_t *interrupt)
 #endif
 }
 
-bool vgic_int_clear_enable(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t data)
+bool vgic_int_clear_enable(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t data)
 {
     if (!data)
         return false;
@@ -451,7 +451,7 @@ bool vgic_int_clear_enable(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t data)
         return vgic_int_update_enable(vcpu, interrupt, false);
 }
 
-bool vgic_int_set_enable(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t data)
+bool vgic_int_set_enable(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t data)
 {
     if (!data)
         return false;
@@ -459,12 +459,12 @@ bool vgic_int_set_enable(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t data)
         return vgic_int_update_enable(vcpu, interrupt, true);
 }
 
-uint64_t vgic_int_get_enable(vcpu_t *vcpu, vgic_int_t *interrupt)
+uint64_t vgic_int_get_enable(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     return (uint64_t)interrupt->enabled;
 }
 
-bool vgic_int_update_pend(vcpu_t *vcpu, vgic_int_t *interrupt, bool pend)
+bool vgic_int_update_pend(struct vcpu *vcpu, struct vgic_int *interrupt, bool pend)
 {
     if (GIC_VERSION == GICV2 && gic_is_sgi(interrupt->id)) {
         return false;
@@ -481,7 +481,7 @@ bool vgic_int_update_pend(vcpu_t *vcpu, vgic_int_t *interrupt, bool pend)
     }
 }
 
-void vgic_int_state_hw(vcpu_t *vcpu, vgic_int_t *interrupt)
+void vgic_int_state_hw(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     uint8_t state = interrupt->state == PEND ? ACT : interrupt->state;
     bool pend = (state & PEND) != 0;
@@ -500,7 +500,7 @@ void vgic_int_state_hw(vcpu_t *vcpu, vgic_int_t *interrupt)
 #endif
 }
 
-bool vgic_int_clear_pend(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t data)
+bool vgic_int_clear_pend(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t data)
 {
     if (!data)
         return false;
@@ -508,7 +508,7 @@ bool vgic_int_clear_pend(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t data)
         return vgic_int_update_pend(vcpu, interrupt, false);
 }
 
-bool vgic_int_set_pend(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t data)
+bool vgic_int_set_pend(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t data)
 {
     if (!data)
         return false;
@@ -516,12 +516,12 @@ bool vgic_int_set_pend(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t data)
         return vgic_int_update_pend(vcpu, interrupt, true);
 }
 
-uint64_t vgic_int_get_pend(vcpu_t *vcpu, vgic_int_t *interrupt)
+uint64_t vgic_int_get_pend(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     return (interrupt->state & PEND) ? 1 : 0;
 }
 
-bool vgic_int_update_act(vcpu_t *vcpu, vgic_int_t *interrupt, bool act)
+bool vgic_int_update_act(struct vcpu *vcpu, struct vgic_int *interrupt, bool act)
 {
     if (act ^ !!(interrupt->state & ACT)) {
         if (act)
@@ -534,7 +534,7 @@ bool vgic_int_update_act(vcpu_t *vcpu, vgic_int_t *interrupt, bool act)
     }
 }
 
-bool vgic_int_clear_act(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t data)
+bool vgic_int_clear_act(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t data)
 {
     if (!data)
         return false;
@@ -542,7 +542,7 @@ bool vgic_int_clear_act(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t data)
         return vgic_int_update_act(vcpu, interrupt, false);
 }
 
-bool vgic_int_set_act(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t data)
+bool vgic_int_set_act(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t data)
 {
     if (!data)
         return false;
@@ -550,24 +550,24 @@ bool vgic_int_set_act(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t data)
         return vgic_int_update_act(vcpu, interrupt, true);
 }
 
-uint64_t vgic_int_get_act(vcpu_t *vcpu, vgic_int_t *interrupt)
+uint64_t vgic_int_get_act(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     return (interrupt->state & ACT) ? 1 : 0;
 }
 
-bool vgic_int_set_cfg(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t cfg)
+bool vgic_int_set_cfg(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t cfg)
 {
     uint8_t prev_cfg = interrupt->cfg;
     interrupt->cfg = (uint8_t)cfg;
     return prev_cfg != cfg;
 }
 
-uint64_t vgic_int_get_cfg(vcpu_t *vcpu, vgic_int_t *interrupt)
+uint64_t vgic_int_get_cfg(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     return (uint64_t)interrupt->cfg;
 }
 
-void vgic_int_set_cfg_hw(vcpu_t *vcpu, vgic_int_t *interrupt)
+void vgic_int_set_cfg_hw(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
 #if (GIC_VERSION != GICV2)
     if (gic_is_priv(interrupt->id)) {
@@ -580,19 +580,19 @@ void vgic_int_set_cfg_hw(vcpu_t *vcpu, vgic_int_t *interrupt)
 #endif
 }
 
-bool vgic_int_set_prio(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t prio)
+bool vgic_int_set_prio(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t prio)
 {
     uint8_t prev_prio = interrupt->prio;
     interrupt->prio = (uint8_t)prio;
     return prev_prio != prio;
 }
 
-uint64_t vgic_int_get_prio(vcpu_t *vcpu, vgic_int_t *interrupt)
+uint64_t vgic_int_get_prio(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     return (uint64_t)interrupt->prio;
 }
 
-void vgic_int_set_prio_hw(vcpu_t *vcpu, vgic_int_t *interrupt)
+void vgic_int_set_prio_hw(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
 #if (GIC_VERSION != GICV2)
     if (gic_is_priv(interrupt->id)) {
@@ -605,14 +605,14 @@ void vgic_int_set_prio_hw(vcpu_t *vcpu, vgic_int_t *interrupt)
 #endif
 }
 
-void vgic_emul_razwi(emul_access_t *acc, struct vgic_reg_handler_info *handlers,
+void vgic_emul_razwi(struct emul_access *acc, struct vgic_reg_handler_info *handlers,
                      bool gicr_access, uint64_t vgicr_id)
 {
     if (!acc->write) vcpu_writereg(cpu.vcpu, acc->reg, 0);
 }
 
-void vgic_int_set_field(struct vgic_reg_handler_info *handlers, vcpu_t *vcpu,
-                        vgic_int_t *interrupt, uint64_t data)
+void vgic_int_set_field(struct vgic_reg_handler_info *handlers, struct vcpu *vcpu,
+                        struct vgic_int *interrupt, uint64_t data)
 {
     spin_lock(&interrupt->lock);
     if (vgic_get_ownership(vcpu, interrupt)) {
@@ -624,7 +624,7 @@ void vgic_int_set_field(struct vgic_reg_handler_info *handlers, vcpu_t *vcpu,
         vgic_route(vcpu, interrupt);
         vgic_yield_ownership(vcpu, interrupt);
     } else {
-        cpu_msg_t msg = {VGIC_IPI_ID, VGIC_SET_REG,
+        struct cpu_msg msg = {VGIC_IPI_ID, VGIC_SET_REG,
                          VGIC_MSG_DATA(vcpu->vm->id, 0, interrupt->id,
                                        handlers->regid, data)};
         cpu_send_msg(interrupt->owner->phys_id, &msg);
@@ -632,7 +632,7 @@ void vgic_int_set_field(struct vgic_reg_handler_info *handlers, vcpu_t *vcpu,
     spin_unlock(&interrupt->lock);
 }
 
-void vgic_emul_generic_access(emul_access_t *acc,
+void vgic_emul_generic_access(struct emul_access *acc,
                               struct vgic_reg_handler_info *handlers,
                               bool gicr_access, uint64_t vgicr_id)
 {
@@ -646,7 +646,7 @@ void vgic_emul_generic_access(emul_access_t *acc,
 
     if (valid_access) {
         for (size_t i = 0; i < ((acc->width * 8) / field_width); i++) {
-            vgic_int_t *interrupt =
+            struct vgic_int *interrupt =
                 vgic_get_int(cpu.vcpu, first_int + i, vgicr_id);
             if (interrupt == NULL) break;
             if (acc->write) {
@@ -668,7 +668,7 @@ struct vgic_reg_handler_info isenabler_info = {
     vgic_emul_generic_access,
     0b0100,
     VGIC_ISENABLER_ID,
-    offsetof(gicd_t, ISENABLER),
+    offsetof(struct gicd, ISENABLER),
     1,
     vgic_int_get_enable,
     vgic_int_set_enable,
@@ -679,7 +679,7 @@ struct vgic_reg_handler_info ispendr_info = {
     vgic_emul_generic_access,
     0b0100,
     VGIC_ISPENDR_ID,
-    offsetof(gicd_t, ISPENDR),
+    offsetof(struct gicd, ISPENDR),
     1,
     vgic_int_get_pend,
     vgic_int_set_pend,
@@ -690,7 +690,7 @@ struct vgic_reg_handler_info isactiver_info = {
     vgic_emul_generic_access,
     0b0100,
     VGIC_ISACTIVER_ID,
-    offsetof(gicd_t, ISACTIVER),
+    offsetof(struct gicd, ISACTIVER),
     1,
     vgic_int_get_act,
     vgic_int_set_act,
@@ -701,7 +701,7 @@ struct vgic_reg_handler_info icenabler_info = {
     vgic_emul_generic_access,
     0b0100,
     VGIC_ICENABLER_ID,
-    offsetof(gicd_t, ICENABLER),
+    offsetof(struct gicd, ICENABLER),
     1,
     vgic_int_get_enable,
     vgic_int_clear_enable,
@@ -712,7 +712,7 @@ struct vgic_reg_handler_info icpendr_info = {
     vgic_emul_generic_access,
     0b0100,
     VGIC_ICPENDR_ID,
-    offsetof(gicd_t, ICPENDR),
+    offsetof(struct gicd, ICPENDR),
     1,
     vgic_int_get_pend,
     vgic_int_clear_pend,
@@ -723,7 +723,7 @@ struct vgic_reg_handler_info iactiver_info = {
     vgic_emul_generic_access,
     0b0100,
     VGIC_ICACTIVER_ID,
-    offsetof(gicd_t, ICACTIVER),
+    offsetof(struct gicd, ICACTIVER),
     1,
     vgic_int_get_act,
     vgic_int_clear_act,
@@ -734,7 +734,7 @@ struct vgic_reg_handler_info icfgr_info = {
     vgic_emul_generic_access,
     0b0100,
     VGIC_ICFGR_ID,
-    offsetof(gicd_t, ICFGR),
+    offsetof(struct gicd, ICFGR),
     2,
     vgic_int_get_cfg,
     vgic_int_set_cfg,
@@ -745,7 +745,7 @@ struct vgic_reg_handler_info ipriorityr_info = {
     vgic_emul_generic_access,
     0b0101,
     VGIC_IPRIORITYR_ID,
-    offsetof(gicd_t, IPRIORITYR),
+    offsetof(struct gicd, IPRIORITYR),
     8,
     vgic_int_get_prio,
     vgic_int_set_prio,
@@ -803,7 +803,7 @@ struct vgic_reg_handler_info *vgic_get_reg_handler_info(uint64_t id)
     }
 }
 
-bool vgic_check_reg_alignment(emul_access_t *acc,
+bool vgic_check_reg_alignment(struct emul_access *acc,
                               struct vgic_reg_handler_info *handlers)
 {
     if (!(handlers->alignment & acc->width) ||
@@ -814,7 +814,7 @@ bool vgic_check_reg_alignment(emul_access_t *acc,
     }
 }
 
-bool vgicd_emul_handler(emul_access_t *acc)
+bool vgicd_emul_handler(struct emul_access *acc)
 {
     struct vgic_reg_handler_info *handler_info = NULL;
     switch (GICD_REG_MASK(acc->addr) >> 7) {
@@ -871,9 +871,9 @@ bool vgicd_emul_handler(emul_access_t *acc)
     }
 }
 
-void vgic_inject(vgicd_t *vgicd, uint64_t id, uint64_t source)
+void vgic_inject(struct vgicd *vgicd, uint64_t id, uint64_t source)
 {
-    vgic_int_t *interrupt = vgic_get_int(cpu.vcpu, id, cpu.vcpu->id);
+    struct vgic_int *interrupt = vgic_get_int(cpu.vcpu, id, cpu.vcpu->id);
     if (interrupt != NULL) {
         if (vgic_int_is_hw(interrupt)) {
             spin_lock(&interrupt->lock);
@@ -911,7 +911,7 @@ void vgic_ipi_handler(uint32_t event, uint64_t data)
         } break;
 
         case VGIC_ROUTE: {
-            vgic_int_t *interrupt =
+            struct vgic_int *interrupt =
                 vgic_get_int(cpu.vcpu, int_id, cpu.vcpu->id);
             if (interrupt != NULL) {
                 spin_lock(&interrupt->lock);
@@ -933,7 +933,7 @@ void vgic_ipi_handler(uint32_t event, uint64_t data)
             uint64_t reg_id = VGIC_MSG_REG(data);
             struct vgic_reg_handler_info *handlers =
                 vgic_get_reg_handler_info(reg_id);
-            vgic_int_t *interrupt = vgic_get_int(cpu.vcpu, int_id, vgicr_id);
+            struct vgic_int *interrupt = vgic_get_int(cpu.vcpu, int_id, vgicr_id);
             if (handlers != NULL && interrupt != NULL) {
                 vgic_int_set_field(handlers, cpu.vcpu, interrupt, val);
             }
@@ -941,7 +941,7 @@ void vgic_ipi_handler(uint32_t event, uint64_t data)
     }
 }
 
-void vgic_refill_lrs(vcpu_t *vcpu)
+void vgic_refill_lrs(struct vcpu *vcpu)
 {
     bool has_pend = false;
     for (size_t i = 0; i < NUM_LRS; i++) {
@@ -961,12 +961,12 @@ void vgic_refill_lrs(vcpu_t *vcpu)
     while (elrsr = gich_get_elrsr(),
            (lr_ind = bitmap_find_nth((bitmap_t)&elrsr, NUM_LRS, 1, 0, true)) >=
                0) {
-        vgic_int_t *interrupt = NULL;
+        struct vgic_int *interrupt = NULL;
         bool prev_pend = false;
         uint8_t prev_prio = GIC_LOWEST_PRIO;
 
         for (size_t i = 0; i < gic_num_irqs(); i++) {
-            vgic_int_t *temp_int = vgic_get_int(vcpu, i, vcpu->id);
+            struct vgic_int *temp_int = vgic_get_int(vcpu, i, vcpu->id);
             if (temp_int == NULL) break;
             spin_lock(&temp_int->lock);
             if (vgic_get_ownership(vcpu, temp_int)) {
@@ -982,7 +982,7 @@ void vgic_refill_lrs(vcpu_t *vcpu)
                         is_act_after_pend || is_higher_prio) {
                         prev_pend = is_pend;
                         prev_prio = temp_int->prio;
-                        vgic_int_t *aux = interrupt;
+                        struct vgic_int *aux = interrupt;
                         interrupt = temp_int;
                         temp_int = aux;
                     }
@@ -1006,17 +1006,17 @@ void vgic_refill_lrs(vcpu_t *vcpu)
     }
 }
 
-void vgic_eoir_highest_spilled_active(vcpu_t *vcpu)
+void vgic_eoir_highest_spilled_active(struct vcpu *vcpu)
 {
-    vgic_int_t *interrupt = NULL;
+    struct vgic_int *interrupt = NULL;
     for (size_t i = 0; i < gic_num_irqs(); i++) {
-        vgic_int_t *temp_int = vgic_get_int(vcpu, i, vcpu->id);
+        struct vgic_int *temp_int = vgic_get_int(vcpu, i, vcpu->id);
         if (temp_int == NULL) break;
 
         spin_lock(&temp_int->lock);
         if (vgic_get_ownership(vcpu, temp_int) && (temp_int->state & ACT)) {
             if (interrupt == NULL || (interrupt->prio < temp_int->prio)) {
-                vgic_int_t *aux = interrupt;
+                struct vgic_int *aux = interrupt;
                 interrupt = temp_int;
                 temp_int = aux;
             }
@@ -1041,7 +1041,7 @@ void vgic_eoir_highest_spilled_active(vcpu_t *vcpu)
     }
 }
 
-void vgic_handle_trapped_eoir(vcpu_t *vcpu)
+void vgic_handle_trapped_eoir(struct vcpu *vcpu)
 {
     int64_t lr_ind = -1;
     uint64_t eisr = 0;
@@ -1051,7 +1051,7 @@ void vgic_handle_trapped_eoir(vcpu_t *vcpu)
         uint64_t lr_val = gich_read_lr(lr_ind);
         gich_write_lr(lr_ind, 0);
 
-        vgic_int_t *interrupt =
+        struct vgic_int *interrupt =
             vgic_get_int(vcpu, GICH_LR_VID(lr_val), vcpu->id);
         if (interrupt == NULL) continue;
 
@@ -1108,14 +1108,14 @@ size_t vgic_get_itln(const struct gic_dscrp *gic_dscrp) {
     return vtyper_itln;
 }
 
-void vgic_set_hw(vm_t *vm, uint64_t id)
+void vgic_set_hw(struct vm *vm, uint64_t id)
 {
     if (id < GIC_MAX_SGIS) return;
 
-    vgic_int_t *interrupt = NULL;
+    struct vgic_int *interrupt = NULL;
 
     if (id < GIC_CPU_PRIV) {
-        list_foreach(vm->vcpu_list, vcpu_t, vcpu)
+        list_foreach(vm->vcpu_list, struct vcpu, vcpu)
         {
             interrupt = vgic_get_int(vcpu, id, vcpu->id);
             if (interrupt != NULL) {
@@ -1128,7 +1128,7 @@ void vgic_set_hw(vm_t *vm, uint64_t id)
         /**
          * This assumes this method is called only during VM initlization
          */
-        interrupt = vgic_get_int((vcpu_t *)list_peek(&vm->vcpu_list), id, 0);
+        interrupt = vgic_get_int((struct vcpu *)list_peek(&vm->vcpu_list), id, 0);
         if (interrupt != NULL) {
             spin_lock(&interrupt->lock);
             interrupt->hw = true;

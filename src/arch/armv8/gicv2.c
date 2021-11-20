@@ -21,11 +21,11 @@
 #include <interrupts.h>
 #include <vm.h>
 
-extern volatile gicd_t gicd;
+extern volatile struct gicd gicd;
 extern spinlock_t gicd_lock;
 
-volatile gicc_t gicc __attribute__((section(".devices"), aligned(PAGE_SIZE)));
-volatile gich_t gich __attribute__((section(".devices"), aligned(PAGE_SIZE)));
+volatile struct gicc gicc __attribute__((section(".devices"), aligned(PAGE_SIZE)));
+volatile struct gich gich __attribute__((section(".devices"), aligned(PAGE_SIZE)));
 
 static uint64_t gic_cpu_map[GIC_MAX_TARGETS];
 
@@ -104,7 +104,7 @@ static inline void gicc_init()
     gic_cpu_map[cpu.id] = gic_cpu_id;
 }
 
-void gicc_save_state(gicc_state_t *state)
+void gicc_save_state(struct gicc_state *state)
 {
     state->CTLR = gicc.CTLR;
     state->PMR = gicc.PMR;
@@ -125,7 +125,7 @@ void gicc_save_state(gicc_state_t *state)
     }
 }
 
-void gicc_restore_state(gicc_state_t *state)
+void gicc_restore_state(struct gicc_state *state)
 {
     gicc.CTLR = state->CTLR;
     gicc.PMR = state->PMR;

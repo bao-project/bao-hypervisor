@@ -19,7 +19,7 @@
 #include <arch/vplic.h>
 #include <string.h>
 
-void vm_arch_init(vm_t *vm, const vm_config_t *config)
+void vm_arch_init(struct vm *vm, const struct vm_config *config)
 {
     unsigned long root_pt_pa;
     mem_translate(&cpu.as, vm->as.pt.root, &root_pt_pa);
@@ -32,12 +32,12 @@ void vm_arch_init(vm_t *vm, const vm_config_t *config)
     vplic_init(vm, platform.arch.plic_base);
 }
 
-void vcpu_arch_init(vcpu_t *vcpu, vm_t *vm) {
+void vcpu_arch_init(struct vcpu *vcpu, struct vm *vm) {
     vcpu->arch.sbi_ctx.lock = SPINLOCK_INITVAL;
     vcpu->arch.sbi_ctx.state = vcpu->id == 0 ?  STARTED : STOPPED;
 }
 
-void vcpu_arch_reset(vcpu_t *vcpu, uint64_t entry)
+void vcpu_arch_reset(struct vcpu *vcpu, uint64_t entry)
 {
     memset(vcpu->regs, 0, sizeof(struct arch_regs));
 
@@ -60,24 +60,24 @@ void vcpu_arch_reset(vcpu_t *vcpu, uint64_t entry)
     CSRW(CSR_VSATP, 0);
 }
 
-uint64_t vcpu_readreg(vcpu_t *vcpu, uint64_t reg)
+uint64_t vcpu_readreg(struct vcpu *vcpu, uint64_t reg)
 {
     if ((reg <= 0) || (reg > 31)) return 0;
     return vcpu->regs->x[reg - 1];
 }
 
-void vcpu_writereg(vcpu_t *vcpu, uint64_t reg, uint64_t val)
+void vcpu_writereg(struct vcpu *vcpu, uint64_t reg, uint64_t val)
 {
     if ((reg <= 0) || (reg > 31)) return;
     vcpu->regs->x[reg - 1] = val;
 }
 
-uint64_t vcpu_readpc(vcpu_t *vcpu)
+uint64_t vcpu_readpc(struct vcpu *vcpu)
 {
     return vcpu->regs->sepc;
 }
 
-void vcpu_writepc(vcpu_t *vcpu, uint64_t pc)
+void vcpu_writepc(struct vcpu *vcpu, uint64_t pc)
 {
     vcpu->regs->sepc = pc;
 }
@@ -200,7 +200,7 @@ static inline uint64_t hlvd(uintptr_t addr){
     })
 
 
-bool vm_readmem(vm_t *vm, void *dest, uintptr_t vmaddr, size_t n, bool exec)
+bool vm_readmem(struct vm *vm, void *dest, uintptr_t vmaddr, size_t n, bool exec)
 {
     if(n == 0) return true;
 
@@ -230,7 +230,7 @@ bool vm_readmem(vm_t *vm, void *dest, uintptr_t vmaddr, size_t n, bool exec)
     return n == 0 && !hlv_except;
 }
 
-void vcpu_arch_run(vcpu_t *vcpu){
+void vcpu_arch_run(struct vcpu *vcpu){
 
     if(vcpu->arch.sbi_ctx.state == STARTED){
         vcpu_arch_entry();

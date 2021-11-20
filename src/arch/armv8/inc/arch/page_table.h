@@ -134,9 +134,9 @@
 extern size_t parange;
 extern size_t parange_table[];
 
-typedef struct page_table page_table_t;
+struct page_table;
 
-void pt_set_recursive(page_table_t* pt, size_t index);
+void pt_set_recursive(struct page_table* pt, size_t index);
 
 static inline void pte_set(pte_t* pte, uint64_t addr, uint64_t type,
                            uint64_t flags)

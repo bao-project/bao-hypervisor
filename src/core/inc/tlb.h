@@ -21,7 +21,7 @@
 
 #include <mem.h>
 
-static inline void tlb_inv_va(addr_space_t *as, void *va)
+static inline void tlb_inv_va(struct addr_space *as, void *va)
 {
     if (as->type == AS_HYP) {
         tlb_hyp_inv_va(va);
@@ -31,7 +31,7 @@ static inline void tlb_inv_va(addr_space_t *as, void *va)
     }
 }
 
-static inline void tlb_inv_all(addr_space_t *as)
+static inline void tlb_inv_all(struct addr_space *as)
 {
     if (as->type == AS_HYP) {
         tlb_hyp_inv_all();

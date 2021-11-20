@@ -51,7 +51,7 @@ void aborts_data_lower(uint32_t iss, uint64_t far, uint64_t il)
     uint64_t addr = far;
     emul_handler_t handler = vm_emul_get_mem(cpu.vcpu->vm, addr);
     if (handler != NULL) {
-        emul_access_t emul;
+        struct emul_access emul;
         emul.addr = addr;
         emul.width =
             (1 << bit_extract(iss, ESR_ISS_DA_SAS_OFF, ESR_ISS_DA_SAS_LEN));
@@ -119,7 +119,7 @@ void sysreg_handler(uint32_t iss, uint64_t far, uint64_t il)
     uint64_t reg_addr = iss & ESR_ISS_SYSREG_ADDR;
     emul_handler_t handler = vm_emul_get_reg(cpu.vcpu->vm, reg_addr);
     if(handler != NULL){
-        emul_access_t emul;
+        struct emul_access emul;
         emul.addr = reg_addr;
         emul.width = 8;
         emul.write = iss & ESR_ISS_SYSREG_DIR ? false : true;

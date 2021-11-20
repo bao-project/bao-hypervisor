@@ -21,7 +21,7 @@
 #include <arch/spinlock.h>
 #include <bitmap.h>
 
-typedef struct {
+struct vplic {
     spinlock_t lock;
     size_t cntxt_num;
     BITMAP_ALLOC(hw, PLIC_MAX_INTERRUPTS);
@@ -30,12 +30,12 @@ typedef struct {
     uint32_t prio[PLIC_MAX_INTERRUPTS];
     BITMAP_ALLOC_ARRAY(enbl, PLIC_MAX_INTERRUPTS, PLIC_PLAT_CNTXT_NUM);
     uint32_t threshold[PLIC_PLAT_CNTXT_NUM];
-} vplic_t;
+};
 
-typedef struct vm vm_t;
-typedef struct vcpu vcpu_t;
-void vplic_init(vm_t *vm, uintptr_t vplic_base);
-void vplic_inject(vcpu_t *vcpu, int id);
-void vplic_set_hw(vm_t *vm, int id);
+struct vm;
+struct vcpu;
+void vplic_init(struct vm *vm, uintptr_t vplic_base);
+void vplic_inject(struct vcpu *vcpu, int id);
+void vplic_set_hw(struct vm *vm, int id);
 
 #endif /* __VPLIC_H__ */

@@ -54,7 +54,7 @@ extern uint8_t _config_end, _images_end;
     .config_header_size = CONFIG_HEADER_SIZE, \
     .config_size = CONFIG_SIZE,
 
-typedef struct vm_config {
+struct vm_config {
     struct {
         /* Image load address in VM's address space */
         uint64_t base_addr;
@@ -86,7 +86,7 @@ typedef struct vm_config {
 
     struct platform_desc platform;
 
-} vm_config_t;
+};
 
 struct fdt_header {
     uint32_t magic;
@@ -118,13 +118,13 @@ extern struct config {
 
     /* Definition of shared memory regions to be used by VMs */
     size_t shmemlist_size;
-    shmem_t *shmemlist;
+    struct shmem *shmemlist;
 
     /* The number of VMs specified by this configuration */
     size_t vmlist_size;
 
     /* Array list with VM configuration */
-    vm_config_t vmlist[];
+    struct vm_config vmlist[];
 
 } config __attribute__((section(".config")));
 

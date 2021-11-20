@@ -43,7 +43,7 @@ typedef size_t (*sync_handler_t)();
 
 extern size_t sbi_vs_handler();
 
-static inline int ins_ldst_decode(uintptr_t ins, emul_access_t *emul)
+static inline int ins_ldst_decode(uintptr_t ins, struct emul_access *emul)
 {
     if (INS_COMPRESSED(ins)) {
         if (INS_C_OPCODE(ins) != MATCH_C_LOAD &&
@@ -94,7 +94,7 @@ size_t guest_page_fault_handler()
         uintptr_t ins_addr = CSRR(sepc);
         unsigned long ins = read_ins(ins_addr);
 
-        emul_access_t emul;
+        struct emul_access emul;
         if (ins_ldst_decode(ins, &emul) < 0) {
             ERROR("cant decode ld/st instruction");
         }

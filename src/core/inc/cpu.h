@@ -30,20 +30,20 @@
 
 extern uint8_t _cpu_if_base;
 
-typedef struct {
-    list_t event_list;
+struct cpuif {
+    struct list event_list;
 
-} __attribute__((aligned(PAGE_SIZE))) cpuif_t;
+} __attribute__((aligned(PAGE_SIZE))) ;
 
-typedef struct vcpu vcpu_t;
+struct vcpu;
 
-typedef struct cpu {
+struct cpu {
     uint64_t id;
-    addr_space_t as;
+    struct addr_space as;
 
-    vcpu_t* vcpu;
+    struct vcpu* vcpu;
 
-    cpu_arch_t arch;
+    struct cpu_arch arch;
 
     uint8_t root_pt[PT_SIZE] __attribute__((aligned(PT_SIZE)));
 
@@ -51,19 +51,19 @@ typedef struct cpu {
 
     /******************* PUBLIC INTERFACE  **************************/
 
-    cpuif_t interface __attribute__((aligned(PAGE_SIZE)));
+    struct cpuif interface __attribute__((aligned(PAGE_SIZE)));
 
-} __attribute__((aligned(PAGE_SIZE))) cpu_t;
+} __attribute__((aligned(PAGE_SIZE)));
 
-extern cpu_t cpu;
+extern struct cpu cpu;
 
-typedef struct {
+struct cpu_msg {
     uint32_t handler;
     uint32_t event;
     uint64_t data;
-} cpu_msg_t;
+};
 
-void cpu_send_msg(uint64_t cpu, cpu_msg_t* msg);
+void cpu_send_msg(uint64_t cpu, struct cpu_msg* msg);
 
 typedef void (*cpu_msg_handler_t)(uint32_t event, uint64_t data);
 
@@ -73,16 +73,16 @@ typedef void (*cpu_msg_handler_t)(uint32_t event, uint64_t data);
     __attribute__((section(".ipi_cpumsg_handlers_id"),          \
                    used)) volatile const size_t handler_id;
 
-typedef struct {
+struct cpu_synctoken {
     spinlock_t lock;
     volatile size_t n;
     volatile bool ready;
     volatile size_t count;
-} cpu_synctoken_t;
+};
 
-extern cpu_synctoken_t cpu_glb_sync;
+extern struct cpu_synctoken cpu_glb_sync;
 
-static inline void cpu_sync_init(cpu_synctoken_t* token, size_t n)
+static inline void cpu_sync_init(struct cpu_synctoken* token, size_t n)
 {
     token->lock = SPINLOCK_INITVAL;
     token->n = n;
@@ -90,7 +90,7 @@ static inline void cpu_sync_init(cpu_synctoken_t* token, size_t n)
     token->ready = true;
 }
 
-static inline void cpu_sync_barrier(cpu_synctoken_t* token)
+static inline void cpu_sync_barrier(struct cpu_synctoken* token)
 {
     // TODO: no fence/barrier needed in this function?
 
@@ -106,15 +106,15 @@ static inline void cpu_sync_barrier(cpu_synctoken_t* token)
     while (token->count < next_count);
 }
 
-static inline cpuif_t* cpu_if(uint64_t cpu_id)
+static inline struct cpuif* cpu_if(uint64_t cpu_id)
 {
     return ((void*)&_cpu_if_base) +
-           (cpu_id * ALIGN(sizeof(cpuif_t), PAGE_SIZE));
+           (cpu_id * ALIGN(sizeof(struct cpuif), PAGE_SIZE));
 }
 
 void cpu_init(uint64_t cpu_id, uint64_t load_addr);
-void cpu_send_msg(uint64_t cpu, cpu_msg_t* msg);
-bool cpu_get_msg(cpu_msg_t* msg);
+void cpu_send_msg(uint64_t cpu, struct cpu_msg* msg);
+bool cpu_get_msg(struct cpu_msg* msg);
 void cpu_msg_handler();
 void cpu_msg_set_handler(uint64_t id, cpu_msg_handler_t handler);
 void cpu_idle();

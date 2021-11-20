@@ -52,14 +52,14 @@
 #define REG_T5 (30)
 #define REG_T6 (31)
 
-typedef struct {
-    vplic_t vplic;
-} vm_arch_t;
+struct vm_arch {
+    struct vplic vplic;
+};
 
-typedef struct {
+struct vcpu_arch {
     unsigned hart_id;
     struct sbi_hsm sbi_ctx;
-} vcpu_arch_t;
+};
 
 struct arch_regs {
     union {
@@ -115,7 +115,7 @@ struct arch_regs {
 
 } __attribute__((__packed__));
 
-bool vm_readmem(vm_t* vm, void* dest, uintptr_t vmaddr, size_t n, bool exec);
+bool vm_readmem(struct vm* vm, void* dest, uintptr_t vmaddr, size_t n, bool exec);
 void vcpu_arch_entry();
 
 #endif /* __ARCH_VM_H__ */

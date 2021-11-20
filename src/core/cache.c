@@ -15,12 +15,12 @@
 
 #include <cache.h>
 
-static cache_t cache_dscr;
+static struct cache cache_dscr;
 
 size_t COLOR_NUM = 1;
 size_t COLOR_SIZE = 1;
 
-static void cache_calc_colors(cache_t* dscrp, size_t page_size)
+static void cache_calc_colors(struct cache* dscrp, size_t page_size)
 {
     if (dscrp->lvls == 0) {
         /* No cache? */

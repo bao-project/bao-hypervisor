@@ -115,7 +115,7 @@
 #define GICD_IROUTER_IRM_BIT (1ULL << 31)
 #define GICD_IROUTER_AFF_MSK (GICD_IROUTER_RES0_MSK & ~GICD_IROUTER_IRM_BIT)
 
-typedef struct {
+struct gicd {
     uint32_t CTLR;
     uint32_t TYPER;
     uint32_t IIDR;
@@ -151,7 +151,7 @@ typedef struct {
     uint64_t IROUTER[GIC_MAX_INTERUPTS];
     uint8_t pad8[0xFFD0 - 0x8000];
     uint32_t ID[(0x10000 - 0xFFD0) / sizeof(uint32_t)];
-} __attribute__((__packed__, aligned(0x10000))) gicd_t;
+} __attribute__((__packed__, aligned(0x10000)));
 
 /* Redistributor Wake Register, GICD_WAKER */
 
@@ -163,7 +163,7 @@ typedef struct {
 #define GICR_WAKER_ProcessorSleep_BIT (0x2)
 #define GICR_WAKER_ChildrenASleep_BIT (0x4)
 
-typedef struct {
+struct gicr {
     /* RD_base frame */
     uint32_t CTLR;
     uint32_t IIDR;
@@ -210,7 +210,7 @@ typedef struct {
     uint32_t IGRPMODR0;
     uint8_t pad16[0x0e00 - 0xd04];
     uint32_t NSACR;
-} __attribute__((__packed__, aligned(0x10000))) gicr_t;
+} __attribute__((__packed__, aligned(0x10000)));
 
 /* CPU Interface Control Register, GICC_CTLR */
 
@@ -247,7 +247,7 @@ typedef struct {
 #define ICC_SRE_SRE_BIT  (0x1)
 #define ICC_IGRPEN_EL1_ENB_BIT (0x1)
 
-typedef struct {
+struct gicc {
     uint32_t CTLR;
     uint32_t PMR;
     uint32_t BPR;
@@ -266,7 +266,7 @@ typedef struct {
     uint32_t IIDR;
     uint8_t pad2[0x1000 - 0x0100];
     uint32_t DIR;
-} __attribute__((__packed__, aligned(0x1000))) gicc_t;
+} __attribute__((__packed__, aligned(0x1000)));
 
 #define GICH_HCR_En_BIT (1 << 0)
 #define GICH_HCR_UIE_BIT (1 << 1)
@@ -351,7 +351,7 @@ typedef struct {
 #define GICH_MISR_VGrp1E (1U << 6)
 #define GICH_MISR_VGrp1D (1U << 7)
 
-typedef struct {
+struct gich {
     uint32_t HCR;
     uint32_t VTR;
     uint32_t VMCR;
@@ -365,9 +365,9 @@ typedef struct {
     uint32_t APR;
     uint8_t pad4[0x100 - 0x0f4];
     uint32_t LR[GIC_NUM_LIST_REGS];
-} __attribute__((__packed__, aligned(0x1000))) gich_t;
+} __attribute__((__packed__, aligned(0x1000)));
 
-typedef struct {
+struct gicv {
     uint32_t CTLR;
     uint32_t PMR;
     uint32_t BPR;
@@ -385,15 +385,15 @@ typedef struct {
     uint32_t IIDR;
     uint8_t pad2[0x1000 - 0x0100];
     uint32_t DIR;
-} __attribute__((__packed__, aligned(0x1000))) gicv_t;
+} __attribute__((__packed__, aligned(0x1000)));
 
-extern volatile gicd_t gicd;
-extern volatile gicc_t gicc;
-extern volatile gich_t gich;
+extern volatile struct gicd gicd;
+extern volatile struct gicc gicc;
+extern volatile struct gich gich;
 
 enum int_state { INV, PEND, ACT, PENDACT };
 
-typedef struct {
+struct gicc_state {
     uint32_t CTLR;
     uint32_t PMR;
     uint32_t BPR;
@@ -406,7 +406,7 @@ typedef struct {
 
     uint32_t HCR;
     uint32_t LR[GIC_NUM_LIST_REGS];
-} gicc_state_t;
+};
 
 extern size_t NUM_LRS;
 
@@ -414,8 +414,8 @@ void gic_init();
 void gic_cpu_init();
 void gic_send_sgi(uint64_t cpu_target, uint64_t sgi_num);
 
-void gicc_save_state(gicc_state_t *state);
-void gicc_restore_state(gicc_state_t *state);
+void gicc_save_state(struct gicc_state *state);
+void gicc_restore_state(struct gicc_state *state);
 
 void gic_set_enable(uint64_t int_id, bool en);
 void gic_set_prio(uint64_t int_id, uint8_t prio);
@@ -454,8 +454,8 @@ uint64_t gich_get_elrsr();
 
 void gic_maintenance_handler(uint64_t arg);
 
-extern volatile gicd_t gicd;
-extern volatile gicr_t *gicr;
+extern volatile struct gicd gicd;
+extern volatile struct gicr *gicr;
 
 size_t gich_num_lrs();
 uint32_t gicc_iar();

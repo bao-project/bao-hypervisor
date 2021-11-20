@@ -17,7 +17,7 @@
 #include <arch/smc.h>
 
 uint64_t smc_call(uint64_t x0, uint64_t x1, uint64_t x2, uint64_t x3,
-                  smc_res_t *res)
+                  struct smc_res *res)
 {
     register uint64_t r0 asm("x0") = x0;
     register uint64_t r1 asm("x1") = x1;

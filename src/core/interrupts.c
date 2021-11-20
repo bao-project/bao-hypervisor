@@ -62,7 +62,7 @@ static inline bool interrupt_is_reserved(int int_id)
     return bitmap_get(hyp_interrupt_bitmap, int_id);
 }
 
-inline void interrupts_vm_inject(vm_t *vm, uint64_t id)
+inline void interrupts_vm_inject(struct vm *vm, uint64_t id)
 {
     interrupts_arch_vm_inject(vm, id);
 }
@@ -84,7 +84,7 @@ enum irq_res interrupts_handle(uint64_t int_id)
     }
 }
 
-void interrupts_vm_assign(vm_t *vm, uint64_t id)
+void interrupts_vm_assign(struct vm *vm, uint64_t id)
 {
     if (interrupts_arch_conflict(global_interrupt_bitmap, id)) {
         ERROR("Interrupts conflict, id = %d\n", id);

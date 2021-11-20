@@ -18,14 +18,14 @@
 
 #include <bao.h>
 
-typedef struct {
+struct smc_res {
     uint64_t x0;
     uint64_t x1;
     uint64_t x2;
     uint64_t x3;
-} smc_res_t;
+};
 
 uint64_t smc_call(uint64_t x0, uint64_t x1, uint64_t x2, uint64_t x3,
-                  smc_res_t *res);
+                  struct smc_res *res);
 
 #endif

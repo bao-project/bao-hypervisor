@@ -21,10 +21,10 @@
 #include <interrupts.h>
 #include <arch/csrs.h>
 
-static int vplic_vcntxt_to_pcntxt(vcpu_t *vcpu, int vcntxt_id)
+static int vplic_vcntxt_to_pcntxt(struct vcpu *vcpu, int vcntxt_id)
 {
-    plic_cntxt_t vcntxt = plic_plat_id_to_cntxt(vcntxt_id);
-    plic_cntxt_t pcntxt;
+    struct plic_cntxt vcntxt = plic_plat_id_to_cntxt(vcntxt_id);
+    struct plic_cntxt pcntxt;
 
     int pcntxt_id = -1;
     pcntxt.mode = vcntxt.mode;
@@ -36,67 +36,67 @@ static int vplic_vcntxt_to_pcntxt(vcpu_t *vcpu, int vcntxt_id)
     return pcntxt_id;
 }
 
-static bool vplic_vcntxt_valid(vcpu_t *vcpu, int vcntxt_id) {
-    plic_cntxt_t vcntxt = plic_plat_id_to_cntxt(vcntxt_id);
+static bool vplic_vcntxt_valid(struct vcpu *vcpu, int vcntxt_id) {
+    struct plic_cntxt vcntxt = plic_plat_id_to_cntxt(vcntxt_id);
     return vcntxt_id < vcpu->vm->arch.vplic.cntxt_num && vcntxt.mode <= PRIV_S ;
 }
 
-static bool vplic_get_pend(vcpu_t* vcpu, int id)
+static bool vplic_get_pend(struct vcpu* vcpu, int id)
 {
     bool ret = false;
-    vplic_t * vplic = &vcpu->vm->arch.vplic;
+    struct vplic * vplic = &vcpu->vm->arch.vplic;
     if (id <= PLIC_MAX_INTERRUPTS) ret = bitmap_get(vplic->pend, id);
     return ret;
 }
 
-static bool vplic_get_act(vcpu_t* vcpu, int id)
+static bool vplic_get_act(struct vcpu* vcpu, int id)
 {
     bool ret = false;
-    vplic_t * vplic = &vcpu->vm->arch.vplic;
+    struct vplic * vplic = &vcpu->vm->arch.vplic;
     if (id <= PLIC_MAX_INTERRUPTS) ret = bitmap_get(vplic->act, id);
     return ret;
 }
 
-static bool vplic_get_enbl(vcpu_t* vcpu, int vcntxt, int id)
+static bool vplic_get_enbl(struct vcpu* vcpu, int vcntxt, int id)
 {
     bool ret = false;
-    vplic_t * vplic = &vcpu->vm->arch.vplic;
+    struct vplic * vplic = &vcpu->vm->arch.vplic;
     if (id <= PLIC_MAX_INTERRUPTS) ret = !!bitmap_get(vplic->enbl[vcntxt], id);
     return ret;
 }
 
 
-static uint32_t vplic_get_prio(vcpu_t *vcpu, int id)
+static uint32_t vplic_get_prio(struct vcpu *vcpu, int id)
 {
     uint32_t ret = 0;
-    vplic_t * vplic = &vcpu->vm->arch.vplic;
+    struct vplic * vplic = &vcpu->vm->arch.vplic;
     if (id <= PLIC_MAX_INTERRUPTS) ret = vplic->prio[id];
     return ret;
 }
 
 
-void vplic_set_hw(vm_t *vm, int id)
+void vplic_set_hw(struct vm *vm, int id)
 {
     if (id <= PLIC_MAX_INTERRUPTS) {
         bitmap_set(vm->arch.vplic.hw,id);
     }
 }
 
-static bool vplic_get_hw(vcpu_t* vcpu, int id)
+static bool vplic_get_hw(struct vcpu* vcpu, int id)
 {
     bool ret = false;
-    vplic_t * vplic = &vcpu->vm->arch.vplic;
+    struct vplic * vplic = &vcpu->vm->arch.vplic;
     if (id <= PLIC_MAX_INTERRUPTS) ret = bitmap_get(vplic->hw, id);
     return ret;
 }
 
-static uint32_t vplic_get_theshold(vcpu_t* vcpu, int vcntxt) 
+static uint32_t vplic_get_theshold(struct vcpu* vcpu, int vcntxt) 
 {
-    vplic_t * vplic = &vcpu->vm->arch.vplic;
+    struct vplic * vplic = &vcpu->vm->arch.vplic;
     return vplic->threshold[vcntxt];
 }
 
-static int vplic_next_pending(vcpu_t *vcpu, int vcntxt)
+static int vplic_next_pending(struct vcpu *vcpu, int vcntxt)
 {
     uint32_t max_prio = 0;
     uint32_t int_id = 0;
@@ -123,10 +123,10 @@ enum {UPDATE_HART_LINE};
 static void vplic_ipi_handler(uint32_t event, uint64_t data);
 CPU_MSG_HANDLER(vplic_ipi_handler, VPLIC_IPI_ID);
 
-void vplic_update_hart_line(vcpu_t* vcpu, int vcntxt) 
+void vplic_update_hart_line(struct vcpu* vcpu, int vcntxt) 
 {
     int pcntxt_id = vplic_vcntxt_to_pcntxt(vcpu, vcntxt);
-    plic_cntxt_t pcntxt = plic_plat_id_to_cntxt(pcntxt_id);
+    struct plic_cntxt pcntxt = plic_plat_id_to_cntxt(pcntxt_id);
     if(pcntxt.hart_id == cpu.id) {
         int id = vplic_next_pending(vcpu, vcntxt);
         if(id != 0){
@@ -135,7 +135,7 @@ void vplic_update_hart_line(vcpu_t* vcpu, int vcntxt)
             CSRC(CSR_HVIP, HIP_VSEIP);
         }
     } else {
-        cpu_msg_t msg = {VPLIC_IPI_ID, UPDATE_HART_LINE, vcntxt};
+        struct cpu_msg msg = {VPLIC_IPI_ID, UPDATE_HART_LINE, vcntxt};
         cpu_send_msg(pcntxt.hart_id, &msg);       
     }
 }
@@ -149,9 +149,9 @@ static void vplic_ipi_handler(uint32_t event, uint64_t data)
     }
 }
 
-static void vplic_set_threshold(vcpu_t* vcpu, int vcntxt, uint32_t threshold) 
+static void vplic_set_threshold(struct vcpu* vcpu, int vcntxt, uint32_t threshold) 
 {
-    vplic_t * vplic = &vcpu->vm->arch.vplic;
+    struct vplic * vplic = &vcpu->vm->arch.vplic;
     spin_lock(&vplic->lock);
     vplic->threshold[vcntxt] = threshold;
     int pcntxt = vplic_vcntxt_to_pcntxt(vcpu, vcntxt);
@@ -161,9 +161,9 @@ static void vplic_set_threshold(vcpu_t* vcpu, int vcntxt, uint32_t threshold)
     vplic_update_hart_line(vcpu, vcntxt);
 }
 
-static void vplic_set_enbl(vcpu_t* vcpu, int vcntxt, int id, bool set)
+static void vplic_set_enbl(struct vcpu* vcpu, int vcntxt, int id, bool set)
 {
-    vplic_t * vplic = &vcpu->vm->arch.vplic;
+    struct vplic * vplic = &vcpu->vm->arch.vplic;
     spin_lock(&vplic->lock);
     if (id <= PLIC_MAX_INTERRUPTS && vplic_get_enbl(vcpu, vcntxt, id) != set) {
         if(set){
@@ -182,9 +182,9 @@ static void vplic_set_enbl(vcpu_t* vcpu, int vcntxt, int id, bool set)
     spin_unlock(&vplic->lock);
 }
 
-static void vplic_set_prio(vcpu_t *vcpu, int id, uint32_t prio)
+static void vplic_set_prio(struct vcpu *vcpu, int id, uint32_t prio)
 {
-    vplic_t *vplic = &vcpu->vm->arch.vplic;
+    struct vplic *vplic = &vcpu->vm->arch.vplic;
     spin_lock(&vplic->lock);
     if (id <= PLIC_MAX_INTERRUPTS && vplic_get_prio(vcpu, id) != prio) {
         vplic->prio[id] = prio;
@@ -202,7 +202,7 @@ static void vplic_set_prio(vcpu_t *vcpu, int id, uint32_t prio)
     spin_unlock(&vplic->lock);
 }
 
-static int vplic_claim(vcpu_t *vcpu, int vcntxt)
+static int vplic_claim(struct vcpu *vcpu, int vcntxt)
 {
     spin_lock(&vcpu->vm->arch.vplic.lock);
     int int_id = vplic_next_pending(vcpu, vcntxt);
@@ -214,7 +214,7 @@ static int vplic_claim(vcpu_t *vcpu, int vcntxt)
     return int_id;
 }
 
-static void vplic_complete(vcpu_t *vcpu, int vcntxt, int int_id)
+static void vplic_complete(struct vcpu *vcpu, int vcntxt, int int_id)
 {
     if(vplic_get_hw(vcpu ,int_id)){
         plic_hart[cpu.arch.plic_cntxt].complete = int_id;
@@ -227,16 +227,16 @@ static void vplic_complete(vcpu_t *vcpu, int vcntxt, int int_id)
     vplic_update_hart_line(vcpu, vcntxt);
 }
 
-void vplic_inject(vcpu_t *vcpu, int id)
+void vplic_inject(struct vcpu *vcpu, int id)
 {
-    vplic_t * vplic = &vcpu->vm->arch.vplic;
+    struct vplic * vplic = &vcpu->vm->arch.vplic;
     spin_lock(&vplic->lock);
     if (id > 0 && id <= PLIC_MAX_INTERRUPTS && !vplic_get_pend(vcpu, id)) {
         
         bitmap_set(vplic->pend, id);
 
         if(vplic_get_hw(vcpu, id)) {
-            plic_cntxt_t vcntxt = {vcpu->id, PRIV_S};
+            struct plic_cntxt vcntxt = {vcpu->id, PRIV_S};
             int vcntxt_id = plic_plat_cntxt_to_id(vcntxt);
             vplic_update_hart_line(vcpu, vcntxt_id);
         } else {
@@ -252,7 +252,7 @@ void vplic_inject(vcpu_t *vcpu, int id)
     spin_unlock(&vplic->lock);
 }
 
-static void vplic_emul_prio_access(emul_access_t *acc)
+static void vplic_emul_prio_access(struct emul_access *acc)
 {
     int int_id = (acc->addr & 0xfff) / 4;
     if (acc->write) {
@@ -262,7 +262,7 @@ static void vplic_emul_prio_access(emul_access_t *acc)
     }
 }
 
-static void vplic_emul_pend_access(emul_access_t *acc)
+static void vplic_emul_pend_access(struct emul_access *acc)
 {
     // pend registers are read only
     if (acc->write) return;
@@ -279,7 +279,7 @@ static void vplic_emul_pend_access(emul_access_t *acc)
     vcpu_writereg(cpu.vcpu, acc->reg, val);
 }
 
-static void vplic_emul_enbl_access(emul_access_t *acc)
+static void vplic_emul_enbl_access(struct emul_access *acc)
 {
     int vcntxt_id =
         (((acc->addr - 0x2000) & 0x1fffff) / 4) / PLIC_NUM_ENBL_REGS;
@@ -302,7 +302,7 @@ static void vplic_emul_enbl_access(emul_access_t *acc)
     }
 }
 
-static bool vplic_global_emul_handler(emul_access_t *acc)
+static bool vplic_global_emul_handler(struct emul_access *acc)
 {
     // only allow aligned word accesses
     if (acc->width != 4 || acc->addr & 0x3) return false;
@@ -322,7 +322,7 @@ static bool vplic_global_emul_handler(emul_access_t *acc)
     return true;
 }
 
-static bool vplic_hart_emul_handler(emul_access_t *acc)
+static bool vplic_hart_emul_handler(struct emul_access *acc)
 {
     // only allow aligned word accesses
     if (acc->width > 4 || acc->addr & 0x3) return false;
@@ -336,14 +336,14 @@ static bool vplic_hart_emul_handler(emul_access_t *acc)
     }
 
     switch (acc->addr & 0xf) {
-        case offsetof(plic_hart_t, threshold):
+        case offsetof(struct plic_hart, threshold):
             if (acc->write) {
                 vplic_set_threshold(cpu.vcpu, vcntxt, vcpu_readreg(cpu.vcpu, acc->reg));
             } else {
                 vcpu_writereg(cpu.vcpu, acc->reg, vplic_get_theshold(cpu.vcpu, vcntxt));
             }
             break;
-        case offsetof(plic_hart_t, claim):
+        case offsetof(struct plic_hart, claim):
             if (acc->write) {
                 vplic_complete(cpu.vcpu, vcntxt, vcpu_readreg(cpu.vcpu, acc->reg));
             } else {
@@ -355,17 +355,17 @@ static bool vplic_hart_emul_handler(emul_access_t *acc)
     return true;
 }
 
-void vplic_init(vm_t *vm, uintptr_t vplic_base)
+void vplic_init(struct vm *vm, uintptr_t vplic_base)
 {
     if (cpu.id == vm->master) {
-        emul_mem_t plic_global_emu = {.va_base = vplic_base,
+        struct emul_mem plic_global_emu = {.va_base = vplic_base,
                                          .pa_base = (uint64_t)&plic_global,
                                          .size = sizeof(plic_global),
                                          .handler = vplic_global_emul_handler};
 
         vm_emul_add_mem(vm, &plic_global_emu);
 
-        emul_mem_t plic_claimcomplte_emu = {
+        struct emul_mem plic_claimcomplte_emu = {
             .va_base = vplic_base + PLIC_CLAIMCMPLT_OFF,
             .pa_base = (uint64_t)plic_hart,
             .size = sizeof(plic_hart),

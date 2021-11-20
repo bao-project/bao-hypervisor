@@ -21,16 +21,16 @@
 #include <vm.h>
 #include <fences.h>
 
-typedef struct {
+struct cpu_msg_node {
     node_t node;
-    cpu_msg_t msg;
-} cpu_msg_node_t;
+    struct cpu_msg msg;
+};
 
-cpu_t cpu __attribute__((section(".cpu_private")));
+struct cpu cpu __attribute__((section(".cpu_private")));
 
-cpu_synctoken_t cpu_glb_sync = {.ready = false};
+struct cpu_synctoken cpu_glb_sync = {.ready = false};
 
-objcache_t msg_cache;
+struct objcache msg_cache;
 extern cpu_msg_handler_t _ipi_cpumsg_handlers_start;
 extern uint64_t _ipi_cpumsg_handlers_size, _ipi_cpumsg_handlers_id_start;
 cpu_msg_handler_t *ipi_cpumsg_handlers;
@@ -45,7 +45,7 @@ void cpu_init(uint64_t cpu_id, uint64_t load_addr)
 
     if (cpu.id == CPU_MASTER) {
         cpu_sync_init(&cpu_glb_sync, platform.cpu_num);
-        objcache_init(&msg_cache, sizeof(cpu_msg_node_t), SEC_HYP_GLOBAL,
+        objcache_init(&msg_cache, sizeof(struct cpu_msg_node), SEC_HYP_GLOBAL,
                       false);
 
         ipi_cpumsg_handlers = &_ipi_cpumsg_handlers_start;
@@ -59,9 +59,9 @@ void cpu_init(uint64_t cpu_id, uint64_t load_addr)
     cpu_sync_barrier(&cpu_glb_sync);
 }
 
-void cpu_send_msg(uint64_t trgtcpu, cpu_msg_t *msg)
+void cpu_send_msg(uint64_t trgtcpu, struct cpu_msg *msg)
 {
-    cpu_msg_node_t *node = objcache_alloc(&msg_cache);
+    struct cpu_msg_node *node = objcache_alloc(&msg_cache);
     if (node == NULL) ERROR("cant allocate msg node");
     node->msg = *msg;
     list_push(&cpu_if(trgtcpu)->event_list, (node_t *)node);
@@ -69,10 +69,10 @@ void cpu_send_msg(uint64_t trgtcpu, cpu_msg_t *msg)
     interrupts_cpu_sendipi(trgtcpu, IPI_CPU_MSG);
 }
 
-bool cpu_get_msg(cpu_msg_t *msg)
+bool cpu_get_msg(struct cpu_msg *msg)
 {
-    cpu_msg_node_t *node = NULL;
-    if ((node = (cpu_msg_node_t *)list_pop(&cpu.interface.event_list)) !=
+    struct cpu_msg_node *node = NULL;
+    if ((node = (struct cpu_msg_node *)list_pop(&cpu.interface.event_list)) !=
         NULL) {
         *msg = node->msg;
         objcache_free(&msg_cache, node);
@@ -83,7 +83,7 @@ bool cpu_get_msg(cpu_msg_t *msg)
 
 void cpu_msg_handler()
 {
-    cpu_msg_t msg;
+    struct cpu_msg msg;
     while (cpu_get_msg(&msg)) {
         if (msg.handler < ipi_cpumsg_handler_num &&
             ipi_cpumsg_handlers[msg.handler]) {

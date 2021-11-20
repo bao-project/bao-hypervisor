@@ -62,7 +62,7 @@ void vmm_init()
     bool master = false;
     bool assigned = false;
     size_t vm_id = 0;
-    vm_config_t *vm_config = NULL;
+    struct vm_config *vm_config = NULL;
 
     /**
      * Assign cpus according to vm affinity.
@@ -121,7 +121,7 @@ void vmm_init()
     if (assigned) {
         vm_config = &vm_config_ptr->vmlist[vm_id];
         if (master) {
-            size_t vm_npages = NUM_PAGES(sizeof(vm_t));
+            size_t vm_npages = NUM_PAGES(sizeof(struct vm));
             void* va = mem_alloc_vpage(&cpu.as, SEC_HYP_VM, (void*)BAO_VM_BASE,
                                        vm_npages);
             mem_map(&cpu.as, va, NULL, vm_npages, PTE_HYP_FLAGS);

@@ -19,7 +19,7 @@
 #include <spinlock.h>
 #include <platform.h>
 
-volatile gicd_t gicd __attribute__((section(".devices"), aligned(PAGE_SIZE)));
+volatile struct gicd gicd __attribute__((section(".devices"), aligned(PAGE_SIZE)));
 spinlock_t gicd_lock;
 
 void gicd_init()

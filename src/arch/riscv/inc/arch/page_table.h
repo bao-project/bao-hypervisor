@@ -85,7 +85,7 @@
 
 typedef uint64_t pte_t;
 
-typedef struct page_table page_table_t;
+struct page_table;
 
 static inline void pte_set(pte_t* pte, uint64_t addr, uint64_t type,
                            uint64_t flags)
@@ -113,12 +113,12 @@ static inline bool pte_check_rsw(pte_t* pte, uint64_t flag)
     return (*pte & PTE_RSW_MSK) == (flag & PTE_RSW_MSK);
 }
 
-static inline bool pte_table(page_table_t* pt, pte_t* pte, size_t lvl)
+static inline bool pte_table(struct page_table* pt, pte_t* pte, size_t lvl)
 {
     return (*pte & 0xf) == PTE_VALID;
 }
 
-static inline uint64_t pt_pte_type(page_table_t* pt, size_t lvl)
+static inline uint64_t pt_pte_type(struct page_table* pt, size_t lvl)
 {
     return PTE_PAGE;
 }

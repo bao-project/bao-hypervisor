@@ -34,7 +34,7 @@ void iommu_init()
 }
 
 /* Configure architecture dependent stuff. */
-int iommu_vm_init(vm_t *vm, const vm_config_t *config)
+int iommu_vm_init(struct vm *vm, const struct vm_config *config)
 {
     objcache_init(&vm->iommu.dev_oc, sizeof(struct iommu_dev_node),
                   SEC_HYP_GLOBAL, false);
@@ -43,7 +43,7 @@ int iommu_vm_init(vm_t *vm, const vm_config_t *config)
 }
 
 /* Allows vms to add devices to their address space. */
-int iommu_vm_add_device(vm_t *vm, int dev_id)
+int iommu_vm_add_device(struct vm *vm, int dev_id)
 {
     int res = -1;
 

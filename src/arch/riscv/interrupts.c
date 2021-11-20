@@ -140,12 +140,12 @@ inline bool interrupts_arch_conflict(bitmap_t interrupt_bitmap, uint64_t int_id)
     return bitmap_get(interrupt_bitmap, int_id);
 }
 
-void interrupts_arch_vm_assign(vm_t *vm, uint64_t id)
+void interrupts_arch_vm_assign(struct vm *vm, uint64_t id)
 {
     vplic_set_hw(vm, id);
 }
 
-void interrupts_arch_vm_inject(vm_t *vm, uint64_t id)
+void interrupts_arch_vm_inject(struct vm *vm, uint64_t id)
 {
     vplic_inject(cpu.vcpu, id);
 }

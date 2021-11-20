@@ -18,7 +18,7 @@
 #include <platform.h>
 #include <cpu.h>
 
-static inline void as_map_physical_identity(addr_space_t *as) {
+static inline void as_map_physical_identity(struct addr_space *as) {
     const size_t lvl = 0;
     size_t lvl_size = pt_lvlsize(&as->pt, lvl);
     uintptr_t lvl_mask = ~(lvl_size - 1);
@@ -45,7 +45,7 @@ static inline void as_map_physical_identity(addr_space_t *as) {
     }
 }
 
-void as_arch_init(addr_space_t *as) {
+void as_arch_init(struct addr_space *as) {
 
     if(as->type == AS_HYP) {
         as_map_physical_identity(as);
@@ -53,7 +53,7 @@ void as_arch_init(addr_space_t *as) {
 
 }
 
-bool mem_translate(addr_space_t *as, void *va, uint64_t *pa)
+bool mem_translate(struct addr_space *as, void *va, uint64_t *pa)
 {
     pte_t* pte = &(as->pt.root[PTE_INDEX(0, (uintptr_t)va)]);
     size_t lvl = 0;

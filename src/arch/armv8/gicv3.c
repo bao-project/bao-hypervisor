@@ -21,8 +21,8 @@
 #include <interrupts.h>
 #include <fences.h>
 
-extern volatile gicd_t gicd;
-volatile gicr_t *gicr;
+extern volatile struct gicd gicd;
+volatile struct gicr *gicr;
 
 static spinlock_t gicd_lock;
 static spinlock_t gicr_lock;
@@ -140,7 +140,7 @@ static inline void gicr_init()
     }
 }
 
-void gicc_save_state(gicc_state_t *state)
+void gicc_save_state(struct gicc_state *state)
 {
     state->PMR = MRS(ICC_PMR_EL1);
     state->BPR = MRS(ICC_BPR1_EL1);
@@ -156,7 +156,7 @@ void gicc_save_state(gicc_state_t *state)
     }
 }
 
-void gicc_restore_state(gicc_state_t *state)
+void gicc_restore_state(struct gicc_state *state)
 {
     MSR(ICC_SRE_EL2, ICC_SRE_SRE_BIT);
     MSR(ICC_CTLR_EL1, ICC_CTLR_EOIMode_BIT);
@@ -185,8 +185,8 @@ void gic_map_mmio()
 {
     mem_map_dev(&cpu.as, (void *)&gicd, platform.arch.gic.gicd_addr,
                 NUM_PAGES(sizeof(gicd)));
-    size_t gicr_size = NUM_PAGES(sizeof(gicr_t)) * platform.cpu_num;
-    gicr = (gicr_t *)mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL, NULL, gicr_size);
+    size_t gicr_size = NUM_PAGES(sizeof(struct gicr)) * platform.cpu_num;
+    gicr = (struct gicr *)mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL, NULL, gicr_size);
     mem_map_dev(&cpu.as, (void *)gicr, platform.arch.gic.gicr_addr, gicr_size);
 }
 

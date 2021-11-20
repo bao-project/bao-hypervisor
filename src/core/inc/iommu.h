@@ -21,25 +21,25 @@
 #include <objcache.h>
 #include <list.h>
 
-typedef struct vm_config vm_config_t;
-typedef struct vm vm_t;
+struct vm_config;
+struct vm;
 
-typedef struct iommu_dev {
-    list_t dev_list;
-    objcache_t dev_oc;
-    iommu_vm_arch_t arch;
-} iommu_vm_t;
+struct iommu_vm {
+    struct list dev_list;
+    struct objcache dev_oc;
+    struct iommu_vm_arch arch;
+};
 
 /* Mainly for HW initialization. */
 void iommu_init();
 
 /* iommu api for vms. */
-int iommu_vm_init(vm_t *vm, const vm_config_t *config);
-int iommu_vm_add_device(vm_t *vm, int dev_id);
+int iommu_vm_init(struct vm *vm, const struct vm_config *config);
+int iommu_vm_add_device(struct vm *vm, int dev_id);
 
 /* Must be implemented by architecture. */
 int iommu_arch_init();
-int iommu_arch_vm_init(vm_t *vm, const vm_config_t *config);
-int iommu_arch_vm_add_device(vm_t *vm, int id);
+int iommu_arch_vm_init(struct vm *vm, const struct vm_config *config);
+int iommu_arch_vm_add_device(struct vm *vm, int id);
 
 #endif

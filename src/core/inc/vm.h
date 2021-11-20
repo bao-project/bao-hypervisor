@@ -32,90 +32,90 @@
 #include <iommu.h>
 #include <ipc.h>
 
-typedef struct vm {
+struct vm {
     uint64_t id;
 
-    const vm_config_t* config;
+    const struct vm_config* config;
 
     spinlock_t lock;
-    cpu_synctoken_t sync;
+    struct cpu_synctoken sync;
     uint64_t master;
 
-    list_t vcpu_list;
+    struct list vcpu_list;
     size_t cpu_num;
     uint64_t cpus;
 
-    addr_space_t as;
+    struct addr_space as;
 
-    vm_arch_t arch;
+    struct vm_arch arch;
 
-    list_t emul_list;
-    objcache_t emul_oc;
+    struct list emul_list;
+    struct objcache emul_oc;
 
-    iommu_vm_t iommu;
+    struct iommu_vm iommu;
 
     BITMAP_ALLOC(interrupt_bitmap, MAX_INTERRUPTS);
 
     size_t ipc_num;
-    ipc_t *ipcs;
-} vm_t;
+    struct ipc *ipcs;
+};
 
-typedef struct vcpu {
+struct vcpu {
     node_t node;
 
     struct arch_regs* regs;
-    vcpu_arch_t arch;
+    struct vcpu_arch arch;
 
     uint64_t id;
     uint32_t phys_id;
     bool active;
 
-    vm_t* vm;
+    struct vm* vm;
 
     uint8_t stack[STACK_SIZE] __attribute__((aligned(STACK_SIZE)));
-} vcpu_t;
+};
 
-extern vm_t vm;
+extern struct vm vm;
 extern struct config* vm_config_ptr;
 
-void vm_init(vm_t* vm, const vm_config_t* config, bool master, uint64_t vm_id);
-void vm_start(vm_t* vm, uint64_t entry);
-vcpu_t* vm_get_vcpu(vm_t* vm, uint64_t vcpuid);
-void vm_emul_add_mem(vm_t* vm, emul_mem_t* emu);
-void vm_emul_add_reg(vm_t* vm, emul_reg_t* emu);
-emul_handler_t vm_emul_get_mem(vm_t* vm, uint64_t addr);
-emul_handler_t vm_emul_get_reg(vm_t* vm, uint64_t addr);
-void vcpu_init(vcpu_t* vcpu, vm_t* vm, uint64_t entry);
-void vm_msg_broadcast(vm_t* vm, cpu_msg_t* msg);
-uint64_t vm_translate_to_pcpu_mask(vm_t* vm, uint64_t mask, size_t len);
-uint64_t vm_translate_to_vcpu_mask(vm_t* vm, uint64_t mask, size_t len);
+void vm_init(struct vm* vm, const struct vm_config* config, bool master, uint64_t vm_id);
+void vm_start(struct vm* vm, uint64_t entry);
+struct vcpu* vm_get_vcpu(struct vm* vm, uint64_t vcpuid);
+void vm_emul_add_mem(struct vm* vm, struct emul_mem* emu);
+void vm_emul_add_reg(struct vm* vm, struct emul_reg* emu);
+emul_handler_t vm_emul_get_mem(struct vm* vm, uint64_t addr);
+emul_handler_t vm_emul_get_reg(struct vm* vm, uint64_t addr);
+void vcpu_init(struct vcpu* vcpu, struct vm* vm, uint64_t entry);
+void vm_msg_broadcast(struct vm* vm, struct cpu_msg* msg);
+uint64_t vm_translate_to_pcpu_mask(struct vm* vm, uint64_t mask, size_t len);
+uint64_t vm_translate_to_vcpu_mask(struct vm* vm, uint64_t mask, size_t len);
 
-static inline int64_t vm_translate_to_pcpuid(vm_t* vm, uint64_t vcpuid)
+static inline int64_t vm_translate_to_pcpuid(struct vm* vm, uint64_t vcpuid)
 {
     return bitmap_find_nth((bitmap_t)&vm->cpus, sizeof(vm->cpus) * 8,
                            vcpuid + 1, 0, true);
 }
 
-static inline uint64_t vm_translate_to_vcpuid(vm_t* vm, uint64_t pcpuid)
+static inline uint64_t vm_translate_to_vcpuid(struct vm* vm, uint64_t pcpuid)
 {
     return bitmap_count((bitmap_t)&vm->cpus, 0, pcpuid, true);
 }
 
-static inline int vm_has_interrupt(vm_t* vm, int int_id)
+static inline int vm_has_interrupt(struct vm* vm, int int_id)
 {
     return bitmap_get(vm->interrupt_bitmap, int_id);
 }
 
 /* ------------------------------------------------------------*/
 
-void vm_arch_init(vm_t* vm, const vm_config_t* config);
-void vcpu_arch_init(vcpu_t* vcpu, vm_t* vm);
-void vcpu_run(vcpu_t* vcpu);
-uint64_t vcpu_readreg(vcpu_t* vcpu, uint64_t reg);
-void vcpu_writereg(vcpu_t* vcpu, uint64_t reg, uint64_t val);
-uint64_t vcpu_readpc(vcpu_t* vcpu);
-void vcpu_writepc(vcpu_t* vcpu, uint64_t pc);
-void vcpu_arch_run(vcpu_t* vcpu);
-void vcpu_arch_reset(vcpu_t* vcpu, uint64_t entry);
+void vm_arch_init(struct vm* vm, const struct vm_config* config);
+void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm);
+void vcpu_run(struct vcpu* vcpu);
+uint64_t vcpu_readreg(struct vcpu* vcpu, uint64_t reg);
+void vcpu_writereg(struct vcpu* vcpu, uint64_t reg, uint64_t val);
+uint64_t vcpu_readpc(struct vcpu* vcpu);
+void vcpu_writepc(struct vcpu* vcpu, uint64_t pc);
+void vcpu_arch_run(struct vcpu* vcpu);
+void vcpu_arch_reset(struct vcpu* vcpu, uint64_t entry);
 
 #endif /* __VM_H__ */

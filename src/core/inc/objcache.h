@@ -26,18 +26,18 @@
 #define SLAB_MAX_OBJECT_SIZE (PAGE_SIZE / 4)
 
 struct objcache;
-typedef union slab slab_t;
+union slab;
 
-typedef struct objcache {
+struct objcache {
     size_t osize;
-    list_t slabs;
-    slab_t* last_free;
+    struct list slabs;
+    union slab* last_free;
     spinlock_t lock;
     enum AS_SEC section;
-} objcache_t;
+};
 
-void objcache_init(objcache_t* oc, size_t osize, enum AS_SEC sec, bool prime);
+void objcache_init(struct objcache* oc, size_t osize, enum AS_SEC sec, bool prime);
 void* objcache_alloc();
-bool objcache_free(objcache_t* oc, void* obj);
+bool objcache_free(struct objcache* oc, void* obj);
 
 #endif /* __OBJCACHE_H__ */

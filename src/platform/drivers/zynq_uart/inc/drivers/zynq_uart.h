@@ -222,8 +222,7 @@
 #define serial_puts(str_buffer) uart_puts(1,(const int8_t *)str_buffer)
 
 /** Zynq UART register structure */
-
-typedef struct{
+struct Uart_Zynq {
 	/* UART Control register */
 	/* 0x0000 */
 	volatile uint32_t control;
@@ -279,18 +278,18 @@ typedef struct{
 	/* 0x0048 */
 	volatile uint32_t rx_fifo_byte;
 
-} volatile Uart_Zynq;
+};
 
-typedef Uart_Zynq bao_uart_t;
+typedef struct Uart_Zynq bao_uart_t;
 
 /** Public Zynq UART interfaces */
 
-bool uart_init(Uart_Zynq* uart);
-void uart_enable(Uart_Zynq* uart);
-void uart_disable(Uart_Zynq* uart);
-bool uart_set_baud_rate(Uart_Zynq* uart, uint32_t baud_rate);
-uint32_t uart_getc(Uart_Zynq* uart);
-void uart_putc(Uart_Zynq* uart,int8_t c);
-void uart_puts(Uart_Zynq* uart,const char *s);
+bool uart_init(volatile struct Uart_Zynq* uart);
+void uart_enable(volatile struct Uart_Zynq* uart);
+void uart_disable(volatile struct Uart_Zynq* uart);
+bool uart_set_baud_rate(volatile struct Uart_Zynq* uart, uint32_t baud_rate);
+uint32_t uart_getc(volatile struct Uart_Zynq* uart);
+void uart_putc(volatile struct Uart_Zynq* uart,int8_t c);
+void uart_puts(volatile struct Uart_Zynq* uart,const char *s);
 
 #endif /* __UART_ZYNQ_H */

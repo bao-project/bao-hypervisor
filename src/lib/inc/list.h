@@ -20,11 +20,11 @@
 #include <spinlock.h>
 
 typedef void* node_t;
-typedef struct {
+struct list {
     node_t* head;
     node_t* tail;
     spinlock_t lock;
-} list_t;
+};
 
 #define list_foreach(list, type, nodeptr)                     \
     for (type* nodeptr = ((type*)list.head); nodeptr != NULL; \
@@ -34,7 +34,7 @@ typedef struct {
     for (type* nodeptr = ((type*)list.head), *tail = ((type*)list); \
          nodeptr != NULL; tail = nodeptr, nodeptr = *((type**)nodeptr))
 
-static inline void list_init(list_t* list)
+static inline void list_init(struct list* list)
 {
     if (list != NULL) {
         list->head = NULL;
@@ -43,7 +43,7 @@ static inline void list_init(list_t* list)
     }
 }
 
-static inline void list_push(list_t* list, node_t* node)
+static inline void list_push(struct list* list, node_t* node)
 {
     if (list != NULL && node != NULL) {
         *node = NULL;
@@ -59,7 +59,7 @@ static inline void list_push(list_t* list, node_t* node)
     }
 }
 
-static inline node_t* list_pop(list_t* list)
+static inline node_t* list_pop(struct list* list)
 {
     node_t* temp = NULL;
     if (list != NULL) {
@@ -79,7 +79,7 @@ static inline node_t* list_pop(list_t* list)
     return (void*)temp;
 }
 
-static inline node_t* list_peek(list_t* list)
+static inline node_t* list_peek(struct list* list)
 {
     node_t* temp = NULL;
     if (list != NULL) {
@@ -88,12 +88,12 @@ static inline node_t* list_peek(list_t* list)
     return (void*)temp;
 }
 
-static inline bool list_empty(list_t* list)
+static inline bool list_empty(struct list* list)
 {
     return (list->head == NULL);
 }
 
-static inline bool list_rm(list_t* list, node_t node)
+static inline bool list_rm(struct list* list, node_t node)
 {
     if (list != NULL && node != NULL) {
         spin_lock(&list->lock);

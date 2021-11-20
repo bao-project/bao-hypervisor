@@ -28,7 +28,7 @@ int iommu_arch_init()
     return -1;
 }
 
-static ssize_t iommu_vm_arch_init_ctx(vm_t *vm)
+static ssize_t iommu_vm_arch_init_ctx(struct vm *vm)
 {
     ssize_t ctx_id = vm->iommu.arch.ctx_id;
     if (ctx_id < 0) {
@@ -49,7 +49,7 @@ static ssize_t iommu_vm_arch_init_ctx(vm_t *vm)
     return ctx_id;
 }
 
-static int iommu_vm_arch_add(vm_t *vm, uint16_t mask, uint16_t id)
+static int iommu_vm_arch_add(struct vm *vm, uint16_t mask, uint16_t id)
 {
     ssize_t vm_ctx = iommu_vm_arch_init_ctx(vm);
     uint16_t glbl_mask = vm->iommu.arch.global_mask;
@@ -74,12 +74,12 @@ static int iommu_vm_arch_add(vm_t *vm, uint16_t mask, uint16_t id)
     return 0;
 }
 
-inline int iommu_arch_vm_add_device(vm_t *vm, int id)
+inline int iommu_arch_vm_add_device(struct vm *vm, int id)
 {
     return iommu_vm_arch_add(vm, 0, id);
 }
 
-int iommu_arch_vm_init(vm_t *vm, const vm_config_t *config)
+int iommu_arch_vm_init(struct vm *vm, const struct vm_config *config)
 {
     vm->iommu.arch.global_mask = 
         config->platform.arch.smmu.global_mask | platform.arch.smmu.global_mask;

@@ -66,12 +66,12 @@ void interrupts_arch_clear(uint64_t int_id)
     gic_set_pend(int_id, false);
 }
 
-void interrupts_arch_vm_assign(vm_t *vm, uint64_t id)
+void interrupts_arch_vm_assign(struct vm *vm, uint64_t id)
 {
     vgic_set_hw(vm, id);
 }
 
-void interrupts_arch_vm_inject(vm_t *vm, uint64_t id)
+void interrupts_arch_vm_inject(struct vm *vm, uint64_t id)
 {
     vgic_inject(&vm->arch.vgicd, id, cpu.vcpu->id);
 }

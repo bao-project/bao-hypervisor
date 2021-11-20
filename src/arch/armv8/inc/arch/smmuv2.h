@@ -126,7 +126,7 @@
 #define S2CR_CLEAR(s2cr)    (s2cr & S2CR_IMPL_MASK)
 #define S2CR_DFLT    (0)
 
-typedef struct {
+struct smmu_glbl_rs0 {
     uint32_t CR0;
     uint32_t SCR1;
     uint32_t CR2;
@@ -213,7 +213,7 @@ typedef struct {
     uint8_t pad17[0xFD0 - 0xE00];
     uint8_t impl3[0x1000 - 0xFD0];
 
-} __attribute__((__packed__, __aligned__(PAGE_SIZE))) smmu_glbl_rs0_t;
+} __attribute__((__packed__, __aligned__(PAGE_SIZE)));
 #define SMMUV2_CBAR_TYPE_S2             (0)
 #define SMMUV2_CBAR_TYPE_S1_S2FAULT     (0x2 << 16)
 #define SMMUV2_CBAR_VMID_MASK           (0xFF)
@@ -274,14 +274,14 @@ typedef struct {
 #define S2CR_CBNDX_MASK        BIT_MASK(S2CR_CBNDX_OFF, S2CR_CBNDX_LEN)
 
 
-typedef struct {
+struct smmu_glbl_rs1 {
     uint32_t CBAR[128];
     uint8_t res1[0x400 - 0x200];
     uint32_t CBFRSYNRA[128];
     uint8_t res2[0x800 - 0x600];
     uint32_t CBA2R[128];
     uint8_t res3[0x1000-0xa00];
-} __attribute__((__packed__,__aligned__(PAGE_SIZE))) smmu_glbl_rs1_t;
+} __attribute__((__packed__,__aligned__(PAGE_SIZE)));
 
 #define SMMUV2_SCTLR_M          (0x1 << 0)
 #define SMMUV2_SCTLR_TRE        (0x1 << 1)
@@ -342,7 +342,7 @@ typedef struct {
 #define SMMUV2_TCR_PS_48B           (0x5 << SMMUV2_TCR_PS_OFF)
 #define SMMUV2_TCR_PS_52B           (0x6 << SMMUV2_TCR_PS_OFF)
 
-typedef struct {
+struct smmu_cntxt {
     uint32_t SCTLR;
     uint32_t ACTLR;
     uint32_t RESUME;
@@ -384,7 +384,7 @@ typedef struct {
     uint8_t res12[0xfb8 - 0xf5c];
     uint32_t PMAUTHSTATUS;
     uint8_t res13[];
-} __attribute__((__packed__, __aligned__(PAGE_SIZE))) smmu_cntxt_t;
+} __attribute__((__packed__, __aligned__(PAGE_SIZE)));
 
 void smmu_init();
 
