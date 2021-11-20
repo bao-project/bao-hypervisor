@@ -138,7 +138,7 @@ struct page_table;
 
 void pt_set_recursive(struct page_table* pt, size_t index);
 
-static inline void pte_set(pte_t* pte, uint64_t addr, uint64_t type,
+static inline void pte_set(pte_t* pte, paddr_t addr, uint64_t type,
                            uint64_t flags)
 {
     *pte =
@@ -160,9 +160,9 @@ static inline bool pte_check_rsw(pte_t* pte, uint64_t flag)
     return (*pte & PTE_RSW_MSK) == (flag & PTE_RSW_MSK);
 }
 
-static inline uint64_t pte_addr(pte_t* pte)
+static inline paddr_t pte_addr(pte_t* pte)
 {
-    return *pte & PTE_ADDR_MSK;
+    return (paddr_t)(*pte & PTE_ADDR_MSK);
 }
 
 #endif /* |__ASSEMBLER__ */

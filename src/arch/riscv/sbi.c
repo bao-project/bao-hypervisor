@@ -377,7 +377,7 @@ struct sbiret sbi_hsm_start_handler() {
             } else if (vcpu->arch.sbi_ctx.state != STOPPED) {
                 ret.error = SBI_ERR_FAILURE;
             } else {
-                uint64_t start_addr = vcpu_readreg(cpu.vcpu, REG_A1);
+                vaddr_t start_addr = vcpu_readreg(cpu.vcpu, REG_A1);
                 uint64_t priv = vcpu_readreg(cpu.vcpu, REG_A2);
                 vcpu->arch.sbi_ctx.state = START_PENDING;
                 vcpu->arch.sbi_ctx.start_addr = start_addr;
@@ -461,7 +461,7 @@ void sbi_lgcy_sendipi_handler()
     if (hart_mask == NULL) return;
 
     unsigned long phart_mask = 0;
-    vm_readmem(cpu.vcpu->vm, &phart_mask, (uintptr_t)hart_mask,
+    vm_readmem(cpu.vcpu->vm, &phart_mask, (vaddr_t)hart_mask,
                sizeof(unsigned long), false);
     phart_mask = vm_translate_to_pcpu_mask(cpu.vcpu->vm, phart_mask,
                                            sizeof(unsigned long));
@@ -484,7 +484,7 @@ void sbi_lgcy_rfence_handler(unsigned long extid)
     if (hart_mask == NULL) return;
 
     unsigned long phart_mask = 0;
-    vm_readmem(cpu.vcpu->vm, &phart_mask, (uintptr_t)hart_mask,
+    vm_readmem(cpu.vcpu->vm, &phart_mask, (vaddr_t)hart_mask,
                sizeof(unsigned long), false);
     phart_mask = vm_translate_to_pcpu_mask(cpu.vcpu->vm, (uint64_t)hart_mask,
                                            sizeof(unsigned long));

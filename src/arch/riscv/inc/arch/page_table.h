@@ -87,13 +87,13 @@ typedef uint64_t pte_t;
 
 struct page_table;
 
-static inline void pte_set(pte_t* pte, uint64_t addr, uint64_t type,
+static inline void pte_set(pte_t* pte, paddr_t addr, uint64_t type,
                            uint64_t flags)
 {
     *pte = ((addr & PTE_ADDR_MSK) >> 2) | (flags & PTE_FLAGS_MSK) | type;
 }
 
-static inline uintptr_t pte_addr(pte_t* pte)
+static inline vaddr_t pte_addr(pte_t* pte)
 {
     return (*pte << 2) & PTE_ADDR_MSK;
 }

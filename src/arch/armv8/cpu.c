@@ -23,7 +23,7 @@
 uint64_t CPU_MASTER __attribute__((section(".data")));
 
 /* Perform architecture dependent cpu cores initializations */
-void cpu_arch_init(uint64_t cpuid, uint64_t load_addr)
+void cpu_arch_init(uint64_t cpuid, paddr_t load_addr)
 {   
     cpu.arch.mpidr = MRS(MPIDR_EL1);
     if (cpuid == CPU_MASTER) {

@@ -250,7 +250,8 @@ static void psci_save_state(uint64_t wakeup_reason){
     cpu.arch.psci_off_state.vmpidr_el2 = MRS(VMPIDR_EL2);
     cpu.arch.psci_off_state.vtcr_el2 = MRS(VTCR_EL2);
     cpu.arch.psci_off_state.vttbr_el2 = MRS(VTTBR_EL2);
-    mem_translate(&cpu.as, &root_l1_flat_pt, &cpu.arch.psci_off_state.flat_map);
+    mem_translate(&cpu.as, (vaddr_t)&root_l1_flat_pt,
+                    &cpu.arch.psci_off_state.flat_map);
     cpu.arch.psci_off_state.wakeup_reason = wakeup_reason;
 
     /**
@@ -258,7 +259,8 @@ static void psci_save_state(uint64_t wakeup_reason){
      * state, make sure the saved state is in memory as we'll use this on wake
      * up before enabling cache to restore basic processor state. 
      */
-    cache_flush_range(&cpu.arch.psci_off_state, sizeof(cpu.arch.psci_off_state));
+    cache_flush_range((vaddr_t)&cpu.arch.psci_off_state,
+                    sizeof(cpu.arch.psci_off_state));
 
     gicc_save_state(&cpu.arch.psci_off_state.gicc_state);
 }
@@ -322,10 +324,10 @@ uint64_t psci_power_down(uint64_t reason){
     uint64_t pwr_state_aux = PSCI_POWER_STATE_LVL_0 | PSCI_STATE_TYPE_POWERDOWN;
 
     psci_save_state(reason);
-    uint64_t cntxt_paddr;
-    uint64_t psci_wakeup_addr;
-    mem_translate(&cpu.as, &cpu.arch.psci_off_state, &cntxt_paddr);
-    mem_translate(&cpu.as, &psci_boot_entry, &psci_wakeup_addr);
+    paddr_t cntxt_paddr;
+    paddr_t psci_wakeup_addr;
+    mem_translate(&cpu.as, (vaddr_t)&cpu.arch.psci_off_state, &cntxt_paddr);
+    mem_translate(&cpu.as, (vaddr_t)&psci_boot_entry, &psci_wakeup_addr);
 
     return psci_cpu_suspend(pwr_state_aux, psci_wakeup_addr, cntxt_paddr);
 }

@@ -21,8 +21,8 @@
 
 void vm_arch_init(struct vm *vm, const struct vm_config *config)
 {
-    unsigned long root_pt_pa;
-    mem_translate(&cpu.as, vm->as.pt.root, &root_pt_pa);
+    paddr_t root_pt_pa;
+    mem_translate(&cpu.as, (vaddr_t)vm->as.pt.root, &root_pt_pa);
 
     unsigned long hgatp = (root_pt_pa >> PAGE_SHIFT) | (HGATP_MODE_DFLT) |
                           ((vm->id << HGATP_VMID_OFF) & HGATP_VMID_MSK);
@@ -37,7 +37,7 @@ void vcpu_arch_init(struct vcpu *vcpu, struct vm *vm) {
     vcpu->arch.sbi_ctx.state = vcpu->id == 0 ?  STARTED : STOPPED;
 }
 
-void vcpu_arch_reset(struct vcpu *vcpu, uint64_t entry)
+void vcpu_arch_reset(struct vcpu *vcpu, vaddr_t entry)
 {
     memset(vcpu->regs, 0, sizeof(struct arch_regs));
 
@@ -82,10 +82,10 @@ void vcpu_writepc(struct vcpu *vcpu, uint64_t pc)
     vcpu->regs->sepc = pc;
 }
 
-static size_t find_max_alignment(uintptr_t addr)
+static size_t find_max_alignment(vaddr_t addr)
 {
     for (size_t i = 3; i > 0; i--) {
-        uintptr_t mask = (1 << i) - 1;
+        vaddr_t mask = (1 << i) - 1;
         if ((addr & mask) == 0) {
             return (1 << i);
         }
@@ -200,13 +200,13 @@ static inline uint64_t hlvd(uintptr_t addr){
     })
 
 
-bool vm_readmem(struct vm *vm, void *dest, uintptr_t vmaddr, size_t n, bool exec)
+bool vm_readmem(struct vm *vm, void *dest, vaddr_t vmaddr, size_t n, bool exec)
 {
     if(n == 0) return true;
 
     if (vm == cpu.vcpu->vm) {
         while (n > 0 && !cpu.arch.hlv_except) {
-            size_t width = find_max_alignment(((uintptr_t)dest) | vmaddr);
+            size_t width = find_max_alignment(((vaddr_t)dest) | vmaddr);
             while(width > n) width = PPOT(width);
             /**
              * You can only load aligned halfword or word instructions.

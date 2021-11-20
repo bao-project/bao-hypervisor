@@ -45,8 +45,8 @@ size_t parange __attribute__((section(".data")));
 
 void pt_set_recursive(struct page_table* pt, size_t index)
 {
-    uint64_t pa;
-    mem_translate(&cpu.as, pt->root, &pa);
+    paddr_t pa;
+    mem_translate(&cpu.as, (vaddr_t)pt->root, &pa);
     pte_t* pte = cpu.as.pt.root + index;
     pte_set(pte, pa, PTE_TABLE, PTE_HYP_FLAGS);
     pt->root_flags &= ~PT_ROOT_FLAGS_REC_IND_MSK;
@@ -54,7 +54,7 @@ void pt_set_recursive(struct page_table* pt, size_t index)
         (index << PT_ROOT_FLAGS_REC_IND_OFF) & PT_ROOT_FLAGS_REC_IND_MSK;
 }
 
-pte_t* pt_get_pte(struct page_table* pt, size_t lvl, void* va)
+pte_t* pt_get_pte(struct page_table* pt, size_t lvl, vaddr_t va)
 {
     struct page_table* cpu_pt = &cpu.as.pt;
 
@@ -68,17 +68,16 @@ pte_t* pt_get_pte(struct page_table* pt, size_t lvl, void* va)
     addr &= PTE_ADDR_MSK;
     addr &= ~(rec_ind_mask);
     addr |= ((rec_ind << rec_ind_off) & rec_ind_mask);
-    addr |=
-        (((((uint64_t)va) >> pt->dscr->lvl_off[lvl]) * sizeof(pte_t)) & (mask));
+    addr |= (((va >> pt->dscr->lvl_off[lvl]) * sizeof(pte_t)) & (mask));
 
     return (pte_t*)addr;
 }
 
-pte_t* pt_get(struct page_table* pt, size_t lvl, void* va)
+pte_t* pt_get(struct page_table* pt, size_t lvl, vaddr_t va)
 {
     if (lvl == 0) return pt->root;
 
-    uint64_t pte = (uint64_t)pt_get_pte(pt, lvl, va);
+    uintptr_t pte = (uintptr_t)pt_get_pte(pt, lvl, va);
     pte &= ~(PAGE_SIZE - 1);
     return (pte_t*)pte;
 }

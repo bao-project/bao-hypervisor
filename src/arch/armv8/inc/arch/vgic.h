@@ -105,7 +105,7 @@ struct vgic_reg_handler_info {
                        bool gicr_accces, uint64_t vgicr_id);
     size_t alignment;
     size_t regid;
-    uintptr_t regroup_base;
+    vaddr_t regroup_base;
     size_t field_width;
     uint64_t (*read_field)(struct vcpu *, struct vgic_int *);
     bool (*update_field)(struct vcpu *, struct vgic_int *, uint64_t data);

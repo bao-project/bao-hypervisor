@@ -22,5 +22,9 @@
 
 typedef signed long ssize_t;
 
+typedef uintptr_t paddr_t;
+typedef uintptr_t vaddr_t;
+#define NULL_VA ((vaddr_t)NULL)
+#define MAX_VA  ((vaddr_t)-1)
 
 #endif

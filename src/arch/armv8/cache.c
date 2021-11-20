@@ -108,14 +108,14 @@ void cache_arch_enumerate(struct cache *dscrp)
     }
 }
 
-void cache_flush_range(void* base, size_t size)
+void cache_flush_range(vaddr_t base, size_t size)
 {
-    uint64_t cache_addr = (uint64_t)base;
+    vaddr_t cache_addr = base;
     uint64_t ctr = MRS(CTR_EL0);
     size_t min_line_size = 1UL << bit_extract(ctr, CTR_DMINLINE_OFF, 
         CTR_DMINLINE_LEN);
 
-    while(cache_addr < ((uint64_t)base + size)){
+    while(cache_addr < (base + size)){
         asm volatile (
             "dc civac, %0\n\t" 
             :: "r"(cache_addr));

@@ -48,7 +48,7 @@ void aborts_data_lower(uint32_t iss, uint64_t far, uint64_t il)
         ERROR("data abort is not translation fault - cant deal with it");
     }
 
-    uint64_t addr = far;
+    vaddr_t addr = far;
     emul_handler_t handler = vm_emul_get_mem(cpu.vcpu->vm, addr);
     if (handler != NULL) {
         struct emul_access emul;
@@ -116,7 +116,7 @@ void hvc64_handler(uint32_t iss, uint64_t far, uint64_t il)
 
 void sysreg_handler(uint32_t iss, uint64_t far, uint64_t il)
 {
-    uint64_t reg_addr = iss & ESR_ISS_SYSREG_ADDR;
+    vaddr_t reg_addr = iss & ESR_ISS_SYSREG_ADDR;
     emul_handler_t handler = vm_emul_get_reg(cpu.vcpu->vm, reg_addr);
     if(handler != NULL){
         struct emul_access emul;

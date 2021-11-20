@@ -36,7 +36,7 @@ extern uint64_t _ipi_cpumsg_handlers_size, _ipi_cpumsg_handlers_id_start;
 cpu_msg_handler_t *ipi_cpumsg_handlers;
 size_t ipi_cpumsg_handler_num;
 
-void cpu_init(uint64_t cpu_id, uint64_t load_addr)
+void cpu_init(uint64_t cpu_id, paddr_t load_addr)
 {
     cpu_arch_init(cpu_id, load_addr);
 

@@ -34,7 +34,7 @@ struct vplic {
 
 struct vm;
 struct vcpu;
-void vplic_init(struct vm *vm, uintptr_t vplic_base);
+void vplic_init(struct vm *vm, vaddr_t vplic_base);
 void vplic_inject(struct vcpu *vcpu, int id);
 void vplic_set_hw(struct vm *vm, int id);
 

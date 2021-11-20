@@ -34,7 +34,7 @@ void as_arch_init(struct addr_space* as)
     pt_set_recursive(&as->pt, index);
 }
 
-bool mem_translate(struct addr_space* as, void* va, uint64_t* pa)
+bool mem_translate(struct addr_space* as, vaddr_t va, paddr_t* pa)
 {
     uint64_t par = 0, par_saved = 0;
 
@@ -55,7 +55,7 @@ bool mem_translate(struct addr_space* as, void* va, uint64_t* pa)
         return false;
     } else {
         if (pa != NULL)
-            *pa = (par & PAR_PA_MSK) | (((uint64_t)va) & (PAGE_SIZE - 1));
+            *pa = (par & PAR_PA_MSK) | (va & (PAGE_SIZE - 1));
         return true;
     }
 }

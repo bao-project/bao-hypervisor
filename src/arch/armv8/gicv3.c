@@ -183,11 +183,11 @@ void gic_cpu_init()
 
 void gic_map_mmio()
 {
-    mem_map_dev(&cpu.as, (void *)&gicd, platform.arch.gic.gicd_addr,
+    mem_map_dev(&cpu.as, (vaddr_t)&gicd, platform.arch.gic.gicd_addr,
                 NUM_PAGES(sizeof(gicd)));
     size_t gicr_size = NUM_PAGES(sizeof(struct gicr_hw)) * platform.cpu_num;
-    gicr = (struct gicr_hw *)mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL, NULL, gicr_size);
-    mem_map_dev(&cpu.as, (void *)gicr, platform.arch.gic.gicr_addr, gicr_size);
+    gicr = (struct gicr_hw *)mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL, NULL_VA, gicr_size);
+    mem_map_dev(&cpu.as, (vaddr_t)gicr, platform.arch.gic.gicr_addr, gicr_size);
 }
 
 uint32_t gicc_iar() {

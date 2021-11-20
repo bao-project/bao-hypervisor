@@ -34,7 +34,7 @@ void console_init()
         WARNING("console base must be page aligned");
     }
 
-    mem_map_dev(&cpu.as, (void*)&uart, platform.console.base,
+    mem_map_dev(&cpu.as, (vaddr_t)&uart, platform.console.base,
                 NUM_PAGES(sizeof(uart)));
 
     fence_sync_write();

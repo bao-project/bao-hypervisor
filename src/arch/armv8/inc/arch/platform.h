@@ -20,11 +20,11 @@
 
 struct arch_platform {
     struct gic_dscrp {
-        uint64_t gicc_addr;
-        uint64_t gich_addr;
-        uint64_t gicv_addr;
-        uint64_t gicd_addr;
-        uint64_t gicr_addr;
+        paddr_t gicc_addr;
+        paddr_t gich_addr;
+        paddr_t gicv_addr;
+        paddr_t gicd_addr;
+        paddr_t gicr_addr;
 
         uint64_t maintenance_id;
 
@@ -32,7 +32,7 @@ struct arch_platform {
     } gic;
 
     struct {
-        uint64_t base;
+        paddr_t base;
         uint64_t interrupt_id;
         uint16_t global_mask;
 
@@ -45,7 +45,7 @@ struct arch_platform {
     } smmu;
 
     struct {
-        uint64_t base_addr;
+        paddr_t base_addr;
     } generic_timer;
 
     struct clusters {

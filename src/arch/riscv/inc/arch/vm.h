@@ -115,7 +115,7 @@ struct arch_regs {
 
 } __attribute__((__packed__));
 
-bool vm_readmem(struct vm* vm, void* dest, uintptr_t vmaddr, size_t n, bool exec);
+bool vm_readmem(struct vm* vm, void* dest, vaddr_t vmaddr, size_t n, bool exec);
 void vcpu_arch_entry();
 
 #endif /* __ARCH_VM_H__ */

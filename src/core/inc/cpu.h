@@ -45,7 +45,7 @@ struct cpu {
 
     struct cpu_arch arch;
 
-    uint8_t root_pt[PT_SIZE] __attribute__((aligned(PT_SIZE)));
+    pte_t root_pt[PT_SIZE/sizeof(pte_t)] __attribute__((aligned(PT_SIZE)));
 
     uint8_t stack[STACK_SIZE] __attribute__((aligned(PAGE_SIZE)));
 
@@ -108,11 +108,11 @@ static inline void cpu_sync_barrier(struct cpu_synctoken* token)
 
 static inline struct cpuif* cpu_if(uint64_t cpu_id)
 {
-    return ((void*)&_cpu_if_base) +
-           (cpu_id * ALIGN(sizeof(struct cpuif), PAGE_SIZE));
+    return (struct cpuif*)(((vaddr_t)&_cpu_if_base) +
+           (cpu_id * ALIGN(sizeof(struct cpuif), PAGE_SIZE)));
 }
 
-void cpu_init(uint64_t cpu_id, uint64_t load_addr);
+void cpu_init(uint64_t cpu_id, paddr_t load_addr);
 void cpu_send_msg(uint64_t cpu, struct cpu_msg* msg);
 bool cpu_get_msg(struct cpu_msg* msg);
 void cpu_msg_handler();
@@ -120,7 +120,7 @@ void cpu_msg_set_handler(uint64_t id, cpu_msg_handler_t handler);
 void cpu_idle();
 void cpu_idle_wakeup();
 
-void cpu_arch_init(uint64_t cpu_id, uint64_t load_addr);
+void cpu_arch_init(uint64_t cpu_id, paddr_t load_addr);
 void cpu_arch_idle();
 
 #endif /* __ASSEMBLER__ */

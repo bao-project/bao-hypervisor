@@ -138,35 +138,37 @@ void smmu_init()
      * Map the first 4k so we can read all the info we need to further
      * allocate smmu registers.
      */
-    struct smmu_glbl_rs0_hw *smmu_glbl_rs0 = mem_alloc_vpage(
-        &cpu.as, SEC_HYP_GLOBAL, NULL, NUM_PAGES(sizeof(struct smmu_glbl_rs0_hw)));
+    vaddr_t smmu_glbl_rs0 = mem_alloc_vpage(
+        &cpu.as, SEC_HYP_GLOBAL, NULL_VA, NUM_PAGES(sizeof(struct smmu_glbl_rs0_hw)));
     mem_map_dev(&cpu.as, smmu_glbl_rs0, platform.arch.smmu.base,
                 NUM_PAGES(sizeof(struct smmu_glbl_rs0_hw)));
 
+    smmu.hw.glbl_rs0 = (struct smmu_glbl_rs0_hw*)smmu_glbl_rs0;
+
     size_t pg_size =
-        smmu_glbl_rs0->IDR1 & SMMUV2_IDR1_PAGESIZE_BIT ? 0x10000 : 0x1000;
+        smmu.hw.glbl_rs0->IDR1 & SMMUV2_IDR1_PAGESIZE_BIT ? 0x10000 : 0x1000;
     size_t num_page =
-        1ULL << (bit_extract(smmu_glbl_rs0->IDR1, SMMUV2_IDR1_NUMPAGEDXB_OFF,
+        1ULL << (bit_extract(smmu.hw.glbl_rs0->IDR1, SMMUV2_IDR1_NUMPAGEDXB_OFF,
                              SMMUV2_IDR1_NUMPAGEDXB_LEN) +
                  1);
     size_t ctx_bank_num = bit_extract(
-        smmu_glbl_rs0->IDR1, SMMUV2_IDR1_NUMCB_OFF, SMMUV2_IDR1_NUMCB_LEN);
+        smmu.hw.glbl_rs0->IDR1, SMMUV2_IDR1_NUMCB_OFF, SMMUV2_IDR1_NUMCB_LEN);
 
-    struct smmu_glbl_rs1_hw *smmu_glbl_rs1 = mem_alloc_vpage(
-        &cpu.as, SEC_HYP_GLOBAL, NULL, NUM_PAGES(sizeof(struct smmu_glbl_rs1_hw)));
+    vaddr_t smmu_glbl_rs1 = mem_alloc_vpage(
+        &cpu.as, SEC_HYP_GLOBAL, NULL_VA, NUM_PAGES(sizeof(struct smmu_glbl_rs1_hw)));
     mem_map_dev(&cpu.as, smmu_glbl_rs1, platform.arch.smmu.base + pg_size,
                 NUM_PAGES(sizeof(struct smmu_glbl_rs1_hw)));
 
-    struct smmu_cntxt_hw *smmu_cntxt = mem_alloc_vpage(
-        &cpu.as, SEC_HYP_GLOBAL, NULL, NUM_PAGES((pg_size * ctx_bank_num)));
+    vaddr_t smmu_cntxt = mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL, NULL_VA,
+        NUM_PAGES((pg_size * ctx_bank_num)));
     mem_map_dev(&cpu.as, smmu_cntxt,
                 platform.arch.smmu.base + (num_page * pg_size),
                 NUM_PAGES(pg_size * ctx_bank_num));
 
+    smmu.hw.glbl_rs1 = (struct smmu_glbl_rs1_hw*)smmu_glbl_rs1;
+    smmu.hw.cntxt = (struct smmu_cntxt_hw*)smmu_cntxt;
+
     /* Everything is mapped. Initialize book-keeping data. */
-    smmu.hw.glbl_rs0 = smmu_glbl_rs0;
-    smmu.hw.glbl_rs1 = smmu_glbl_rs1;
-    smmu.hw.cntxt = smmu_cntxt;
 
     smmu_check_features();
 
@@ -180,16 +182,16 @@ void smmu_init()
     bitmap_clear_consecutive(smmu.grp_bitmap, 0, smmu.sme_num);
 
     /* Clear random reset state. */
-    smmu_glbl_rs0->GFSR = smmu_glbl_rs0->GFSR;
-    smmu_glbl_rs0->NSGFSR = smmu_glbl_rs0->NSGFSR;
+    smmu.hw.glbl_rs0->GFSR = smmu.hw.glbl_rs0->GFSR;
+    smmu.hw.glbl_rs0->NSGFSR = smmu.hw.glbl_rs0->NSGFSR;
 
     for (size_t i = 0; i < smmu.sme_num; i++) {
-        smmu_glbl_rs0->SMR[i] = 0;
+        smmu.hw.glbl_rs0->SMR[i] = 0;
     }
 
     for (size_t i = 0; i < smmu.ctx_num; i++) {
-        smmu_cntxt[i].SCTLR = 0;
-        smmu_cntxt[i].FSR = -1;
+        smmu.hw.cntxt[i].SCTLR = 0;
+        smmu.hw.cntxt[i].FSR = -1;
     }
 
     /* Enable IOMMU. */
@@ -232,7 +234,7 @@ static size_t smmu_cb_ttba_offset(size_t t0sz)
     return offset;
 }
 
-void smmu_write_ctxbnk(size_t ctx_id, void *root_pt, uint32_t vm_id)
+void smmu_write_ctxbnk(size_t ctx_id, paddr_t root_pt, uint32_t vm_id)
 {
     spin_lock(&smmu.ctx_lock);
     if (!bitmap_get(smmu.ctxbank_bitmap, ctx_id)) {
@@ -258,7 +260,7 @@ void smmu_write_ctxbnk(size_t ctx_id, void *root_pt, uint32_t vm_id)
                                               : SMMUV2_TCR_SL0_0);
         smmu.hw.cntxt[ctx_id].TCR = tcr;
         smmu.hw.cntxt[ctx_id].TTBR0 =
-            ((uint64_t)root_pt) & SMMUV2_CB_TTBA(smmu_cb_ttba_offset(t0sz));
+            root_pt & SMMUV2_CB_TTBA(smmu_cb_ttba_offset(t0sz));
 
         uint32_t sctlr = smmu.hw.cntxt[ctx_id].SCTLR;
         sctlr = SMMUV2_SCTLR_CLEAR(sctlr);

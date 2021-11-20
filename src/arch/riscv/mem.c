@@ -21,7 +21,7 @@
 static inline void as_map_physical_identity(struct addr_space *as) {
     const size_t lvl = 0;
     size_t lvl_size = pt_lvlsize(&as->pt, lvl);
-    uintptr_t lvl_mask = ~(lvl_size - 1);
+    paddr_t lvl_mask = ~((paddr_t)lvl_size - 1);
     pte_t *pt = as->pt.root;
 
     /**
@@ -32,11 +32,11 @@ static inline void as_map_physical_identity(struct addr_space *as) {
 
     for (size_t i = 0; i < platform.region_num; i++) {
         struct mem_region *reg = &platform.regions[i];
-        uintptr_t base = reg->base & lvl_mask;
-        uintptr_t top = (reg->base + reg->size) & lvl_mask;
+        paddr_t base = reg->base & lvl_mask;
+        paddr_t top = (reg->base + reg->size) & lvl_mask;
         size_t num_entries = ((top - base - 1) / lvl_size) + 1;
 
-        uintptr_t addr = base;
+        paddr_t addr = base;
         for (size_t j = 0; j < num_entries; j++) {
             size_t index = PTE_INDEX(lvl, addr);
             pte_set(&pt[index], addr, PTE_SUPERPAGE, PTE_HYP_FLAGS);
@@ -53,9 +53,9 @@ void as_arch_init(struct addr_space *as) {
 
 }
 
-bool mem_translate(struct addr_space *as, void *va, uint64_t *pa)
+bool mem_translate(struct addr_space *as, vaddr_t va, paddr_t *pa)
 {
-    pte_t* pte = &(as->pt.root[PTE_INDEX(0, (uintptr_t)va)]);
+    pte_t* pte = &(as->pt.root[PTE_INDEX(0, va)]);
     size_t lvl = 0;
     for (size_t i = 0; i < as->pt.dscr->lvls; i++) {
         if (!pte_valid(pte) || !pte_table(&as->pt, pte, i)) {
@@ -63,13 +63,13 @@ bool mem_translate(struct addr_space *as, void *va, uint64_t *pa)
             break;  
         }
         pte = (pte_t*)pte_addr(pte);
-        size_t index = PTE_INDEX(i + 1, (uintptr_t)va);
+        size_t index = PTE_INDEX(i + 1, va);
         pte = &pte[index];
     }
     if (pte && pte_valid(pte)) {
         *pa = pte_addr(pte);
-        uint64_t mask = (1ULL << as->pt.dscr->lvl_off[lvl]) - 1;
-        *pa = (*pa & ~mask) | ((uint64_t)va & mask);
+        paddr_t mask = (1ULL << as->pt.dscr->lvl_off[lvl]) - 1;
+        *pa = (*pa & ~mask) | ((paddr_t)va & mask);
         return true;
     } else {
         return false;

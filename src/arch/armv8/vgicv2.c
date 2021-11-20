@@ -153,11 +153,11 @@ void vgic_init(struct vm *vm, const struct gic_dscrp *gic_dscrp)
     vm->arch.vgicd.IIDR = gicd.IIDR;
 
     size_t n = NUM_PAGES(sizeof(struct gicc_hw));
-    void *va =
-        mem_alloc_vpage(&vm->as, SEC_VM_ANY, (void *)gic_dscrp->gicc_addr, n);
-    if (va != (void *)gic_dscrp->gicc_addr)
+    vaddr_t va =
+        mem_alloc_vpage(&vm->as, SEC_VM_ANY, (vaddr_t)gic_dscrp->gicc_addr, n);
+    if (va != (vaddr_t)gic_dscrp->gicc_addr)
         ERROR("failed to alloc vm address space to hold gicc");
-    mem_map_dev(&vm->as, va, platform.arch.gic.gicv_addr, n);
+    mem_map_dev(&vm->as, va, (vaddr_t)platform.arch.gic.gicv_addr, n);
 
     size_t vgic_int_size = vm->arch.vgicd.int_num * sizeof(struct vgic_int);
     vm->arch.vgicd.interrupts =
@@ -180,7 +180,7 @@ void vgic_init(struct vm *vm, const struct gic_dscrp *gic_dscrp)
     }
 
     struct emul_mem emu = {.va_base = gic_dscrp->gicd_addr,
-                      .pa_base = (uint64_t)&gicd,
+                      .pa_base = (paddr_t)&gicd,
                       .size = ALIGN(sizeof(struct gicd_hw), PAGE_SIZE),
                       .handler = vgicd_emul_handler};
 

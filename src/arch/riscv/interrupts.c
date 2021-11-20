@@ -28,10 +28,10 @@
 void interrupts_arch_init()
 {
     if (cpu.id == CPU_MASTER) {
-        mem_map_dev(&cpu.as, (void *)&plic_global, platform.arch.plic_base,
+        mem_map_dev(&cpu.as, (vaddr_t)&plic_global, platform.arch.plic_base,
                     ALIGN(sizeof(plic_global), PAGE_SIZE) / PAGE_SIZE);
 
-        mem_map_dev(&cpu.as, (void *)plic_hart,
+        mem_map_dev(&cpu.as, (vaddr_t)plic_hart,
                     platform.arch.plic_base + PLIC_CLAIMCMPLT_OFF,
                     ALIGN(sizeof(plic_hart), PAGE_SIZE) / PAGE_SIZE);
 

@@ -355,7 +355,7 @@ static bool vplic_hart_emul_handler(struct emul_access *acc)
     return true;
 }
 
-void vplic_init(struct vm *vm, uintptr_t vplic_base)
+void vplic_init(struct vm *vm, vaddr_t vplic_base)
 {
     if (cpu.id == vm->master) {
         struct emul_mem plic_global_emu = {.va_base = vplic_base,
@@ -367,7 +367,7 @@ void vplic_init(struct vm *vm, uintptr_t vplic_base)
 
         struct emul_mem plic_claimcomplte_emu = {
             .va_base = vplic_base + PLIC_CLAIMCMPLT_OFF,
-            .pa_base = (uint64_t)plic_hart,
+            .pa_base = (paddr_t)plic_hart,
             .size = sizeof(plic_hart),
             .handler = vplic_hart_emul_handler};
 

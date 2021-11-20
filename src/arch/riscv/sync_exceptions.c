@@ -19,7 +19,7 @@
 #include <arch/encoding.h>
 #include <arch/csrs.h>
 
-static unsigned long read_ins(uintptr_t ins_addr)
+static unsigned long read_ins(vaddr_t ins_addr)
 {
     unsigned long ins = 0;
 
@@ -43,7 +43,7 @@ typedef size_t (*sync_handler_t)();
 
 extern size_t sbi_vs_handler();
 
-static inline int ins_ldst_decode(uintptr_t ins, struct emul_access *emul)
+static inline int ins_ldst_decode(vaddr_t ins, struct emul_access *emul)
 {
     if (INS_COMPRESSED(ins)) {
         if (INS_C_OPCODE(ins) != MATCH_C_LOAD &&
@@ -87,11 +87,11 @@ size_t guest_page_fault_handler()
         return 4;
     }
 
-    uintptr_t addr = CSRR(CSR_HTVAL) << 2;
+    vaddr_t addr = CSRR(CSR_HTVAL) << 2;
 
     emul_handler_t handler = vm_emul_get_mem(cpu.vcpu->vm, addr);
     if (handler != NULL) {
-        uintptr_t ins_addr = CSRR(sepc);
+        vaddr_t ins_addr = CSRR(sepc);
         unsigned long ins = read_ins(ins_addr);
 
         struct emul_access emul;

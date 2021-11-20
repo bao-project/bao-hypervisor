@@ -172,11 +172,11 @@ void gic_cpu_init()
 
 void gic_map_mmio()
 {
-    mem_map_dev(&cpu.as, (void *)&gicc, platform.arch.gic.gicc_addr,
+    mem_map_dev(&cpu.as, (vaddr_t)&gicc, platform.arch.gic.gicc_addr,
                 NUM_PAGES(sizeof(gicc)));
-    mem_map_dev(&cpu.as, (void *)&gich, platform.arch.gic.gich_addr,
+    mem_map_dev(&cpu.as, (vaddr_t)&gich, platform.arch.gic.gich_addr,
                 NUM_PAGES(sizeof(gich)));
-    mem_map_dev(&cpu.as, (void *)&gicd, platform.arch.gic.gicd_addr,
+    mem_map_dev(&cpu.as, (vaddr_t)&gicd, platform.arch.gic.gicd_addr,
                 NUM_PAGES(sizeof(gicd)));
 }
 

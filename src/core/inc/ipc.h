@@ -21,7 +21,7 @@
 #include <mem.h>
 
 struct ipc {
-    uint64_t base;
+    paddr_t base;
     size_t size;
     size_t shmem_id;
     size_t interrupt_num;
