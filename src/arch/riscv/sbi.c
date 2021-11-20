@@ -282,7 +282,7 @@ struct sbiret sbi_ipi_handler(unsigned long fid)
     };
 
     for (size_t i = 0; i < sizeof(hart_mask) * 8; i++) {
-        if (bitmap_get((bitmap_t)&hart_mask, i)) {
+        if (bitmap_get((bitmap_t*)&hart_mask, i)) {
             uint64_t vhart_id = hart_mask_base + i;
             int64_t phart_id = vm_translate_to_pcpuid(cpu.vcpu->vm, vhart_id); 
             if(phart_id >= 0) cpu_send_msg(phart_id, &msg);
@@ -331,7 +331,7 @@ struct sbiret sbi_rfence_handler(unsigned long fid)
 
     const size_t hart_mask_width = sizeof(hart_mask) * 8;
     if ((hart_mask_base != 0) && ((hart_mask_base >= hart_mask_width) ||
-        (bitmap_find_nth((bitmap_t)&hart_mask, hart_mask_width, 1,
+        (bitmap_find_nth((bitmap_t*)&hart_mask, hart_mask_width, 1,
                         hart_mask_width - hart_mask_base, true) > 0))) {
         WARNING("sbi invalid hart_mask");
         return (struct sbiret){SBI_ERR_INVALID_PARAM};
@@ -472,7 +472,7 @@ void sbi_lgcy_sendipi_handler()
     };
 
     for (size_t i = 0; i < sizeof(phart_mask) * 8; i++) {
-        if (bitmap_get((bitmap_t)&phart_mask, i)) {
+        if (bitmap_get((bitmap_t*)&phart_mask, i)) {
             cpu_send_msg(i, &msg);
         }
     }

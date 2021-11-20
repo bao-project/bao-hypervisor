@@ -135,7 +135,7 @@ void interrupts_arch_clear(uint64_t int_id)
     }
 }
 
-inline bool interrupts_arch_conflict(bitmap_t interrupt_bitmap, uint64_t int_id)
+inline bool interrupts_arch_conflict(bitmap_t* interrupt_bitmap, uint64_t int_id)
 {
     return bitmap_get(interrupt_bitmap, int_id);
 }

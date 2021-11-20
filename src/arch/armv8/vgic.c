@@ -959,7 +959,7 @@ void vgic_refill_lrs(struct vcpu *vcpu)
     int64_t lr_ind;
     uint64_t elrsr;
     while (elrsr = gich_get_elrsr(),
-           (lr_ind = bitmap_find_nth((bitmap_t)&elrsr, NUM_LRS, 1, 0, true)) >=
+           (lr_ind = bitmap_find_nth((bitmap_t*)&elrsr, NUM_LRS, 1, 0, true)) >=
                0) {
         struct vgic_int *interrupt = NULL;
         bool prev_pend = false;
@@ -1047,7 +1047,7 @@ void vgic_handle_trapped_eoir(struct vcpu *vcpu)
     uint64_t eisr = 0;
     while (
         eisr = gich_get_eisr(),
-        (lr_ind = bitmap_find_nth((bitmap_t)&eisr, NUM_LRS, 1, 0, true)) >= 0) {
+        (lr_ind = bitmap_find_nth((bitmap_t*)&eisr, NUM_LRS, 1, 0, true)) >= 0) {
         uint64_t lr_val = gich_read_lr(lr_ind);
         gich_write_lr(lr_ind, 0);
 

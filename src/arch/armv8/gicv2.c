@@ -96,7 +96,7 @@ static inline void gicc_init()
     
     uint64_t sgi_targets = gicd.ITARGETSR[0] & BIT_MASK(0, GIC_TARGET_BITS);
     ssize_t gic_cpu_id = 
-        bitmap_find_nth((bitmap_t)&sgi_targets, GIC_TARGET_BITS, 1, 0, true);
+        bitmap_find_nth((bitmap_t*)&sgi_targets, GIC_TARGET_BITS, 1, 0, true);
     if(gic_cpu_id < 0) {
         ERROR("cant find gic cpu id");
     }

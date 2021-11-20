@@ -92,13 +92,13 @@ uint64_t vm_translate_to_vcpu_mask(struct vm* vm, uint64_t mask, size_t len);
 
 static inline int64_t vm_translate_to_pcpuid(struct vm* vm, uint64_t vcpuid)
 {
-    return bitmap_find_nth((bitmap_t)&vm->cpus, sizeof(vm->cpus) * 8,
+    return bitmap_find_nth((bitmap_t*)&vm->cpus, sizeof(vm->cpus) * 8,
                            vcpuid + 1, 0, true);
 }
 
 static inline uint64_t vm_translate_to_vcpuid(struct vm* vm, uint64_t pcpuid)
 {
-    return bitmap_count((bitmap_t)&vm->cpus, 0, pcpuid, true);
+    return bitmap_count((bitmap_t*)&vm->cpus, 0, pcpuid, true);
 }
 
 static inline int vm_has_interrupt(struct vm* vm, int int_id)

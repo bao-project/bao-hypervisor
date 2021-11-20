@@ -49,6 +49,6 @@ void interrupts_arch_clear(uint64_t int_id);
 void interrupts_arch_ipi_send(uint64_t cpu_target, uint64_t ipi_id);
 void interrupts_arch_vm_assign(struct vm *vm, uint64_t id);
 void interrupts_arch_vm_inject(struct vm *vm, uint64_t id);
-bool interrupts_arch_conflict(bitmap_t interrupt_bitmap, uint64_t id);
+bool interrupts_arch_conflict(bitmap_t* interrupt_bitmap, uint64_t id);
 
 #endif /* __INTERRUPTS_H__ */
