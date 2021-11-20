@@ -21,12 +21,7 @@
 
 #ifndef __ASSEMBLER__
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <stddef.h>
-
-typedef signed long ssize_t;
-
+#include <types.h>
 #include <printk.h>
 #include <util.h>
 
