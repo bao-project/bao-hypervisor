@@ -27,13 +27,13 @@
 #define PLIC_ENBL_OFF (0x002000)
 #define PLIC_CLAIMCMPLT_OFF (0x200000)
 
-struct plic_global {
+struct plic_global_hw {
     uint32_t prio[PLIC_NUM_PRIO_REGS];
     uint32_t pend[PLIC_NUM_PEND_REGS];
     uint32_t enbl[PLIC_PLAT_CNTXT_NUM][PLIC_NUM_ENBL_REGS];
 } __attribute__((__packed__, aligned(PAGE_SIZE)));
 
-struct plic_hart {
+struct plic_hart_hw {
     uint32_t threshold;
     union {
         uint32_t claim;
@@ -42,8 +42,8 @@ struct plic_hart {
     uint8_t res[0x1000 - 0x0008];
 } __attribute__((__packed__, aligned(PAGE_SIZE)));
 
-extern volatile struct plic_global plic_global;
-extern volatile struct plic_hart plic_hart[PLIC_PLAT_CNTXT_NUM];
+extern volatile struct plic_global_hw plic_global;
+extern volatile struct plic_hart_hw plic_hart[PLIC_PLAT_CNTXT_NUM];
 extern size_t PLIC_IMPL_INTERRUPTS;
 
 void plic_init();

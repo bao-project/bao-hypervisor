@@ -15,7 +15,7 @@
 
 #include <drivers/8250_uart.h>
 
-void uart_init(volatile struct uart8250 *uart) {
+void uart_init(volatile struct uart8250_hw *uart) {
     
     /* set baudrate */
     uart->lcr |= UART8250_LCR_DLAB;
@@ -41,16 +41,16 @@ uart->lcr = UART8250_LCR_8BIT;
     uart->msr = 0;
 }
 
-void uart_enable(volatile struct uart8250 *uart){
+void uart_enable(volatile struct uart8250_hw *uart){
     uart->fcr = UART8250_FCR_EN;
 }
 
-void uart_putc(volatile struct uart8250 *uart, int8_t c){
+void uart_putc(volatile struct uart8250_hw *uart, int8_t c){
     while(!(uart->lsr & UART8250_LSR_THRE));
     uart->thr = c;
 }
 
-void uart_puts(volatile struct uart8250 *uart, char const* str){
+void uart_puts(volatile struct uart8250_hw *uart, char const* str){
     while (*str) {
         uart_putc(uart, *str++);
     }

@@ -21,8 +21,8 @@
 #include <interrupts.h>
 #include <fences.h>
 
-extern volatile struct gicd gicd;
-volatile struct gicr *gicr;
+extern volatile struct gicd_hw gicd;
+volatile struct gicr_hw *gicr;
 
 static spinlock_t gicd_lock;
 static spinlock_t gicr_lock;
@@ -185,8 +185,8 @@ void gic_map_mmio()
 {
     mem_map_dev(&cpu.as, (void *)&gicd, platform.arch.gic.gicd_addr,
                 NUM_PAGES(sizeof(gicd)));
-    size_t gicr_size = NUM_PAGES(sizeof(struct gicr)) * platform.cpu_num;
-    gicr = (struct gicr *)mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL, NULL, gicr_size);
+    size_t gicr_size = NUM_PAGES(sizeof(struct gicr_hw)) * platform.cpu_num;
+    gicr = (struct gicr_hw *)mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL, NULL, gicr_size);
     mem_map_dev(&cpu.as, (void *)gicr, platform.arch.gic.gicr_addr, gicr_size);
 }
 

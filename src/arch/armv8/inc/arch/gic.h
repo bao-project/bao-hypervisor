@@ -115,7 +115,7 @@
 #define GICD_IROUTER_IRM_BIT (1ULL << 31)
 #define GICD_IROUTER_AFF_MSK (GICD_IROUTER_RES0_MSK & ~GICD_IROUTER_IRM_BIT)
 
-struct gicd {
+struct gicd_hw {
     uint32_t CTLR;
     uint32_t TYPER;
     uint32_t IIDR;
@@ -163,7 +163,7 @@ struct gicd {
 #define GICR_WAKER_ProcessorSleep_BIT (0x2)
 #define GICR_WAKER_ChildrenASleep_BIT (0x4)
 
-struct gicr {
+struct gicr_hw {
     /* RD_base frame */
     uint32_t CTLR;
     uint32_t IIDR;
@@ -247,7 +247,7 @@ struct gicr {
 #define ICC_SRE_SRE_BIT  (0x1)
 #define ICC_IGRPEN_EL1_ENB_BIT (0x1)
 
-struct gicc {
+struct gicc_hw {
     uint32_t CTLR;
     uint32_t PMR;
     uint32_t BPR;
@@ -351,7 +351,7 @@ struct gicc {
 #define GICH_MISR_VGrp1E (1U << 6)
 #define GICH_MISR_VGrp1D (1U << 7)
 
-struct gich {
+struct gich_hw {
     uint32_t HCR;
     uint32_t VTR;
     uint32_t VMCR;
@@ -367,7 +367,7 @@ struct gich {
     uint32_t LR[GIC_NUM_LIST_REGS];
 } __attribute__((__packed__, aligned(0x1000)));
 
-struct gicv {
+struct gicv_hw {
     uint32_t CTLR;
     uint32_t PMR;
     uint32_t BPR;
@@ -387,9 +387,9 @@ struct gicv {
     uint32_t DIR;
 } __attribute__((__packed__, aligned(0x1000)));
 
-extern volatile struct gicd gicd;
-extern volatile struct gicc gicc;
-extern volatile struct gich gich;
+extern volatile struct gicd_hw gicd;
+extern volatile struct gicc_hw gicc;
+extern volatile struct gich_hw gich;
 
 enum int_state { INV, PEND, ACT, PENDACT };
 
@@ -454,8 +454,8 @@ uint64_t gich_get_elrsr();
 
 void gic_maintenance_handler(uint64_t arg);
 
-extern volatile struct gicd gicd;
-extern volatile struct gicr *gicr;
+extern volatile struct gicd_hw gicd;
+extern volatile struct gicr_hw *gicr;
 
 size_t gich_num_lrs();
 uint32_t gicc_iar();

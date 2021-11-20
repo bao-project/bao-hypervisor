@@ -25,11 +25,11 @@ enum VGIC_EVENTS { VGIC_UPDATE_ENABLE, VGIC_ROUTE, VGIC_INJECT, VGIC_SET_REG };
 extern volatile const uint64_t VGIC_IPI_ID;
 
 #define GICD_IS_REG(REG, offset)            \
-    (((offset) >= offsetof(struct gicd, REG)) && \
-     (offset) < (offsetof(struct gicd, REG) + sizeof(gicd.REG)))
-#define GICD_REG_GROUP(REG) ((offsetof(struct gicd, REG) & 0xff80) >> 7)
+    (((offset) >= offsetof(struct gicd_hw, REG)) && \
+     (offset) < (offsetof(struct gicd_hw, REG) + sizeof(gicd.REG)))
+#define GICD_REG_GROUP(REG) ((offsetof(struct gicd_hw, REG) & 0xff80) >> 7)
 #define GICD_REG_MASK(ADDR) ((ADDR)&(GIC_VERSION == GICV2 ? 0xfffULL : 0xffffULL))
-#define GICD_REG_IND(REG) (offsetof(struct gicd, REG) & 0x7f)
+#define GICD_REG_IND(REG) (offsetof(struct gicd_hw, REG) & 0x7f)
 
 #define VGIC_MSG_DATA(VM_ID, VGICRID, INT_ID, REG, VAL)                 \
     (((uint64_t)(VM_ID) << 48) | (((uint64_t)(VGICRID)&0xffff) << 32) | \
@@ -668,7 +668,7 @@ struct vgic_reg_handler_info isenabler_info = {
     vgic_emul_generic_access,
     0b0100,
     VGIC_ISENABLER_ID,
-    offsetof(struct gicd, ISENABLER),
+    offsetof(struct gicd_hw, ISENABLER),
     1,
     vgic_int_get_enable,
     vgic_int_set_enable,
@@ -679,7 +679,7 @@ struct vgic_reg_handler_info ispendr_info = {
     vgic_emul_generic_access,
     0b0100,
     VGIC_ISPENDR_ID,
-    offsetof(struct gicd, ISPENDR),
+    offsetof(struct gicd_hw, ISPENDR),
     1,
     vgic_int_get_pend,
     vgic_int_set_pend,
@@ -690,7 +690,7 @@ struct vgic_reg_handler_info isactiver_info = {
     vgic_emul_generic_access,
     0b0100,
     VGIC_ISACTIVER_ID,
-    offsetof(struct gicd, ISACTIVER),
+    offsetof(struct gicd_hw, ISACTIVER),
     1,
     vgic_int_get_act,
     vgic_int_set_act,
@@ -701,7 +701,7 @@ struct vgic_reg_handler_info icenabler_info = {
     vgic_emul_generic_access,
     0b0100,
     VGIC_ICENABLER_ID,
-    offsetof(struct gicd, ICENABLER),
+    offsetof(struct gicd_hw, ICENABLER),
     1,
     vgic_int_get_enable,
     vgic_int_clear_enable,
@@ -712,7 +712,7 @@ struct vgic_reg_handler_info icpendr_info = {
     vgic_emul_generic_access,
     0b0100,
     VGIC_ICPENDR_ID,
-    offsetof(struct gicd, ICPENDR),
+    offsetof(struct gicd_hw, ICPENDR),
     1,
     vgic_int_get_pend,
     vgic_int_clear_pend,
@@ -723,7 +723,7 @@ struct vgic_reg_handler_info iactiver_info = {
     vgic_emul_generic_access,
     0b0100,
     VGIC_ICACTIVER_ID,
-    offsetof(struct gicd, ICACTIVER),
+    offsetof(struct gicd_hw, ICACTIVER),
     1,
     vgic_int_get_act,
     vgic_int_clear_act,
@@ -734,7 +734,7 @@ struct vgic_reg_handler_info icfgr_info = {
     vgic_emul_generic_access,
     0b0100,
     VGIC_ICFGR_ID,
-    offsetof(struct gicd, ICFGR),
+    offsetof(struct gicd_hw, ICFGR),
     2,
     vgic_int_get_cfg,
     vgic_int_set_cfg,
@@ -745,7 +745,7 @@ struct vgic_reg_handler_info ipriorityr_info = {
     vgic_emul_generic_access,
     0b0101,
     VGIC_IPRIORITYR_ID,
-    offsetof(struct gicd, IPRIORITYR),
+    offsetof(struct gicd_hw, IPRIORITYR),
     8,
     vgic_int_get_prio,
     vgic_int_set_prio,

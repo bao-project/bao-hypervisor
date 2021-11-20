@@ -336,14 +336,14 @@ static bool vplic_hart_emul_handler(struct emul_access *acc)
     }
 
     switch (acc->addr & 0xf) {
-        case offsetof(struct plic_hart, threshold):
+        case offsetof(struct plic_hart_hw, threshold):
             if (acc->write) {
                 vplic_set_threshold(cpu.vcpu, vcntxt, vcpu_readreg(cpu.vcpu, acc->reg));
             } else {
                 vcpu_writereg(cpu.vcpu, acc->reg, vplic_get_theshold(cpu.vcpu, vcntxt));
             }
             break;
-        case offsetof(struct plic_hart, claim):
+        case offsetof(struct plic_hart_hw, claim):
             if (acc->write) {
                 vplic_complete(cpu.vcpu, vcntxt, vcpu_readreg(cpu.vcpu, acc->reg));
             } else {

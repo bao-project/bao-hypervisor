@@ -19,10 +19,10 @@
 
 size_t PLIC_IMPL_INTERRUPTS;
 
-volatile struct plic_global plic_global
+volatile struct plic_global_hw plic_global
     __attribute__((section(".devices")));
 
-volatile struct plic_hart plic_hart[PLIC_PLAT_CNTXT_NUM]
+volatile struct plic_hart_hw plic_hart[PLIC_PLAT_CNTXT_NUM]
     __attribute__((section(".devices")));
 
 static size_t plic_scan_max_int()

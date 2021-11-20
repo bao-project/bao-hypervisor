@@ -126,7 +126,7 @@
 #define S2CR_CLEAR(s2cr)    (s2cr & S2CR_IMPL_MASK)
 #define S2CR_DFLT    (0)
 
-struct smmu_glbl_rs0 {
+struct smmu_glbl_rs0_hw {
     uint32_t CR0;
     uint32_t SCR1;
     uint32_t CR2;
@@ -274,7 +274,7 @@ struct smmu_glbl_rs0 {
 #define S2CR_CBNDX_MASK        BIT_MASK(S2CR_CBNDX_OFF, S2CR_CBNDX_LEN)
 
 
-struct smmu_glbl_rs1 {
+struct smmu_glbl_rs1_hw {
     uint32_t CBAR[128];
     uint8_t res1[0x400 - 0x200];
     uint32_t CBFRSYNRA[128];
@@ -342,7 +342,7 @@ struct smmu_glbl_rs1 {
 #define SMMUV2_TCR_PS_48B           (0x5 << SMMUV2_TCR_PS_OFF)
 #define SMMUV2_TCR_PS_52B           (0x6 << SMMUV2_TCR_PS_OFF)
 
-struct smmu_cntxt {
+struct smmu_cntxt_hw {
     uint32_t SCTLR;
     uint32_t ACTLR;
     uint32_t RESUME;

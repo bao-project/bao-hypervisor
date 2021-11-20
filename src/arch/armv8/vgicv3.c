@@ -22,9 +22,9 @@
 #include <vm.h>
 
 #define GICR_IS_REG(REG, offset)            \
-    (((offset) >= offsetof(struct gicr, REG)) && \
-     (offset) < (offsetof(struct gicr, REG) + sizeof(gicr[0].REG)))
-#define GICR_REG_OFF(REG) (offsetof(struct gicr, REG) & 0x1ffff)
+    (((offset) >= offsetof(struct gicr_hw, REG)) && \
+     (offset) < (offsetof(struct gicr_hw, REG) + sizeof(gicr[0].REG)))
+#define GICR_REG_OFF(REG) (offsetof(struct gicr_hw, REG) & 0x1ffff)
 #define GICR_REG_MASK(ADDR) ((ADDR)&0x1ffff)
 
 static inline bool vgic_broadcast(struct vcpu *vcpu, struct vgic_int *interrupt)
@@ -140,7 +140,7 @@ struct vgic_reg_handler_info irouter_info = {
     vgic_emul_generic_access,
     0b1000,
     VGIC_IROUTER_ID,
-    offsetof(struct gicd, IROUTER),
+    offsetof(struct gicd_hw, IROUTER),
     64,
     vgic_int_get_route,
     vgic_int_set_route,
@@ -162,7 +162,7 @@ struct vgic_reg_handler_info vgicr_pidr_info = {
 
 static inline uint32_t vgicr_get_id(struct emul_access *acc)
 {
-    return (acc->addr - cpu.vcpu->vm->arch.vgicr_addr) / sizeof(struct gicr);
+    return (acc->addr - cpu.vcpu->vm->arch.vgicr_addr) / sizeof(struct gicr_hw);
 }
 
 bool vgicr_emul_handler(struct emul_access *acc)
@@ -289,7 +289,7 @@ void vgic_init(struct vm *vm, const struct gic_dscrp *gic_dscrp)
 
     struct emul_mem gicd_emu = {.va_base = gic_dscrp->gicd_addr,
                            .pa_base = (uint64_t)&gicd,
-                           .size = ALIGN(sizeof(struct gicd), PAGE_SIZE),
+                           .size = ALIGN(sizeof(struct gicd_hw), PAGE_SIZE),
                            .handler = vgicd_emul_handler};
     vm_emul_add_mem(vm, &gicd_emu);
 
@@ -297,9 +297,9 @@ void vgic_init(struct vm *vm, const struct gic_dscrp *gic_dscrp)
     {
         uint64_t phy_cpuid = vcpu->phys_id;
         struct emul_mem gicr_emu = {
-            .va_base = gic_dscrp->gicr_addr + sizeof(struct gicr) * vcpu->id,
+            .va_base = gic_dscrp->gicr_addr + sizeof(struct gicr_hw) * vcpu->id,
             .pa_base = (uint64_t) & (gicr[phy_cpuid]),
-            .size = ALIGN(sizeof(struct gicr), PAGE_SIZE),
+            .size = ALIGN(sizeof(struct gicr_hw), PAGE_SIZE),
             .handler = vgicr_emul_handler};
         vm_emul_add_mem(vm, &gicr_emu);
 

@@ -16,7 +16,7 @@
 #include <drivers/pl011_uart.h>
 
 
-void uart_disable(volatile struct Pl011_Uart * ptr_uart){
+void uart_disable(volatile struct Pl011_Uart_hw * ptr_uart){
 
 	uint32_t ctrl_reg = ptr_uart->control;					
 	ctrl_reg &= ((~UART_CR_UARTEN) | (~UART_CR_TXE) | (~UART_CR_RXE));	
@@ -25,7 +25,7 @@ void uart_disable(volatile struct Pl011_Uart * ptr_uart){
 }
 
 
-void uart_enable(volatile struct Pl011_Uart * ptr_uart){
+void uart_enable(volatile struct Pl011_Uart_hw * ptr_uart){
 
 	uint32_t ctrl_reg = ptr_uart->control;				
 	ctrl_reg |= (UART_CR_UARTEN | UART_CR_TXE | UART_CR_RXE);	
@@ -34,7 +34,7 @@ void uart_enable(volatile struct Pl011_Uart * ptr_uart){
 }
 
 
-void uart_set_baud_rate(volatile struct Pl011_Uart * ptr_uart, uint32_t baud_rate){
+void uart_set_baud_rate(volatile struct Pl011_Uart_hw * ptr_uart, uint32_t baud_rate){
 
 	uint32_t temp;
 	uint32_t ibrd;
@@ -60,7 +60,7 @@ void uart_set_baud_rate(volatile struct Pl011_Uart * ptr_uart, uint32_t baud_rat
 }
 
 
-void uart_init(volatile struct Pl011_Uart * ptr_uart/*, uint32_t baud_rate*/) {
+void uart_init(volatile struct Pl011_Uart_hw * ptr_uart/*, uint32_t baud_rate*/) {
 
 	int lcrh_reg;
 
@@ -100,7 +100,7 @@ void uart_init(volatile struct Pl011_Uart * ptr_uart/*, uint32_t baud_rate*/) {
 }
 
 
-uint32_t uart_getc(volatile struct Pl011_Uart * ptr_uart){
+uint32_t uart_getc(volatile struct Pl011_Uart_hw * ptr_uart){
 
 	uint32_t data = 0;
 
@@ -113,7 +113,7 @@ uint32_t uart_getc(volatile struct Pl011_Uart * ptr_uart){
 }
 
 
-void uart_putc(volatile struct Pl011_Uart * ptr_uart,int8_t c){
+void uart_putc(volatile struct Pl011_Uart_hw * ptr_uart,int8_t c){
 
 	//wait until txFIFO is not full
 	while(ptr_uart->flag & UART_FR_TXFF);
@@ -123,7 +123,7 @@ void uart_putc(volatile struct Pl011_Uart * ptr_uart,int8_t c){
 }
 
 
-void uart_puts(volatile struct Pl011_Uart * ptr_uart,const char *s){
+void uart_puts(volatile struct Pl011_Uart_hw * ptr_uart,const char *s){
 
 	while (*s)
 	{

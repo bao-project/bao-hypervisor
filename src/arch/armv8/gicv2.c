@@ -21,11 +21,11 @@
 #include <interrupts.h>
 #include <vm.h>
 
-extern volatile struct gicd gicd;
+extern volatile struct gicd_hw gicd;
 extern spinlock_t gicd_lock;
 
-volatile struct gicc gicc __attribute__((section(".devices"), aligned(PAGE_SIZE)));
-volatile struct gich gich __attribute__((section(".devices"), aligned(PAGE_SIZE)));
+volatile struct gicc_hw gicc __attribute__((section(".devices"), aligned(PAGE_SIZE)));
+volatile struct gich_hw gich __attribute__((section(".devices"), aligned(PAGE_SIZE)));
 
 static uint64_t gic_cpu_map[GIC_MAX_TARGETS];
 

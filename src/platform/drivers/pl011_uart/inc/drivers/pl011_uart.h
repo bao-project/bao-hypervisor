@@ -187,7 +187,7 @@
 
 /* UART (PL011) register structure */
 
-struct Pl011_Uart
+struct Pl011_Uart_hw
 {
    volatile uint32_t data;                // UART Data Register
    volatile uint32_t status_error;        // UART Receive Status Register/Error Clear Register
@@ -207,16 +207,16 @@ struct Pl011_Uart
    volatile uint32_t DMA_control;         // UART DMA control Register
 };
 
-typedef struct Pl011_Uart bao_uart_t;
+typedef struct Pl011_Uart_hw bao_uart_t;
 
 /** Public PL011 UART interfaces */
 
-void uart_disable(volatile struct Pl011_Uart * ptr_uart);
-void uart_enable(volatile struct Pl011_Uart * ptr_uart);
-void uart_set_baud_rate(volatile struct Pl011_Uart * ptr_uart, uint32_t baud_rate);
-void uart_init(volatile struct Pl011_Uart * ptr_uart);
-uint32_t uart_getc(volatile struct Pl011_Uart * ptr_uart);
-void uart_putc(volatile struct Pl011_Uart * ptr_uart,int8_t c);
-void uart_puts(volatile struct Pl011_Uart * ptr_uart,const char *s);
+void uart_disable(volatile struct Pl011_Uart_hw * ptr_uart);
+void uart_enable(volatile struct Pl011_Uart_hw * ptr_uart);
+void uart_set_baud_rate(volatile struct Pl011_Uart_hw * ptr_uart, uint32_t baud_rate);
+void uart_init(volatile struct Pl011_Uart_hw * ptr_uart);
+uint32_t uart_getc(volatile struct Pl011_Uart_hw * ptr_uart);
+void uart_putc(volatile struct Pl011_Uart_hw * ptr_uart,int8_t c);
+void uart_puts(volatile struct Pl011_Uart_hw * ptr_uart,const char *s);
 
 #endif /* __PL011_UART_H_ */

@@ -105,7 +105,7 @@ struct vgic_reg_handler_info itargetr_info = {
     vgic_emul_generic_access,
     0b0101,
     VGIC_ITARGETSR_ID,
-    offsetof(struct gicd, ITARGETSR),
+    offsetof(struct gicd_hw, ITARGETSR),
     8,
     vgicd_get_trgt,
     vgicd_set_trgt,
@@ -152,7 +152,7 @@ void vgic_init(struct vm *vm, const struct gic_dscrp *gic_dscrp)
         (((vm->cpu_num - 1) << GICD_TYPER_CPUNUM_OFF) & GICD_TYPER_CPUNUM_MSK);
     vm->arch.vgicd.IIDR = gicd.IIDR;
 
-    size_t n = NUM_PAGES(sizeof(struct gicc));
+    size_t n = NUM_PAGES(sizeof(struct gicc_hw));
     void *va =
         mem_alloc_vpage(&vm->as, SEC_VM_ANY, (void *)gic_dscrp->gicc_addr, n);
     if (va != (void *)gic_dscrp->gicc_addr)
@@ -181,7 +181,7 @@ void vgic_init(struct vm *vm, const struct gic_dscrp *gic_dscrp)
 
     struct emul_mem emu = {.va_base = gic_dscrp->gicd_addr,
                       .pa_base = (uint64_t)&gicd,
-                      .size = ALIGN(sizeof(struct gicd), PAGE_SIZE),
+                      .size = ALIGN(sizeof(struct gicd_hw), PAGE_SIZE),
                       .handler = vgicd_emul_handler};
 
     vm_emul_add_mem(vm, &emu);
