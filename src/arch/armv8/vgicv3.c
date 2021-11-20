@@ -198,8 +198,8 @@ bool vgicr_emul_handler(emul_access_t *acc)
             handler_info = &icfgr_info;
             break;
         default: {
-            uint64_t base_offset = acc->addr - cpu.vcpu->vm->arch.vgicr_addr;
-            uint64_t acc_offset = GICR_REG_MASK(base_offset);
+            size_t base_offset = acc->addr - cpu.vcpu->vm->arch.vgicr_addr;
+            size_t acc_offset = GICR_REG_MASK(base_offset);
             if (GICR_IS_REG(IPRIORITYR, acc_offset)) {
                 handler_info = &ipriorityr_info;
             } else if (GICR_IS_REG(ID, acc_offset)) {
@@ -258,7 +258,7 @@ void vgic_init(vm_t *vm, const struct gic_dscrp *gic_dscrp)
 {
     vm->arch.vgicr_addr = gic_dscrp->gicr_addr;
     vm->arch.vgicd.CTLR = 0;
-    uint64_t vtyper_itln = vgic_get_itln(gic_dscrp);
+    size_t vtyper_itln = vgic_get_itln(gic_dscrp);
     vm->arch.vgicd.int_num = 32 * (vtyper_itln + 1);
     vm->arch.vgicd.TYPER =
         ((vtyper_itln << GICD_TYPER_ITLN_OFF) & GICD_TYPER_ITLN_MSK) |
@@ -273,7 +273,7 @@ void vgic_init(vm_t *vm, const struct gic_dscrp *gic_dscrp)
         ERROR("failed to alloc vgic");
     }
 
-    for (int i = 0; i < vm->arch.vgicd.int_num; i++) {
+    for (size_t i = 0; i < vm->arch.vgicd.int_num; i++) {
         vm->arch.vgicd.interrupts[i].owner = NULL;
         vm->arch.vgicd.interrupts[i].lock = SPINLOCK_INITVAL;
         vm->arch.vgicd.interrupts[i].id = i + GIC_CPU_PRIV;
@@ -324,7 +324,7 @@ void vgic_init(vm_t *vm, const struct gic_dscrp *gic_dscrp)
 
 void vgic_cpu_init(vcpu_t *vcpu)
 {
-    for (int i = 0; i < GIC_CPU_PRIV; i++) {
+    for (size_t i = 0; i < GIC_CPU_PRIV; i++) {
         vcpu->arch.vgic_priv.interrupts[i].owner = NULL;
         vcpu->arch.vgic_priv.interrupts[i].lock = SPINLOCK_INITVAL;
         vcpu->arch.vgic_priv.interrupts[i].id = i;
@@ -338,7 +338,7 @@ void vgic_cpu_init(vcpu_t *vcpu)
         vcpu->arch.vgic_priv.interrupts[i].enabled = false;
     }
 
-    for (int i = 0; i < GIC_MAX_SGIS; i++) {
+    for (size_t i = 0; i < GIC_MAX_SGIS; i++) {
         vcpu->arch.vgic_priv.interrupts[i].cfg = 0b10;
     }
 }

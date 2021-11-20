@@ -82,9 +82,9 @@ void vcpu_writepc(vcpu_t *vcpu, uint64_t pc)
     vcpu->regs->sepc = pc;
 }
 
-static int find_max_alignment(uintptr_t addr)
+static size_t find_max_alignment(uintptr_t addr)
 {
-    for (int i = 3; i > 0; i--) {
+    for (size_t i = 3; i > 0; i--) {
         uintptr_t mask = (1 << i) - 1;
         if ((addr & mask) == 0) {
             return (1 << i);
@@ -206,7 +206,7 @@ bool vm_readmem(vm_t *vm, void *dest, uintptr_t vmaddr, size_t n, bool exec)
 
     if (vm == cpu.vcpu->vm) {
         while (n > 0 && !cpu.arch.hlv_except) {
-            int width = find_max_alignment(((uintptr_t)dest) | vmaddr);
+            size_t width = find_max_alignment(((uintptr_t)dest) | vmaddr);
             while(width > n) width = PPOT(width);
             /**
              * You can only load aligned halfword or word instructions.
@@ -214,7 +214,7 @@ bool vm_readmem(vm_t *vm, void *dest, uintptr_t vmaddr, size_t n, bool exec)
             if(exec && width == 8) width = 4;
             if(exec && width == 1) break;
             size_t count = n / width;
-            for (int i = 0; i < count; i++) {
+            for (size_t i = 0; i < count; i++) {
                 if(exec) VM_LOAD_EXEC(width, dest, vmaddr);
                 else VM_LOAD(width, dest, vmaddr);
                 dest += width;

@@ -34,7 +34,7 @@ objcache_t msg_cache;
 extern cpu_msg_handler_t _ipi_cpumsg_handlers_start;
 extern uint64_t _ipi_cpumsg_handlers_size, _ipi_cpumsg_handlers_id_start;
 cpu_msg_handler_t *ipi_cpumsg_handlers;
-uint64_t ipi_cpumsg_handler_num;
+size_t ipi_cpumsg_handler_num;
 
 void cpu_init(uint64_t cpu_id, uint64_t load_addr)
 {
@@ -50,8 +50,8 @@ void cpu_init(uint64_t cpu_id, uint64_t load_addr)
 
         ipi_cpumsg_handlers = &_ipi_cpumsg_handlers_start;
         ipi_cpumsg_handler_num =
-            ((uint64_t)&_ipi_cpumsg_handlers_size) / sizeof(cpu_msg_handler_t);
-        for (int i = 0; i < ipi_cpumsg_handler_num; i++) {
+            ((size_t)&_ipi_cpumsg_handlers_size) / sizeof(cpu_msg_handler_t);
+        for (size_t i = 0; i < ipi_cpumsg_handler_num; i++) {
             (&_ipi_cpumsg_handlers_id_start)[i] = i;
         }
     }

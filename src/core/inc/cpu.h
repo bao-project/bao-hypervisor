@@ -71,18 +71,18 @@ typedef void (*cpu_msg_handler_t)(uint32_t event, uint64_t data);
     __attribute__((section(".ipi_cpumsg_handlers"), used))      \
         cpu_msg_handler_t __cpumsg_handler_##handler = handler; \
     __attribute__((section(".ipi_cpumsg_handlers_id"),          \
-                   used)) volatile const uint64_t handler_id;
+                   used)) volatile const size_t handler_id;
 
 typedef struct {
     spinlock_t lock;
-    volatile uint64_t n;
+    volatile size_t n;
     volatile bool ready;
-    volatile uint64_t count;
+    volatile size_t count;
 } cpu_synctoken_t;
 
 extern cpu_synctoken_t cpu_glb_sync;
 
-static inline void cpu_sync_init(cpu_synctoken_t* token, uint64_t n)
+static inline void cpu_sync_init(cpu_synctoken_t* token, size_t n)
 {
     token->lock = SPINLOCK_INITVAL;
     token->n = n;
@@ -94,7 +94,7 @@ static inline void cpu_sync_barrier(cpu_synctoken_t* token)
 {
     // TODO: no fence/barrier needed in this function?
 
-    uint64_t next_count = 0;
+    size_t next_count = 0;
 
     while (!token->ready);
 

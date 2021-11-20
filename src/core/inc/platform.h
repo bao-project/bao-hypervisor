@@ -24,15 +24,15 @@
 #include <ipc.h>
 
 struct platform_desc {
-    uint64_t cpu_num;
+    size_t cpu_num;
 
-    uint64_t region_num;
+    size_t region_num;
     struct mem_region *regions;
 
-    uint64_t ipc_num;
+    size_t ipc_num;
     struct ipc *ipcs;
 
-    uint64_t dev_num;
+    size_t dev_num;
     struct dev_region *devs;
 
     struct {

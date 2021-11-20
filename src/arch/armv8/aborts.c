@@ -25,7 +25,7 @@ typedef void (*abort_handler_t)(uint32_t, uint64_t, uint64_t);
 
 void internal_abort_handler(uint64_t gprs[]) {
 
-    for(int i = 0; i < 31; i++) {
+    for(size_t i = 0; i < 31; i++) {
         printk("x%d:\t\t0x%0lx\n", i, gprs[i]);
     }
     printk("SP_EL2:\t\t0x%0lx\n", gprs[32]);

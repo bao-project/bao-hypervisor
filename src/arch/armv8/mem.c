@@ -19,7 +19,7 @@
 
 void as_arch_init(addr_space_t* as)
 {
-    uint64_t index;
+    size_t index;
 
     /*
      * If the address space is a copy of an existing hypervisor space it's not

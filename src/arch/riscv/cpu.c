@@ -25,7 +25,7 @@ void cpu_arch_init(uint64_t cpuid, uint64_t load_addr)
 {
     if (cpuid == CPU_MASTER) {
         sbi_init();
-        for(int hartid = 0; hartid < platform.cpu_num; hartid++){
+        for(size_t hartid = 0; hartid < platform.cpu_num; hartid++){
             if(hartid == cpuid) continue;
             struct sbiret ret = sbi_hart_start(hartid, load_addr, 0);
             if(ret.error < 0) {

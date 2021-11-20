@@ -27,9 +27,9 @@ volatile gicr_t *gicr;
 static spinlock_t gicd_lock;
 static spinlock_t gicr_lock;
 
-uint64_t NUM_LRS;
+size_t NUM_LRS;
 
-uint64_t gich_num_lrs()
+size_t gich_num_lrs()
 {
     return ((MRS(ICH_VTR_EL2) & ICH_VTR_MSK) >> ICH_VTR_OFF) + 1;
 }
@@ -118,7 +118,7 @@ static inline void gicc_init()
     MSR(ICC_SRE_EL2, ICC_SRE_SRE_BIT);
     ISB();
 
-    for (int i = 0; i < gich_num_lrs(); i++) {
+    for (size_t i = 0; i < gich_num_lrs(); i++) {
         gich_write_lr(i, 0);
     }
 
@@ -135,7 +135,7 @@ static inline void gicr_init()
     gicr[cpu.id].ICPENDR0 = -1;
     gicr[cpu.id].ICACTIVER0 = -1;
 
-    for (int i = 0; i < GIC_NUM_PRIO_REGS(GIC_CPU_PRIV); i++) {
+    for (size_t i = 0; i < GIC_NUM_PRIO_REGS(GIC_CPU_PRIV); i++) {
         gicr[cpu.id].IPRIORITYR[i] = -1;
     }
 }
@@ -146,12 +146,12 @@ void gicc_save_state(gicc_state_t *state)
     state->BPR = MRS(ICC_BPR1_EL1);
     state->priv_ISENABLER = gicr[cpu.id].ISENABLER0;
 
-    for (int i = 0; i < GIC_NUM_PRIO_REGS(GIC_CPU_PRIV); i++) {
+    for (size_t i = 0; i < GIC_NUM_PRIO_REGS(GIC_CPU_PRIV); i++) {
         state->priv_IPRIORITYR[i] = gicr[cpu.id].IPRIORITYR[i];
     }
 
     state->HCR = MRS(ICH_HCR_EL2);
-    for (int i = 0; i < gich_num_lrs(); i++) {
+    for (size_t i = 0; i < gich_num_lrs(); i++) {
         state->LR[i] = gich_read_lr(i);
     }
 }
@@ -165,12 +165,12 @@ void gicc_restore_state(gicc_state_t *state)
     MSR(ICC_BPR1_EL1, state->BPR);
     gicr[cpu.id].ISENABLER0 = state->priv_ISENABLER;
 
-    for (int i = 0; i < GIC_NUM_PRIO_REGS(GIC_CPU_PRIV); i++) {
+    for (size_t i = 0; i < GIC_NUM_PRIO_REGS(GIC_CPU_PRIV); i++) {
         gicr[cpu.id].IPRIORITYR[i] = state->priv_IPRIORITYR[i];
     }
 
     MSR(ICH_HCR_EL2, state->HCR);
-    for (int i = 0; i < gich_num_lrs(); i++) {
+    for (size_t i = 0; i < gich_num_lrs(); i++) {
         gich_write_lr(i, state->LR[i]);
     }
 }
@@ -204,8 +204,8 @@ void gicc_dir(uint32_t dir) {
 
 void gicr_set_prio(uint64_t int_id, uint8_t prio, uint32_t gicr_id)
 {
-    uint64_t reg_ind = GIC_PRIO_REG(int_id);
-    uint64_t off = GIC_PRIO_OFF(int_id);
+    size_t reg_ind = GIC_PRIO_REG(int_id);
+    size_t off = GIC_PRIO_OFF(int_id);
     uint64_t mask = BIT_MASK(off, GIC_PRIO_BITS);
 
     spin_lock(&gicr_lock);
@@ -218,8 +218,8 @@ void gicr_set_prio(uint64_t int_id, uint8_t prio, uint32_t gicr_id)
 
 uint64_t gicr_get_prio(uint64_t int_id, uint32_t gicr_id)
 {
-    uint64_t reg_ind = GIC_PRIO_REG(int_id);
-    uint64_t off = GIC_PRIO_OFF(int_id);
+    size_t reg_ind = GIC_PRIO_REG(int_id);
+    size_t off = GIC_PRIO_OFF(int_id);
 
     spin_lock(&gicr_lock);
 
@@ -233,8 +233,8 @@ uint64_t gicr_get_prio(uint64_t int_id, uint32_t gicr_id)
 
 void gicr_set_icfgr(uint64_t int_id, uint8_t cfg, uint32_t gicr_id)
 {
-    uint64_t reg_ind = (int_id * GIC_CONFIG_BITS) / (sizeof(uint32_t) * 8);
-    uint64_t off = (int_id * GIC_CONFIG_BITS) % (sizeof(uint32_t) * 8);
+    size_t reg_ind = (int_id * GIC_CONFIG_BITS) / (sizeof(uint32_t) * 8);
+    size_t off = (int_id * GIC_CONFIG_BITS) % (sizeof(uint32_t) * 8);
     uint64_t mask = ((1U << GIC_CONFIG_BITS) - 1) << off;
 
     spin_lock(&gicr_lock);

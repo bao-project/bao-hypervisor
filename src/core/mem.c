@@ -86,10 +86,10 @@ static objcache_t pagepool_cache;
 
 static bool config_found = false;
 
-static inline uint64_t pp_next_clr(uint64_t base, int from, uint64_t colors)
+static inline size_t pp_next_clr(uint64_t base, size_t from, uint64_t colors)
 {
-    uint64_t clr_offset = (base / PAGE_SIZE) % (COLOR_NUM * COLOR_SIZE);
-    uint64_t index = from;
+    size_t clr_offset = (base / PAGE_SIZE) % (COLOR_NUM * COLOR_SIZE);
+    size_t index = from;
 
     while (!((colors >> ((index + clr_offset) / COLOR_SIZE % COLOR_NUM)) & 1))
         index++;
@@ -103,10 +103,10 @@ static void mem_free_ppages(ppages_t *ppages)
     {
         spin_lock(&pool->lock);
         if (in_range(ppages->base, pool->base, pool->size * PAGE_SIZE)) {
-            uint64_t index = (ppages->base - pool->base) / PAGE_SIZE;
+            size_t index = (ppages->base - pool->base) / PAGE_SIZE;
             if (!all_clrs(ppages->colors)) {
-                uint64_t index = 0;
-                for (int i = 0; i < ppages->size; i++) {
+                size_t index = 0;
+                for (size_t i = 0; i < ppages->size; i++) {
                     index = pp_next_clr(pool->base, index, ppages->colors);
                     bitmap_set(pool->bitmap, index++);
                 }
@@ -121,9 +121,9 @@ static void mem_free_ppages(ppages_t *ppages)
 static bool pp_alloc_clr(page_pool_t *pool, size_t n, uint64_t colors,
                          ppages_t *ppages)
 {
-    uint64_t allocated = 0;
+    size_t allocated = 0;
 
-    uint64_t first_index = 0;
+    size_t first_index = 0;
     bool ok = false;
 
     ppages->colors = colors;
@@ -135,15 +135,15 @@ static bool pp_alloc_clr(page_pool_t *pool, size_t n, uint64_t colors,
      * Lets start the search at the first available color after the last
      * known free position to the top of the pool.
      */
-    uint64_t index = pp_next_clr(pool->base, pool->last, colors);
-    uint64_t top = pool->size;
+    size_t index = pp_next_clr(pool->base, pool->last, colors);
+    size_t top = pool->size;
 
     /**
      * Two iterations. One starting from the last known free page,
      * other starting from the beggining of page pool to the start of the
      * previous iteration.
      */
-    for (int i = 0; i < 2 && !ok; i++) {
+    for (size_t i = 0; i < 2 && !ok; i++) {
         while ((allocated < n) && (index < top)) {
             allocated = 0;
 
@@ -175,7 +175,7 @@ static bool pp_alloc_clr(page_pool_t *pool, size_t n, uint64_t colors,
              */
             ppages->size = n;
             ppages->base = pool->base + (first_index * PAGE_SIZE);
-            for (int i = 0; i < n; i++) {
+            for (size_t i = 0; i < n; i++) {
                 first_index = pp_next_clr(pool->base, first_index, colors);
                 bitmap_set(pool->bitmap, first_index++);
             }
@@ -224,7 +224,7 @@ static bool pp_alloc(page_pool_t *pool, size_t n, bool aligned,
      *  - one starting from the last known free index.
      *  - in case this does not work, start from index 0.
      */
-    for (int i = 0; i < 2 && !ok; i++) {
+    for (size_t i = 0; i < 2 && !ok; i++) {
         while (pool->free != 0) {
             int64_t bit =
                 bitmap_find_consec(pool->bitmap, pool->size, curr, n, false);
@@ -280,7 +280,7 @@ ppages_t mem_alloc_ppages(uint64_t colors, size_t n, bool aligned)
 
 static section_t *mem_find_sec(addr_space_t *as, void *va)
 {
-    for (int i = 0; i < sections[as->type].sec_size; i++) {
+    for (size_t i = 0; i < sections[as->type].sec_size; i++) {
         if ((va >= sections[as->type].sec[i].beg) &&
             (va <= sections[as->type].sec[i].end)) {
             return &sections[as->type].sec[i];
@@ -290,8 +290,8 @@ static section_t *mem_find_sec(addr_space_t *as, void *va)
     return NULL;
 }
 
-static inline bool pte_allocable(addr_space_t *as, pte_t *pte, uint64_t lvl,
-                                 uint64_t left, uint64_t addr)
+static inline bool pte_allocable(addr_space_t *as, pte_t *pte, size_t lvl,
+                                 size_t left, uint64_t addr)
 {
     return (lvl == (as->pt.dscr->lvls - 1)) ||
            (pt_lvl_terminal(&as->pt, lvl) && !pte_valid(pte) &&
@@ -299,7 +299,7 @@ static inline bool pte_allocable(addr_space_t *as, pte_t *pte, uint64_t lvl,
             ((addr % pt_lvlsize(&as->pt, lvl)) == 0));
 }
 
-static inline pte_t *mem_alloc_pt(addr_space_t *as, pte_t *parent, uint64_t lvl,
+static inline pte_t *mem_alloc_pt(addr_space_t *as, pte_t *parent, size_t lvl,
                                   uint64_t addr)
 {
     /* Must have lock on as and va section to call */
@@ -313,17 +313,17 @@ static inline pte_t *mem_alloc_pt(addr_space_t *as, pte_t *parent, uint64_t lvl,
     return temp_pt;
 }
 
-static inline bool pt_pte_mappable(addr_space_t *as, pte_t *pte, uint64_t lvl,
-                                   uint64_t left, uint64_t vaddr,
+static inline bool pt_pte_mappable(addr_space_t *as, pte_t *pte, size_t lvl,
+                                   size_t left, uint64_t vaddr,
                                    uint64_t paddr)
 {
     return !pte_valid(pte) &&
            (pt_lvlsize(&as->pt, lvl) <= (left * PAGE_SIZE)) &&
-           (((uint64_t)vaddr % pt_lvlsize(&as->pt, lvl)) == 0) &&
+           (((size_t)vaddr % pt_lvlsize(&as->pt, lvl)) == 0) &&
            ((paddr % pt_lvlsize(&as->pt, lvl)) == 0);
 }
 
-static void mem_expand_pte(addr_space_t *as, uint64_t va, uint64_t lvl)
+static void mem_expand_pte(addr_space_t *as, uint64_t va, size_t lvl)
 {
     /* Must have lock on as and va section to call */
 
@@ -367,9 +367,9 @@ static void mem_expand_pte(addr_space_t *as, uint64_t va, uint64_t lvl)
 
             lvl++;
             uint64_t paddr = pte_addr(&pte_val);
-            uint64_t entry = pt_getpteindex(&as->pt, pte, lvl);
-            uint64_t nentries = pt_nentries(&as->pt, lvl);
-            uint64_t lvlsz = pt_lvlsize(&as->pt, lvl);
+            size_t entry = pt_getpteindex(&as->pt, pte, lvl);
+            size_t nentries = pt_nentries(&as->pt, lvl);
+            size_t lvlsz = pt_lvlsize(&as->pt, lvl);
             uint64_t type = pt_pte_type(&as->pt, lvl);
             uint64_t flags = as->type == AS_HYP ? PTE_HYP_FLAGS : PTE_VM_FLAGS;
 
@@ -388,7 +388,7 @@ static void mem_expand_pte(addr_space_t *as, uint64_t va, uint64_t lvl)
     }
 }
 
-static void mem_inflate_pt(addr_space_t *as, uint64_t va, uint64_t length)
+static void mem_inflate_pt(addr_space_t *as, uint64_t va, size_t length)
 {
     /* Must have lock on as and va section to call */
 
@@ -396,9 +396,9 @@ static void mem_inflate_pt(addr_space_t *as, uint64_t va, uint64_t length)
      * For each level in the pt, expand each entry in the specified range
      * as a next level page table.
      */
-    for (int lvl = 0; lvl < as->pt.dscr->lvls - 1; lvl++) {
+    for (size_t lvl = 0; lvl < as->pt.dscr->lvls - 1; lvl++) {
         uint64_t vaddr = va;
-        uint64_t lvlsz = pt_lvlsize(&as->pt, lvl);
+        size_t lvlsz = pt_lvlsize(&as->pt, lvl);
         while (vaddr < (va + length)) {
             mem_expand_pte(as, vaddr, lvl);
             vaddr += lvlsz;
@@ -408,11 +408,11 @@ static void mem_inflate_pt(addr_space_t *as, uint64_t va, uint64_t length)
 
 void *mem_alloc_vpage(addr_space_t *as, enum AS_SEC section, void *at, size_t n)
 {
-    int lvl = 0;
-    int entry = 0;
-    int nentries = 0;
-    int lvlsze = 0;
-    int count = 0;
+    size_t lvl = 0;
+    size_t entry = 0;
+    size_t nentries = 0;
+    size_t lvlsze = 0;
+    size_t count = 0;
     void *addr = NULL;
     void *vpage = NULL;
     void *top = (void *)-1;
@@ -484,7 +484,7 @@ void *mem_alloc_vpage(addr_space_t *as, enum AS_SEC section, void *at, size_t n)
     if (vpage != NULL && !failed) {
         count = 0;
         addr = vpage;
-        int lvl = 0;
+        size_t lvl = 0;
         while (count < n) {
             for (lvl = 0; lvl < as->pt.dscr->lvls; lvl++) {
                 pte = pt_get_pte(&as->pt, lvl, addr);
@@ -507,7 +507,7 @@ void mem_free_vpage(addr_space_t *as, void *at, size_t n, bool free_ppages)
 {
     void *vaddr = at;
     void *top = at + (n * PAGE_SIZE);
-    int lvl = 0;
+    size_t lvl = 0;
 
     spin_lock(&as->lock);
 
@@ -519,14 +519,14 @@ void mem_free_vpage(addr_space_t *as, void *at, size_t n, bool free_ppages)
         if (pte == NULL) {
             ERROR("invalid pte while freeing vpages");
         } else if (!pte_valid(pte)) {
-            uint64_t lvlsz = pt_lvlsize(&as->pt, lvl);
+            size_t lvlsz = pt_lvlsize(&as->pt, lvl);
             vaddr += lvlsz;
         } else if (pte_table(&as->pt, pte, lvl)) {
             lvl++;
         } else {
-            uint64_t entry = pt_getpteindex(&as->pt, pte, lvl);
-            uint64_t nentries = pt_nentries(&as->pt, lvl);
-            uint64_t lvlsz = pt_lvlsize(&as->pt, lvl);
+            size_t entry = pt_getpteindex(&as->pt, pte, lvl);
+            size_t nentries = pt_nentries(&as->pt, lvl);
+            size_t lvlsz = pt_lvlsize(&as->pt, lvl);
 
             while ((entry < nentries) && (vaddr < top)) {
                 if (!pte_table(&as->pt, pte, lvl)) {
@@ -600,9 +600,9 @@ int mem_map(addr_space_t *as, void *va, ppages_t *ppages, size_t n,
     }
 
     if (ppages && !all_clrs(ppages->colors)) {
-        uint64_t index = 0;
+        size_t index = 0;
         mem_inflate_pt(as, (uint64_t)vaddr, n * PAGE_SIZE);
-        for (int i = 0; i < ppages->size; i++) {
+        for (size_t i = 0; i < ppages->size; i++) {
             pte = pt_get_pte(&as->pt, as->pt.dscr->lvls - 1, vaddr);
             index = pp_next_clr(ppages->base, index, ppages->colors);
             uint64_t paddr = ppages->base + (index * PAGE_SIZE);
@@ -613,7 +613,7 @@ int mem_map(addr_space_t *as, void *va, ppages_t *ppages, size_t n,
     } else {
         uint64_t paddr = ppages ? ppages->base : 0;
         while (count < n) {
-            int lvl = 0;
+            size_t lvl = 0;
             for (lvl = 0; lvl < as->pt.dscr->lvls; lvl++) {
                 pte = pt_get_pte(&as->pt, lvl, vaddr);
                 if (pt_lvl_terminal(&as->pt, lvl)) {
@@ -628,9 +628,9 @@ int mem_map(addr_space_t *as, void *va, ppages_t *ppages, size_t n,
                 }
             }
 
-            uint64_t entry = pt_getpteindex(&as->pt, pte, lvl);
-            uint64_t nentries = pt_nentries(&as->pt, lvl);
-            uint64_t lvlsz = pt_lvlsize(&as->pt, lvl);
+            size_t entry = pt_getpteindex(&as->pt, pte, lvl);
+            size_t nentries = pt_nentries(&as->pt, lvl);
+            size_t lvlsz = pt_lvlsize(&as->pt, lvl);
 
             while ((entry < nentries) && (count < n) &&
                    (n - count >= lvlsz / PAGE_SIZE)) {
@@ -684,11 +684,11 @@ int mem_map_reclr(addr_space_t *as, void *va, ppages_t *ppages, size_t n,
      * Allocate the necessary colored pages.
      * Mapped onto hypervisor address space.
      */
-    uint64_t reclrd_num =
+    size_t reclrd_num =
         n / (COLOR_NUM * COLOR_SIZE) * COLOR_SIZE *
         bitmap_count((bitmap_t)&as->colors, 0, COLOR_NUM, false);
-    uint64_t clr_offset = (ppages->base / PAGE_SIZE) % (COLOR_NUM * COLOR_SIZE);
-    for (int i = 0; i < (n % (COLOR_NUM * COLOR_SIZE)); i++) {
+    size_t clr_offset = (ppages->base / PAGE_SIZE) % (COLOR_NUM * COLOR_SIZE);
+    for (size_t i = 0; i < (n % (COLOR_NUM * COLOR_SIZE)); i++) {
         if (!bitmap_get((bitmap_t)&as->colors,
                         (i + clr_offset) / COLOR_SIZE % COLOR_NUM))
             reclrd_num++;
@@ -718,7 +718,7 @@ int mem_map_reclr(addr_space_t *as, void *va, ppages_t *ppages, size_t n,
     uint64_t paddr = ppages->base;
     void *clrd_vaddr = reclrd_va_base;
     void *phys_va = phys_va_base;
-    uint64_t index = 0;
+    size_t index = 0;
 
     /**
      * Inflate reserved page tables to the last level. This assumes
@@ -726,7 +726,7 @@ int mem_map_reclr(addr_space_t *as, void *va, ppages_t *ppages, size_t n,
      */
     mem_inflate_pt(as, (uint64_t)vaddr, n * PAGE_SIZE);
 
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
         pte = pt_get_pte(&as->pt, as->pt.dscr->lvls - 1, vaddr);
 
         /**
@@ -886,10 +886,10 @@ bool root_pool_set_up_bitmap(uint64_t load_addr)
     size_t cpu_size = platform.cpu_num * (ALIGN(sizeof(struct cpu), PAGE_SIZE) +
                                           (PT_SIZE * (PT_LVLS - 1)));
 
-    uint64_t bitmap_size = root_pool.size / (8 * PAGE_SIZE) +
+    size_t bitmap_size = root_pool.size / (8 * PAGE_SIZE) +
                            ((root_pool.size % (8 * PAGE_SIZE) != 0) ? 1 : 0);
     if (root_pool.size <= bitmap_size) return false;
-    uint64_t bitmap_base = load_addr + image_size + config_size + cpu_size;
+    size_t bitmap_base = load_addr + image_size + config_size + cpu_size;
 
     ppages_t bitmap_pp = mem_ppages_get(bitmap_base, bitmap_size);
     bitmap_t root_bitmap =
@@ -907,7 +907,7 @@ bool pp_root_reserve_hyp_mem(uint64_t load_addr)
 {
     size_t image_size = (size_t)(&_image_end - &_image_start);
     size_t config_size = (size_t)(&_config_end - &_config_start);
-    uint64_t cpu_size =
+    size_t cpu_size =
         platform.cpu_num *
         (ALIGN(sizeof(struct cpu), PAGE_SIZE) + (PT_SIZE * (PT_LVLS - 1)));
     uint64_t cpu_base_addr = load_addr + image_size + config_size;
@@ -950,7 +950,7 @@ static void pp_init(page_pool_t *pool, uint64_t base, size_t size)
     memset(pool, 0, sizeof(page_pool_t));
     pool->base = ALIGN(base, PAGE_SIZE);
     pool->size = NUM_PAGES(size);
-    uint64_t bitmap_size =
+    size_t bitmap_size =
         pool->size / (8 * PAGE_SIZE) + !!(pool->size % (8 * PAGE_SIZE) != 0);
 
     if (size <= bitmap_size) return;
@@ -987,10 +987,10 @@ bool mem_reserve_config(uint64_t config_addr, page_pool_t *pool)
 bool mem_reserve_vm_cfg(page_pool_t *pool)
 {
     /* for every vm config */
-    for (int i = 0; i < vm_config_ptr->vmlist_size; i++) {
+    for (size_t i = 0; i < vm_config_ptr->vmlist_size; i++) {
         vm_config_t *vm_cfg = &vm_config_ptr->vmlist[i];
         /* for every mem region */
-        for (int j = 0; j < vm_cfg->platform.region_num; j++) {
+        for (size_t j = 0; j < vm_cfg->platform.region_num; j++) {
             struct mem_region *reg = &vm_cfg->platform.regions[j];
             if (reg->place_phys) {
                 size_t n_pg = NUM_PAGES(reg->size);
@@ -1002,7 +1002,7 @@ bool mem_reserve_vm_cfg(page_pool_t *pool)
         }
     }
 
-    for (int i = 0; i < vm_config_ptr->shmemlist_size; i++) {
+    for (size_t i = 0; i < vm_config_ptr->shmemlist_size; i++) {
         shmem_t *shmem = &vm_config_ptr->shmemlist[i];
         if(shmem->place_phys) {
             size_t n_pg = NUM_PAGES(shmem->size);
@@ -1064,7 +1064,7 @@ bool mem_map_vm_config(uint64_t config_addr)
     mem_map(&cpu.as, vm_config_ptr, &pages, 1, PTE_HYP_FLAGS);
     if (vm_config_ptr->config_header_size > PAGE_SIZE) {
         size_t n =
-            NUM_PAGES(((uint64_t)vm_config_ptr->config_header_size) - PAGE_SIZE);
+            NUM_PAGES(((size_t)vm_config_ptr->config_header_size) - PAGE_SIZE);
         void *va = mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL,
                                    vm_config_ptr + PAGE_SIZE, n);
         if (va == NULL) return false;
@@ -1119,7 +1119,7 @@ bool mem_setup_root_pool(uint64_t load_addr,
     return pp_root_init(load_addr, *root_mem_region);
 }
 
-void *copy_space(void *base, const uint64_t size, ppages_t *pages)
+void *copy_space(void *base, const size_t size, ppages_t *pages)
 {
     *pages = mem_alloc_ppages(cpu.as.colors, NUM_PAGES(size), false);
     void *va = mem_alloc_vpage(&cpu.as, SEC_HYP_PRIVATE, NULL, NUM_PAGES(size));

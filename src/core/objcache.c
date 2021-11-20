@@ -48,7 +48,7 @@ static slab_t* slab_create(objcache_t* oc, enum AS_SEC sec)
             memset(slab, 0, PAGE_SIZE);
             slab->header.cache = oc;
             slab->header.objsize =
-                ALIGN((sizeof(node_t) + oc->osize), sizeof(uint64_t));
+                ALIGN((sizeof(node_t) + oc->osize), sizeof(size_t));
             slab->header.objnum =
                 (PAGE_SIZE - sizeof(((slab_t*)NULL)->header)) /
                 slab->header.objsize;
@@ -56,7 +56,7 @@ static slab_t* slab_create(objcache_t* oc, enum AS_SEC sec)
             list_t* obj_lst = &(slab->header.free);
             list_init(obj_lst);
             void* obj = &(slab->slab[sizeof(slab->header)]);
-            for (int i = 0; i < slab->header.objnum; i++) {
+            for (size_t i = 0; i < slab->header.objnum; i++) {
                 list_push(obj_lst, obj);
                 obj += slab->header.objsize;
             }

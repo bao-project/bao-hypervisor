@@ -36,14 +36,14 @@ page_table_dscr_t armv8_pt_s2_dscr = {
     .lvl_term = (bool[]){false, true, true, true},
 };
 
-uint64_t parange_table[] = {32, 36, 40, 42, 44, 48};
+size_t parange_table[] = {32, 36, 40, 42, 44, 48};
 
 page_table_dscr_t* hyp_pt_dscr = &armv8_pt_dscr;
 page_table_dscr_t* vm_pt_dscr = &armv8_pt_s2_dscr;
 
-uint64_t parange __attribute__((section(".data")));
+size_t parange __attribute__((section(".data")));
 
-void pt_set_recursive(page_table_t* pt, uint64_t index)
+void pt_set_recursive(page_table_t* pt, size_t index)
 {
     uint64_t pa;
     mem_translate(&cpu.as, pt->root, &pa);
@@ -54,15 +54,15 @@ void pt_set_recursive(page_table_t* pt, uint64_t index)
         (index << PT_ROOT_FLAGS_REC_IND_OFF) & PT_ROOT_FLAGS_REC_IND_MSK;
 }
 
-pte_t* pt_get_pte(page_table_t* pt, uint64_t lvl, void* va)
+pte_t* pt_get_pte(page_table_t* pt, size_t lvl, void* va)
 {
     page_table_t* cpu_pt = &cpu.as.pt;
 
-    uint64_t rec_ind_off = cpu_pt->dscr->lvl_off[cpu_pt->dscr->lvls - lvl - 1];
-    uint64_t rec_ind_len = cpu_pt->dscr->lvl_wdt[cpu_pt->dscr->lvls - lvl - 1];
+    size_t rec_ind_off = cpu_pt->dscr->lvl_off[cpu_pt->dscr->lvls - lvl - 1];
+    size_t rec_ind_len = cpu_pt->dscr->lvl_wdt[cpu_pt->dscr->lvls - lvl - 1];
     uint64_t mask = (1UL << rec_ind_off) - 1;
     uint64_t rec_ind_mask = ((1UL << rec_ind_len) - 1) & ~mask;
-    uint64_t rec_ind = ((pt->root_flags & PT_ROOT_FLAGS_REC_IND_MSK) >>
+    size_t rec_ind = ((pt->root_flags & PT_ROOT_FLAGS_REC_IND_MSK) >>
                         PT_ROOT_FLAGS_REC_IND_OFF);
     uint64_t addr = ~mask;
     addr &= PTE_ADDR_MSK;
@@ -74,7 +74,7 @@ pte_t* pt_get_pte(page_table_t* pt, uint64_t lvl, void* va)
     return (pte_t*)addr;
 }
 
-pte_t* pt_get(page_table_t* pt, uint64_t lvl, void* va)
+pte_t* pt_get(page_table_t* pt, size_t lvl, void* va)
 {
     if (lvl == 0) return pt->root;
 
@@ -83,12 +83,12 @@ pte_t* pt_get(page_table_t* pt, uint64_t lvl, void* va)
     return (pte_t*)pte;
 }
 
-uint64_t pt_pte_type(page_table_t* pt, uint64_t lvl)
+uint64_t pt_pte_type(page_table_t* pt, size_t lvl)
 {
     return (lvl == pt->dscr->lvls - 1) ? PTE_PAGE : PTE_SUPERPAGE;
 }
 
-bool pte_page(page_table_t* pt, pte_t* pte, uint64_t lvl)
+bool pte_page(page_table_t* pt, pte_t* pte, size_t lvl)
 {
     if (lvl != pt->dscr->lvls - 1) {
         return false;
@@ -97,7 +97,7 @@ bool pte_page(page_table_t* pt, pte_t* pte, uint64_t lvl)
     return (*pte & PTE_TYPE_MSK) == PTE_PAGE;
 }
 
-bool pte_table(page_table_t* pt, pte_t* pte, uint64_t lvl)
+bool pte_table(page_table_t* pt, pte_t* pte, size_t lvl)
 {
     if (lvl == pt->dscr->lvls - 1) {
         return false;

@@ -145,7 +145,7 @@ void vgic_inject_sgi(vcpu_t *vcpu, vgic_int_t *interrupt, uint64_t source)
 void vgic_init(vm_t *vm, const struct gic_dscrp *gic_dscrp)
 {
     vm->arch.vgicd.CTLR = 0;
-    uint64_t vtyper_itln = vgic_get_itln(gic_dscrp);
+    size_t vtyper_itln = vgic_get_itln(gic_dscrp);
     vm->arch.vgicd.int_num = 32 * (vtyper_itln + 1);
     vm->arch.vgicd.TYPER =
         ((vtyper_itln << GICD_TYPER_ITLN_OFF) & GICD_TYPER_ITLN_MSK) |
@@ -166,7 +166,7 @@ void vgic_init(vm_t *vm, const struct gic_dscrp *gic_dscrp)
         ERROR("failed to alloc vgic");
     }
 
-    for (int i = 0; i < vm->arch.vgicd.int_num; i++) {
+    for (size_t i = 0; i < vm->arch.vgicd.int_num; i++) {
         vm->arch.vgicd.interrupts[i].owner = NULL;
         vm->arch.vgicd.interrupts[i].lock = SPINLOCK_INITVAL;
         vm->arch.vgicd.interrupts[i].id = i + GIC_CPU_PRIV;
@@ -189,7 +189,7 @@ void vgic_init(vm_t *vm, const struct gic_dscrp *gic_dscrp)
 
 void vgic_cpu_init(vcpu_t *vcpu)
 {
-    for (int i = 0; i < GIC_CPU_PRIV; i++) {
+    for (size_t i = 0; i < GIC_CPU_PRIV; i++) {
         vcpu->arch.vgic_priv.interrupts[i].owner = vcpu;
         vcpu->arch.vgic_priv.interrupts[i].lock = SPINLOCK_INITVAL;
         vcpu->arch.vgic_priv.interrupts[i].id = i;
@@ -203,7 +203,7 @@ void vgic_cpu_init(vcpu_t *vcpu)
         vcpu->arch.vgic_priv.interrupts[i].enabled = false;
     }
 
-    for (int i = 0; i < GIC_MAX_SGIS; i++) {
+    for (size_t i = 0; i < GIC_MAX_SGIS; i++) {
         vcpu->arch.vgic_priv.interrupts[i].enabled = true;
     }
 }

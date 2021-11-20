@@ -28,7 +28,7 @@ struct arch_platform {
 
         uint64_t maintenance_id;
 
-        uint64_t interrupt_num;
+        size_t interrupt_num;
     } gic;
 
     struct {
@@ -36,7 +36,7 @@ struct arch_platform {
         uint64_t interrupt_id;
         uint16_t global_mask;
 
-        uint32_t group_num;
+        size_t group_num;
         struct smmu_group {
             uint16_t group_mask;
             uint16_t group_id;
@@ -49,8 +49,8 @@ struct arch_platform {
     } generic_timer;
 
     struct clusters {
-        uint64_t num;
-        uint8_t* core_num;
+        size_t num;
+        size_t* core_num;
     } clusters;
 };
 

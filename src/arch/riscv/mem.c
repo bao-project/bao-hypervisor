@@ -19,7 +19,7 @@
 #include <cpu.h>
 
 static inline void as_map_physical_identity(addr_space_t *as) {
-    const int lvl = 0;
+    const size_t lvl = 0;
     size_t lvl_size = pt_lvlsize(&as->pt, lvl);
     uintptr_t lvl_mask = ~(lvl_size - 1);
     pte_t *pt = as->pt.root;
@@ -30,15 +30,15 @@ static inline void as_map_physical_identity(addr_space_t *as) {
      * pt).
      */
 
-    for (int i = 0; i < platform.region_num; i++) {
+    for (size_t i = 0; i < platform.region_num; i++) {
         struct mem_region *reg = &platform.regions[i];
         uintptr_t base = reg->base & lvl_mask;
         uintptr_t top = (reg->base + reg->size) & lvl_mask;
-        int num_entries = ((top - base - 1) / lvl_size) + 1;
+        size_t num_entries = ((top - base - 1) / lvl_size) + 1;
 
         uintptr_t addr = base;
-        for (int j = 0; j < num_entries; j++) {
-            int index = PTE_INDEX(lvl, addr);
+        for (size_t j = 0; j < num_entries; j++) {
+            size_t index = PTE_INDEX(lvl, addr);
             pte_set(&pt[index], addr, PTE_SUPERPAGE, PTE_HYP_FLAGS);
             addr += lvl_size;
         }
@@ -57,13 +57,13 @@ bool mem_translate(addr_space_t *as, void *va, uint64_t *pa)
 {
     pte_t* pte = &(as->pt.root[PTE_INDEX(0, (uintptr_t)va)]);
     size_t lvl = 0;
-    for (int i = 0; i < as->pt.dscr->lvls; i++) {
+    for (size_t i = 0; i < as->pt.dscr->lvls; i++) {
         if (!pte_valid(pte) || !pte_table(&as->pt, pte, i)) {
             lvl = i;
             break;  
         }
         pte = (pte_t*)pte_addr(pte);
-        int index = PTE_INDEX(i + 1, (uintptr_t)va);
+        size_t index = PTE_INDEX(i + 1, (uintptr_t)va);
         pte = &pte[index];
     }
     if (pte && pte_valid(pte)) {

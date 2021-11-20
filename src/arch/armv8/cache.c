@@ -36,7 +36,7 @@ void cache_arch_enumerate(cache_t *dscrp)
     dscrp->lvls = 0;
 
     clidr = MRS(CLIDR_EL1);
-    for(int i = 0; i < CLIDR_CTYPE_NUM; i++){
+    for(size_t i = 0; i < CLIDR_CTYPE_NUM; i++){
         if((temp = bit_extract(clidr, i*CLIDR_CTYPE_LEN, CLIDR_CTYPE_LEN)) != 0){
             dscrp->lvls++;
             switch(temp){
@@ -58,7 +58,7 @@ void cache_arch_enumerate(cache_t *dscrp)
         }
     }
 
-    for(int lvl = 0; lvl < dscrp->lvls; lvl++){
+    for(size_t lvl = 0; lvl < dscrp->lvls; lvl++){
         
         uint64_t csselr = 0;
         uint64_t ccsidr = 0;
@@ -108,11 +108,11 @@ void cache_arch_enumerate(cache_t *dscrp)
     }
 }
 
-void cache_flush_range(void* base, uint64_t size)
+void cache_flush_range(void* base, size_t size)
 {
     uint64_t cache_addr = (uint64_t)base;
     uint64_t ctr = MRS(CTR_EL0);
-    uint64_t min_line_size = 1UL << bit_extract(ctr, CTR_DMINLINE_OFF, 
+    size_t min_line_size = 1UL << bit_extract(ctr, CTR_DMINLINE_OFF, 
         CTR_DMINLINE_LEN);
 
     while(cache_addr < ((uint64_t)base + size)){

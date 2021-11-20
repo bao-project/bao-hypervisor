@@ -471,7 +471,7 @@ void sbi_lgcy_sendipi_handler()
         .event = SEND_IPI,
     };
 
-    for (int i = 0; i < sizeof(phart_mask) * 8; i++) {
+    for (size_t i = 0; i < sizeof(phart_mask) * 8; i++) {
         if (bitmap_get((bitmap_t)&phart_mask, i)) {
             cpu_send_msg(i, &msg);
         }

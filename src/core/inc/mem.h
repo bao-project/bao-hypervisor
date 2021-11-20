@@ -70,14 +70,14 @@ struct dev_region {
 };
 
 typedef struct shmem {
-    uint64_t size;
+    size_t size;
     uint64_t colors;
     bool place_phys;
     uint64_t phys;
     uint64_t cpu_masters;
 } shmem_t;
 
-static inline ppages_t mem_ppages_get(uint64_t base, uint64_t size)
+static inline ppages_t mem_ppages_get(uint64_t base, size_t size)
 {
     return (ppages_t){.colors = 0, .base = base, .size = size};
 }

@@ -24,7 +24,7 @@ typedef struct {
     bool sign_ext;
     size_t width;
     uint64_t reg;
-    uint64_t reg_width;
+    size_t reg_width;
 } emul_access_t;
 
 typedef bool (*emul_handler_t)(emul_access_t*);
@@ -32,7 +32,7 @@ typedef bool (*emul_handler_t)(emul_access_t*);
 typedef struct {
     uint64_t va_base;
     uint64_t pa_base;
-    uint64_t size;
+    size_t size;
     uint64_t flags;
     emul_handler_t handler;
 } emul_mem_t;

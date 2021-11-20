@@ -44,7 +44,7 @@ typedef struct {
 
 extern volatile plic_global_t plic_global;
 extern volatile plic_hart_t plic_hart[PLIC_PLAT_CNTXT_NUM];
-extern int PLIC_IMPL_INTERRUPTS;
+extern size_t PLIC_IMPL_INTERRUPTS;
 
 void plic_init();
 void plic_cpu_init();

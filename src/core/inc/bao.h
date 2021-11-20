@@ -25,6 +25,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+typedef signed long ssize_t;
+
 #include <printk.h>
 #include <util.h>
 

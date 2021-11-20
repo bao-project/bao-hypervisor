@@ -35,12 +35,12 @@ typedef struct {
 
     /* For easier book keeping */
     spinlock_t sme_lock;
-    uint32_t sme_num;
+    size_t sme_num;
     BITMAP_ALLOC(sme_bitmap, SME_MAX_NUM);
     BITMAP_ALLOC(grp_bitmap, SME_MAX_NUM);
 
     spinlock_t ctx_lock;
-    int32_t ctx_num;
+    size_t ctx_num;
     BITMAP_ALLOC(ctxbank_bitmap, CTX_MAX_NUM);
 } smmu_priv_t;
 
@@ -52,7 +52,7 @@ smmu_priv_t smmu;
  * @sme: starting point of the loop cursor
  */
 #define smmu_for_each_sme(sme)                                             \
-    for (int __bit = bitmap_get(smmu.sme_bitmap, sme); sme < smmu.sme_num; \
+    for (size_t __bit = bitmap_get(smmu.sme_bitmap, sme); sme < smmu.sme_num; \
          __bit = bitmap_get(smmu.sme_bitmap, ++sme))                       \
         if (!__bit)                                                        \
             continue;                                                      \
@@ -61,22 +61,22 @@ smmu_priv_t smmu;
 /**
  * Accessors inline functions.
  */
-inline bool smmu_sme_is_group(uint32_t sme)
+inline bool smmu_sme_is_group(size_t sme)
 {
     return bitmap_get(smmu.grp_bitmap, sme);
 }
 
-inline uint32_t smmu_sme_get_ctx(uint32_t sme)
+inline size_t smmu_sme_get_ctx(size_t sme)
 {
     return S2CR_CBNDX(smmu.hw.glbl_rs0->S2CR[sme]);
 }
 
-inline uint16_t smmu_sme_get_id(uint32_t sme)
+inline uint16_t smmu_sme_get_id(size_t sme)
 {
     return SMMU_SMR_ID(smmu.hw.glbl_rs0->SMR[sme]);
 }
 
-inline uint16_t smmu_sme_get_mask(uint32_t sme)
+inline uint16_t smmu_sme_get_mask(size_t sme)
 {
     return SMMU_SMR_MASK(smmu.hw.glbl_rs0->SMR[sme]);
 }
@@ -115,11 +115,11 @@ static void smmu_check_features()
         ERROR("smmuv2 does not support 4kb page granule");
     }
 
-    int pasize = bit_extract(smmu.hw.glbl_rs0->IDR2, SMMUV2_IDR2_OAS_OFF,
+    size_t pasize = bit_extract(smmu.hw.glbl_rs0->IDR2, SMMUV2_IDR2_OAS_OFF,
                              SMMUV2_IDR2_OAS_LEN);
-    int ipasize = bit_extract(smmu.hw.glbl_rs0->IDR2, SMMUV2_IDR2_IAS_OFF,
+    size_t ipasize = bit_extract(smmu.hw.glbl_rs0->IDR2, SMMUV2_IDR2_IAS_OFF,
                               SMMUV2_IDR2_IAS_LEN);
-    int parange = 0;
+    size_t parange = 0;
     parange = MRS(ID_AA64MMFR0_EL1);
     parange &= ID_AA64MMFR0_PAR_MSK;
 
@@ -143,13 +143,13 @@ void smmu_init()
     mem_map_dev(&cpu.as, smmu_glbl_rs0, platform.arch.smmu.base,
                 NUM_PAGES(sizeof(smmu_glbl_rs0_t)));
 
-    uint32_t pg_size =
+    size_t pg_size =
         smmu_glbl_rs0->IDR1 & SMMUV2_IDR1_PAGESIZE_BIT ? 0x10000 : 0x1000;
-    uint32_t num_page =
+    size_t num_page =
         1ULL << (bit_extract(smmu_glbl_rs0->IDR1, SMMUV2_IDR1_NUMPAGEDXB_OFF,
                              SMMUV2_IDR1_NUMPAGEDXB_LEN) +
                  1);
-    int32_t ctx_bank_num = bit_extract(
+    size_t ctx_bank_num = bit_extract(
         smmu_glbl_rs0->IDR1, SMMUV2_IDR1_NUMCB_OFF, SMMUV2_IDR1_NUMCB_LEN);
 
     smmu_glbl_rs1_t *smmu_glbl_rs1 = mem_alloc_vpage(
@@ -183,11 +183,11 @@ void smmu_init()
     smmu_glbl_rs0->GFSR = smmu_glbl_rs0->GFSR;
     smmu_glbl_rs0->NSGFSR = smmu_glbl_rs0->NSGFSR;
 
-    for (int i = 0; i < smmu.sme_num; i++) {
+    for (size_t i = 0; i < smmu.sme_num; i++) {
         smmu_glbl_rs0->SMR[i] = 0;
     }
 
-    for (int i = 0; i < smmu.ctx_num; i++) {
+    for (size_t i = 0; i < smmu.ctx_num; i++) {
         smmu_cntxt[i].SCTLR = 0;
         smmu_cntxt[i].FSR = -1;
     }
@@ -200,11 +200,11 @@ void smmu_init()
     smmu.hw.glbl_rs0->CR0 = cr0;
 }
 
-int smmu_alloc_ctxbnk()
+ssize_t smmu_alloc_ctxbnk()
 {
     spin_lock(&smmu.ctx_lock);
     /* Find a free context bank. */
-    int nth = bitmap_find_nth(smmu.ctxbank_bitmap, smmu.ctx_num, 1, 0, false);
+    ssize_t nth = bitmap_find_nth(smmu.ctxbank_bitmap, smmu.ctx_num, 1, 0, false);
     if (nth >= 0) {
         bitmap_set(smmu.ctxbank_bitmap, nth);
     }
@@ -213,9 +213,9 @@ int smmu_alloc_ctxbnk()
     return nth;
 }
 
-static int smmu_cb_ttba_offset(int t0sz)
+static size_t smmu_cb_ttba_offset(size_t t0sz)
 {
-    int offset = 12;
+    size_t offset = 12;
 
     if (parange_table[parange] < 44) {
         /* SMMUV2_TCR_SL0_1 */
@@ -232,7 +232,7 @@ static int smmu_cb_ttba_offset(int t0sz)
     return offset;
 }
 
-void smmu_write_ctxbnk(int32_t ctx_id, void *root_pt, uint32_t vm_id)
+void smmu_write_ctxbnk(size_t ctx_id, void *root_pt, uint32_t vm_id)
 {
     spin_lock(&smmu.ctx_lock);
     if (!bitmap_get(smmu.ctxbank_bitmap, ctx_id)) {
@@ -248,7 +248,7 @@ void smmu_write_ctxbnk(int32_t ctx_id, void *root_pt, uint32_t vm_id)
          * smmu context.
          */
         uint32_t tcr = ((parange << SMMUV2_TCR_PS_OFF) & SMMUV2_TCR_PS_MSK);
-        int t0sz = 64 - parange_table[parange];
+        size_t t0sz = 64 - parange_table[parange];
         tcr |= SMMUV2_TCR_TG0_4K;
         tcr |= SMMUV2_TCR_ORGN0_WB_RA_WA;
         tcr |= SMMUV2_TCR_IRGN0_WB_RA_WA;
@@ -268,11 +268,11 @@ void smmu_write_ctxbnk(int32_t ctx_id, void *root_pt, uint32_t vm_id)
     spin_unlock(&smmu.ctx_lock);
 }
 
-int smmu_alloc_sme()
+ssize_t smmu_alloc_sme()
 {
     spin_lock(&smmu.sme_lock);
     /* Find a free sme. */
-    int nth = bitmap_find_nth(smmu.sme_bitmap, smmu.sme_num, 1, 0, false);
+    ssize_t nth = bitmap_find_nth(smmu.sme_bitmap, smmu.sme_num, 1, 0, false);
     spin_unlock(&smmu.sme_lock);
 
     return nth;
@@ -292,11 +292,11 @@ int smmu_alloc_sme()
  * This function searches for existing smes that are compatible for merging
  * with the new sme, raising an ERROR when conflicting attributes are found.
  */
-bool smmu_compatible_sme_exists(uint16_t mask, uint16_t id, uint32_t ctx,
+bool smmu_compatible_sme_exists(uint16_t mask, uint16_t id, size_t ctx,
                                 bool group)
 {
     bool included = false;
-    uint32_t sme = 0;
+    size_t sme = 0;
 
     spin_lock(&smmu.sme_lock);
     smmu_for_each_sme(sme)
@@ -335,7 +335,7 @@ bool smmu_compatible_sme_exists(uint16_t mask, uint16_t id, uint32_t ctx,
     return included;
 }
 
-void smmu_write_sme(uint32_t sme, uint16_t mask, uint16_t id, bool group)
+void smmu_write_sme(size_t sme, uint16_t mask, uint16_t id, bool group)
 {
     spin_lock(&smmu.sme_lock);
     if (bitmap_get(smmu.sme_bitmap, sme)) {
@@ -353,7 +353,7 @@ void smmu_write_sme(uint32_t sme, uint16_t mask, uint16_t id, bool group)
     spin_unlock(&smmu.sme_lock);
 }
 
-void smmu_write_s2c(uint32_t sme, int32_t ctx_id)
+void smmu_write_s2c(size_t sme, size_t ctx_id)
 {
     spin_lock(&smmu.sme_lock);
     if (!bitmap_get(smmu.sme_bitmap, sme)) {

@@ -23,7 +23,7 @@
 typedef struct ipc {
     uint64_t base;
     size_t size;
-    uint64_t shmem_id;
+    size_t shmem_id;
     size_t interrupt_num;
     uint64_t *interrupts;
 } ipc_t;
@@ -32,6 +32,6 @@ typedef struct vm_config vm_config_t;
 
 int64_t ipc_hypercall(uint64_t arg0, uint64_t arg1, uint64_t arg2);
 void ipc_init(const vm_config_t* vm_config, bool vm_master);
-shmem_t* ipc_get_shmem(uint64_t shmem_id);
+shmem_t* ipc_get_shmem(size_t shmem_id);
 
 #endif /* IPC_H */

@@ -67,7 +67,7 @@ void vmm_init()
     /**
      * Assign cpus according to vm affinity.
      */
-    for (int i = 0; i < vm_config_ptr->vmlist_size && !assigned; i++) {
+    for (size_t i = 0; i < vm_config_ptr->vmlist_size && !assigned; i++) {
         if (vm_config_ptr->vmlist[i].cpu_affinity & (1UL << cpu.id)) {
             spin_lock(&vm_assign[i].lock);
             if (!vm_assign[i].master) {
@@ -94,7 +94,7 @@ void vmm_init()
      * Assign remaining cpus not assigned by affinity.
      */
     if (assigned == false) {
-        for (int i = 0; i < vm_config_ptr->vmlist_size && !assigned; i++) {
+        for (size_t i = 0; i < vm_config_ptr->vmlist_size && !assigned; i++) {
             spin_lock(&vm_assign[i].lock);
             if (vm_assign[i].ncpus <
                 vm_config_ptr->vmlist[i].platform.cpu_num) {

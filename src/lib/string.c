@@ -15,9 +15,9 @@
 
 #include <string.h>
 
-void *memcpy(void *dst, const void *src, uint32_t count)
+void *memcpy(void *dst, const void *src, size_t count)
 {
-    int32_t i;
+    size_t i;
     uint8_t *dst_tmp = dst;
     const uint8_t *src_tmp = src;
 
@@ -42,7 +42,7 @@ void *memcpy(void *dst, const void *src, uint32_t count)
     return dst;
 }
 
-void *memset(void *dest, uint32_t c, uint32_t count)
+void *memset(void *dest, uint32_t c, size_t count)
 {
     uint8_t *d;
     d = (uint8_t *)dest;
@@ -65,7 +65,7 @@ char *strcat(char *dest, char *src)
     return (save);
 }
 
-uint32_t strlen(const char *s)
+size_t strlen(const char *s)
 {
     const char *sc;
     for (sc = s; *sc != '\0'; ++sc) {
@@ -74,7 +74,7 @@ uint32_t strlen(const char *s)
     return sc - s;
 }
 
-uint32_t strnlen(const char *s, size_t n)
+size_t strnlen(const char *s, size_t n)
 {
     const char *str;
 

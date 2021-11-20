@@ -40,21 +40,21 @@ page_table_dscr_t* hyp_pt_dscr = &sv39_pt_dscr;
 page_table_dscr_t* vm_pt_dscr = &sv39x4_pt_dscr;
 #endif
 
-pte_t* pt_get_pte(page_table_t* pt, uint64_t lvl, void* va)
+pte_t* pt_get_pte(page_table_t* pt, size_t lvl, void* va)
 {
     pte_t* pte = &(pt->root[PTE_INDEX(0, (uintptr_t)va)]);
 
-    for (int i = 0; i < lvl; i++) {
+    for (size_t i = 0; i < lvl; i++) {
         if (!pte_valid(pte)) return NULL;
         pte = (pte_t*)pte_addr(pte);
-        int index = PTE_INDEX(i + 1, (uintptr_t)va);
+        size_t index = PTE_INDEX(i + 1, (uintptr_t)va);
         pte = &pte[index];
     }
 
     return pte;
 }
 
-pte_t* pt_get(page_table_t* pt, uint64_t lvl, void* va)
+pte_t* pt_get(page_table_t* pt, size_t lvl, void* va)
 {
     uintptr_t pte = (uintptr_t)pt_get_pte(pt, lvl, va);
     return (pte_t*)(pte & ~(PAGE_SIZE - 1));

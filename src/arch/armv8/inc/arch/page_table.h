@@ -131,12 +131,12 @@
 #ifndef __ASSEMBLER__
 
     typedef uint64_t pte_t;
-extern uint64_t parange;
-extern uint64_t parange_table[];
+extern size_t parange;
+extern size_t parange_table[];
 
 typedef struct page_table page_table_t;
 
-void pt_set_recursive(page_table_t* pt, uint64_t index);
+void pt_set_recursive(page_table_t* pt, size_t index);
 
 static inline void pte_set(pte_t* pte, uint64_t addr, uint64_t type,
                            uint64_t flags)

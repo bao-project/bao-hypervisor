@@ -42,7 +42,7 @@ typedef struct vm {
     uint64_t master;
 
     list_t vcpu_list;
-    uint64_t cpu_num;
+    size_t cpu_num;
     uint64_t cpus;
 
     addr_space_t as;

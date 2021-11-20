@@ -62,7 +62,7 @@ void vm_vcpu_init(vm_t* vm, const vm_config_t* config)
     vcpu->phys_id = cpu.id;
     vcpu->vm = vm;
 
-    uint64_t count = 0, offset = 0;
+    size_t count = 0, offset = 0;
     while (count < vm->cpu_num) {
         if (offset == cpu.id) {
             vcpu->id = count;
@@ -96,8 +96,8 @@ static void vm_copy_img_to_rgn(vm_t* vm, const vm_config_t* config,
     }
 
     /* map new address */
-    uint64_t offset = config->image.base_addr - reg->base;
-    uint64_t dst_phys = reg->phys + offset;
+    size_t offset = config->image.base_addr - reg->base;
+    size_t dst_phys = reg->phys + offset;
     ppages_t dst_pp = mem_ppages_get(dst_phys, n_img);
     void* dst_va = mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL, NULL, n_img);
     if (mem_map(&cpu.as, dst_va, &dst_pp, n_img, PTE_HYP_FLAGS)) {
@@ -175,7 +175,7 @@ static void vm_map_img_rgn(vm_t* vm, const vm_config_t* config,
 
 static void vm_init_mem_regions(vm_t* vm, const vm_config_t* config)
 {
-    for (int i = 0; i < config->platform.region_num; i++) {
+    for (size_t i = 0; i < config->platform.region_num; i++) {
         struct mem_region* reg = &config->platform.regions[i];
         int img_is_in_rgn = range_in_range(
             config->image.base_addr, config->image.size, reg->base, reg->size);
@@ -191,7 +191,7 @@ static void vm_init_ipc(vm_t* vm, const vm_config_t* config)
 {
     vm->ipc_num = config->platform.ipc_num;
     vm->ipcs = config->platform.ipcs;
-    for (int i = 0; i < config->platform.ipc_num; i++) {
+    for (size_t i = 0; i < config->platform.ipc_num; i++) {
         ipc_t *ipc = &config->platform.ipcs[i];
         shmem_t *shmem = ipc_get_shmem(ipc->shmem_id);
         if(shmem == NULL) {
@@ -217,7 +217,7 @@ static void vm_init_ipc(vm_t* vm, const vm_config_t* config)
 
 static void vm_init_dev(vm_t* vm, const vm_config_t* config)
 {
-    for (int i = 0; i < config->platform.dev_num; i++) {
+    for (size_t i = 0; i < config->platform.dev_num; i++) {
         struct dev_region* dev = &config->platform.devs[i];
 
         size_t n = ALIGN(dev->size, PAGE_SIZE) / PAGE_SIZE;
@@ -225,14 +225,14 @@ static void vm_init_dev(vm_t* vm, const vm_config_t* config)
         void* va = mem_alloc_vpage(&vm->as, SEC_VM_ANY, (void*)dev->va, n);
         mem_map_dev(&vm->as, va, dev->pa, n);
 
-        for (int j = 0; j < dev->interrupt_num; j++) {
+        for (size_t j = 0; j < dev->interrupt_num; j++) {
             interrupts_vm_assign(vm, dev->interrupts[j]);
         }
     }
 
     /* iommu */
     if (iommu_vm_init(vm, config) >= 0) {
-        for (int i = 0; i < config->platform.dev_num; i++) {
+        for (size_t i = 0; i < config->platform.dev_num; i++) {
             struct dev_region* dev = &config->platform.devs[i];
             if (dev->id) {
                 if(iommu_vm_add_device(vm, dev->id) < 0){
@@ -361,7 +361,7 @@ emul_handler_t vm_emul_get_reg(vm_t* vm, uint64_t addr)
 
 void vm_msg_broadcast(vm_t* vm, cpu_msg_t* msg)
 {
-    for (int i = 0, n = 0; n < vm->cpu_num - 1; i++) {
+    for (size_t i = 0, n = 0; n < vm->cpu_num - 1; i++) {
         if (((1U << i) & vm->cpus) && (i != cpu.id)) {
             n++;
             cpu_send_msg(i, msg);
@@ -375,7 +375,7 @@ __attribute__((weak)) uint64_t vm_translate_to_pcpu_mask(vm_t* vm,
 {
     uint64_t pmask = 0;
     int shift;
-    for (int i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i++) {
         if ((mask & (1ULL << i)) &&
             ((shift = vm_translate_to_pcpuid(vm, i)) >= 0)) {
             pmask |= (1ULL << shift);
@@ -390,7 +390,7 @@ __attribute__((weak)) uint64_t vm_translate_to_vcpu_mask(vm_t* vm,
 {
     uint64_t pmask = 0;
     int shift;
-    for (int i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i++) {
         if ((mask & (1ULL << i)) &&
             ((shift = vm_translate_to_vcpuid(vm, i)) >= 0)) {
             pmask |= (1ULL << shift);

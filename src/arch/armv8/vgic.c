@@ -134,7 +134,7 @@ void vgic_send_sgi_msg(vcpu_t *vcpu, uint64_t pcpu_mask, uint64_t int_id)
         VGIC_IPI_ID, VGIC_INJECT,
         VGIC_MSG_DATA(cpu.vcpu->vm->id, 0, int_id, 0, cpu.vcpu->id)};
 
-    for (int i = 0; i < platform.cpu_num; i++) {
+    for (size_t i = 0; i < platform.cpu_num; i++) {
         if (pcpu_mask & (1ull << i)) {
             cpu_send_msg(i, &msg);
         }
@@ -158,7 +158,7 @@ void vgic_route(vcpu_t *vcpu, vgic_int_t *interrupt)
         vgic_yield_ownership(vcpu, interrupt);
         uint64_t trgtlist =
             vgic_int_ptarget_mask(vcpu, interrupt) & ~(1ull << vcpu->phys_id);
-        for (int i = 0; i < platform.cpu_num; i++) {
+        for (size_t i = 0; i < platform.cpu_num; i++) {
             if (trgtlist & (1ull << i)) {
                 cpu_send_msg(i, &msg);
             }
@@ -167,7 +167,7 @@ void vgic_route(vcpu_t *vcpu, vgic_int_t *interrupt)
 }
 
 static inline void vgic_write_lr(vcpu_t *vcpu, vgic_int_t *interrupt,
-                                 uint64_t lr_ind)
+                                 size_t lr_ind)
 {
     uint64_t prev_int_id = vcpu->arch.vgic_priv.curr_lrs[lr_ind];
 
@@ -211,7 +211,7 @@ static inline void vgic_write_lr(vcpu_t *vcpu, vgic_int_t *interrupt,
             lr |= (interrupt->sgi.act << GICH_LR_CPUID_OFF) & GICH_LR_CPUID_MSK;
             lr |= GICH_LR_STATE_ACT;
         } else {
-            for (int i = GIC_MAX_TARGETS - 1; i >= 0; i--) {
+            for (ssize_t i = GIC_MAX_TARGETS - 1; i >= 0; i--) {
                 if (interrupt->sgi.pend & (1U << i)) {
                     lr |= (i << GICH_LR_CPUID_OFF) & GICH_LR_CPUID_MSK;
                     interrupt->sgi.pend &= ~(1U << i);
@@ -252,7 +252,7 @@ bool vgic_remove_lr(vcpu_t *vcpu, vgic_int_t *interrupt)
     }
 
     uint64_t lr_val = 0;
-    int64_t lr_ind = -1;
+    ssize_t lr_ind = -1;
     if ((lr_ind = gich_get_lr(interrupt, &lr_val)) >= 0) {
         gich_write_lr(lr_ind, 0);
     }
@@ -288,9 +288,9 @@ bool vgic_add_lr(vcpu_t *vcpu, vgic_int_t *interrupt)
         return ret;
     }
 
-    int64_t lr_ind = -1;
+    ssize_t lr_ind = -1;
     uint64_t elrsr = gich_get_elrsr();
-    for (int i = 0; i < NUM_LRS; i++) {
+    for (size_t i = 0; i < NUM_LRS; i++) {
         if (bit_get(elrsr, i)) {
             lr_ind = i;
             break;
@@ -299,10 +299,10 @@ bool vgic_add_lr(vcpu_t *vcpu, vgic_int_t *interrupt)
 
     if (lr_ind < 0) {
         uint64_t min_prio_pend = 0, min_prio_act = 0;
-        uint64_t pend_found = 0, act_found = 0;
-        int64_t pend_ind = -1, act_ind = -1;
+        size_t pend_found = 0, act_found = 0;
+        ssize_t pend_ind = -1, act_ind = -1;
 
-        for (int i = 0; i < NUM_LRS; i++) {
+        for (size_t i = 0; i < NUM_LRS; i++) {
             uint64_t lr = gich_read_lr(i);
             uint64_t lr_prio = (lr & GICH_LR_PRIO_MSK) >> GICH_LR_PRIO_OFF;
             uint64_t lr_state = (lr & GICH_LR_STATE_MSK);
@@ -637,7 +637,7 @@ void vgic_emul_generic_access(emul_access_t *acc,
                               bool gicr_access, uint64_t vgicr_id)
 {
     size_t field_width = handlers->field_width;
-    uint64_t first_int =
+    size_t first_int =
         (GICD_REG_MASK(acc->addr) - handlers->regroup_base) * 8 / field_width;
     uint64_t val = acc->write ? vcpu_readreg(cpu.vcpu, acc->reg) : 0;
     uint64_t mask = (1ull << field_width) - 1;
@@ -645,7 +645,7 @@ void vgic_emul_generic_access(emul_access_t *acc,
         (GIC_VERSION == GICV2) || !(gicr_access ^ gic_is_priv(first_int));
 
     if (valid_access) {
-        for (int i = 0; i < ((acc->width * 8) / field_width); i++) {
+        for (size_t i = 0; i < ((acc->width * 8) / field_width); i++) {
             vgic_int_t *interrupt =
                 vgic_get_int(cpu.vcpu, first_int + i, vgicr_id);
             if (interrupt == NULL) break;
@@ -846,7 +846,7 @@ bool vgicd_emul_handler(emul_access_t *acc)
             handler_info = &sgir_info;
             break;
         default: {
-            uint64_t acc_off = GICD_REG_MASK(acc->addr);
+            size_t acc_off = GICD_REG_MASK(acc->addr);
             if (GICD_IS_REG(IPRIORITYR, acc_off)) {
                 handler_info = &ipriorityr_info;
             } else if (GICD_IS_REG(ITARGETSR, acc_off)) {
@@ -944,7 +944,7 @@ void vgic_ipi_handler(uint32_t event, uint64_t data)
 void vgic_refill_lrs(vcpu_t *vcpu)
 {
     bool has_pend = false;
-    for (int i = 0; i < NUM_LRS; i++) {
+    for (size_t i = 0; i < NUM_LRS; i++) {
         uint64_t lr = gich_read_lr(i);
         if (GICH_LR_STATE(lr) & PEND) {
             has_pend = true;
@@ -965,7 +965,7 @@ void vgic_refill_lrs(vcpu_t *vcpu)
         bool prev_pend = false;
         uint8_t prev_prio = GIC_LOWEST_PRIO;
 
-        for (int i = 0; i < gic_num_irqs(); i++) {
+        for (size_t i = 0; i < gic_num_irqs(); i++) {
             vgic_int_t *temp_int = vgic_get_int(vcpu, i, vcpu->id);
             if (temp_int == NULL) break;
             spin_lock(&temp_int->lock);
@@ -1009,7 +1009,7 @@ void vgic_refill_lrs(vcpu_t *vcpu)
 void vgic_eoir_highest_spilled_active(vcpu_t *vcpu)
 {
     vgic_int_t *interrupt = NULL;
-    for (int i = 0; i < gic_num_irqs(); i++) {
+    for (size_t i = 0; i < gic_num_irqs(); i++) {
         vgic_int_t *temp_int = vgic_get_int(vcpu, i, vcpu->id);
         if (temp_int == NULL) break;
 
@@ -1088,7 +1088,7 @@ void gic_maintenance_handler(uint64_t arg)
     }
 }
 
-uint64_t vgic_get_itln(const struct gic_dscrp *gic_dscrp) {
+size_t vgic_get_itln(const struct gic_dscrp *gic_dscrp) {
 
     /**
      * By default the guest sees the real platforms interrupt line number
@@ -1097,7 +1097,7 @@ uint64_t vgic_get_itln(const struct gic_dscrp *gic_dscrp) {
      * least the number os ppis and a multiple of 32.
      */
 
-    uint64_t vtyper_itln =
+    size_t vtyper_itln =
         bit_extract(gicd.TYPER, GICD_TYPER_ITLN_OFF, GICD_TYPER_ITLN_LEN);
 
     if(gic_dscrp->interrupt_num > GIC_MAX_PPIS) {

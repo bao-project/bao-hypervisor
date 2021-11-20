@@ -388,16 +388,16 @@ typedef struct {
 
 void smmu_init();
 
-int smmu_alloc_ctxbnk();
-int smmu_alloc_sme();
-void smmu_write_ctxbnk(int32_t ctx_id, void *root_pt, uint32_t vm_id);
-void smmu_write_sme(uint32_t sme, uint16_t mask, uint16_t id, bool group);
-void smmu_write_s2c(uint32_t sme, int32_t ctx_id);
-uint32_t smmu_sme_get_ctx(uint32_t sme);
-uint16_t smmu_sme_get_id(uint32_t sme);
-uint16_t smmu_sme_get_mask(uint32_t sme);
-bool smmu_sme_is_group(uint32_t sme);
-bool smmu_compatible_sme_exists(uint16_t mask, uint16_t id, uint32_t ctx,
+ssize_t smmu_alloc_ctxbnk();
+ssize_t smmu_alloc_sme();
+void smmu_write_ctxbnk(size_t ctx_id, void *root_pt, uint32_t vm_id);
+void smmu_write_sme(size_t sme, uint16_t mask, uint16_t id, bool group);
+void smmu_write_s2c(size_t sme, size_t ctx_id);
+size_t smmu_sme_get_ctx(size_t sme);
+uint16_t smmu_sme_get_id(size_t sme);
+uint16_t smmu_sme_get_mask(size_t sme);
+bool smmu_sme_is_group(size_t sme);
+bool smmu_compatible_sme_exists(uint16_t mask, uint16_t id, size_t ctx,
                                 bool group);
 
 #endif

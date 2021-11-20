@@ -408,7 +408,7 @@ typedef struct {
     uint32_t LR[GIC_NUM_LIST_REGS];
 } gicc_state_t;
 
-extern uint64_t NUM_LRS;
+extern size_t NUM_LRS;
 
 void gic_init();
 void gic_cpu_init();
@@ -457,14 +457,14 @@ void gic_maintenance_handler(uint64_t arg);
 extern volatile gicd_t gicd;
 extern volatile gicr_t *gicr;
 
-uint64_t gich_num_lrs();
+size_t gich_num_lrs();
 uint32_t gicc_iar();
 void gicc_eoir(uint32_t eoir);
 void gicc_dir(uint32_t dir);
 
-static inline uint64_t gic_num_irqs()
+static inline size_t gic_num_irqs()
 {
-    uint32_t itlinenumber =
+    size_t itlinenumber =
         bit_extract(gicd.TYPER, GICD_TYPER_ITLN_OFF, GICD_TYPER_ITLN_LEN);
     return 32 * itlinenumber + 1;
 }

@@ -33,7 +33,7 @@ void cache_arch_enumerate(cache_t* dscrp)
     *dscrp = platform.cache;
 }
 
-__attribute__((weak)) void cache_flush_range(void* base, uint64_t size)
+__attribute__((weak)) void cache_flush_range(void* base, size_t size)
 {
     /**
      * A platform must define its custom cache flush operation, otherwise

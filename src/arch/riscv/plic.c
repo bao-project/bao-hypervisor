@@ -17,7 +17,7 @@
 #include <interrupts.h>
 #include <cpu.h>
 
-int PLIC_IMPL_INTERRUPTS;
+size_t PLIC_IMPL_INTERRUPTS;
 
 volatile plic_global_t plic_global
     __attribute__((section(".devices")));
@@ -25,10 +25,10 @@ volatile plic_global_t plic_global
 volatile plic_hart_t plic_hart[PLIC_PLAT_CNTXT_NUM]
     __attribute__((section(".devices")));
 
-static int plic_scan_max_int()
+static size_t plic_scan_max_int()
 {
-    int res = 0;
-    for (int i = 1; i < PLIC_MAX_INTERRUPTS; i++) {
+    size_t res = 0;
+    for (size_t i = 1; i < PLIC_MAX_INTERRUPTS; i++) {
         plic_global.prio[i] = -1;
         if (plic_global.prio[i] == 0) {
             res = i - 1;
@@ -43,12 +43,12 @@ void plic_init()
 {
     PLIC_IMPL_INTERRUPTS = plic_scan_max_int();
 
-    for (int i = 0; i <= PLIC_IMPL_INTERRUPTS; i++) {
+    for (size_t i = 0; i <= PLIC_IMPL_INTERRUPTS; i++) {
         plic_global.prio[i] = 0;
     }
 
-    for (int i = 0; i < PLIC_PLAT_CNTXT_NUM; i++) {
-        for (int j = 0; j < PLIC_NUM_ENBL_REGS; j++) {
+    for (size_t i = 0; i < PLIC_PLAT_CNTXT_NUM; i++) {
+        for (size_t j = 0; j < PLIC_NUM_ENBL_REGS; j++) {
             plic_global.enbl[i][j] = 0;
         }
     }

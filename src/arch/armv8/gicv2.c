@@ -29,9 +29,9 @@ volatile gich_t gich __attribute__((section(".devices"), aligned(PAGE_SIZE)));
 
 static uint64_t gic_cpu_map[GIC_MAX_TARGETS];
 
-uint64_t NUM_LRS;
+size_t NUM_LRS;
 
-uint64_t gich_num_lrs()
+size_t gich_num_lrs()
 {
     return ((gich.VTR & GICH_VTR_MSK) >> GICH_VTR_OFF) + 1;
 }
@@ -85,7 +85,7 @@ uint64_t gich_get_elrsr()
 
 static inline void gicc_init()
 {
-    for (int i = 0; i < gich_num_lrs(); i++) {
+    for (size_t i = 0; i < gich_num_lrs(); i++) {
         gich.LR[i] = 0;
     }
 
@@ -95,7 +95,7 @@ static inline void gicc_init()
     gich.HCR |= GICH_HCR_LRENPIE_BIT;
     
     uint64_t sgi_targets = gicd.ITARGETSR[0] & BIT_MASK(0, GIC_TARGET_BITS);
-    int64_t gic_cpu_id = 
+    ssize_t gic_cpu_id = 
         bitmap_find_nth((bitmap_t)&sgi_targets, GIC_TARGET_BITS, 1, 0, true);
     if(gic_cpu_id < 0) {
         ERROR("cant find gic cpu id");
@@ -115,12 +115,12 @@ void gicc_save_state(gicc_state_t *state)
     state->HPPIR = gicc.HPPIR;
     state->priv_ISENABLER = gicd.ISENABLER[0];
 
-    for (int i = 0; i < GIC_NUM_PRIO_REGS(GIC_CPU_PRIV); i++) {
+    for (size_t i = 0; i < GIC_NUM_PRIO_REGS(GIC_CPU_PRIV); i++) {
         state->priv_IPRIORITYR[i] = gicd.IPRIORITYR[i];
     }
 
     state->HCR = gich.HCR;
-    for (int i = 0; i < gich_num_lrs(); i++) {
+    for (size_t i = 0; i < gich_num_lrs(); i++) {
         state->LR[i] = gich.LR[i];
     }
 }
@@ -136,19 +136,19 @@ void gicc_restore_state(gicc_state_t *state)
     gicc.HPPIR = state->HPPIR;
     gicd.ISENABLER[0] = state->priv_ISENABLER;
 
-    for (int i = 0; i < GIC_NUM_PRIO_REGS(GIC_CPU_PRIV); i++) {
+    for (size_t i = 0; i < GIC_NUM_PRIO_REGS(GIC_CPU_PRIV); i++) {
         gicd.IPRIORITYR[i] = state->priv_IPRIORITYR[i];
     }
 
     gich.HCR = state->HCR;
-    for (int i = 0; i < gich_num_lrs(); i++) {
+    for (size_t i = 0; i < gich_num_lrs(); i++) {
         gich.LR[i] = state->LR[i];
     }
 }
 
 void gic_cpu_init()
 {
-    for (int i = 0; i < GIC_NUM_INT_REGS(GIC_CPU_PRIV); i++) {
+    for (size_t i = 0; i < GIC_NUM_INT_REGS(GIC_CPU_PRIV); i++) {
         /**
          * Make sure all private interrupts are not enabled, non pending,
          * non active.
@@ -159,11 +159,11 @@ void gic_cpu_init()
     }
 
     /* Clear any pending SGIs. */
-    for (int i = 0; i < GIC_NUM_SGI_REGS; i++) {
+    for (size_t i = 0; i < GIC_NUM_SGI_REGS; i++) {
         gicd.CPENDSGIR[i] = -1;
     }
 
-    for (int i = 0; i < GIC_NUM_PRIO_REGS(GIC_CPU_PRIV); i++) {
+    for (size_t i = 0; i < GIC_NUM_PRIO_REGS(GIC_CPU_PRIV); i++) {
         gicd.IPRIORITYR[i] = -1;
     }
 
@@ -203,7 +203,7 @@ void gic_send_sgi(uint64_t cpu_target, uint64_t sgi_num)
 
 static inline uint8_t gic_translate_cpu_to_trgt(uint8_t cpu_targets) {
     uint8_t gic_targets = 0;
-    for(int i = 0; i < GIC_MAX_TARGETS; i++) {
+    for(size_t i = 0; i < GIC_MAX_TARGETS; i++) {
         if((1 << i) & cpu_targets) {
             gic_targets |= (1 << gic_cpu_map[i]);
         }
@@ -213,8 +213,8 @@ static inline uint8_t gic_translate_cpu_to_trgt(uint8_t cpu_targets) {
 
 void gicd_set_trgt(uint64_t int_id, uint8_t cpu_targets)
 {
-    uint64_t reg_ind = GIC_TARGET_REG(int_id);
-    uint64_t off = GIC_TARGET_OFF(int_id);
+    size_t reg_ind = GIC_TARGET_REG(int_id);
+    size_t off = GIC_TARGET_OFF(int_id);
     uint32_t mask = BIT_MASK(off, GIC_TARGET_BITS);
 
     spin_lock(&gicd_lock);
@@ -263,8 +263,8 @@ void gic_set_enable(uint64_t int_id, bool en)
 void gic_set_pend(uint64_t int_id, bool pend)
 {
     if (gic_is_sgi(int_id)) {
-        uint64_t reg_ind = GICD_SGI_REG(int_id);
-        uint64_t off = GICD_SGI_OFF(int_id);
+        size_t reg_ind = GICD_SGI_REG(int_id);
+        size_t off = GICD_SGI_OFF(int_id);
 
         if (pend) {
             gicd.SPENDSGIR[reg_ind] = (1U) << (off + cpu.id);

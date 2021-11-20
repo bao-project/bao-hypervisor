@@ -29,7 +29,7 @@ void cpu_arch_init(uint64_t cpuid, uint64_t load_addr)
     if (cpuid == CPU_MASTER) {
         /* power on necessary, but still sleeping, secondary cpu cores
          * Assumes CPU zero is doing this */
-        for (int cpu_core_id = 0; cpu_core_id < platform.cpu_num;
+        for (size_t cpu_core_id = 0; cpu_core_id < platform.cpu_num;
              cpu_core_id++) {
             if(cpu_core_id == cpuid) continue;
             uint64_t mpdir = cpu_id_to_mpidr(cpu_core_id);

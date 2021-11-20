@@ -65,24 +65,24 @@ static inline void bitmap_clear_consecutive(bitmap_t map, size_t start,
     for (size_t i = 0; i < n; i++) bitmap_clear(map, start + i);
 }
 
-static inline uint64_t bitmap_count(bitmap_t map, size_t start, size_t n,
+static inline size_t bitmap_count(bitmap_t map, size_t start, size_t n,
                                     bool set)
 {
-    uint64_t count = 0;
-    for (int i = start; i < n; i++) {
+    size_t count = 0;
+    for (size_t i = start; i < n; i++) {
         if (bitmap_get(map, i) == set) count++;
     }
 
     return count;
 }
 
-int64_t bitmap_find_nth(bitmap_t map, size_t size, size_t nth, size_t start,
+ssize_t bitmap_find_nth(bitmap_t map, size_t size, size_t nth, size_t start,
                         bool set);
 
 size_t bitmap_count_consecutive(bitmap_t map, size_t size, size_t start,
                                 size_t n);
 
-uint64_t bitmap_find_consec(bitmap_t map, size_t size, size_t start, size_t n,
+ssize_t bitmap_find_consec(bitmap_t map, size_t size, size_t start, size_t n,
                             bool set);
 
 #endif /* __BITMAP_H__ */

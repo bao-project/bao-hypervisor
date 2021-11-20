@@ -101,7 +101,7 @@ static int vplic_next_pending(vcpu_t *vcpu, int vcntxt)
     uint32_t max_prio = 0;
     uint32_t int_id = 0;
 
-    for (int i = 0; i <= PLIC_MAX_INTERRUPTS; i++) {
+    for (size_t i = 0; i <= PLIC_MAX_INTERRUPTS; i++) {
         if (vplic_get_pend(vcpu, i) && !vplic_get_act(vcpu, i) && 
             vplic_get_enbl(vcpu, vcntxt, i)) {
 
@@ -191,7 +191,7 @@ static void vplic_set_prio(vcpu_t *vcpu, int id, uint32_t prio)
         if(vplic_get_hw(vcpu,id)){
             plic_set_prio(id, prio);
         } else {
-            for(int i = 0; i < vplic->cntxt_num; i++) {
+            for(size_t i = 0; i < vplic->cntxt_num; i++) {
                 if(plic_plat_id_to_cntxt(i).mode != PRIV_S) continue;
                 if(vplic_get_enbl(vcpu, i, id)) {
                     vplic_update_hart_line(vcpu, i);
@@ -240,7 +240,7 @@ void vplic_inject(vcpu_t *vcpu, int id)
             int vcntxt_id = plic_plat_cntxt_to_id(vcntxt);
             vplic_update_hart_line(vcpu, vcntxt_id);
         } else {
-            for(int i = 0; i < vplic->cntxt_num; i++) {
+            for(size_t i = 0; i < vplic->cntxt_num; i++) {
                 if(plic_plat_id_to_cntxt(i).mode != PRIV_S) continue;
                 if(vplic_get_enbl(vcpu, i, id) && 
                 vplic_get_prio(vcpu, id) > vplic_get_theshold(vcpu, i)) {
@@ -270,7 +270,7 @@ static void vplic_emul_pend_access(emul_access_t *acc)
     int first_int = ((acc->addr & 0xfff) / 4) * 32;
 
     uint32_t val = 0;
-    for (int i = 0; i < 32; i++) {
+    for (size_t i = 0; i < 32; i++) {
         if (vplic_get_pend(cpu.vcpu, first_int + i)) {
             val |= (1ULL << i);
         }
@@ -287,7 +287,7 @@ static void vplic_emul_enbl_access(emul_access_t *acc)
     int first_int = ((acc->addr & 0x7f) / 4) * 32;
     unsigned long val = acc->write ? vcpu_readreg(cpu.vcpu, acc->reg) : 0;
     if(vplic_vcntxt_valid(cpu.vcpu, vcntxt_id)) {
-        for (int i = 0; i < 32; i++) {
+        for (size_t i = 0; i < 32; i++) {
             if (acc->write) {
                 vplic_set_enbl(cpu.vcpu, vcntxt_id, first_int + i, val & (1U << i));
             } else {

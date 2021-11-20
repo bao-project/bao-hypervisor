@@ -27,7 +27,7 @@ void gicd_init()
     size_t int_num = gic_num_irqs();
 
     /* Bring distributor to known state */
-    for (int i = GIC_NUM_PRIVINT_REGS; i < GIC_NUM_INT_REGS(int_num); i++) {
+    for (size_t i = GIC_NUM_PRIVINT_REGS; i < GIC_NUM_INT_REGS(int_num); i++) {
         /**
          * Make sure all interrupts are not enabled, non pending,
          * non active.
@@ -38,14 +38,14 @@ void gicd_init()
     }
 
     /* All interrupts have lowest priority possible by default */
-    for (int i = GIC_NUM_PRIO_REGS(GIC_CPU_PRIV);
+    for (size_t i = GIC_NUM_PRIO_REGS(GIC_CPU_PRIV);
          i < GIC_NUM_PRIO_REGS(int_num); i++) {
         gicd.IPRIORITYR[i] = -1;
     }
 
     if (GIC_VERSION == GICV2) {
         /* No CPU targets for any interrupt by default */
-        for (int i = GIC_NUM_TARGET_REGS(GIC_CPU_PRIV);
+        for (size_t i = GIC_NUM_TARGET_REGS(GIC_CPU_PRIV);
              i < GIC_NUM_TARGET_REGS(int_num); i++) {
             gicd.ITARGETSR[i] = 0;
         }
@@ -54,7 +54,7 @@ void gicd_init()
         gicd.CTLR |= GICD_CTLR_EN_BIT;
 
     } else {
-        for (int i = GIC_CPU_PRIV; i < GIC_MAX_INTERUPTS; i++) {
+        for (size_t i = GIC_CPU_PRIV; i < GIC_MAX_INTERUPTS; i++) {
             gicd.IROUTER[i] = GICD_IROUTER_INV;
         }
 
@@ -99,8 +99,8 @@ void gic_handle()
 
 uint64_t gicd_get_prio(uint64_t int_id)
 {
-    uint64_t reg_ind = GIC_PRIO_REG(int_id);
-    uint64_t off = GIC_PRIO_OFF(int_id);
+    size_t reg_ind = GIC_PRIO_REG(int_id);
+    size_t off = GIC_PRIO_OFF(int_id);
 
     uint64_t prio =
         gicd.IPRIORITYR[reg_ind] >> off & BIT_MASK(off, GIC_PRIO_BITS);
@@ -110,8 +110,8 @@ uint64_t gicd_get_prio(uint64_t int_id)
 
 void gicd_set_icfgr(uint64_t int_id, uint8_t cfg)
 {
-    uint64_t reg_ind = (int_id * GIC_CONFIG_BITS) / (sizeof(uint32_t) * 8);
-    uint64_t off = (int_id * GIC_CONFIG_BITS) % (sizeof(uint32_t) * 8);
+    size_t reg_ind = (int_id * GIC_CONFIG_BITS) / (sizeof(uint32_t) * 8);
+    size_t off = (int_id * GIC_CONFIG_BITS) % (sizeof(uint32_t) * 8);
     uint64_t mask = ((1U << GIC_CONFIG_BITS) - 1) << off;
 
     spin_lock(&gicd_lock);
@@ -123,8 +123,8 @@ void gicd_set_icfgr(uint64_t int_id, uint8_t cfg)
 
 void gicd_set_prio(uint64_t int_id, uint8_t prio)
 {
-    uint64_t reg_ind = GIC_PRIO_REG(int_id);
-    uint64_t off = GIC_PRIO_OFF(int_id);
+    size_t reg_ind = GIC_PRIO_REG(int_id);
+    size_t off = GIC_PRIO_OFF(int_id);
     uint64_t mask = BIT_MASK(off, GIC_PRIO_BITS);
 
     spin_lock(&gicd_lock);
@@ -137,7 +137,7 @@ void gicd_set_prio(uint64_t int_id, uint8_t prio)
 
 void gicd_set_pend(uint64_t int_id, bool pend)
 {
-    uint64_t reg_ind = GIC_INT_REG(int_id);
+    size_t reg_ind = GIC_INT_REG(int_id);
     if (pend) {
         gicd.ISPENDR[reg_ind] = GIC_INT_MASK(int_id);
     } else {
@@ -152,7 +152,7 @@ bool gicd_get_pend(uint64_t int_id)
 
 void gicd_set_act(uint64_t int_id, bool act)
 {
-    uint64_t reg_ind = GIC_INT_REG(int_id);
+    size_t reg_ind = GIC_INT_REG(int_id);
 
     if (act) {
         gicd.ISACTIVER[reg_ind] = GIC_INT_MASK(int_id);
@@ -168,7 +168,7 @@ bool gicd_get_act(uint64_t int_id)
 
 void gicd_set_enable(uint64_t int_id, bool en)
 {
-    uint64_t reg_ind = GIC_INT_REG(int_id);
+    size_t reg_ind = GIC_INT_REG(int_id);
     uint64_t bit = GIC_INT_MASK(int_id);
 
     if (en) {
