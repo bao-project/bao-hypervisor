@@ -66,15 +66,15 @@ static inline bool pt_lvl_terminal(struct page_table* pt, size_t lvl)
 
 pte_t* pt_get_pte(struct page_table* pt, size_t lvl, vaddr_t va);
 pte_t* pt_get(struct page_table* pt, size_t lvl, vaddr_t va);
-void pte_set(pte_t* pte, paddr_t addr, uint64_t type, uint64_t flags);
+void pte_set(pte_t* pte, paddr_t addr, pte_t flags);
 
-void pte_set_rsw(pte_t* pte, uint64_t flag);
-bool pte_check_rsw(pte_t* pte, uint64_t flag);
+void pte_set_rsw(pte_t* pte, pte_t flag);
+bool pte_check_rsw(pte_t* pte, pte_t flag);
 
 bool pte_valid(pte_t* pte);
 bool pte_table(struct page_table* pt, pte_t* pte, size_t lvl);
 bool pte_page(struct page_table* pt, pte_t* pte, size_t lvl);
-uint64_t pt_pte_type(struct page_table* pt, size_t lvl);
+pte_t pt_pte_type(struct page_table* pt, size_t lvl);
 
 #endif /* __ASSEMBLER__ */
 
