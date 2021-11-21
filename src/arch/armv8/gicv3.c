@@ -202,7 +202,7 @@ void gicc_dir(uint32_t dir) {
     MSR(ICC_DIR_EL1, dir);
 }
 
-void gicr_set_prio(uint64_t int_id, uint8_t prio, uint32_t gicr_id)
+void gicr_set_prio(uint64_t int_id, uint8_t prio, cpuid_t gicr_id)
 {
     size_t reg_ind = GIC_PRIO_REG(int_id);
     size_t off = GIC_PRIO_OFF(int_id);
@@ -216,7 +216,7 @@ void gicr_set_prio(uint64_t int_id, uint8_t prio, uint32_t gicr_id)
     spin_unlock(&gicr_lock);
 }
 
-uint64_t gicr_get_prio(uint64_t int_id, uint32_t gicr_id)
+uint64_t gicr_get_prio(uint64_t int_id, cpuid_t gicr_id)
 {
     size_t reg_ind = GIC_PRIO_REG(int_id);
     size_t off = GIC_PRIO_OFF(int_id);
@@ -231,7 +231,7 @@ uint64_t gicr_get_prio(uint64_t int_id, uint32_t gicr_id)
     return prio;
 }
 
-void gicr_set_icfgr(uint64_t int_id, uint8_t cfg, uint32_t gicr_id)
+void gicr_set_icfgr(uint64_t int_id, uint8_t cfg, cpuid_t gicr_id)
 {
     size_t reg_ind = (int_id * GIC_CONFIG_BITS) / (sizeof(uint32_t) * 8);
     size_t off = (int_id * GIC_CONFIG_BITS) % (sizeof(uint32_t) * 8);
@@ -250,7 +250,7 @@ void gicr_set_icfgr(uint64_t int_id, uint8_t cfg, uint32_t gicr_id)
     spin_unlock(&gicr_lock);
 }
 
-void gicr_set_pend(uint64_t int_id, bool pend, uint32_t gicr_id)
+void gicr_set_pend(uint64_t int_id, bool pend, cpuid_t gicr_id)
 {
     spin_lock(&gicr_lock);
     if (pend) {
@@ -261,7 +261,7 @@ void gicr_set_pend(uint64_t int_id, bool pend, uint32_t gicr_id)
     spin_unlock(&gicr_lock);
 }
 
-bool gicr_get_pend(uint64_t int_id, uint32_t gicr_id)
+bool gicr_get_pend(uint64_t int_id, cpuid_t gicr_id)
 {
     if (gic_is_priv(int_id)) {
         return !!(gicr[gicr_id].ISPENDR0 & GIC_INT_MASK(int_id));
@@ -270,7 +270,7 @@ bool gicr_get_pend(uint64_t int_id, uint32_t gicr_id)
     }
 }
 
-void gicr_set_act(uint64_t int_id, bool act, uint32_t gicr_id)
+void gicr_set_act(uint64_t int_id, bool act, cpuid_t gicr_id)
 {
     spin_lock(&gicr_lock);
 
@@ -283,7 +283,7 @@ void gicr_set_act(uint64_t int_id, bool act, uint32_t gicr_id)
     spin_unlock(&gicr_lock);
 }
 
-bool gicr_get_act(uint64_t int_id, uint32_t gicr_id)
+bool gicr_get_act(uint64_t int_id, cpuid_t gicr_id)
 {
     if (gic_is_priv(int_id)) {
         return !!(gicr[gicr_id].ISACTIVER0 & GIC_INT_MASK(int_id));
@@ -292,7 +292,7 @@ bool gicr_get_act(uint64_t int_id, uint32_t gicr_id)
     }
 }
 
-void gicr_set_enable(uint64_t int_id, bool en, uint32_t gicr_id)
+void gicr_set_enable(uint64_t int_id, bool en, cpuid_t gicr_id)
 {
     uint64_t bit = GIC_INT_MASK(int_id);
 
@@ -315,7 +315,7 @@ void gicd_set_route(uint64_t int_id, uint64_t route)
     spin_unlock(&gicd_lock);
 }
 
-void gic_send_sgi(uint64_t cpu_target, uint64_t sgi_num)
+void gic_send_sgi(cpuid_t cpu_target, uint64_t sgi_num)
 {
     if (sgi_num < GIC_MAX_SGIS) {
         uint64_t mpidr = cpu_id_to_mpidr(cpu_target) & MPIDR_AFF_MSK;

@@ -20,10 +20,10 @@
 #include <page_table.h>
 #include <arch/sysregs.h>
 
-uint64_t CPU_MASTER __attribute__((section(".data")));
+cpuid_t CPU_MASTER __attribute__((section(".data")));
 
 /* Perform architecture dependent cpu cores initializations */
-void cpu_arch_init(uint64_t cpuid, paddr_t load_addr)
+void cpu_arch_init(cpuid_t cpuid, paddr_t load_addr)
 {   
     cpu.arch.mpidr = MRS(MPIDR_EL1);
     if (cpuid == CPU_MASTER) {
@@ -42,13 +42,13 @@ void cpu_arch_init(uint64_t cpuid, paddr_t load_addr)
     }
 }
 
-uint64_t cpu_id_to_mpidr(uint64_t id)
+uint64_t cpu_id_to_mpidr(cpuid_t id)
 {
     return platform_arch_cpuid_to_mpdir(&platform, id);
 }
 
 
-int64_t cpu_mpidr_to_id(uint64_t mpidr)
+cpuid_t cpu_mpidr_to_id(uint64_t mpidr)
 {
     return platform_arch_mpidr_to_cpuid(&platform, mpidr);
 }

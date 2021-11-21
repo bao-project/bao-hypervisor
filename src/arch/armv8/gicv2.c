@@ -27,7 +27,7 @@ extern spinlock_t gicd_lock;
 volatile struct gicc_hw gicc __attribute__((section(".devices"), aligned(PAGE_SIZE)));
 volatile struct gich_hw gich __attribute__((section(".devices"), aligned(PAGE_SIZE)));
 
-static uint64_t gic_cpu_map[GIC_MAX_TARGETS];
+static cpuid_t gic_cpu_map[GIC_MAX_TARGETS];
 
 size_t NUM_LRS;
 
@@ -101,7 +101,7 @@ static inline void gicc_init()
         ERROR("cant find gic cpu id");
     }
 
-    gic_cpu_map[cpu.id] = gic_cpu_id;
+    gic_cpu_map[cpu.id] = (cpuid_t)gic_cpu_id;
 }
 
 void gicc_save_state(struct gicc_state *state)
@@ -192,7 +192,7 @@ void gicc_dir(uint32_t dir) {
      gicc.DIR = dir;
 }
 
-void gic_send_sgi(uint64_t cpu_target, uint64_t sgi_num)
+void gic_send_sgi(cpuid_t cpu_target, uint64_t sgi_num)
 {
     if (sgi_num < GIC_MAX_SGIS && cpu_target < GIC_MAX_TARGETS) {
         gicd.SGIR = 

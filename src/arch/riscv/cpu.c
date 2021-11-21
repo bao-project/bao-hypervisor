@@ -18,10 +18,10 @@
 #include <arch/sbi.h>
 #include <platform.h>
 
-uint64_t CPU_MASTER __attribute__((section(".data")));
+cpuid_t CPU_MASTER __attribute__((section(".data")));
 
 /* Perform architecture dependent cpu cores initializations */
-void cpu_arch_init(uint64_t cpuid, paddr_t load_addr)
+void cpu_arch_init(cpuid_t cpuid, paddr_t load_addr)
 {
     if (cpuid == CPU_MASTER) {
         sbi_init();

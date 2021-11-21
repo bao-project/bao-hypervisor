@@ -26,7 +26,7 @@ BITMAP_ALLOC(global_interrupt_bitmap, MAX_INTERRUPTS);
 
 irq_handler_t interrupt_handlers[MAX_INTERRUPTS];
 
-inline void interrupts_cpu_sendipi(uint64_t target_cpu, uint64_t ipi_id)
+inline void interrupts_cpu_sendipi(cpuid_t target_cpu, uint64_t ipi_id)
 {
     interrupts_arch_ipi_send(target_cpu, ipi_id);
 }

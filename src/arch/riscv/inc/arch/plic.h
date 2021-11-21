@@ -58,7 +58,7 @@ uint32_t plic_get_threshold(unsigned int_id);
 bool plic_get_pend(unsigned int_id);
 
 struct plic_cntxt {
-    int hart_id;
+    cpuid_t hart_id;
     enum { PRIV_M = 3, PRIV_S = 2, PRIV_U = 0 } mode;
 };
 

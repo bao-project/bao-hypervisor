@@ -57,7 +57,7 @@ struct vm_arch {
 };
 
 struct vcpu_arch {
-    unsigned hart_id;
+    vcpuid_t hart_id;
     struct sbi_hsm sbi_ctx;
 };
 

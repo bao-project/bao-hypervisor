@@ -290,7 +290,7 @@ void vm_init(struct vm* vm, const struct vm_config* config, bool master, uint64_
     cpu_sync_barrier(&vm->sync);
 }
 
-struct vcpu* vm_get_vcpu(struct vm* vm, uint64_t vcpuid)
+struct vcpu* vm_get_vcpu(struct vm* vm, vcpuid_t vcpuid)
 {
     list_foreach(vm->vcpu_list, struct vcpu, vcpu)
     {
@@ -377,7 +377,7 @@ __attribute__((weak)) uint64_t vm_translate_to_pcpu_mask(struct vm* vm,
                                                          size_t len)
 {
     uint64_t pmask = 0;
-    int shift;
+    cpuid_t shift;
     for (size_t i = 0; i < len; i++) {
         if ((mask & (1ULL << i)) &&
             ((shift = vm_translate_to_pcpuid(vm, i)) >= 0)) {
@@ -392,7 +392,7 @@ __attribute__((weak)) uint64_t vm_translate_to_vcpu_mask(struct vm* vm,
                                                          size_t len)
 {
     uint64_t pmask = 0;
-    int shift;
+    vcpuid_t shift;
     for (size_t i = 0; i < len; i++) {
         if ((mask & (1ULL << i)) &&
             ((shift = vm_translate_to_vcpuid(vm, i)) >= 0)) {

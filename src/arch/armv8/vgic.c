@@ -44,7 +44,7 @@ void vgic_ipi_handler(uint32_t event, uint64_t data);
 CPU_MSG_HANDLER(vgic_ipi_handler, VGIC_IPI_ID);
 
 static inline struct vgic_int *vgic_get_int(struct vcpu *vcpu, uint64_t int_id,
-                                       uint64_t vgicr_id)
+                                       vcpuid_t vgicr_id)
 {
     if (int_id < GIC_CPU_PRIV) {
         struct vcpu *target_vcpu =
@@ -369,7 +369,7 @@ static inline void vgic_update_enable(struct vcpu *vcpu)
 
 void vgicd_emul_misc_access(struct emul_access *acc,
                             struct vgic_reg_handler_info *handlers,
-                            bool gicr_access, uint64_t vgicr_id)
+                            bool gicr_access, vcpuid_t vgicr_id)
 {
     struct vgicd *vgicd = &cpu.vcpu->vm->arch.vgicd;
     uint64_t reg = acc->addr & 0x7F;
@@ -407,7 +407,7 @@ void vgicd_emul_misc_access(struct emul_access *acc,
 
 void vgicd_emul_pidr_access(struct emul_access *acc,
                             struct vgic_reg_handler_info *handlers,
-                            bool gicr_access, uint64_t vgicr_id)
+                            bool gicr_access, vcpuid_t vgicr_id)
 {
     if (!acc->write) {
         vcpu_writereg(cpu.vcpu, acc->reg,
@@ -606,7 +606,7 @@ void vgic_int_set_prio_hw(struct vcpu *vcpu, struct vgic_int *interrupt)
 }
 
 void vgic_emul_razwi(struct emul_access *acc, struct vgic_reg_handler_info *handlers,
-                     bool gicr_access, uint64_t vgicr_id)
+                     bool gicr_access, vcpuid_t vgicr_id)
 {
     if (!acc->write) vcpu_writereg(cpu.vcpu, acc->reg, 0);
 }
@@ -634,7 +634,7 @@ void vgic_int_set_field(struct vgic_reg_handler_info *handlers, struct vcpu *vcp
 
 void vgic_emul_generic_access(struct emul_access *acc,
                               struct vgic_reg_handler_info *handlers,
-                              bool gicr_access, uint64_t vgicr_id)
+                              bool gicr_access, vcpuid_t vgicr_id)
 {
     size_t field_width = handlers->field_width;
     size_t first_int =
@@ -871,7 +871,7 @@ bool vgicd_emul_handler(struct emul_access *acc)
     }
 }
 
-void vgic_inject(struct vgicd *vgicd, uint64_t id, uint64_t source)
+void vgic_inject(struct vgicd *vgicd, uint64_t id, vcpuid_t source)
 {
     struct vgic_int *interrupt = vgic_get_int(cpu.vcpu, id, cpu.vcpu->id);
     if (interrupt != NULL) {

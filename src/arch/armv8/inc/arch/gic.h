@@ -412,7 +412,7 @@ extern size_t NUM_LRS;
 
 void gic_init();
 void gic_cpu_init();
-void gic_send_sgi(uint64_t cpu_target, uint64_t sgi_num);
+void gic_send_sgi(cpuid_t cpu_target, uint64_t sgi_num);
 
 void gicc_save_state(struct gicc_state *state);
 void gicc_restore_state(struct gicc_state *state);
@@ -437,12 +437,12 @@ bool gicd_get_pend(uint64_t int_id);
 bool gicd_get_act(uint64_t int_id);
 uint64_t gicd_get_prio(uint64_t int_id);
 
-void gicr_set_enable(uint64_t int_id, bool en, uint32_t gicr_id);
-void gicr_set_pend(uint64_t int_id, bool pend, uint32_t gicr_id);
-void gicr_set_prio(uint64_t int_id, uint8_t prio, uint32_t gicr_id);
-void gicr_set_icfgr(uint64_t int_id, uint8_t cfg, uint32_t gicr_id);
-void gicr_set_act(uint64_t int_id, bool act, uint32_t gicr_id);
-uint64_t gicr_get_prio(uint64_t int_id, uint32_t gicr_id);
+void gicr_set_enable(uint64_t int_id, bool en, cpuid_t gicr_id);
+void gicr_set_pend(uint64_t int_id, bool pend, cpuid_t gicr_id);
+void gicr_set_prio(uint64_t int_id, uint8_t prio, cpuid_t gicr_id);
+void gicr_set_icfgr(uint64_t int_id, uint8_t cfg, cpuid_t gicr_id);
+void gicr_set_act(uint64_t int_id, bool act, cpuid_t gicr_id);
+uint64_t gicr_get_prio(uint64_t int_id, cpuid_t gicr_id);
 
 uint64_t gich_read_lr(size_t i);
 void gich_write_lr(size_t i, uint64_t val);

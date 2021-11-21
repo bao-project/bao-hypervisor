@@ -98,7 +98,7 @@ void vgic_int_set_route_hw(struct vcpu *vcpu, struct vgic_int *interrupt)
 
 void vgicr_emul_ctrl_access(struct emul_access *acc,
                             struct vgic_reg_handler_info *handlers,
-                            bool gicr_access, uint64_t vgicr_id)
+                            bool gicr_access, vcpuid_t vgicr_id)
 {
     if (!acc->write) {
         vcpu_writereg(cpu.vcpu, acc->reg, 0);
@@ -107,7 +107,7 @@ void vgicr_emul_ctrl_access(struct emul_access *acc,
 
 void vgicr_emul_typer_access(struct emul_access *acc,
                              struct vgic_reg_handler_info *handlers,
-                             bool gicr_access, uint64_t vgicr_id)
+                             bool gicr_access, vcpuid_t vgicr_id)
 {
     if (!acc->write) {
         struct vcpu *vcpu = vm_get_vcpu(cpu.vcpu->vm, vgicr_id);
@@ -117,10 +117,10 @@ void vgicr_emul_typer_access(struct emul_access *acc,
 
 void vgicr_emul_pidr_access(struct emul_access *acc,
                             struct vgic_reg_handler_info *handlers,
-                            bool gicr_access, uint64_t vgicr_id)
+                            bool gicr_access, vcpuid_t vgicr_id)
 {
     if (!acc->write) {
-        uint64_t pgicr_id = vm_translate_to_pcpuid(cpu.vcpu->vm, vgicr_id);
+        cpuid_t pgicr_id = vm_translate_to_pcpuid(cpu.vcpu->vm, vgicr_id);
         vcpu_writereg(cpu.vcpu, acc->reg,
                       gicr[pgicr_id].ID[((acc->addr & 0xff) - 0xd0) / 4]);
     }
@@ -160,7 +160,7 @@ struct vgic_reg_handler_info vgicr_pidr_info = {
     0b0100,
 };
 
-static inline uint32_t vgicr_get_id(struct emul_access *acc)
+static inline vcpuid_t vgicr_get_id(struct emul_access *acc)
 {
     return (acc->addr - cpu.vcpu->vm->arch.vgicr_addr) / sizeof(struct gicr_hw);
 }
@@ -211,7 +211,7 @@ bool vgicr_emul_handler(struct emul_access *acc)
     }
 
     if (vgic_check_reg_alignment(acc, handler_info)) {
-        uint64_t vgicr_id = vgicr_get_id(acc);
+        vcpuid_t vgicr_id = vgicr_get_id(acc);
         struct vcpu *vcpu = vgicr_id == cpu.vcpu->id
                            ? cpu.vcpu
                            : vm_get_vcpu(cpu.vcpu->vm, vgicr_id);

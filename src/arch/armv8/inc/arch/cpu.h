@@ -26,9 +26,9 @@ struct cpu_arch {
     uint64_t mpidr;
 };
 
-uint64_t cpu_id_to_mpidr(uint64_t id);
-int64_t cpu_mpidr_to_id(uint64_t mpdir);
+uint64_t cpu_id_to_mpidr(cpuid_t id);
+cpuid_t cpu_mpidr_to_id(uint64_t mpdir);
 
-extern uint64_t CPU_MASTER;
+extern cpuid_t CPU_MASTER;
 
 #endif /* __ARCH_CPU_H__ */

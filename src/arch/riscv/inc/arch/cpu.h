@@ -18,7 +18,7 @@
 
 #include <bao.h>
 
-extern uint64_t CPU_MASTER;
+extern cpuid_t CPU_MASTER;
 
 struct cpu_arch {
     unsigned hart_id;

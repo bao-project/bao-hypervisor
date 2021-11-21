@@ -39,7 +39,7 @@ struct vcpu* vm_get_vcpu_by_mpidr(struct vm* vm, uint64_t mpidr)
     return NULL;
 }
 
-static uint64_t vm_cpuid_to_mpidr(struct vm* vm, uint64_t cpuid)
+static uint64_t vm_cpuid_to_mpidr(struct vm* vm, vcpuid_t cpuid)
 {
     return platform_arch_cpuid_to_mpdir(&vm->config->platform, cpuid);
 }

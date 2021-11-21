@@ -51,7 +51,7 @@ void interrupts_arch_init()
     CSRS(sie, SIE_SEIE);
 }
 
-void interrupts_arch_ipi_send(uint64_t target_cpu, uint64_t ipi_id)
+void interrupts_arch_ipi_send(cpuid_t target_cpu, uint64_t ipi_id)
 {
     sbi_send_ipi(1ULL << target_cpu, 0);
 }

@@ -69,7 +69,7 @@ uint64_t vgicd_get_trgt(struct vcpu *vcpu, struct vgic_int *interrupt)
 
 void vgicd_emul_sgiregs_access(struct emul_access *acc,
                                struct vgic_reg_handler_info *handlers,
-                               bool gicr_access, uint64_t vgicr_id)
+                               bool gicr_access, vcpuid_t vgicr_id)
 {
     uint32_t val = acc->write ? vcpu_readreg(cpu.vcpu, acc->reg) : 0;
 
@@ -117,7 +117,7 @@ struct vgic_reg_handler_info sgir_info = {
     0b0100,
 };
 
-void vgic_inject_sgi(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t source)
+void vgic_inject_sgi(struct vcpu *vcpu, struct vgic_int *interrupt, vcpuid_t source)
 {
     spin_lock(&interrupt->lock);
 

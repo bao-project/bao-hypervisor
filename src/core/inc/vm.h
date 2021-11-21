@@ -39,7 +39,7 @@ struct vm {
 
     spinlock_t lock;
     struct cpu_synctoken sync;
-    uint64_t master;
+    cpuid_t master;
 
     struct list vcpu_list;
     size_t cpu_num;
@@ -66,8 +66,8 @@ struct vcpu {
     struct arch_regs* regs;
     struct vcpu_arch arch;
 
-    uint64_t id;
-    uint32_t phys_id;
+    vcpuid_t id;
+    cpuid_t phys_id;
     bool active;
 
     struct vm* vm;
@@ -80,7 +80,7 @@ extern struct config* vm_config_ptr;
 
 void vm_init(struct vm* vm, const struct vm_config* config, bool master, uint64_t vm_id);
 void vm_start(struct vm* vm, vaddr_t entry);
-struct vcpu* vm_get_vcpu(struct vm* vm, uint64_t vcpuid);
+struct vcpu* vm_get_vcpu(struct vm* vm, vcpuid_t vcpuid);
 void vm_emul_add_mem(struct vm* vm, struct emul_mem* emu);
 void vm_emul_add_reg(struct vm* vm, struct emul_reg* emu);
 emul_handler_t vm_emul_get_mem(struct vm* vm, vaddr_t addr);
@@ -90,13 +90,13 @@ void vm_msg_broadcast(struct vm* vm, struct cpu_msg* msg);
 uint64_t vm_translate_to_pcpu_mask(struct vm* vm, uint64_t mask, size_t len);
 uint64_t vm_translate_to_vcpu_mask(struct vm* vm, uint64_t mask, size_t len);
 
-static inline int64_t vm_translate_to_pcpuid(struct vm* vm, uint64_t vcpuid)
+static inline cpuid_t vm_translate_to_pcpuid(struct vm* vm, vcpuid_t vcpuid)
 {
     return bitmap_find_nth((bitmap_t*)&vm->cpus, sizeof(vm->cpus) * 8,
                            vcpuid + 1, 0, true);
 }
 
-static inline uint64_t vm_translate_to_vcpuid(struct vm* vm, uint64_t pcpuid)
+static inline vcpuid_t vm_translate_to_vcpuid(struct vm* vm, cpuid_t pcpuid)
 {
     return bitmap_count((bitmap_t*)&vm->cpus, 0, pcpuid, true);
 }

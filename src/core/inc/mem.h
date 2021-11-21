@@ -97,10 +97,10 @@ vaddr_t mem_alloc_vpage(struct addr_space* as, enum AS_SEC section,
                     vaddr_t at, size_t n);
 void mem_free_vpage(struct addr_space* as, vaddr_t at, size_t n,
                     bool free_ppages);
-int mem_map(struct addr_space* as, vaddr_t va, struct ppages* ppages, size_t n,
-            uint64_t flags);
-int mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages, size_t n,
-                  uint64_t flags);
+int mem_map(struct addr_space* as, vaddr_t va, struct ppages* ppages,
+            size_t n, pte_t flags);
+int mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages,
+                size_t n, pte_t flags);
 int mem_map_dev(struct addr_space* as, vaddr_t va, paddr_t base, size_t n);
 
 /* Functions implemented in architecture dependent files */

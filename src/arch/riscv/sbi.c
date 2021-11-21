@@ -283,8 +283,8 @@ struct sbiret sbi_ipi_handler(unsigned long fid)
 
     for (size_t i = 0; i < sizeof(hart_mask) * 8; i++) {
         if (bitmap_get((bitmap_t*)&hart_mask, i)) {
-            uint64_t vhart_id = hart_mask_base + i;
-            int64_t phart_id = vm_translate_to_pcpuid(cpu.vcpu->vm, vhart_id); 
+            vcpuid_t vhart_id = hart_mask_base + i;
+            cpuid_t phart_id = vm_translate_to_pcpuid(cpu.vcpu->vm, vhart_id);
             if(phart_id >= 0) cpu_send_msg(phart_id, &msg);
         }
     }
@@ -362,7 +362,7 @@ struct sbiret sbi_rfence_handler(unsigned long fid)
 struct sbiret sbi_hsm_start_handler() {
     
     struct sbiret ret;
-    uint64_t vhart_id = vcpu_readreg(cpu.vcpu, REG_A0);
+    vcpuid_t vhart_id = vcpu_readreg(cpu.vcpu, REG_A0);
     
     if(vhart_id == cpu.vcpu->id){
         ret.error = SBI_ERR_ALREADY_AVAILABLE;
@@ -404,7 +404,7 @@ struct sbiret sbi_hsm_start_handler() {
 struct sbiret sbi_hsm_status_handler() {
 
     struct sbiret ret;
-    uint64_t vhart_id = vcpu_readreg(cpu.vcpu, REG_A0);
+    vcpuid_t vhart_id = vcpu_readreg(cpu.vcpu, REG_A0);
     struct vcpu *vhart = vm_get_vcpu(cpu.vcpu->vm, vhart_id);
 
     if(vhart != NULL) { 

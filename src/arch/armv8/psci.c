@@ -141,7 +141,7 @@ int64_t psci_cpu_on_handler(uint64_t target_cpu, uintptr_t entrypoint,
             return PSCI_E_ALREADY_ON;
         }
 
-        uint64_t pcpuid = vm_translate_to_pcpuid(vm, target_vcpu->id);
+        cpuid_t pcpuid = vm_translate_to_pcpuid(vm, target_vcpu->id);
 
         struct cpu_msg msg = {PSCI_CPUSMG_ID, PSCI_MSG_ON};
         cpu_send_msg(pcpuid, &msg);
