@@ -52,19 +52,20 @@ bool vgic_int_has_other_target(struct vcpu *vcpu, struct vgic_int *interrupt)
     return any || (!routed_here && route_valid);
 }
 
-uint64_t vgic_int_ptarget_mask(struct vcpu *vcpu, struct vgic_int *interrupt)
+uint8_t vgic_int_ptarget_mask(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     if (vgic_broadcast(vcpu, interrupt)) {
         return cpu.vcpu->vm->cpus & ~(1U << cpu.vcpu->phys_id);
     } else {
-        return (1ull << interrupt->phys.route);
+        return (1 << interrupt->phys.route);
     }
 }
 
-bool vgic_int_set_route(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t route)
+bool vgic_int_set_route(struct vcpu *vcpu, struct vgic_int *interrupt, 
+                        unsigned long route)
 {
-    uint64_t phys_route;
-    uint64_t prev_route = interrupt->route;
+    unsigned long phys_route;
+    unsigned long prev_route = interrupt->route;
 
     if (gic_is_priv(interrupt->id)) return false;
 
@@ -85,7 +86,7 @@ bool vgic_int_set_route(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t 
     return prev_route != interrupt->route;
 }
 
-uint64_t vgic_int_get_route(struct vcpu *vcpu, struct vgic_int *interrupt)
+unsigned long vgic_int_get_route(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     if (gic_is_priv(interrupt->id)) return 0;
     return interrupt->route;
@@ -230,7 +231,7 @@ bool vgicr_emul_handler(struct emul_access *acc)
 bool vgic_icc_sgir_handler(struct emul_access *acc)
 {
     if (acc->write) {
-        uint64_t sgir = vcpu_readreg(cpu.vcpu, acc->reg);
+        unsigned long sgir = vcpu_readreg(cpu.vcpu, acc->reg);
         irqid_t int_id = ICC_SGIR_SGIINTID(sgir);
         cpumap_t trgtlist;
         if (sgir & ICC_SGIR_IRM_BIT) {
@@ -308,7 +309,7 @@ void vgic_init(struct vm *vm, const struct gic_dscrp *gic_dscrp)
 
         vcpu->arch.vgic_priv.vgicr.CTLR = 0;
 
-        uint64_t typer = vcpu->id << GICR_TYPER_PRCNUM_OFF;
+        uint64_t typer = (uint64_t)vcpu->id << GICR_TYPER_PRCNUM_OFF;
         typer |= (vcpu->arch.vmpidr & MPIDR_AFF_MSK) << GICR_TYPER_AFFVAL_OFF;
         typer |= !!(vcpu->id == vcpu->vm->cpu_num - 1) << GICR_TYPER_LAST_OFF;
         vcpu->arch.vgic_priv.vgicr.TYPER = typer;

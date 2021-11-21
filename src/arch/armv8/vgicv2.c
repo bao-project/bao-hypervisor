@@ -35,7 +35,7 @@ bool vgic_int_has_other_target(struct vcpu *vcpu, struct vgic_int *interrupt)
     return !priv && has_other_targets;
 }
 
-uint64_t vgic_int_ptarget_mask(struct vcpu *vcpu, struct vgic_int *interrupt)
+uint8_t vgic_int_ptarget_mask(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     return interrupt->targets;
 }
@@ -62,7 +62,7 @@ cpumap_t vgicd_get_trgt(struct vcpu *vcpu, struct vgic_int *interrupt)
     if (gic_is_priv(interrupt->id)) {
         return (((cpumap_t)1) << vcpu->id);
     } else {
-        return (uint8_t)vm_translate_to_vcpu_mask(vcpu->vm, interrupt->targets,
+        return vm_translate_to_vcpu_mask(vcpu->vm, interrupt->targets,
                                                   GIC_TARGET_BITS);
     }
 }
@@ -71,7 +71,7 @@ void vgicd_emul_sgiregs_access(struct emul_access *acc,
                                struct vgic_reg_handler_info *handlers,
                                bool gicr_access, vcpuid_t vgicr_id)
 {
-    uint32_t val = acc->write ? vcpu_readreg(cpu.vcpu, acc->reg) : 0;
+    unsigned long val = acc->write ? vcpu_readreg(cpu.vcpu, acc->reg) : 0;
 
     if ((acc->addr & 0xfff) == (((uintptr_t)&gicd.SGIR) & 0xfff)) {
         if (acc->write) {

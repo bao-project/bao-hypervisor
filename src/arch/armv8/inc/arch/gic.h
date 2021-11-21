@@ -405,7 +405,7 @@ struct gicc_state {
     uint32_t priv_IPRIORITYR[GIC_NUM_PRIO_REGS(GIC_CPU_PRIV)];
 
     uint32_t HCR;
-    uint32_t LR[GIC_NUM_LIST_REGS];
+    unsigned long LR[GIC_NUM_LIST_REGS];
 };
 
 extern size_t NUM_LRS;
@@ -422,7 +422,7 @@ void gic_set_prio(irqid_t int_id, uint8_t prio);
 void gic_set_icfgr(irqid_t int_id, uint8_t cfg);
 void gic_set_pend(irqid_t int_id, bool pend);
 void gic_set_act(irqid_t int_id, bool act);
-uint64_t gic_get_prio(irqid_t int_id);
+uint8_t gic_get_prio(irqid_t int_id);
 bool gic_get_pend(irqid_t int_id);
 bool gic_get_act(irqid_t int_id);
 
@@ -432,20 +432,20 @@ void gicd_set_prio(irqid_t int_id, uint8_t prio);
 void gicd_set_icfgr(irqid_t int_id, uint8_t cfg);
 void gicd_set_act(irqid_t int_id, bool act);
 void gicd_set_trgt(irqid_t int_id, uint8_t cpu_targets);
-void gicd_set_route(irqid_t int_id, uint64_t route);
+void gicd_set_route(irqid_t int_id, unsigned long route);
 bool gicd_get_pend(irqid_t int_id);
 bool gicd_get_act(irqid_t int_id);
-uint64_t gicd_get_prio(irqid_t int_id);
+uint8_t gicd_get_prio(irqid_t int_id);
 
 void gicr_set_enable(irqid_t int_id, bool en, cpuid_t gicr_id);
 void gicr_set_pend(irqid_t int_id, bool pend, cpuid_t gicr_id);
 void gicr_set_prio(irqid_t int_id, uint8_t prio, cpuid_t gicr_id);
 void gicr_set_icfgr(irqid_t int_id, uint8_t cfg, cpuid_t gicr_id);
 void gicr_set_act(irqid_t int_id, bool act, cpuid_t gicr_id);
-uint64_t gicr_get_prio(irqid_t int_id, cpuid_t gicr_id);
+uint8_t gicr_get_prio(irqid_t int_id, cpuid_t gicr_id);
 
-uint64_t gich_read_lr(size_t i);
-void gich_write_lr(size_t i, uint64_t val);
+unsigned long gich_read_lr(size_t i);
+void gich_write_lr(size_t i, unsigned long val);
 uint32_t gich_get_hcr();
 void gich_set_hcr(uint32_t);
 uint32_t gich_get_misr();

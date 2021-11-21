@@ -29,10 +29,10 @@ struct gic_dscrp;
 struct vgic_int {
     struct vcpu *owner;
 #if (GIC_VERSION != GICV2)
-    uint64_t route;
+    unsigned long route;
     union {
         vcpuid_t redist;
-        uint64_t route;
+        unsigned long route;
     } phys;
 #endif
     spinlock_t lock;
@@ -128,7 +128,7 @@ size_t vgic_get_itln(const struct gic_dscrp *gic_dscrp);
 /* interface for version specific vgic */
 bool vgic_int_vcpu_is_target(struct vcpu *vcpu, struct vgic_int *interrupt);
 bool vgic_int_has_other_target(struct vcpu *vcpu, struct vgic_int *interrupt);
-uint64_t vgic_int_ptarget_mask(struct vcpu *vcpu, struct vgic_int *interrupt);
+uint8_t vgic_int_ptarget_mask(struct vcpu *vcpu, struct vgic_int *interrupt);
 void vgic_inject_sgi(struct vcpu *vcpu, struct vgic_int *interrupt, vcpuid_t source);
 
 #endif /* __VGIC_H__ */
