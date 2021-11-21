@@ -234,7 +234,7 @@ static size_t smmu_cb_ttba_offset(size_t t0sz)
     return offset;
 }
 
-void smmu_write_ctxbnk(size_t ctx_id, paddr_t root_pt, uint32_t vm_id)
+void smmu_write_ctxbnk(size_t ctx_id, paddr_t root_pt, asid_t vm_id)
 {
     spin_lock(&smmu.ctx_lock);
     if (!bitmap_get(smmu.ctxbank_bitmap, ctx_id)) {

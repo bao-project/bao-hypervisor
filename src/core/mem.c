@@ -1329,7 +1329,7 @@ void color_hypervisor(const paddr_t load_addr, const paddr_t config_addr)
     mem_free_vpage(&cpu.as, va, p_cpu.size, false);
 }
 
-void as_init(struct addr_space *as, enum AS_TYPE type, uint64_t id, 
+void as_init(struct addr_space *as, enum AS_TYPE type, asid_t id, 
             pte_t *root_pt, uint64_t colors)
 {
     as->type = type;

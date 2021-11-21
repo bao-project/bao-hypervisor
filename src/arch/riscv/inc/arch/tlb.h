@@ -39,13 +39,13 @@ static inline void tlb_hyp_inv_all()
  * TODO: change hart_mask to only take into account the vm physical cpus.
  */
 
-static inline void tlb_vm_inv_va(uint64_t vmid, vaddr_t va)
+static inline void tlb_vm_inv_va(asid_t vmid, vaddr_t va)
 {
     sbi_remote_hfence_gvma_vmid((1 << platform.cpu_num)- 1, 0, (unsigned long)va,
                                 PAGE_SIZE, vmid);
 }
 
-static inline void tlb_vm_inv_all(uint64_t vmid)
+static inline void tlb_vm_inv_all(asid_t vmid)
 {
     sbi_remote_hfence_gvma_vmid((1 << platform.cpu_num) - 1, 0, 0, 0, vmid);
 }

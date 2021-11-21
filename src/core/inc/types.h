@@ -22,6 +22,8 @@
 
 typedef signed long ssize_t;
 
+typedef unsigned long asid_t;
+
 typedef unsigned long vmid_t;
 
 typedef uintptr_t paddr_t;

@@ -42,7 +42,7 @@ struct addr_space {
     struct page_table pt;
     enum AS_TYPE type;
     uint64_t colors;
-    uint64_t id;
+    asid_t id;
     spinlock_t lock;
 };
 
@@ -89,7 +89,7 @@ static inline bool all_clrs(uint64_t clrs)
 }
 
 void mem_init(paddr_t load_addr, paddr_t config_addr);
-void as_init(struct addr_space* as, enum AS_TYPE type, uint64_t id, pte_t* root_pt,
+void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, pte_t* root_pt,
              uint64_t colors);
 void* mem_alloc_page(size_t n, enum AS_SEC sec, bool phys_aligned);
 struct ppages mem_alloc_ppages(uint64_t colors, size_t n, bool aligned);
