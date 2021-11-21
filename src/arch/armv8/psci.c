@@ -27,7 +27,7 @@
 
 enum {PSCI_MSG_ON};
 
-extern void psci_boot_entry(uint64_t x0);
+extern void psci_boot_entry(unsigned long x0);
 
 /* --------------------------------
 	SMC Trapping
@@ -60,16 +60,16 @@ void psci_cpumsg_handler(uint32_t event, uint64_t data){
 
 CPU_MSG_HANDLER(psci_cpumsg_handler, PSCI_CPUSMG_ID);
 
-int64_t psci_cpu_suspend_handler(uint64_t power_state, uintptr_t entrypoint, 
-                                                        uint64_t context_id)
+int32_t psci_cpu_suspend_handler(uint32_t power_state, unsigned long entrypoint, 
+                                                    unsigned long context_id)
 {
     /**
      * !! Ignoring the rest of the requested  powerstate for now. 
      * This might be a problem howwver since powerlevel and stateid are 
      * implementation defined.
      */ 
-    int state_type = power_state & PSCI_STATE_TYPE_BIT;
-    int64_t ret;
+    uint32_t state_type = power_state & PSCI_STATE_TYPE_BIT;
+    int32_t ret;
 
     if(state_type){
         //PSCI_STATE_TYPE_POWERDOWN:
@@ -96,7 +96,7 @@ int64_t psci_cpu_suspend_handler(uint64_t power_state, uintptr_t entrypoint,
 }
 
 
-int64_t psci_cpu_off_handler(void)
+int32_t psci_cpu_off_handler(void)
 {
     /**
      *  Right now we only support one vcpu por cpu, so passthrough the request
@@ -117,10 +117,10 @@ int64_t psci_cpu_off_handler(void)
     return PSCI_E_DENIED;
 }
 
-int64_t psci_cpu_on_handler(uint64_t target_cpu, uintptr_t entrypoint,
-                                                         uint64_t context_id)
+int32_t psci_cpu_on_handler(unsigned long target_cpu, unsigned long entrypoint,
+                            unsigned long context_id)
 {
-    int64_t ret;
+    int32_t ret;
     struct vm* vm = cpu.vcpu->vm;
     struct vcpu* target_vcpu = vm_get_vcpu_by_mpidr(vm, target_cpu);
 
@@ -158,8 +158,8 @@ int64_t psci_cpu_on_handler(uint64_t target_cpu, uintptr_t entrypoint,
 }
 
 
-int64_t psci_affinity_info_handler(uint64_t target_affinity, 
-                                                uint64_t lowest_affinity_level)
+int32_t psci_affinity_info_handler(unsigned long  target_affinity, 
+                                uint32_t lowest_affinity_level)
 {
     /* return ON, if at least one core in the affinity instance: has been 
     enabled with a call to CPU_ON, and that core has not called CPU_OFF */
@@ -178,9 +178,9 @@ int64_t psci_affinity_info_handler(uint64_t target_affinity,
     return 0;
 }
 
-int64_t psci_features_handler(uint64_t feature_id){
+int32_t psci_features_handler(uint32_t feature_id){
 
-    int64_t ret = PSCI_E_NOT_SUPPORTED;
+    int32_t ret = PSCI_E_NOT_SUPPORTED;
 
     switch (feature_id) {
         case PSCI_VERSION:
@@ -197,12 +197,10 @@ int64_t psci_features_handler(uint64_t feature_id){
 }
 
 
-int64_t psci_smc_handler(uint32_t smc_fid,
-                        uint64_t x1,
-                        uint64_t x2,
-                        uint64_t x3)
+int32_t psci_smc_handler(uint32_t smc_fid, unsigned long x1, unsigned long x2, 
+                        unsigned long x3)
 {
-   int64_t ret = PSCI_E_NOT_SUPPORTED;
+   int32_t ret = PSCI_E_NOT_SUPPORTED;
 
     switch (smc_fid) {
 		case PSCI_VERSION:
@@ -242,7 +240,7 @@ int64_t psci_smc_handler(uint32_t smc_fid,
 
 extern uint8_t root_l1_flat_pt;
 
-static void psci_save_state(uint64_t wakeup_reason){
+static void psci_save_state(enum wakeup_reason wakeup_reason){
 
     cpu.arch.psci_off_state.tcr_el2 = MRS(TCR_EL2);
     cpu.arch.psci_off_state.ttbr0_el2 = MRS(TTBR0_EL2);
@@ -301,7 +299,7 @@ void (*psci_wake_handlers[PSCI_WAKEUP_NUM])(void) = {
     [PSCI_WAKEUP_IDLE] = psci_wake_from_idle,
 };
 
-void psci_wake(uint64_t handler_id)
+void psci_wake(uint32_t handler_id)
 {    
 
     psci_restore_state();
@@ -314,16 +312,16 @@ void psci_wake(uint64_t handler_id)
 
 }
 
-uint64_t psci_standby(){
+int32_t psci_standby(){
     /* only apply request to core level */
-    uint64_t pwr_state_aux = PSCI_POWER_STATE_LVL_0 | PSCI_STATE_TYPE_STANDBY;
+    uint32_t pwr_state_aux = PSCI_POWER_STATE_LVL_0 | PSCI_STATE_TYPE_STANDBY;
 
     return psci_cpu_suspend(pwr_state_aux, 0, 0);
 }
 
-uint64_t psci_power_down(uint64_t reason){
+int32_t psci_power_down(enum wakeup_reason reason){
 
-    uint64_t pwr_state_aux = PSCI_POWER_STATE_LVL_0 | PSCI_STATE_TYPE_POWERDOWN;
+    uint32_t pwr_state_aux = PSCI_POWER_STATE_LVL_0 | PSCI_STATE_TYPE_POWERDOWN;
 
     psci_save_state(reason);
     paddr_t cntxt_paddr;
@@ -338,34 +336,34 @@ uint64_t psci_power_down(uint64_t reason){
     SMC PSCI interface 
 --------------------------------- */
 
-uint64_t psci_version(void)
+int32_t psci_version(void)
 {
     return smc_call(PSCI_VERSION, 0, 0, 0, NULL);
 }
 
 
-uint64_t psci_cpu_suspend(uint64_t power_state, uintptr_t entrypoint, 
-                    uint64_t context_id)
+int32_t psci_cpu_suspend(uint32_t power_state, unsigned long entrypoint, 
+                        unsigned long context_id)
 {
 
     return smc_call(PSCI_CPU_SUSPEND_AARCH64, power_state, entrypoint, 
                                                             context_id, NULL);
 }
 
-uint64_t psci_cpu_off(void)
+int32_t psci_cpu_off(void)
 {   
     return smc_call(PSCI_CPU_OFF, 0, 0, 0, NULL);
 }
 
-uint64_t psci_cpu_on(uint64_t target_cpu, uintptr_t entrypoint, 
-                    uint64_t context_id)
+int32_t psci_cpu_on(unsigned long target_cpu, unsigned long entrypoint, 
+                    unsigned long context_id)
 {
     return smc_call(PSCI_CPU_ON_AARCH64, target_cpu, entrypoint, context_id,
                                                                         NULL);
 }
 
-uint64_t psci_affinity_info(uint64_t target_affinity, 
-                            uint64_t lowest_affinity_level)
+int32_t psci_affinity_info(unsigned long target_affinity, 
+                            uint32_t lowest_affinity_level)
 {
     return smc_call(PSCI_AFFINITY_INFO_AARCH64, target_affinity, 
                                             lowest_affinity_level, 0, NULL);

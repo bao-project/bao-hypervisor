@@ -34,7 +34,7 @@ void cpu_arch_init(cpuid_t cpuid, paddr_t load_addr)
             if(cpu_core_id == cpuid) continue;
             unsigned long mpdir = cpu_id_to_mpidr(cpu_core_id);
             // TODO: pass config addr in contextid (x0 register)
-            int result = psci_cpu_on(mpdir, load_addr, 0);
+            int32_t result = psci_cpu_on(mpdir, load_addr, 0);
             if (!(result == PSCI_E_SUCCESS || result == PSCI_E_ALREADY_ON)) {
                 ERROR("cant wake up cpu %d", cpu_core_id);
             }
