@@ -71,12 +71,12 @@ inline size_t smmu_sme_get_ctx(size_t sme)
     return S2CR_CBNDX(smmu.hw.glbl_rs0->S2CR[sme]);
 }
 
-inline uint16_t smmu_sme_get_id(size_t sme)
+inline streamid_t smmu_sme_get_id(size_t sme)
 {
     return SMMU_SMR_ID(smmu.hw.glbl_rs0->SMR[sme]);
 }
 
-inline uint16_t smmu_sme_get_mask(size_t sme)
+inline streamid_t smmu_sme_get_mask(size_t sme)
 {
     return SMMU_SMR_MASK(smmu.hw.glbl_rs0->SMR[sme]);
 }
@@ -294,7 +294,7 @@ ssize_t smmu_alloc_sme()
  * This function searches for existing smes that are compatible for merging
  * with the new sme, raising an ERROR when conflicting attributes are found.
  */
-bool smmu_compatible_sme_exists(uint16_t mask, uint16_t id, size_t ctx,
+bool smmu_compatible_sme_exists(streamid_t mask, streamid_t id, size_t ctx,
                                 bool group)
 {
     bool included = false;
@@ -303,9 +303,9 @@ bool smmu_compatible_sme_exists(uint16_t mask, uint16_t id, size_t ctx,
     spin_lock(&smmu.sme_lock);
     smmu_for_each_sme(sme)
     {
-        uint16_t sme_mask = smmu_sme_get_mask(sme);
-        uint16_t mask_r = mask & sme_mask;
-        uint16_t diff_id = (smmu_sme_get_id(sme) ^ id) & ~(mask | sme_mask);
+        streamid_t sme_mask = smmu_sme_get_mask(sme);
+        streamid_t mask_r = mask & sme_mask;
+        streamid_t diff_id = (smmu_sme_get_id(sme) ^ id) & ~(mask | sme_mask);
 
         if (!diff_id) {
             /* Only group-to-group or device-to-group can be merged */
@@ -337,7 +337,7 @@ bool smmu_compatible_sme_exists(uint16_t mask, uint16_t id, size_t ctx,
     return included;
 }
 
-void smmu_write_sme(size_t sme, uint16_t mask, uint16_t id, bool group)
+void smmu_write_sme(size_t sme, streamid_t mask, streamid_t id, bool group)
 {
     spin_lock(&smmu.sme_lock);
     if (bitmap_get(smmu.sme_bitmap, sme)) {

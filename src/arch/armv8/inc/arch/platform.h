@@ -34,12 +34,12 @@ struct arch_platform {
     struct {
         paddr_t base;
         irqid_t interrupt_id;
-        uint16_t global_mask;
+        streamid_t global_mask;
 
         size_t group_num;
         struct smmu_group {
-            uint16_t group_mask;
-            uint16_t group_id;
+            streamid_t group_mask;
+            streamid_t group_id;
         } *smmu_groups;
 
     } smmu;

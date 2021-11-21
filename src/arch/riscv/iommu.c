@@ -24,7 +24,7 @@ int iommu_arch_init()
     return 0;
 }
 
-inline int iommu_arch_vm_add_device(struct vm *vm, int id)
+inline int iommu_arch_vm_add_device(struct vm *vm, streamid_t id)
 {
     return 0;
 }

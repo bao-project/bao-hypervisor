@@ -19,7 +19,7 @@
 #include <bao.h>
 
 struct iommu_vm_arch {
-    uint32_t global_mask;
+    streamid_t global_mask;
     size_t ctx_id;
 };
 
