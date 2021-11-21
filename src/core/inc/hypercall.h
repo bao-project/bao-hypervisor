@@ -28,6 +28,8 @@ enum {
     HC_E_INVAL_ARGS = 3
 };
 
-typedef int64_t (*hypercall_handler)(uint64_t arg0, uint64_t arg1, uint64_t arg2);
+typedef unsigned long (*hypercall_handler)( unsigned long arg0, 
+                                            unsigned long arg1, 
+                                            unsigned long arg2);
 
 #endif /* HYPERCALL_H */

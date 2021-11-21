@@ -61,7 +61,7 @@ static inline int ins_ldst_decode(vaddr_t ins, struct emul_access *emul)
             return -1;
         }
 
-        int funct3 = INS_FUNCT3(ins);
+        unsigned funct3 = INS_FUNCT3(ins);
         emul->width = (funct3 & 3) == 0
                           ? 1
                           : (funct3 & 3) == 1 ? 2 : (funct3 & 3) == 2 ? 4 : 8;

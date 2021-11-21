@@ -120,10 +120,10 @@ static inline int vm_has_interrupt(struct vm* vm, irqid_t int_id)
 void vm_arch_init(struct vm* vm, const struct vm_config* config);
 void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm);
 void vcpu_run(struct vcpu* vcpu);
-uint64_t vcpu_readreg(struct vcpu* vcpu, uint64_t reg);
-void vcpu_writereg(struct vcpu* vcpu, uint64_t reg, uint64_t val);
-uint64_t vcpu_readpc(struct vcpu* vcpu);
-void vcpu_writepc(struct vcpu* vcpu, uint64_t pc);
+unsigned long vcpu_readreg(struct vcpu* vcpu, unsigned long reg);
+void vcpu_writereg(struct vcpu* vcpu, unsigned long reg, unsigned long val);
+unsigned long vcpu_readpc(struct vcpu* vcpu);
+void vcpu_writepc(struct vcpu* vcpu, unsigned long pc);
 void vcpu_arch_run(struct vcpu* vcpu);
 void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry);
 

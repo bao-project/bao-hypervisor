@@ -27,7 +27,7 @@ void vm_arch_init(struct vm* vm, const struct vm_config* config)
     }
 }
 
-struct vcpu* vm_get_vcpu_by_mpidr(struct vm* vm, uint64_t mpidr)
+struct vcpu* vm_get_vcpu_by_mpidr(struct vm* vm, unsigned long mpidr)
 {
     list_foreach(vm->vcpu_list, struct vcpu, vcpu)
     {
@@ -39,7 +39,7 @@ struct vcpu* vm_get_vcpu_by_mpidr(struct vm* vm, uint64_t mpidr)
     return NULL;
 }
 
-static uint64_t vm_cpuid_to_mpidr(struct vm* vm, vcpuid_t cpuid)
+static unsigned long vm_cpuid_to_mpidr(struct vm* vm, vcpuid_t cpuid)
 {
     return platform_arch_cpuid_to_mpdir(&vm->config->platform, cpuid);
 }
@@ -85,24 +85,24 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
      */
 }
 
-uint64_t vcpu_readreg(struct vcpu* vcpu, uint64_t reg)
+unsigned long vcpu_readreg(struct vcpu* vcpu, unsigned long reg)
 {
     if (reg > 30) return 0;
     return vcpu->regs->x[reg];
 }
 
-void vcpu_writereg(struct vcpu* vcpu, uint64_t reg, uint64_t val)
+void vcpu_writereg(struct vcpu* vcpu, unsigned long reg, unsigned long val)
 {
     if (reg > 30) return;
     vcpu->regs->x[reg] = val;
 }
 
-uint64_t vcpu_readpc(struct vcpu* vcpu)
+unsigned long vcpu_readpc(struct vcpu* vcpu)
 {
     return vcpu->regs->elr_el2;
 }
 
-void vcpu_writepc(struct vcpu* vcpu, uint64_t pc)
+void vcpu_writepc(struct vcpu* vcpu, unsigned long pc)
 {
     vcpu->regs->elr_el2 = pc;
 }

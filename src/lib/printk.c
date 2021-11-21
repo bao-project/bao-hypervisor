@@ -51,7 +51,7 @@ size_t vsprintk(char *buf, const char *fmt, va_list args)
 
             switch (*fmt) {
                 case 'x': {
-                    uint64_t number = is_long ? va_arg(args, uint64_t) : va_arg(args, uint32_t);
+                    unsigned long number = is_long ? va_arg(args, unsigned long) : va_arg(args, unsigned);
                     size_t length = is_long ? 16 : 8;
                     size_t length_in_bits = is_long ? 64 : 32;
                     int byte = 0;
@@ -85,14 +85,14 @@ size_t vsprintk(char *buf, const char *fmt, va_list args)
                     bool keep_zeros = false;
 
                     if (!is_unsigned) {
-                        int64_t number_signed = is_long ? va_arg(args, int64_t) : va_arg(args, int32_t);
+                        unsigned long number_signed = is_long ? va_arg(args, unsigned long) : va_arg(args, unsigned);
                         if (number_signed < 0) {
                             *str++ = 0x2d;
                             number_signed = -(number_signed);
                         }
                         number = number_signed;
                     } else {
-                        number = is_long ? va_arg(args, uint64_t) : va_arg(args, uint32_t);
+                        number = is_long ? va_arg(args, unsigned long) : va_arg(args, unsigned);
                     }
 
                     divisor_value_uint64_t = 1000000000;

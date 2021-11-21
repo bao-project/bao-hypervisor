@@ -23,7 +23,7 @@ struct emul_access {
     bool write;
     bool sign_ext;
     size_t width;
-    uint64_t reg;
+    unsigned long reg;
     size_t reg_width;
 };
 
@@ -64,9 +64,9 @@ static inline void emul_write(struct emul_access* emul, uint64_t val)
     }
 }
 
-static inline uint64_t emul_read(struct emul_access* emul)
+static inline unsigned long emul_read(struct emul_access* emul)
 {
-    uint64_t val = 0;
+    unsigned long val = 0;
 
     switch (emul->width) {
         case 1:

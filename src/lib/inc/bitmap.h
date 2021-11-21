@@ -47,7 +47,7 @@ static inline void bitmap_clear(bitmap_t* map, size_t bit)
     map[bit / BITMAP_GRANULE_LEN] &= ~(ONE << (bit % BITMAP_GRANULE_LEN));
 }
 
-static inline uint64_t bitmap_get(bitmap_t* map, size_t bit)
+static inline unsigned bitmap_get(bitmap_t* map, size_t bit)
 {
     return (map[bit / BITMAP_GRANULE_LEN] & (ONE << (bit % BITMAP_GRANULE_LEN)))
                ? 1U

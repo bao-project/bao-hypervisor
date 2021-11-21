@@ -60,24 +60,24 @@ void vcpu_arch_reset(struct vcpu *vcpu, vaddr_t entry)
     CSRW(CSR_VSATP, 0);
 }
 
-uint64_t vcpu_readreg(struct vcpu *vcpu, uint64_t reg)
+unsigned long vcpu_readreg(struct vcpu *vcpu, unsigned long reg)
 {
     if ((reg <= 0) || (reg > 31)) return 0;
     return vcpu->regs->x[reg - 1];
 }
 
-void vcpu_writereg(struct vcpu *vcpu, uint64_t reg, uint64_t val)
+void vcpu_writereg(struct vcpu *vcpu, unsigned long reg, unsigned long val)
 {
     if ((reg <= 0) || (reg > 31)) return;
     vcpu->regs->x[reg - 1] = val;
 }
 
-uint64_t vcpu_readpc(struct vcpu *vcpu)
+unsigned long vcpu_readpc(struct vcpu *vcpu)
 {
     return vcpu->regs->sepc;
 }
 
-void vcpu_writepc(struct vcpu *vcpu, uint64_t pc)
+void vcpu_writepc(struct vcpu *vcpu, unsigned long pc)
 {
     vcpu->regs->sepc = pc;
 }

@@ -40,7 +40,7 @@ struct sbi_hsm {
     spinlock_t lock;
     enum { STARTED, STOPPED, START_PENDING, STOP_PENDING } state;
     vaddr_t start_addr;
-    uint64_t priv; 
+    unsigned priv;
 };
 
 void sbi_init();

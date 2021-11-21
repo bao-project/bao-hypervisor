@@ -456,7 +456,7 @@
 #ifndef __ASSEMBLER__
 
 #define MRS(reg) ({\
-    uint64_t _temp;\
+    unsigned long _temp;\
     asm volatile("mrs %0, " XSTR(reg) "\n\r" : "=r"(_temp));\
     _temp;\
 })

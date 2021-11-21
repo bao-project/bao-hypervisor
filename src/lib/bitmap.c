@@ -21,7 +21,7 @@ ssize_t bitmap_find_nth(bitmap_t* map, size_t size, size_t nth, size_t start,
     if (size <= 0 || nth <= 0 || start < 0) return -1;
 
     size_t count = 0;
-    uint64_t bit = set ? 1 : 0;
+    unsigned bit = set ? 1 : 0;
 
     for (ssize_t i = start; i < size; i++) {
         if (bitmap_get(map, i) == bit) {
@@ -37,7 +37,7 @@ size_t bitmap_count_consecutive(bitmap_t* map, size_t size, size_t start,
 {
     if (n <= 1) return n;
 
-    uint8_t b = bitmap_get(map, start);
+    unsigned b = bitmap_get(map, start);
     size_t count = 1;
     start += 1;
 
