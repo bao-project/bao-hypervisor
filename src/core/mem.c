@@ -32,7 +32,7 @@ extern uint8_t _image_start, _image_end, _dmem_phys_beg, _dmem_beg,
     _cpu_private_beg, _cpu_private_end, _vm_beg, _vm_end, _config_start,
     _config_end;
 
-extern struct dev _dev_init_table_start, _dev_init_table_end;
+extern uint8_t _dev_init_table_start, _dev_init_table_end;
 
 void switch_space(struct cpu *, paddr_t);
 

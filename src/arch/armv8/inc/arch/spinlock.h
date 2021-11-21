@@ -29,7 +29,7 @@ typedef volatile uint32_t spinlock_t;
 
 static inline void spin_lock(spinlock_t* lock)
 {
-    uint32_t const ONE = 1;
+    spinlock_t const ONE = 1;
     spinlock_t tmp;
 
     asm volatile(

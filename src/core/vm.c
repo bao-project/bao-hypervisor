@@ -306,7 +306,7 @@ void vm_emul_add_mem(struct vm* vm, struct emul_mem* emu)
     if (ptr != NULL) {
         ptr->type = EMUL_MEM;
         ptr->emu_mem = *emu;
-        list_push(&vm->emul_list, (void*)ptr);
+        list_push(&vm->emul_list, (node_t*)ptr);
         // TODO: if we plan to grow the VM's PAS dynamically, after
         // inialization,
         // the pages for this emulation region must be reserved in the stage 2
@@ -320,7 +320,7 @@ void vm_emul_add_reg(struct vm* vm, struct emul_reg* emu)
     if (ptr != NULL) {
         ptr->type = EMUL_REG;
         ptr->emu_reg = *emu;
-        list_push(&vm->emul_list, (void*)ptr);
+        list_push(&vm->emul_list, (node_t*)ptr);
         // TODO: if we plan to grow the VM's PAS dynamically, after
         // inialization,
         // the pages for this emulation region must be reserved in the stage 2

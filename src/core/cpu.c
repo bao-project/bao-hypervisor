@@ -48,11 +48,11 @@ void cpu_init(cpuid_t cpu_id, paddr_t load_addr)
         objcache_init(&msg_cache, sizeof(struct cpu_msg_node), SEC_HYP_GLOBAL,
                       false);
 
-        ipi_cpumsg_handlers = &_ipi_cpumsg_handlers_start;
+        ipi_cpumsg_handlers = (cpu_msg_handler_t*)&_ipi_cpumsg_handlers_start;
         ipi_cpumsg_handler_num =
             ((size_t)&_ipi_cpumsg_handlers_size) / sizeof(cpu_msg_handler_t);
         for (size_t i = 0; i < ipi_cpumsg_handler_num; i++) {
-            (&_ipi_cpumsg_handlers_id_start)[i] = i;
+            ((size_t*)&_ipi_cpumsg_handlers_id_start)[i] = i;
         }
     }
 

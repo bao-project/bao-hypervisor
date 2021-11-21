@@ -54,7 +54,7 @@ size_t vsprintk(char *buf, const char *fmt, va_list args)
                     unsigned long number = is_long ? va_arg(args, unsigned long) : va_arg(args, unsigned);
                     size_t length = is_long ? 16 : 8;
                     size_t length_in_bits = is_long ? 64 : 32;
-                    int byte = 0;
+                    uint8_t byte = 0;
                     size_t i = 0;
                     bool keep_zeros = false;
 

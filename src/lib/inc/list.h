@@ -76,7 +76,7 @@ static inline node_t* list_pop(struct list* list)
 
         spin_unlock(&list->lock);
     }
-    return (void*)temp;
+    return temp;
 }
 
 static inline node_t* list_peek(struct list* list)
@@ -85,7 +85,7 @@ static inline node_t* list_peek(struct list* list)
     if (list != NULL) {
         temp = list->head;
     }
-    return (void*)temp;
+    return temp;
 }
 
 static inline bool list_empty(struct list* list)
