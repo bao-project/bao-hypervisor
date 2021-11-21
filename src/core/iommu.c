@@ -34,7 +34,7 @@ void iommu_init()
 }
 
 /* Configure architecture dependent stuff. */
-int iommu_vm_init(struct vm *vm, const struct vm_config *config)
+bool iommu_vm_init(struct vm *vm, const struct vm_config *config)
 {
     objcache_init(&vm->iommu.dev_oc, sizeof(struct iommu_dev_node),
                   SEC_HYP_GLOBAL, false);
@@ -43,9 +43,9 @@ int iommu_vm_init(struct vm *vm, const struct vm_config *config)
 }
 
 /* Allows vms to add devices to their address space. */
-int iommu_vm_add_device(struct vm *vm, streamid_t dev_id)
+bool iommu_vm_add_device(struct vm *vm, streamid_t dev_id)
 {
-    int res = -1;
+    bool res = false;
 
     /*
      * If dev_id == 0 assume global mask includes
@@ -58,13 +58,13 @@ int iommu_vm_add_device(struct vm *vm, streamid_t dev_id)
         res = iommu_arch_vm_add_device(vm, dev_id);
     }
 
-    if (res >= 0) {
+    if (res) {
         struct iommu_dev_node *ptr = objcache_alloc(&vm->iommu.dev_oc);
         if(ptr != NULL){
             ptr->dev.id = dev_id;
-            list_push(&vm->iommu.dev_list, (void *)ptr);
+            list_push(&vm->iommu.dev_list, (node_t*)ptr);
         } else {
-            res = -1;
+            res = false;
         }
     }
 

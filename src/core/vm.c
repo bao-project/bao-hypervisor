@@ -179,7 +179,7 @@ static void vm_init_mem_regions(struct vm* vm, const struct vm_config* config)
 {
     for (size_t i = 0; i < config->platform.region_num; i++) {
         struct mem_region* reg = &config->platform.regions[i];
-        int img_is_in_rgn = range_in_range(
+        bool img_is_in_rgn = range_in_range(
             config->image.base_addr, config->image.size, reg->base, reg->size);
         if (img_is_in_rgn) {
             vm_map_img_rgn(vm, config, reg);
@@ -234,11 +234,11 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* config)
     }
 
     /* iommu */
-    if (iommu_vm_init(vm, config) >= 0) {
+    if (iommu_vm_init(vm, config)) {
         for (size_t i = 0; i < config->platform.dev_num; i++) {
             struct dev_region* dev = &config->platform.devs[i];
             if (dev->id) {
-                if(iommu_vm_add_device(vm, dev->id) < 0){
+                if(!iommu_vm_add_device(vm, dev->id)){
                     ERROR("Failed to add device to iommu");
                 }
             }

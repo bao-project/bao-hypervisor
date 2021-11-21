@@ -18,14 +18,14 @@
 #include <iommu.h>
 #include <arch/smmuv2.h>
 
-int iommu_arch_init()
+bool iommu_arch_init()
 {
     if(platform.arch.smmu.base){
         smmu_init();
-        return 0;
+        return true;
     }
 
-    return -1;
+    return false;
 }
 
 static ssize_t iommu_vm_arch_init_ctx(struct vm *vm)
@@ -49,7 +49,7 @@ static ssize_t iommu_vm_arch_init_ctx(struct vm *vm)
     return ctx_id;
 }
 
-static int iommu_vm_arch_add(struct vm *vm, streamid_t mask, streamid_t id)
+static bool iommu_vm_arch_add(struct vm *vm, streamid_t mask, streamid_t id)
 {
     ssize_t vm_ctx = iommu_vm_arch_init_ctx(vm);
     streamid_t glbl_mask = vm->iommu.arch.global_mask;
@@ -58,28 +58,28 @@ static int iommu_vm_arch_add(struct vm *vm, streamid_t mask, streamid_t id)
     bool group = (bool) mask;
     
     if(vm_ctx < 0){
-        return -1;
+        return false;
     }
 
     if (!smmu_compatible_sme_exists(prep_mask, prep_id, vm_ctx, group)) {
         size_t sme = smmu_alloc_sme();
         if(sme < 0){
             INFO("iommu: smmuv2 no more free sme available.");
-            return -1;
+            return false;
         }
         smmu_write_sme(sme, prep_mask, prep_id, group);
         smmu_write_s2c(sme, vm_ctx);
     }
 
-    return 0;
+    return true;
 }
 
-inline int iommu_arch_vm_add_device(struct vm *vm, streamid_t id)
+inline bool iommu_arch_vm_add_device(struct vm *vm, streamid_t id)
 {
     return iommu_vm_arch_add(vm, 0, id);
 }
 
-int iommu_arch_vm_init(struct vm *vm, const struct vm_config *config)
+bool iommu_arch_vm_init(struct vm *vm, const struct vm_config *config)
 {
     vm->iommu.arch.global_mask = 
         config->platform.arch.smmu.global_mask | platform.arch.smmu.global_mask;
@@ -90,10 +90,10 @@ int iommu_arch_vm_init(struct vm *vm, const struct vm_config *config)
         /* Register each group. */
         const struct smmu_group *group =
             &config->platform.arch.smmu.smmu_groups[i];
-        if(iommu_vm_arch_add(vm, group->group_mask, group->group_id) < 0){
-            return -1;
+        if(!iommu_vm_arch_add(vm, group->group_mask, group->group_id)){
+            return false;
         }
     }
 
-    return 0;
+    return true;
 }

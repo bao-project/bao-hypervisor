@@ -34,12 +34,12 @@ struct iommu_vm {
 void iommu_init();
 
 /* iommu api for vms. */
-int iommu_vm_init(struct vm *vm, const struct vm_config *config);
-int iommu_vm_add_device(struct vm *vm, streamid_t dev_id);
+bool iommu_vm_init(struct vm *vm, const struct vm_config *config);
+bool iommu_vm_add_device(struct vm *vm, streamid_t dev_id);
 
 /* Must be implemented by architecture. */
-int iommu_arch_init();
-int iommu_arch_vm_init(struct vm *vm, const struct vm_config *config);
-int iommu_arch_vm_add_device(struct vm *vm, streamid_t id);
+bool iommu_arch_init();
+bool iommu_arch_vm_init(struct vm *vm, const struct vm_config *config);
+bool iommu_arch_vm_add_device(struct vm *vm, streamid_t id);
 
 #endif

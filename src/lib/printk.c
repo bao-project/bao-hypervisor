@@ -35,18 +35,18 @@ size_t vsprintk(char *buf, const char *fmt, va_list args)
 
         if (*fmt == '%') {
             ++fmt;
-            uint64_t is_unsigned = 0;
-            uint64_t zero_padding = 0;
-            uint64_t is_long = 0;
+            bool is_unsigned = false;
+            bool zero_padding = false;
+            bool is_long = false;
 
             if (*fmt == '0') {
                 ++fmt;
-                zero_padding = 1;
+                zero_padding = true;
             }
 
            if (*fmt == 'l') {
                 ++fmt;
-                is_long = 1;
+                is_long = true;
            }
 
             switch (*fmt) {
@@ -76,7 +76,7 @@ size_t vsprintk(char *buf, const char *fmt, va_list args)
                     break;
                 }
                 case 'u':
-                    is_unsigned = 1;
+                    is_unsigned = true;
                 case 'i':
                 case 'd': {
                     size_t i, j, max_num_zeros, num_of_digits_uint64_t,

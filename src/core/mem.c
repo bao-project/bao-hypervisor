@@ -206,9 +206,8 @@ static bool pp_alloc(struct page_pool *pool, size_t n, bool aligned,
     ppages->size = 0;
 
     bool ok = false;
-    uint64_t base = -1;
 
-    if (n == 0) return base;
+    if (n == 0) return true;
 
     spin_lock(&pool->lock);
 
@@ -574,7 +573,7 @@ void mem_free_vpage(struct addr_space *as, vaddr_t at, size_t n,
     spin_unlock(&as->lock);
 }
 
-int mem_map(struct addr_space *as, vaddr_t va, struct ppages *ppages,
+bool mem_map(struct addr_space *as, vaddr_t va, struct ppages *ppages,
             size_t n, pte_t flags)
 {
     size_t count = 0;
@@ -584,7 +583,7 @@ int mem_map(struct addr_space *as, vaddr_t va, struct ppages *ppages,
     struct section *sec = mem_find_sec(as, vaddr);
 
     if ((sec == NULL) || (sec != mem_find_sec(as, vaddr + n * PAGE_SIZE - 1)))
-        return -1;
+        return false;
 
     spin_lock(&as->lock);
     if (sec->shared) spin_lock(&sec->lock);
@@ -670,10 +669,10 @@ int mem_map(struct addr_space *as, vaddr_t va, struct ppages *ppages,
     }
     spin_unlock(&as->lock);
 
-    return 0;
+    return true;
 }
 
-int mem_map_reclr(struct addr_space *as, vaddr_t va, struct ppages *ppages,
+bool mem_map_reclr(struct addr_space *as, vaddr_t va, struct ppages *ppages,
                     size_t n, pte_t flags)
 {
     if (ppages == NULL) {
@@ -771,7 +770,7 @@ int mem_map_reclr(struct addr_space *as, vaddr_t va, struct ppages *ppages,
     mem_free_vpage(&cpu.as, reclrd_va_base, reclrd_num, false);
     mem_free_vpage(&cpu.as, phys_va_base, n, false);
 
-    return 0;
+    return true;
 }
 
 bool mem_are_ppages_reserved_in_pool(struct page_pool *ppool, struct ppages *ppages)
@@ -854,7 +853,8 @@ bool mem_reserve_ppages(struct ppages *ppages)
     return mem_reserve_ppages_in_pool_list(&page_pool_list, ppages);
 }
 
-int mem_map_dev(struct addr_space *as, vaddr_t va, paddr_t base, size_t n)
+bool mem_map_dev(struct addr_space *as, vaddr_t va, paddr_t base,
+                size_t n)
 {
     struct ppages pages = mem_ppages_get(base, n);
     return mem_map(as, va, &pages, n,

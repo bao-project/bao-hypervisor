@@ -43,12 +43,12 @@ typedef size_t (*sync_handler_t)();
 
 extern size_t sbi_vs_handler();
 
-static inline int ins_ldst_decode(vaddr_t ins, struct emul_access *emul)
+static inline bool ins_ldst_decode(vaddr_t ins, struct emul_access *emul)
 {
     if (INS_COMPRESSED(ins)) {
         if (INS_C_OPCODE(ins) != MATCH_C_LOAD &&
             INS_C_OPCODE(ins) != MATCH_C_STORE) {
-            return -1;
+            return false;
         }
 
         emul->width = 4;
@@ -58,7 +58,7 @@ static inline int ins_ldst_decode(vaddr_t ins, struct emul_access *emul)
         emul->sign_ext = true;
     } else {
         if (INS_OPCODE(ins) != MATCH_LOAD && INS_OPCODE(ins) != MATCH_STORE) {
-            return -1;
+            return false;
         }
 
         unsigned funct3 = INS_FUNCT3(ins);
@@ -71,7 +71,7 @@ static inline int ins_ldst_decode(vaddr_t ins, struct emul_access *emul)
         emul->sign_ext = !(funct3 & 0x4);
     }
 
-    return 0;
+    return true;
 }
 
 size_t guest_page_fault_handler()
@@ -95,7 +95,7 @@ size_t guest_page_fault_handler()
         unsigned long ins = read_ins(ins_addr);
 
         struct emul_access emul;
-        if (ins_ldst_decode(ins, &emul) < 0) {
+        if (!ins_ldst_decode(ins, &emul)) {
             ERROR("cant decode ld/st instruction");
         }
         emul.addr = addr;
