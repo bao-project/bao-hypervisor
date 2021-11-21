@@ -285,7 +285,7 @@ struct sbiret sbi_ipi_handler(unsigned long fid)
         if (bitmap_get((bitmap_t*)&hart_mask, i)) {
             vcpuid_t vhart_id = hart_mask_base + i;
             cpuid_t phart_id = vm_translate_to_pcpuid(cpu.vcpu->vm, vhart_id);
-            if(phart_id >= 0) cpu_send_msg(phart_id, &msg);
+            if(phart_id != INVALID_CPUID) cpu_send_msg(phart_id, &msg);
         }
     }
 

@@ -120,9 +120,12 @@ void vgicr_emul_pidr_access(struct emul_access *acc,
                             bool gicr_access, vcpuid_t vgicr_id)
 {
     if (!acc->write) {
+        unsigned long val = 0;
         cpuid_t pgicr_id = vm_translate_to_pcpuid(cpu.vcpu->vm, vgicr_id);
-        vcpu_writereg(cpu.vcpu, acc->reg,
-                      gicr[pgicr_id].ID[((acc->addr & 0xff) - 0xd0) / 4]);
+        if(pgicr_id != INVALID_CPUID) {
+            val = gicr[pgicr_id].ID[((acc->addr & 0xff) - 0xd0) / 4];
+        } 
+        vcpu_writereg(cpu.vcpu, acc->reg, val);
     }
 }
 

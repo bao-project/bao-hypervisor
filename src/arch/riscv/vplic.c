@@ -29,7 +29,7 @@ static int vplic_vcntxt_to_pcntxt(struct vcpu *vcpu, int vcntxt_id)
     int pcntxt_id = -1;
     pcntxt.mode = vcntxt.mode;
     pcntxt.hart_id = vm_translate_to_pcpuid(vcpu->vm, vcntxt.hart_id);
-    if (pcntxt.hart_id >= 0) {
+    if (pcntxt.hart_id != INVALID_CPUID) {
         pcntxt_id = plic_plat_cntxt_to_id(pcntxt);
     }
 
