@@ -51,7 +51,7 @@ void interrupts_arch_init()
     CSRS(sie, SIE_SEIE);
 }
 
-void interrupts_arch_ipi_send(cpuid_t target_cpu, uint64_t ipi_id)
+void interrupts_arch_ipi_send(cpuid_t target_cpu, irqid_t ipi_id)
 {
     sbi_send_ipi(1ULL << target_cpu, 0);
 }
@@ -65,7 +65,7 @@ void interrupts_arch_cpu_enable(bool en)
     }
 }
 
-void interrupts_arch_enable(uint64_t int_id, bool en)
+void interrupts_arch_enable(irqid_t int_id, bool en)
 {
     if (int_id == SOFT_INT_ID) {
         if (en)
@@ -111,7 +111,7 @@ void interrupts_arch_handle()
     }
 }
 
-bool interrupts_arch_check(uint64_t int_id)
+bool interrupts_arch_check(irqid_t int_id)
 {
     if (int_id == SOFT_INT_ID) {
         return CSRR(sip) & SIP_SSIP;
@@ -122,7 +122,7 @@ bool interrupts_arch_check(uint64_t int_id)
     }
 }
 
-void interrupts_arch_clear(uint64_t int_id)
+void interrupts_arch_clear(irqid_t int_id)
 {
     if (int_id == SOFT_INT_ID) {
         CSRC(sip, SIP_SSIP);
@@ -135,17 +135,17 @@ void interrupts_arch_clear(uint64_t int_id)
     }
 }
 
-inline bool interrupts_arch_conflict(bitmap_t* interrupt_bitmap, uint64_t int_id)
+inline bool interrupts_arch_conflict(bitmap_t* interrupt_bitmap, irqid_t int_id)
 {
     return bitmap_get(interrupt_bitmap, int_id);
 }
 
-void interrupts_arch_vm_assign(struct vm *vm, uint64_t id)
+void interrupts_arch_vm_assign(struct vm *vm, irqid_t id)
 {
     vplic_set_hw(vm, id);
 }
 
-void interrupts_arch_vm_inject(struct vm *vm, uint64_t id)
+void interrupts_arch_vm_inject(struct vm *vm, irqid_t id)
 {
     vplic_inject(cpu.vcpu, id);
 }

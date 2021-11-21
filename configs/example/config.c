@@ -84,7 +84,7 @@ struct config config = {
                         .va = 0x1c090000,
                         .size = 0x10000,
                         .interrupt_num = 1,
-                        .interrupts = (uint64_t[]) {38} 
+                        .interrupts = (irqid_t[]) {38}
                     }
                 },
 
@@ -95,7 +95,7 @@ struct config config = {
                         .size = 0x1000,
                         .shmem_id = 0,
                         .interrupt_num = 1,
-                        .interrupts = (uint64_t[]) {42}
+                        .interrupts = (irqid_t[]) {42}
                     }
                 },
 
@@ -144,12 +144,12 @@ struct config config = {
                         .va = 0x1c090000,
                         .size = 0x10000,
                         .interrupt_num = 1,
-                        .interrupts = (uint64_t[]) {39} 
+                        .interrupts = (irqid_t[]) {39}
                     },
                     {
                         /* Timer interrupt */
                         .interrupt_num = 1,
-                        .interrupts = (uint64_t[]) {27}
+                        .interrupts = (irqid_t[]) {27}
                     }
                 },
 
@@ -160,7 +160,7 @@ struct config config = {
                         .size = 0x1000,
                         .shmem_id = 0,
                         .interrupt_num = 1,
-                        .interrupts = (uint64_t[]) {112}
+                        .interrupts = (irqid_t[]) {112}
                     }
                 },
 

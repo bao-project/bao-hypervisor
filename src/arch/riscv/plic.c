@@ -65,7 +65,7 @@ bool plic_cntxt_valid(unsigned cntxt_id) {
     return (cntxt_id < PLIC_PLAT_CNTXT_NUM) && (cntxt.mode <= PRIV_S);
 }
 
-void plic_set_enbl(unsigned cntxt, unsigned int_id, bool en)
+void plic_set_enbl(unsigned cntxt, irqid_t int_id, bool en)
 {
     int reg_ind = int_id / (sizeof(uint32_t) * 8);
     uint32_t mask = 1U << (int_id % (sizeof(uint32_t) * 8));
@@ -80,7 +80,7 @@ void plic_set_enbl(unsigned cntxt, unsigned int_id, bool en)
     }
 }
 
-bool plic_get_enbl(unsigned cntxt, unsigned int_id)
+bool plic_get_enbl(unsigned cntxt, irqid_t int_id)
 {
     int reg_ind = int_id / (sizeof(uint32_t) * 8);
     uint32_t mask = 1U << (int_id % (sizeof(uint32_t) * 8));
@@ -91,14 +91,14 @@ bool plic_get_enbl(unsigned cntxt, unsigned int_id)
         return false;
 }
 
-void plic_set_prio(unsigned int_id, uint32_t prio)
+void plic_set_prio(irqid_t int_id, uint32_t prio)
 {
     if (int_id <= PLIC_IMPL_INTERRUPTS) {
         plic_global.prio[int_id] = prio;
     }
 }
 
-uint32_t plic_get_prio(unsigned int_id)
+uint32_t plic_get_prio(irqid_t int_id)
 {
     if (int_id <= PLIC_IMPL_INTERRUPTS)
         return plic_global.prio[int_id];
@@ -106,7 +106,7 @@ uint32_t plic_get_prio(unsigned int_id)
         return 0;
 }
 
-bool plic_get_pend(unsigned int_id)
+bool plic_get_pend(irqid_t int_id)
 {
     int reg_ind = int_id / 32;
     int mask = (1U << (int_id % 32));

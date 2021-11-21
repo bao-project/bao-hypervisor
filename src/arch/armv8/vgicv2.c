@@ -76,7 +76,7 @@ void vgicd_emul_sgiregs_access(struct emul_access *acc,
     if ((acc->addr & 0xfff) == (((uint64_t)&gicd.SGIR) & 0xfff)) {
         if (acc->write) {
             cpumap_t trgtlist = 0;
-            uint64_t int_id = GICD_SGIR_SGIINTID(val);
+            irqid_t int_id = GICD_SGIR_SGIINTID(val);
             switch (GICD_SGIR_TRGLSTFLT(val)) {
                 case 0:
                     trgtlist = vm_translate_to_pcpu_mask(

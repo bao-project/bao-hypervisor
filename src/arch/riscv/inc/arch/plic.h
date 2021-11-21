@@ -49,13 +49,13 @@ extern size_t PLIC_IMPL_INTERRUPTS;
 void plic_init();
 void plic_cpu_init();
 void plic_handle();
-void plic_set_enbl(unsigned cntxt, unsigned int_id, bool en);
-bool plic_get_enbl(unsigned cntxt, unsigned int_id);
-void plic_set_prio(unsigned int_id, uint32_t prio);
-uint32_t plic_get_prio(unsigned int_id);
+void plic_set_enbl(unsigned cntxt, irqid_t int_id, bool en);
+bool plic_get_enbl(unsigned cntxt, irqid_t int_id);
+void plic_set_prio(irqid_t int_id, uint32_t prio);
+uint32_t plic_get_prio(irqid_t int_id);
 void plic_set_threshold(unsigned cntxt, uint32_t threshold);
-uint32_t plic_get_threshold(unsigned int_id);
-bool plic_get_pend(unsigned int_id);
+uint32_t plic_get_threshold(irqid_t int_id);
+bool plic_get_pend(irqid_t int_id);
 
 struct plic_cntxt {
     cpuid_t hart_id;

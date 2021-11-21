@@ -65,7 +65,7 @@ struct dev_region {
     vaddr_t va;
     size_t size;
     size_t interrupt_num;
-    uint64_t *interrupts;
+    irqid_t *interrupts;
     uint32_t id; /* bus master id for iommu effects */
 };
 

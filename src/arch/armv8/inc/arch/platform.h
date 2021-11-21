@@ -26,14 +26,14 @@ struct arch_platform {
         paddr_t gicd_addr;
         paddr_t gicr_addr;
 
-        uint64_t maintenance_id;
+        irqid_t maintenance_id;
 
         size_t interrupt_num;
     } gic;
 
     struct {
         paddr_t base;
-        uint64_t interrupt_id;
+        irqid_t interrupt_id;
         uint16_t global_mask;
 
         size_t group_num;

@@ -192,7 +192,7 @@ void gicc_dir(uint32_t dir) {
      gicc.DIR = dir;
 }
 
-void gic_send_sgi(cpuid_t cpu_target, uint64_t sgi_num)
+void gic_send_sgi(cpuid_t cpu_target, irqid_t sgi_num)
 {
     if (sgi_num < GIC_MAX_SGIS && cpu_target < GIC_MAX_TARGETS) {
         gicd.SGIR = 
@@ -211,7 +211,7 @@ static inline uint8_t gic_translate_cpu_to_trgt(uint8_t cpu_targets) {
     return gic_targets;
 }
 
-void gicd_set_trgt(uint64_t int_id, uint8_t cpu_targets)
+void gicd_set_trgt(irqid_t int_id, uint8_t cpu_targets)
 {
     size_t reg_ind = GIC_TARGET_REG(int_id);
     size_t off = GIC_TARGET_OFF(int_id);
@@ -225,42 +225,42 @@ void gicd_set_trgt(uint64_t int_id, uint8_t cpu_targets)
     spin_unlock(&gicd_lock);
 }
 
-void gic_set_prio(uint64_t int_id, uint8_t prio)
+void gic_set_prio(irqid_t int_id, uint8_t prio)
 {
     gicd_set_prio(int_id, prio);
 }
 
-uint64_t gic_get_prio(uint64_t int_id)
+uint64_t gic_get_prio(irqid_t int_id)
 {
     return gicd_get_prio(int_id);
 }
 
-void gic_set_icfgr(uint64_t int_id, uint8_t cfg)
+void gic_set_icfgr(irqid_t int_id, uint8_t cfg)
 {
     gicd_set_icfgr(int_id, cfg);
 }
 
-bool gic_get_pend(uint64_t int_id)
+bool gic_get_pend(irqid_t int_id)
 {
     return gicd_get_pend(int_id);
 }
 
-void gic_set_act(uint64_t int_id, bool act)
+void gic_set_act(irqid_t int_id, bool act)
 {
     gicd_set_act(int_id, act);
 }
 
-bool gic_get_act(uint64_t int_id)
+bool gic_get_act(irqid_t int_id)
 {
     return gicd_get_act(int_id);
 }
 
-void gic_set_enable(uint64_t int_id, bool en)
+void gic_set_enable(irqid_t int_id, bool en)
 {
     gicd_set_enable(int_id, en);
 }
 
-void gic_set_pend(uint64_t int_id, bool pend)
+void gic_set_pend(irqid_t int_id, bool pend)
 {
     if (gic_is_sgi(int_id)) {
         size_t reg_ind = GICD_SGI_REG(int_id);
