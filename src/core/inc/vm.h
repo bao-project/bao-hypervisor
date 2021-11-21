@@ -33,7 +33,7 @@
 #include <ipc.h>
 
 struct vm {
-    uint64_t id;
+    vmid_t id;
 
     const struct vm_config* config;
 
@@ -78,7 +78,7 @@ struct vcpu {
 extern struct vm vm;
 extern struct config* vm_config_ptr;
 
-void vm_init(struct vm* vm, const struct vm_config* config, bool master, uint64_t vm_id);
+void vm_init(struct vm* vm, const struct vm_config* config, bool master, vmid_t vm_id);
 void vm_start(struct vm* vm, vaddr_t entry);
 struct vcpu* vm_get_vcpu(struct vm* vm, vcpuid_t vcpuid);
 void vm_emul_add_mem(struct vm* vm, struct emul_mem* emu);

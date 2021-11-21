@@ -61,7 +61,7 @@ void vmm_init()
 
     bool master = false;
     bool assigned = false;
-    size_t vm_id = 0;
+    vmid_t vm_id = 0;
     struct vm_config *vm_config = NULL;
 
     /**
