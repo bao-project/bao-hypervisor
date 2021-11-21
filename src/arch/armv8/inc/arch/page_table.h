@@ -111,7 +111,7 @@
 #define PT_ROOT_FLAGS_REC_IND_OFF (0)
 #define PT_ROOT_FLAGS_REC_IND_LEN (13)
 #define PT_ROOT_FLAGS_REC_IND_MSK \
-    BIT_MASK(PT_ROOT_FLAGS_REC_IND_OFF, PT_ROOT_FLAGS_REC_IND_LEN)
+    BIT64_MASK(PT_ROOT_FLAGS_REC_IND_OFF, PT_ROOT_FLAGS_REC_IND_LEN)
 
 #define PT_CPU_REC_IND (pt_nentries(&cpu.as.pt, 0) - 1)
 #define PT_VM_REC_IND (pt_nentries(&cpu.as.pt, 0) - 2)

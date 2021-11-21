@@ -291,7 +291,7 @@ bool vgic_add_lr(struct vcpu *vcpu, struct vgic_int *interrupt)
     ssize_t lr_ind = -1;
     uint64_t elrsr = gich_get_elrsr();
     for (size_t i = 0; i < NUM_LRS; i++) {
-        if (bit_get(elrsr, i)) {
+        if (bit64_get(elrsr, i)) {
             lr_ind = i;
             break;
         }
@@ -650,7 +650,7 @@ void vgic_emul_generic_access(struct emul_access *acc,
                 vgic_get_int(cpu.vcpu, first_int + i, vgicr_id);
             if (interrupt == NULL) break;
             if (acc->write) {
-                uint64_t data = bit_extract(val, i * field_width, field_width);
+                uint64_t data = bit64_extract(val, i * field_width, field_width);
                 vgic_int_set_field(handlers, cpu.vcpu, interrupt, data);
             } else {
                 val |= (handlers->read_field(cpu.vcpu, interrupt) & mask)
@@ -1098,11 +1098,11 @@ size_t vgic_get_itln(const struct gic_dscrp *gic_dscrp) {
      */
 
     size_t vtyper_itln =
-        bit_extract(gicd.TYPER, GICD_TYPER_ITLN_OFF, GICD_TYPER_ITLN_LEN);
+        bit32_extract(gicd.TYPER, GICD_TYPER_ITLN_OFF, GICD_TYPER_ITLN_LEN);
 
     if(gic_dscrp->interrupt_num > GIC_MAX_PPIS) {
         vtyper_itln = (ALIGN(gic_dscrp->interrupt_num, 32)/32 - 1) & 
-            BIT_MASK(0, GICD_TYPER_ITLN_LEN);
+            BIT32_MASK(0, GICD_TYPER_ITLN_LEN);
     }
 
     return vtyper_itln;

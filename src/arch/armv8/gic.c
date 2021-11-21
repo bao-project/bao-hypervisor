@@ -88,7 +88,7 @@ void gic_init()
 void gic_handle()
 {
     uint64_t ack = gicc_iar();
-    irqid_t id = bit_extract(ack, GICC_IAR_ID_OFF, GICC_IAR_ID_LEN);
+    irqid_t id = bit32_extract(ack, GICC_IAR_ID_OFF, GICC_IAR_ID_LEN);
 
     if (id < GIC_FIRST_SPECIAL_INTID) {
         enum irq_res res = interrupts_handle(id);
@@ -103,7 +103,7 @@ uint64_t gicd_get_prio(irqid_t int_id)
     size_t off = GIC_PRIO_OFF(int_id);
 
     uint64_t prio =
-        gicd.IPRIORITYR[reg_ind] >> off & BIT_MASK(off, GIC_PRIO_BITS);
+        gicd.IPRIORITYR[reg_ind] >> off & BIT32_MASK(off, GIC_PRIO_BITS);
 
     return prio;
 }
@@ -125,7 +125,7 @@ void gicd_set_prio(irqid_t int_id, uint8_t prio)
 {
     size_t reg_ind = GIC_PRIO_REG(int_id);
     size_t off = GIC_PRIO_OFF(int_id);
-    uint64_t mask = BIT_MASK(off, GIC_PRIO_BITS);
+    uint64_t mask = BIT32_MASK(off, GIC_PRIO_BITS);
 
     spin_lock(&gicd_lock);
 

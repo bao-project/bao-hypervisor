@@ -42,7 +42,7 @@ void aborts_data_lower(uint32_t iss, uint64_t far, uint64_t il)
     }
 
     uint32_t DSFC =
-        bit_extract(iss, ESR_ISS_DA_DSFC_OFF, ESR_ISS_DA_DSFC_LEN) & (0xf << 2);
+        bit64_extract(iss, ESR_ISS_DA_DSFC_OFF, ESR_ISS_DA_DSFC_LEN) & (0xf << 2);
 
     if (DSFC != ESR_ISS_DA_DSFC_TRNSLT) {
         ERROR("data abort is not translation fault - cant deal with it");
@@ -54,13 +54,13 @@ void aborts_data_lower(uint32_t iss, uint64_t far, uint64_t il)
         struct emul_access emul;
         emul.addr = addr;
         emul.width =
-            (1 << bit_extract(iss, ESR_ISS_DA_SAS_OFF, ESR_ISS_DA_SAS_LEN));
+            (1 << bit64_extract(iss, ESR_ISS_DA_SAS_OFF, ESR_ISS_DA_SAS_LEN));
         emul.write = iss & ESR_ISS_DA_WnR_BIT ? true : false;
-        emul.reg = bit_extract(iss, ESR_ISS_DA_SRT_OFF, ESR_ISS_DA_SRT_LEN);
+        emul.reg = bit64_extract(iss, ESR_ISS_DA_SRT_OFF, ESR_ISS_DA_SRT_LEN);
         emul.reg_width =
-            4 + (4 * bit_extract(iss, ESR_ISS_DA_SF_OFF, ESR_ISS_DA_SF_LEN));
+            4 + (4 * bit64_extract(iss, ESR_ISS_DA_SF_OFF, ESR_ISS_DA_SF_LEN));
         emul.sign_ext =
-            bit_extract(iss, ESR_ISS_DA_SSE_OFF, ESR_ISS_DA_SSE_LEN);
+            bit64_extract(iss, ESR_ISS_DA_SSE_OFF, ESR_ISS_DA_SSE_LEN);
 
         // TODO: check if the access is aligned. If not, inject an exception in
         // the vm
@@ -123,7 +123,7 @@ void sysreg_handler(uint32_t iss, uint64_t far, uint64_t il)
         emul.addr = reg_addr;
         emul.width = 8;
         emul.write = iss & ESR_ISS_SYSREG_DIR ? false : true;
-        emul.reg = bit_extract(iss, ESR_ISS_SYSREG_REG_OFF, ESR_ISS_SYSREG_REG_LEN);
+        emul.reg = bit64_extract(iss, ESR_ISS_SYSREG_REG_OFF, ESR_ISS_SYSREG_REG_LEN);
         emul.reg_width = 8;
         emul.sign_ext = false;
 
@@ -153,9 +153,9 @@ void aborts_sync_handler()
 
     ipa_fault_addr = (far & 0xFFF) | (hpfar << 8);
 
-    uint32_t ec = bit_extract(esr, ESR_EC_OFF, ESR_EC_LEN);
-    uint32_t il = bit_extract(esr, ESR_IL_OFF, ESR_IL_LEN);
-    uint32_t iss = bit_extract(esr, ESR_ISS_OFF, ESR_ISS_LEN);
+    uint32_t ec = bit64_extract(esr, ESR_EC_OFF, ESR_EC_LEN);
+    uint32_t il = bit64_extract(esr, ESR_IL_OFF, ESR_IL_LEN);
+    uint32_t iss = bit64_extract(esr, ESR_ISS_OFF, ESR_ISS_LEN);
 
     abort_handler_t handler = abort_handlers[ec];
     if (handler)

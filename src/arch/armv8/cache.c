@@ -37,7 +37,7 @@ void cache_arch_enumerate(struct cache *dscrp)
 
     clidr = MRS(CLIDR_EL1);
     for(size_t i = 0; i < CLIDR_CTYPE_NUM; i++){
-        if((temp = bit_extract(clidr, i*CLIDR_CTYPE_LEN, CLIDR_CTYPE_LEN)) != 0){
+        if((temp = bit64_extract(clidr, i*CLIDR_CTYPE_LEN, CLIDR_CTYPE_LEN)) != 0){
             dscrp->lvls++;
             switch(temp){
                 case CLIDR_CTYPE_IO:
@@ -63,7 +63,7 @@ void cache_arch_enumerate(struct cache *dscrp)
         uint64_t csselr = 0;
         uint64_t ccsidr = 0;
         uint64_t ctr = 0;
-        csselr = bit_insert(csselr, lvl, CSSELR_LVL_OFF, CSSELR_LVL_LEN);
+        csselr = bit64_insert(csselr, lvl, CSSELR_LVL_OFF, CSSELR_LVL_LEN);
 
         if(dscrp->type[lvl] == UNIFIED && first_unified == false){
             first_unified = true;
@@ -71,34 +71,34 @@ void cache_arch_enumerate(struct cache *dscrp)
         }
 
         if(dscrp->type[lvl] != INSTRUCTION){
-            csselr = bit_clear(csselr, CSSELR_IND_BIT);
+            csselr = bit64_clear(csselr, CSSELR_IND_BIT);
             MSR(CSSELR_EL1, csselr);
             ccsidr = MRS(CCSIDR_EL1);
 
-            dscrp->line_size[lvl][0] = 1UL << (bit_extract(ccsidr, 
+            dscrp->line_size[lvl][0] = 1UL << (bit64_extract(ccsidr, 
                 CCSIDR_LINESIZE_OFF, CCSIDR_LINESIZE_LEN) + 4);
-            dscrp->assoc[lvl][0] = bit_extract(ccsidr, CCSIDR_ASSOCIATIVITY_OFF, 
+            dscrp->assoc[lvl][0] = bit64_extract(ccsidr, CCSIDR_ASSOCIATIVITY_OFF, 
                 CCSIDR_ASSOCIATIVITY_LEN) + 1;
-            dscrp->numset[lvl][0] = bit_extract(ccsidr, CCSIDR_NUMSETS_OFF, 
+            dscrp->numset[lvl][0] = bit64_extract(ccsidr, CCSIDR_NUMSETS_OFF, 
                 CCSIDR_NUMSETS_LEN) + 1;
 
             dscrp->indexed[lvl][0] = PIPT;
         }
         
         if(dscrp->type[lvl] == SEPARATE || dscrp->type[lvl] == INSTRUCTION){
-            csselr = bit_set(csselr, CSSELR_IND_BIT);
+            csselr = bit64_set(csselr, CSSELR_IND_BIT);
             MSR(CSSELR_EL1, csselr);
             ccsidr = MRS(CCSIDR_EL1);
 
-            dscrp->line_size[lvl][1] = 1UL << (bit_extract(ccsidr, 
+            dscrp->line_size[lvl][1] = 1UL << (bit64_extract(ccsidr, 
                 CCSIDR_LINESIZE_OFF, CCSIDR_LINESIZE_LEN) + 4);
-            dscrp->assoc[lvl][1] = bit_extract(ccsidr, CCSIDR_ASSOCIATIVITY_OFF, 
+            dscrp->assoc[lvl][1] = bit64_extract(ccsidr, CCSIDR_ASSOCIATIVITY_OFF, 
                 CCSIDR_ASSOCIATIVITY_LEN) + 1;
-            dscrp->numset[lvl][1] = bit_extract(ccsidr, CCSIDR_NUMSETS_OFF, 
+            dscrp->numset[lvl][1] = bit64_extract(ccsidr, CCSIDR_NUMSETS_OFF, 
                 CCSIDR_NUMSETS_LEN) + 1;
 
             ctr = MRS(CTR_EL0);
-            if((ctr & BIT_MASK(CTR_L1LP_OFF, CTR_L1LP_LEN)) == CTR_L1LP_PIPT){
+            if((ctr & BIT64_MASK(CTR_L1LP_OFF, CTR_L1LP_LEN)) == CTR_L1LP_PIPT){
                 dscrp->indexed[lvl][1] = PIPT;
             } else {
                 dscrp->indexed[lvl][1] = VIPT;
@@ -112,7 +112,7 @@ void cache_flush_range(vaddr_t base, size_t size)
 {
     vaddr_t cache_addr = base;
     uint64_t ctr = MRS(CTR_EL0);
-    size_t min_line_size = 1UL << bit_extract(ctr, CTR_DMINLINE_OFF, 
+    size_t min_line_size = 1UL << bit64_extract(ctr, CTR_DMINLINE_OFF,
         CTR_DMINLINE_LEN);
 
     while(cache_addr < (base + size)){

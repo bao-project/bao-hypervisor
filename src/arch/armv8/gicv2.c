@@ -94,7 +94,7 @@ static inline void gicc_init()
 
     gich.HCR |= GICH_HCR_LRENPIE_BIT;
     
-    uint64_t sgi_targets = gicd.ITARGETSR[0] & BIT_MASK(0, GIC_TARGET_BITS);
+    uint64_t sgi_targets = gicd.ITARGETSR[0] & BIT32_MASK(0, GIC_TARGET_BITS);
     ssize_t gic_cpu_id = 
         bitmap_find_nth((bitmap_t*)&sgi_targets, GIC_TARGET_BITS, 1, 0, true);
     if(gic_cpu_id < 0) {
@@ -215,7 +215,7 @@ void gicd_set_trgt(irqid_t int_id, uint8_t cpu_targets)
 {
     size_t reg_ind = GIC_TARGET_REG(int_id);
     size_t off = GIC_TARGET_OFF(int_id);
-    uint32_t mask = BIT_MASK(off, GIC_TARGET_BITS);
+    uint32_t mask = BIT32_MASK(off, GIC_TARGET_BITS);
 
     spin_lock(&gicd_lock);
 
@@ -269,7 +269,7 @@ void gic_set_pend(irqid_t int_id, bool pend)
         if (pend) {
             gicd.SPENDSGIR[reg_ind] = (1U) << (off + cpu.id);
         } else {
-            gicd.CPENDSGIR[reg_ind] = BIT_MASK(off, 8);
+            gicd.CPENDSGIR[reg_ind] = BIT32_MASK(off, 8);
         }
     } else {
         gicd_set_pend(int_id, pend);

@@ -43,7 +43,7 @@ static inline void tlb_vm_inv_va(asid_t vmid, vaddr_t va)
     uint64_t vttbr = 0;
     vttbr = MRS(VTTBR_EL2);
     bool switch_vmid =
-        bit_extract(vttbr, VTTBR_VMID_OFF, VTTBR_VMID_LEN) != vmid;
+        bit64_extract(vttbr, VTTBR_VMID_OFF, VTTBR_VMID_LEN) != vmid;
 
     if (switch_vmid) {
         MSR(VTTBR_EL2, ((vmid << VTTBR_VMID_OFF) & VTTBR_VMID_MSK));
@@ -64,7 +64,7 @@ static inline void tlb_vm_inv_all(asid_t vmid)
     uint64_t vttbr = 0;
     vttbr = MRS(VTTBR_EL2);
     bool switch_vmid =
-        bit_extract(vttbr, VTTBR_VMID_OFF, VTTBR_VMID_LEN) != vmid;
+        bit64_extract(vttbr, VTTBR_VMID_OFF, VTTBR_VMID_LEN) != vmid;
 
     if (switch_vmid) {
         MSR(VTTBR_EL2, ((vmid << VTTBR_VMID_OFF) & VTTBR_VMID_MSK));

@@ -26,15 +26,17 @@
 #if (RV64)
 #define PT_LVLS (3)  // assumes sv39 for rv64
 #define PTE_INDEX_SHIFT(LEVEL) ((9 * (PT_LVLS - 1 - (LEVEL))) + 12)
-#define PTE_ADDR_MSK BIT_MASK(12, 44)
+#define PTE_MASK    BIT64_MASK
+#define PTE_ADDR_MSK PTE_MASK(12, 44)
 #elif (RV32)
 #define PT_LVLS (2)
 #define PTE_INDEX_SHIFT(LEVEL) ((10 * (PT_LVLS - 1 - (LEVEL))) + 12)
-#define PTE_ADDR_MSK BIT_MASK(12, 22)
+#define PTE_MASK    BIT32_MASK
+#define PTE_ADDR_MSK PTE_MASK(12, 22)
 #endif
 
 #define PTE_INDEX(LEVEL, ADDR) (((ADDR) >> PTE_INDEX_SHIFT(LEVEL)) & (0x1FF))
-#define PTE_FLAGS_MSK BIT_MASK(0, 8)
+#define PTE_FLAGS_MSK PTE_MASK(0, 8)
 
 #define PTE_VALID (1ULL << 0)
 #define PTE_READ (1ULL << 1)
@@ -53,7 +55,7 @@
 
 #define PTE_RSW_OFF 8
 #define PTE_RSW_LEN 2
-#define PTE_RSW_MSK BIT_MASK(PTE_RSW_OFF, PTE_RSW_LEN)
+#define PTE_RSW_MSK PTE_MASK(PTE_RSW_OFF, PTE_RSW_LEN)
 
 #define PTE_TABLE (0)
 #define PTE_PAGE (PTE_RWX)
@@ -69,7 +71,7 @@
 #define PT_ROOT_FLAGS_REC_IND_OFF ? ? ?
 #define PT_ROOT_FLAGS_REC_IND_LEN ? ? ?
 #define PT_ROOT_FLAGS_REC_IND_MSK \
-    BIT_MASK(PT_ROOT_FLAGS_REC_IND_OFF, PT_ROOT_FLAGS_REC_IND_LEN)
+    PTE_MASK(PT_ROOT_FLAGS_REC_IND_OFF, PT_ROOT_FLAGS_REC_IND_LEN)
 
 #define PT_CPU_REC_IND (pt_nentries(&cpu.as.pt, 0) - 1)
 #define PT_VM_REC_IND (pt_nentries(&cpu.as.pt, 0) - 2)
