@@ -31,8 +31,9 @@ struct cpu cpu __attribute__((section(".cpu_private")));
 struct cpu_synctoken cpu_glb_sync = {.ready = false};
 
 struct objcache msg_cache;
-extern cpu_msg_handler_t _ipi_cpumsg_handlers_start;
-extern uint64_t _ipi_cpumsg_handlers_size, _ipi_cpumsg_handlers_id_start;
+extern uint8_t _ipi_cpumsg_handlers_start;
+extern uint8_t _ipi_cpumsg_handlers_size;
+extern uint8_t _ipi_cpumsg_handlers_id_start;
 cpu_msg_handler_t *ipi_cpumsg_handlers;
 size_t ipi_cpumsg_handler_num;
 

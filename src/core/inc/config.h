@@ -28,8 +28,8 @@ extern uint8_t _config_end, _images_end;
 #define VM_IMAGE_SIZE(vm_name) ((size_t)&_##vm_name##_vm_size)
 
 #define VM_IMAGE(vm_name, image)                                            \
-    extern uint64_t _##vm_name##_vm_size;                                   \
-    extern uint64_t _##vm_name##_vm_beg;                                    \
+    extern uint8_t _##vm_name##_vm_size;                                   \
+    extern uint8_t _##vm_name##_vm_beg;                                    \
     asm(".pushsection .vm_image_" XSTR(vm_name) ", \"a\"\n\t"               \
         ".global _" XSTR(vm_name) "_vm_beg\n\t"                             \
         "_" XSTR(vm_name) "_vm_beg:\n\t"                                    \
