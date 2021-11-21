@@ -47,13 +47,6 @@ unsigned long cpu_id_to_mpidr(cpuid_t id)
     return platform_arch_cpuid_to_mpdir(&platform, id);
 }
 
-
-cpuid_t cpu_mpidr_to_id(unsigned long mpidr)
-{
-    return platform_arch_mpidr_to_cpuid(&platform, mpidr);
-}
-    
-
 void cpu_arch_idle()
 {
     int64_t err = psci_power_down(PSCI_WAKEUP_IDLE);

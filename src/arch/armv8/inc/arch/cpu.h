@@ -27,7 +27,6 @@ struct cpu_arch {
 };
 
 unsigned long cpu_id_to_mpidr(cpuid_t id);
-cpuid_t cpu_mpidr_to_id(unsigned long mpdir);
 
 extern cpuid_t CPU_MASTER;
 
