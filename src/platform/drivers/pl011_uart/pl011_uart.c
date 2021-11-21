@@ -62,7 +62,7 @@ void uart_set_baud_rate(volatile struct Pl011_Uart_hw * ptr_uart, uint32_t baud_
 
 void uart_init(volatile struct Pl011_Uart_hw * ptr_uart/*, uint32_t baud_rate*/) {
 
-	int lcrh_reg;
+	uint32_t lcrh_reg;
 
 	/* First, disable everything */
 	ptr_uart->control = 0x0;
