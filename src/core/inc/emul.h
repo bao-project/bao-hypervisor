@@ -31,9 +31,7 @@ typedef bool (*emul_handler_t)(struct emul_access*);
 
 struct emul_mem {
     vaddr_t va_base;
-    paddr_t pa_base;
     size_t size;
-    uint64_t flags;
     emul_handler_t handler;
 };
 
