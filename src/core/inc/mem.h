@@ -38,6 +38,7 @@ enum AS_SEC {
     SEC_VM_ANY = 0, /* must be last */
 };
 
+#define HYP_ASID  0
 struct addr_space {
     struct page_table pt;
     enum AS_TYPE type;
