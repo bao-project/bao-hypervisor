@@ -486,7 +486,7 @@ void sbi_lgcy_rfence_handler(unsigned long extid)
     unsigned long phart_mask = 0;
     vm_readmem(cpu.vcpu->vm, &phart_mask, (vaddr_t)hart_mask,
                sizeof(unsigned long), false);
-    phart_mask = vm_translate_to_pcpu_mask(cpu.vcpu->vm, (uint64_t)hart_mask,
+    phart_mask = vm_translate_to_pcpu_mask(cpu.vcpu->vm, (cpumap_t)hart_mask,
                                            sizeof(unsigned long));
 
     unsigned long start_addr = vcpu_readreg(cpu.vcpu, REG_A2);

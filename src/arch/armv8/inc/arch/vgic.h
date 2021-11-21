@@ -122,7 +122,7 @@ bool vgic_get_ownership(struct vcpu *vcpu, struct vgic_int *interrupt);
 void vgic_yield_ownership(struct vcpu *vcpu, struct vgic_int *interrupt);
 void vgic_emul_generic_access(struct emul_access *, struct vgic_reg_handler_info *,
                               bool, vcpuid_t);
-void vgic_send_sgi_msg(struct vcpu *vcpu, uint64_t pcpu_mask, uint64_t int_id);
+void vgic_send_sgi_msg(struct vcpu *vcpu, cpumap_t pcpu_mask, uint64_t int_id);
 size_t vgic_get_itln(const struct gic_dscrp *gic_dscrp);
 
 /* interface for version specific vgic */

@@ -29,6 +29,7 @@ typedef uintptr_t vaddr_t;
 
 typedef unsigned long cpuid_t;
 typedef unsigned long vcpuid_t;
+typedef unsigned long cpumap_t;
 #define INVALID_CPUID   ((cpuid_t)-1)
 
 #endif

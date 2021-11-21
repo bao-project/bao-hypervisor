@@ -40,7 +40,7 @@ void vmm_init()
         spinlock_t lock;
         bool master;
         size_t ncpus;
-        uint64_t cpus;
+        cpumap_t cpus;
         pte_t vm_shared_table;
     } * vm_assign;
 

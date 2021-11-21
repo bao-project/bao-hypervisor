@@ -71,7 +71,7 @@ struct vm_config {
      * If this value is each mutual exclusive for all the VMs, this field
      * allows to direcly assign specific physical cpus to the VM.
      */
-    uint64_t cpu_affinity;
+    cpumap_t cpu_affinity;
 
     /**
      * A bitmap for the assigned colors of the VM. This value is truncated

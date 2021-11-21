@@ -74,7 +74,7 @@ struct shmem {
     uint64_t colors;
     bool place_phys;
     paddr_t phys;
-    uint64_t cpu_masters;
+    cpumap_t cpu_masters;
 };
 
 static inline struct ppages mem_ppages_get(paddr_t base, size_t size)

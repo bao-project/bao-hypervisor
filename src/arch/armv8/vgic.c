@@ -128,7 +128,7 @@ void vgic_yield_ownership(struct vcpu *vcpu, struct vgic_int *interrupt)
     interrupt->owner = NULL;
 }
 
-void vgic_send_sgi_msg(struct vcpu *vcpu, uint64_t pcpu_mask, uint64_t int_id)
+void vgic_send_sgi_msg(struct vcpu *vcpu, cpumap_t pcpu_mask, uint64_t int_id)
 {
     struct cpu_msg msg = {
         VGIC_IPI_ID, VGIC_INJECT,
@@ -156,7 +156,7 @@ void vgic_route(struct vcpu *vcpu, struct vgic_int *interrupt)
             VGIC_IPI_ID, VGIC_ROUTE,
             VGIC_MSG_DATA(vcpu->vm->id, vcpu->id, interrupt->id, 0, 0)};
         vgic_yield_ownership(vcpu, interrupt);
-        uint64_t trgtlist =
+        cpumap_t trgtlist =
             vgic_int_ptarget_mask(vcpu, interrupt) & ~(1ull << vcpu->phys_id);
         for (size_t i = 0; i < platform.cpu_num; i++) {
             if (trgtlist & (1ull << i)) {

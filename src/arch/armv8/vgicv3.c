@@ -232,7 +232,7 @@ bool vgic_icc_sgir_handler(struct emul_access *acc)
     if (acc->write) {
         uint64_t sgir = vcpu_readreg(cpu.vcpu, acc->reg);
         uint64_t int_id = ICC_SGIR_SGIINTID(sgir);
-        uint64_t trgtlist;
+        cpumap_t trgtlist;
         if (sgir & ICC_SGIR_IRM_BIT) {
             trgtlist = cpu.vcpu->vm->cpus & ~(1U << cpu.vcpu->phys_id);
         } else {

@@ -43,7 +43,7 @@ struct vm {
 
     struct list vcpu_list;
     size_t cpu_num;
-    uint64_t cpus;
+    cpumap_t cpus;
 
     struct addr_space as;
 
@@ -87,8 +87,8 @@ emul_handler_t vm_emul_get_mem(struct vm* vm, vaddr_t addr);
 emul_handler_t vm_emul_get_reg(struct vm* vm, vaddr_t addr);
 void vcpu_init(struct vcpu* vcpu, struct vm* vm, vaddr_t entry);
 void vm_msg_broadcast(struct vm* vm, struct cpu_msg* msg);
-uint64_t vm_translate_to_pcpu_mask(struct vm* vm, uint64_t mask, size_t len);
-uint64_t vm_translate_to_vcpu_mask(struct vm* vm, uint64_t mask, size_t len);
+cpumap_t vm_translate_to_pcpu_mask(struct vm* vm, cpumap_t mask, size_t len);
+cpumap_t vm_translate_to_vcpu_mask(struct vm* vm, cpumap_t mask, size_t len);
 
 static inline cpuid_t vm_translate_to_pcpuid(struct vm* vm, vcpuid_t vcpuid)
 {
