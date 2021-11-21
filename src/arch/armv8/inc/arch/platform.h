@@ -55,8 +55,8 @@ struct arch_platform {
 };
 
 struct platform_desc;
-uint64_t platform_arch_cpuid_to_mpdir(const struct platform_desc* plat,
+unsigned long platform_arch_cpuid_to_mpdir(const struct platform_desc* plat,
                                       cpuid_t cpuid);
 cpuid_t platform_arch_mpidr_to_cpuid(const struct platform_desc* plat,
-                                      uint64_t mpidr);
+                                      unsigned long mpidr);
 #endif /* __ARCH_PLATFORM_H__ */

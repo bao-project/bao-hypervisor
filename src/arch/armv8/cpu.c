@@ -32,7 +32,7 @@ void cpu_arch_init(cpuid_t cpuid, paddr_t load_addr)
         for (size_t cpu_core_id = 0; cpu_core_id < platform.cpu_num;
              cpu_core_id++) {
             if(cpu_core_id == cpuid) continue;
-            uint64_t mpdir = cpu_id_to_mpidr(cpu_core_id);
+            unsigned long mpdir = cpu_id_to_mpidr(cpu_core_id);
             // TODO: pass config addr in contextid (x0 register)
             int result = psci_cpu_on(mpdir, load_addr, 0);
             if (!(result == PSCI_E_SUCCESS || result == PSCI_E_ALREADY_ON)) {
@@ -42,13 +42,13 @@ void cpu_arch_init(cpuid_t cpuid, paddr_t load_addr)
     }
 }
 
-uint64_t cpu_id_to_mpidr(cpuid_t id)
+unsigned long cpu_id_to_mpidr(cpuid_t id)
 {
     return platform_arch_cpuid_to_mpdir(&platform, id);
 }
 
 
-cpuid_t cpu_mpidr_to_id(uint64_t mpidr)
+cpuid_t cpu_mpidr_to_id(unsigned long mpidr)
 {
     return platform_arch_mpidr_to_cpuid(&platform, mpidr);
 }

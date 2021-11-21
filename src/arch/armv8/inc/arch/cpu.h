@@ -23,11 +23,11 @@
 
 struct cpu_arch {
     struct psci_off_state psci_off_state;
-    uint64_t mpidr;
+    unsigned long mpidr;
 };
 
-uint64_t cpu_id_to_mpidr(cpuid_t id);
-cpuid_t cpu_mpidr_to_id(uint64_t mpdir);
+unsigned long cpu_id_to_mpidr(cpuid_t id);
+cpuid_t cpu_mpidr_to_id(unsigned long mpdir);
 
 extern cpuid_t CPU_MASTER;
 
