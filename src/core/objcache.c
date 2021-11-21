@@ -84,10 +84,10 @@ static bool slab_free(union slab* slab, void* obj)
     void* obj_addr = obj - sizeof(node_t);
 
     if (slab != NULL) {
-        if (((((uint64_t)slab) & ~(PAGE_SIZE - 1)) ==
-             (((uint64_t)obj_addr) &
+        if (((((uintptr_t)slab) & ~(PAGE_SIZE - 1)) ==
+             (((uintptr_t)obj_addr) &
               ~(PAGE_SIZE - 1))) &&  // obj is part of slab
-            ((((((uint64_t)obj_addr) & (PAGE_SIZE - 1)) -
+            ((((((uintptr_t)obj_addr) & (PAGE_SIZE - 1)) -
                sizeof(slab->header)) %
               slab->header.objsize) == 0) &&  // is aligned to object in slab
             (*((node_t*)(obj - sizeof(node_t))) ==
@@ -104,7 +104,7 @@ static bool slab_free(union slab* slab, void* obj)
 }
 static union slab* slab_get(void* obj)
 {
-    return (union slab*)(((uint64_t)obj) & ~(PAGE_SIZE - 1));
+    return (union slab*)(((uintptr_t)obj) & ~(PAGE_SIZE - 1));
 }
 
 static bool slab_full(union slab* slab)

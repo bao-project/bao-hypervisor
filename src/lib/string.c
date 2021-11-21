@@ -21,8 +21,8 @@ void *memcpy(void *dst, const void *src, size_t count)
     uint8_t *dst_tmp = dst;
     const uint8_t *src_tmp = src;
 
-    if (!((WORD_TYPE)src & (WORD_SIZE - 1)) &&
-        !((WORD_TYPE)dst & (WORD_SIZE - 1))) {
+    if (!((uintptr_t)src & (WORD_SIZE - 1)) &&
+        !((uintptr_t)dst & (WORD_SIZE - 1))) {
         for (i = 0; i < count; i += WORD_SIZE) {
             if (i + (WORD_SIZE - 1) > count - 1) break;
             *(WORD_TYPE *)dst_tmp = *(WORD_TYPE *)src_tmp;

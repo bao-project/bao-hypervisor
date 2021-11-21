@@ -73,7 +73,7 @@ void vgicd_emul_sgiregs_access(struct emul_access *acc,
 {
     uint32_t val = acc->write ? vcpu_readreg(cpu.vcpu, acc->reg) : 0;
 
-    if ((acc->addr & 0xfff) == (((uint64_t)&gicd.SGIR) & 0xfff)) {
+    if ((acc->addr & 0xfff) == (((uintptr_t)&gicd.SGIR) & 0xfff)) {
         if (acc->write) {
             cpumap_t trgtlist = 0;
             irqid_t int_id = GICD_SGIR_SGIINTID(val);
