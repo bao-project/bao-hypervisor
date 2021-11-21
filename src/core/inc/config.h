@@ -77,7 +77,7 @@ struct vm_config {
      * A bitmap for the assigned colors of the VM. This value is truncated
      * depending on the number of available colors calculated at runtime
      */
-    uint64_t colors;
+    colormap_t colors;
 
     /**
      * A description of the virtual platform available to the guest, i.e.,
@@ -114,7 +114,7 @@ extern struct config {
     size_t config_size;
 
     /* Hypervisor colors */
-    uint64_t hyp_colors;
+    colormap_t hyp_colors;
 
     /* Definition of shared memory regions to be used by VMs */
     size_t shmemlist_size;

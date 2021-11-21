@@ -42,7 +42,7 @@ enum AS_SEC {
 struct addr_space {
     struct page_table pt;
     enum AS_TYPE type;
-    uint64_t colors;
+    colormap_t colors;
     asid_t id;
     spinlock_t lock;
 };
@@ -50,13 +50,13 @@ struct addr_space {
 struct ppages {
     paddr_t base;
     size_t size;
-    uint64_t colors;
+    colormap_t colors;
 };
 
 struct mem_region {
     paddr_t base;
     size_t size;
-    uint64_t colors;
+    colormap_t colors;
     bool place_phys;
     paddr_t phys;
 };
@@ -72,7 +72,7 @@ struct dev_region {
 
 struct shmem {
     size_t size;
-    uint64_t colors;
+    colormap_t colors;
     bool place_phys;
     paddr_t phys;
     cpumap_t cpu_masters;
@@ -83,17 +83,17 @@ static inline struct ppages mem_ppages_get(paddr_t base, size_t size)
     return (struct ppages){.colors = 0, .base = base, .size = size};
 }
 
-static inline bool all_clrs(uint64_t clrs)
+static inline bool all_clrs(colormap_t clrs)
 {
     return (clrs == 0) ||
            ((clrs & ((1ULL << COLOR_NUM) - 1)) == ((1ULL << COLOR_NUM) - 1));
 }
 
 void mem_init(paddr_t load_addr, paddr_t config_addr);
-void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, pte_t* root_pt,
-             uint64_t colors);
+void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, 
+            pte_t* root_pt, colormap_t colors);
 void* mem_alloc_page(size_t n, enum AS_SEC sec, bool phys_aligned);
-struct ppages mem_alloc_ppages(uint64_t colors, size_t n, bool aligned);
+struct ppages mem_alloc_ppages(colormap_t colors, size_t n, bool aligned);
 vaddr_t mem_alloc_vpage(struct addr_space* as, enum AS_SEC section,
                     vaddr_t at, size_t n);
 void mem_free_vpage(struct addr_space* as, vaddr_t at, size_t n,
