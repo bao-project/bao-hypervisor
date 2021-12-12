@@ -79,7 +79,7 @@
 /* TCR - Translation Control Register */
 
 #define TCR_RES1 ((1 << 23) | (1 << 31))
-#define TCR_T0SZ_MSK (0x1f << 0)
+#define TCR_T0SZ_MSK (0x3f << 0)
 #define TCR_T0SZ_OFF (0)
 #define TCR_T0SZ(SZ) ((SZ << TCR_T0SZ_OFF) & TCR_T0SZ_MSK)
 #define TCR_IRGN0_MSK (0x3 << 8)
