@@ -19,7 +19,7 @@
 #include <cpu.h>
 
 struct page_table_dscr armv8_pt_dscr = {
-    .lvls = PT_LVLS,
+    .lvls = 4,
     .lvl_wdt = (size_t[]){48, 39, 30, 21},
     .lvl_off = (size_t[]){39, 30, 21, 12},
     .lvl_term = (bool[]){false, true, true, true},
@@ -30,7 +30,7 @@ struct page_table_dscr armv8_pt_dscr = {
  * value of parange and consequently SL0 in VTCR_EL2.
  */
 struct page_table_dscr armv8_pt_s2_dscr = {
-    .lvls = PT_LVLS,
+    .lvls = 4,
     .lvl_wdt = (size_t[]){48, 39, 30, 21},
     .lvl_off = (size_t[]){39, 30, 21, 12},
     .lvl_term = (bool[]){false, true, true, true},
@@ -78,7 +78,7 @@ pte_t* pt_get(struct page_table* pt, size_t lvl, vaddr_t va)
     if (lvl == 0) return pt->root;
 
     uintptr_t pte = (uintptr_t)pt_get_pte(pt, lvl, va);
-    pte &= ~(PAGE_SIZE - 1);
+    pte &= ~(pt_size(pt, lvl) - 1);
     return (pte_t*)pte;
 }
 

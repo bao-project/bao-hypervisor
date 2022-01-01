@@ -47,14 +47,20 @@ static inline size_t pt_lvlsize(struct page_table* pt, size_t lvl)
     return 1ULL << pt->dscr->lvl_off[lvl];
 }
 
-static inline size_t pt_getpteindex(struct page_table* pt, pte_t* pte, size_t lvl)
-{
-    return (size_t)(((size_t)pte) & (PT_SIZE - 1)) / sizeof(pte_t);
-}
-
 static inline size_t pt_size(struct page_table* pt, size_t lvl)
 {
     return pt_nentries(pt, lvl) * sizeof(pte_t);
+}
+
+static inline size_t pt_getpteindex(struct page_table* pt, pte_t* pte, size_t lvl)
+{
+    return (size_t)(((size_t)pte) & (pt_size(pt, lvl) - 1)) / sizeof(pte_t);
+}
+
+static inline size_t pt_getpteindex_by_va(struct page_table* pt, vaddr_t va, 
+    size_t lvl)
+{
+    return (va >> pt->dscr->lvl_off[lvl]) & (pt_nentries(pt, lvl) - 1);
 }
 
 static inline bool pt_lvl_terminal(struct page_table* pt, size_t lvl)

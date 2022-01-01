@@ -201,6 +201,11 @@
 #define HCOUNTEREN_TM (1ULL << 1)
 #define HCOUNTEREN_IR (1ULL << 2)
 
+#define TINST_PSEUDO_STORE  (0x3020)
+#define TINST_PSEUDO_LOAD   (0x3000)
+#define TINST_INS_COMPRESSED(tinst) (!((tinst) & 0x2))
+#define TINST_INS_SIZE(tinst) (TINST_INS_COMPRESSED((tinst)) ? 2 : 4)
+
 #ifndef __ASSEMBLER__
 
 #define CSRR(csr)                                   \

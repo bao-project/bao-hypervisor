@@ -13,16 +13,15 @@
  *
  */
 
-#ifndef __ARCH_CPU_H__
-#define __ARCH_CPU_H__
+#ifndef ARCH_INSTRUCTIONS_H
+#define ARCH_INSTRUCTIONS_H
 
-#include <bao.h>
+static inline uint64_t hlvxhu(uintptr_t addr){
+    uint64_t value;
+    asm volatile(
+        ".insn r 0x73, 0x4, 0x32, %0, %1, x3\n\t"
+        : "=r"(value): "r"(addr) : "memory");
+    return value;
+}
 
-extern cpuid_t CPU_MASTER;
-
-struct cpu_arch {
-    unsigned hart_id;
-    unsigned plic_cntxt;
-};
-
-#endif /* __ARCH_CPU_H__ */
+#endif /* ARCH_INSTRUCTIONS_H */

@@ -107,13 +107,6 @@ void vcpu_writepc(struct vcpu* vcpu, unsigned long pc)
     vcpu->regs->elr_el2 = pc;
 }
 
-bool vm_readmem(struct vm* vm, void* dest, vaddr_t vmaddr, size_t n)
-{
-    // TODO
-
-    return false;
-}
-
 void vcpu_arch_run(struct vcpu* vcpu)
 {
     // TODO: consider using TPIDR_EL2 to store vcpu pointer

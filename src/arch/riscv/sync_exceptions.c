@@ -18,22 +18,34 @@
 #include <vm.h>
 #include <arch/encoding.h>
 #include <arch/csrs.h>
+#include <arch/instructions.h>
 
-static unsigned long read_ins(vaddr_t ins_addr)
+void internal_exception_handler(unsigned long gprs[]) {
+
+    for(int i = 0; i < 31; i++) {
+        printk("x%d:\t\t0x%0lx\n", i, gprs[i]);
+    }
+    printk("sstatus:\t0x%0lx\n", CSRR(sstatus));
+    printk("stval:\t\t0x%0lx\n", CSRR(stval));
+    printk("sepc:\t\t0x%0lx\n", CSRR(sepc));
+    ERROR("cpu%d internal hypervisor abort - PANIC\n", cpu.id);
+}
+
+static uint32_t read_ins(uintptr_t ins_addr)
 {
-    unsigned long ins = 0;
+    uint32_t ins = 0;
 
-    bool succ = vm_readmem(cpu.vcpu->vm, &ins, ins_addr, 2, true);
-    if (succ && ((ins & 0x3) == 3)) {
-        succ = vm_readmem(cpu.vcpu->vm, &ins, ins_addr, 4, true);
+    if(ins_addr & 0b1) {
+        ERROR("trying to read guest unaligned instruction");
     }
 
-    if(!succ){
-        ERROR("failed to read guest instruction");
-        /**
-         * TODO: maybe the best is to inject the instuction fault in the
-         * guest instead of stopping altogether
-         */
+    /**
+     * Read 16 bits at a time to make sure the access is aligned. If
+     * the instruction is not compressed, read the following 16-bits.
+     */
+    ins = hlvxhu(ins_addr);
+    if ((ins & 0b11) == 3) {
+        ins |= ((uint32_t)hlvxhu(ins_addr + 2)) << 16;
     }
 
     return ins;
@@ -74,25 +86,40 @@ static inline bool ins_ldst_decode(vaddr_t ins, struct emul_access *emul)
     return true;
 }
 
-size_t guest_page_fault_handler()
-{   
-    /**
-     * If this was caused by an hypervisor access using hlv instructions, 
-     * just mark it as such, and return.
-     * TODO: should we proceed with emulation even if this is a hypervisor
-     * access? 
-     */
-    if(!(CSRR(CSR_HSTATUS) & HSTATUS_SPV)){
-        cpu.arch.hlv_except = true;
-        return 4;
-    }
+static inline bool is_pseudo_ins(uint32_t ins) {
+    return ins == TINST_PSEUDO_STORE || ins == TINST_PSEUDO_LOAD;
+}
 
+size_t guest_page_fault_handler()
+{
     vaddr_t addr = CSRR(CSR_HTVAL) << 2;
 
     emul_handler_t handler = vm_emul_get_mem(cpu.vcpu->vm, addr);
     if (handler != NULL) {
-        vaddr_t ins_addr = CSRR(sepc);
-        unsigned long ins = read_ins(ins_addr);
+
+        unsigned long ins = CSRR(CSR_HTINST);
+        size_t ins_size;
+        if(ins == 0) {
+            /**
+             * If htinst does not provide information about the trap,
+             * we must read the instruction from the guest's memory
+             * manually.
+             */
+            vaddr_t ins_addr = CSRR(sepc);
+            ins = read_ins(ins_addr);
+            ins_size = INS_SIZE(ins);
+        } else if (is_pseudo_ins(ins)) {
+            //TODO: we should reinject this in the guest as a fault access
+            ERROR("fault on 1st stage page table walk");
+        } else {
+            /**
+             * If htinst is valid and is not a pseudo isntruction make sure
+             * the opcode is valid even if it was a compressed instruction,
+             * but before save the real instruction size.
+             */
+            ins_size = TINST_INS_SIZE(ins);
+            ins = ins | 0b10;
+        }
 
         struct emul_access emul;
         if (!ins_ldst_decode(ins, &emul)) {
@@ -106,7 +133,7 @@ size_t guest_page_fault_handler()
          */
 
         if (handler(&emul)) {
-            return INS_SIZE(ins);
+            return ins_size;
         } else {
             ERROR("emulation handler failed (0x%x at 0x%x)", addr, CSRR(sepc));
         }
@@ -128,6 +155,10 @@ void sync_exception_handler()
 {
     size_t pc_step = 0;
     unsigned long _scause = CSRR(scause);
+
+    if(!(CSRR(CSR_HSTATUS) & HSTATUS_SPV)) {
+        internal_exception_handler(&cpu.vcpu->regs->x[0]);
+    }
 
     // TODO: Do we need to check call comes from VS-mode and not VU-mode
     // or U-mode ?

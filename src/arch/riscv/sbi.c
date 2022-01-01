@@ -21,16 +21,6 @@
 #include <fences.h>
 #include <hypercall.h>
 
-#define SBI_LGCY_EXTID_SETTIMER (0x0)
-#define SBI_LGCY_EXTID_PUTCHAR (0x1)
-#define SBI_LGCY_EXTID_GETCHAR (0x2)
-#define SBI_LGCY_EXTID_CLEARIPI (0x3)
-#define SBI_LGCY_EXTID_SENDIPI (0x4)
-#define SBI_LGCY_EXTID_REMFENCEI (0x5)
-#define SBI_LGCY_EXTID_REMSFENCEVMA (0x6)
-#define SBI_LGCY_EXTID_REMSFENCEASID (0x7)
-#define SBI_LGCY_EXTID_SHUTDOWN (0x8)
-
 #define SBI_EXTID_BASE (0x10)
 #define SBI_GET_SBI_SPEC_VERSION_FID (0)
 #define SBI_GET_SBI_IMPL_ID_FID (1)
@@ -211,12 +201,7 @@ struct sbiret sbi_hart_status(unsigned long hartid)
                      0, 0, 0, 0, 0);   
 }
 
-static unsigned long ext_table[] = {SBI_LGCY_EXTID_SETTIMER,
-                                    SBI_LGCY_EXTID_SENDIPI,
-                                    SBI_LGCY_EXTID_REMFENCEI,
-                                    SBI_LGCY_EXTID_REMSFENCEVMA,
-                                    SBI_LGCY_EXTID_REMSFENCEASID,
-                                    SBI_EXTID_BASE,
+static unsigned long ext_table[] = {SBI_EXTID_BASE,
                                     SBI_EXTID_TIME,
                                     SBI_EXTID_IPI,
                                     SBI_EXTID_RFNC,
@@ -455,126 +440,39 @@ struct sbiret sbi_bao_handler(unsigned long fid){
    return ret;
 }
 
-void sbi_lgcy_sendipi_handler()
-{
-    unsigned long *hart_mask = (unsigned long *)vcpu_readreg(cpu.vcpu, REG_A0);
-    if (hart_mask == NULL) return;
-
-    unsigned long phart_mask = 0;
-    vm_readmem(cpu.vcpu->vm, &phart_mask, (vaddr_t)hart_mask,
-               sizeof(unsigned long), false);
-    phart_mask = vm_translate_to_pcpu_mask(cpu.vcpu->vm, phart_mask,
-                                           sizeof(unsigned long));
-
-    struct cpu_msg msg = {
-        .handler = SBI_MSG_ID,
-        .event = SEND_IPI,
-    };
-
-    for (size_t i = 0; i < sizeof(phart_mask) * 8; i++) {
-        if (bitmap_get((bitmap_t*)&phart_mask, i)) {
-            cpu_send_msg(i, &msg);
-        }
-    }
-}
-
-void sbi_lgcy_rfence_handler(unsigned long extid)
-{
-    unsigned long *hart_mask = (unsigned long *)vcpu_readreg(cpu.vcpu, REG_A0);
-    if (hart_mask == NULL) return;
-
-    unsigned long phart_mask = 0;
-    vm_readmem(cpu.vcpu->vm, &phart_mask, (vaddr_t)hart_mask,
-               sizeof(unsigned long), false);
-    phart_mask = vm_translate_to_pcpu_mask(cpu.vcpu->vm, (cpumap_t)hart_mask,
-                                           sizeof(unsigned long));
-
-    unsigned long start_addr = vcpu_readreg(cpu.vcpu, REG_A2);
-    unsigned long size = vcpu_readreg(cpu.vcpu, REG_A3);
-    unsigned long asid = vcpu_readreg(cpu.vcpu, REG_A4);
-
-    switch (extid) {
-        case SBI_LGCY_EXTID_REMFENCEI:
-            sbi_remote_fence_i(phart_mask, 0);
-            break;
-        case SBI_LGCY_EXTID_REMSFENCEVMA:
-            sbi_remote_hfence_vvma(phart_mask, 0, start_addr, size);
-            break;
-        case SBI_LGCY_EXTID_REMSFENCEASID:
-            sbi_remote_hfence_vvma_asid(phart_mask, 0, start_addr, size, asid);
-            break;
-    }
-}
-
-void sbi_lgcy_putchar_handler() 
-{
-    char c = (char)vcpu_readreg(cpu.vcpu, REG_A0);
-    sbi_console_putchar(c);
-}
-
-void sbi_lgcy_handler(unsigned long extid)
-{
-    switch (extid) {
-        case SBI_LGCY_EXTID_SETTIMER:
-            (void)sbi_time_handler(SBI_SET_TIMER_FID);
-            break;
-        case SBI_LGCY_EXTID_SENDIPI:
-            sbi_lgcy_sendipi_handler();
-            break;
-        case SBI_LGCY_EXTID_REMFENCEI:
-        case SBI_LGCY_EXTID_REMSFENCEVMA:
-        case SBI_LGCY_EXTID_REMSFENCEASID:
-            sbi_lgcy_rfence_handler(extid);
-            break;
-        case SBI_LGCY_EXTID_PUTCHAR:
-            sbi_lgcy_putchar_handler();
-            break;
-        default:
-            WARNING("guest issued unsupported sbi legacy extension call (%d)",
-                    extid);
-    }
-}
-
-
-
 size_t sbi_vs_handler()
 {
     unsigned long extid = vcpu_readreg(cpu.vcpu, REG_A7);
+    unsigned long fid = vcpu_readreg(cpu.vcpu, REG_A6);
+    struct sbiret ret;
 
-    if (extid < 16) {
-        sbi_lgcy_handler(extid);
-    } else {
-        unsigned long fid = vcpu_readreg(cpu.vcpu, REG_A6);
-        struct sbiret ret;
-
-        switch (extid) {
-            case SBI_EXTID_BASE:
-                ret = sbi_base_handler(fid);
-                break;
-            case SBI_EXTID_TIME:
-                ret = sbi_time_handler(fid);
-                break;
-            case SBI_EXTID_IPI:
-                ret = sbi_ipi_handler(fid);
-                break;
-            case SBI_EXTID_RFNC:
-                ret = sbi_rfence_handler(fid);
-                break;
-            case SBI_EXTID_HSM:
-                ret = sbi_hsm_handler(fid);
-                break;
-            case SBI_EXTID_BAO:
-                ret = sbi_bao_handler(fid);
-                break;
-            default:
-                WARNING("guest issued unsupport sbi extension call (%d)",
-                        extid);
-                ret.value = SBI_ERR_NOT_SUPPORTED;
-        }
-
-        vcpu_writereg(cpu.vcpu, REG_A0, ret.error);
-        vcpu_writereg(cpu.vcpu, REG_A1, ret.value);
+    switch (extid) {
+        case SBI_EXTID_BASE:
+            ret = sbi_base_handler(fid);
+            break;
+        case SBI_EXTID_TIME:
+            ret = sbi_time_handler(fid);
+            break;
+        case SBI_EXTID_IPI:
+            ret = sbi_ipi_handler(fid);
+            break;
+        case SBI_EXTID_RFNC:
+            ret = sbi_rfence_handler(fid);
+            break;
+        case SBI_EXTID_HSM:
+            ret = sbi_hsm_handler(fid);
+            break;
+        case SBI_EXTID_BAO:
+            ret = sbi_bao_handler(fid);
+            break;
+        default:
+            WARNING("guest issued unsupport sbi extension call (%d)",
+                    extid);
+            ret.value = SBI_ERR_NOT_SUPPORTED;
     }
+
+    vcpu_writereg(cpu.vcpu, REG_A0, ret.error);
+    vcpu_writereg(cpu.vcpu, REG_A1, ret.value);
 
     return 4;
 }

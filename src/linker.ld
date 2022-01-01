@@ -36,9 +36,6 @@ SECTIONS
 
 	.rodata :  {
 		*(.rdata .rodata .rodata.*)
-		_dev_init_table_start = .;
-		*(.dev_init_table)
-		_dev_init_table_end = .;
 	}
 	
 	.data : {

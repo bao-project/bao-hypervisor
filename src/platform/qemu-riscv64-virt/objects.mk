@@ -1,1 +1,1 @@
-boards-objs-y+=virt_desc.o cache.o
+boards-objs-y+=virt_desc.o

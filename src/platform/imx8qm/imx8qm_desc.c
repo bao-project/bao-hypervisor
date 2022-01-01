@@ -25,7 +25,7 @@ struct platform_desc platform = {
             .size = 0x80000000 - 0x20000 // 2 GiB - 128 KiB (reserved for ATF) 
         },
         {
-            .base = 0x800000000,
+            .base = 0x880000000,
             .size = 0x100000000 // 4 GiB 
         }
     },

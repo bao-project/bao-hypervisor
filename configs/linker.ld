@@ -13,6 +13,8 @@
  *
  */
 
+ASSERT(DEFINED(config), "Error: No config structure in configuration file");
+
 SECTIONS
 {   
     . = 0x0;

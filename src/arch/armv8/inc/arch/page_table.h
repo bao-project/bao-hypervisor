@@ -19,19 +19,21 @@
 #include <bao.h>
 #include <bit.h>
 
+#ifdef __ASSEMBLER__
 #define PT_SIZE PAGE_SIZE
 #define PT_LVLS 4
 
 #define PTE_INDEX_SHIFT(LEVEL) ((9 * (3 - LEVEL)) + 12)
 #define PTE_INDEX(LEVEL, ADDR) ((ADDR >> PTE_INDEX_SHIFT(LEVEL)) & (0x1FF))
 
-#ifdef __ASSEMBLER__
 .macro PTE_INDEX_ASM	index, addr, level
 	lsr \index, \addr, #PTE_INDEX_SHIFT(\level) 
 	and \index, \index, #0x1ff
 	lsl \index, \index, #3
 .endm
 #endif
+
+#define HYP_ROOT_PT_SIZE PAGE_SIZE
 
 #define ADDR_MSK(MSB, LSB) (((1UL << (MSB + 1)) - 1) & ~((1UL << (LSB)) - 1))
 #define PTE_ADDR_MSK ADDR_MSK(47, 12)

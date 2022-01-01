@@ -113,9 +113,8 @@ struct arch_regs {
     // unsigned long vsip;
     // unsigned long vsatp;
 
-} __attribute__((__packed__));
+} __attribute__((__packed__, aligned(sizeof(unsigned long))));
 
-bool vm_readmem(struct vm* vm, void* dest, vaddr_t vmaddr, size_t n, bool exec);
 void vcpu_arch_entry();
 
 #endif /* __ARCH_VM_H__ */

@@ -19,23 +19,17 @@
 #include <bao.h>
 #include <bit.h>
 
-#define PT_SIZE (PAGE_SIZE)
-#define PAGE_ADDR_MSK (~(PAGE_SIZE - 1))
+#define HYP_ROOT_PT_SIZE (PAGE_SIZE)
 #define PAGE_SHIFT (12)
 
 #if (RV64)
-#define PT_LVLS (3)  // assumes sv39 for rv64
-#define PTE_INDEX_SHIFT(LEVEL) ((9 * (PT_LVLS - 1 - (LEVEL))) + 12)
 #define PTE_MASK    BIT64_MASK
 #define PTE_ADDR_MSK PTE_MASK(12, 44)
 #elif (RV32)
-#define PT_LVLS (2)
-#define PTE_INDEX_SHIFT(LEVEL) ((10 * (PT_LVLS - 1 - (LEVEL))) + 12)
 #define PTE_MASK    BIT32_MASK
 #define PTE_ADDR_MSK PTE_MASK(12, 22)
 #endif
 
-#define PTE_INDEX(LEVEL, ADDR) (((ADDR) >> PTE_INDEX_SHIFT(LEVEL)) & (0x1FF))
 #define PTE_FLAGS_MSK PTE_MASK(0, 8)
 
 #define PTE_VALID (1ULL << 0)

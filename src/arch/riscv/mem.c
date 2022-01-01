@@ -37,8 +37,8 @@ static inline void as_map_physical_identity(struct addr_space *as) {
         size_t num_entries = ((top - base - 1) / lvl_size) + 1;
 
         paddr_t addr = base;
-        for (size_t j = 0; j < num_entries; j++) {
-            size_t index = PTE_INDEX(lvl, addr);
+        for (int j = 0; j < num_entries; j++) {
+            int index = pt_getpteindex_by_va(&as->pt, (vaddr_t)addr, lvl);
             pte_set(&pt[index], addr, PTE_SUPERPAGE | PTE_HYP_FLAGS);
             addr += lvl_size;
         }
@@ -55,7 +55,8 @@ void as_arch_init(struct addr_space *as) {
 
 bool mem_translate(struct addr_space *as, vaddr_t va, paddr_t *pa)
 {
-    pte_t* pte = &(as->pt.root[PTE_INDEX(0, va)]);
+    size_t pte_index = pt_getpteindex_by_va(&as->pt, va, 0);
+    pte_t* pte = &(as->pt.root[pte_index]);
     size_t lvl = 0;
     for (size_t i = 0; i < as->pt.dscr->lvls; i++) {
         if (!pte_valid(pte) || !pte_table(&as->pt, pte, i)) {
@@ -63,7 +64,7 @@ bool mem_translate(struct addr_space *as, vaddr_t va, paddr_t *pa)
             break;  
         }
         pte = (pte_t*)pte_addr(pte);
-        size_t index = PTE_INDEX(i + 1, va);
+        int index = pt_getpteindex_by_va(&as->pt, va, i+1);
         pte = &pte[index];
     }
     if (pte && pte_valid(pte)) {
