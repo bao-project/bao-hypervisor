@@ -67,6 +67,12 @@ struct dev_region {
     size_t size;
     size_t interrupt_num;
     irqid_t *interrupts;
+    /* Interrupt id range from base to end (both inclusive). */
+    size_t interrupt_range_num;
+    struct irqid_range {
+        irqid_t base;
+        irqid_t end;
+    } *interrupts_range;
     streamid_t id; /* bus master id for iommu effects */
 };
 

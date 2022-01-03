@@ -231,6 +231,18 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* config)
         for (size_t j = 0; j < dev->interrupt_num; j++) {
             interrupts_vm_assign(vm, dev->interrupts[j]);
         }
+
+        for (size_t j = 0; j < dev->interrupt_range_num; j++) {
+            irqid_t base = dev->interrupts_range[j].base;
+            irqid_t end = dev->interrupts_range[j].end;
+            if(end < base) {
+                WARNING("Interrupt range base lower than end");
+                continue;
+            }
+            for(irqid_t l = base ; l <= end; l++) {
+                interrupts_vm_assign(vm, l);
+            }
+        }
     }
 
     /* iommu */

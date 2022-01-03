@@ -27,6 +27,7 @@ void config_adjust_to_va(struct config *config, paddr_t phys)
 	    if(adjust_ptr(config->vmlist[i].platform.devs, config)){
 	        for (size_t j = 0; j < config->vmlist[i].platform.dev_num; j++) {
 	    	    adjust_ptr(config->vmlist[i].platform.devs[j].interrupts, config);
+                adjust_ptr(config->vmlist[i].platform.devs[j].interrupts_range, config);
 	        }
 	    }
 
