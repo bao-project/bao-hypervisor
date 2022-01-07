@@ -338,7 +338,7 @@ int32_t psci_power_down(enum wakeup_reason reason){
 
 int32_t psci_version(void)
 {
-    return smc_call(PSCI_VERSION, 0, 0, 0, NULL);
+    return smc_call(PSCI_VERSION, 0, 0, 0, 0, 0, NULL);
 }
 
 
@@ -347,24 +347,24 @@ int32_t psci_cpu_suspend(uint32_t power_state, unsigned long entrypoint,
 {
 
     return smc_call(PSCI_CPU_SUSPEND_AARCH64, power_state, entrypoint, 
-                                                            context_id, NULL);
+                    context_id, 0, 0, NULL);
 }
 
 int32_t psci_cpu_off(void)
 {   
-    return smc_call(PSCI_CPU_OFF, 0, 0, 0, NULL);
+    return smc_call(PSCI_CPU_OFF, 0, 0, 0, 0, 0, NULL);
 }
 
 int32_t psci_cpu_on(unsigned long target_cpu, unsigned long entrypoint, 
                     unsigned long context_id)
 {
     return smc_call(PSCI_CPU_ON_AARCH64, target_cpu, entrypoint, context_id,
-                                                                        NULL);
+                    0, 0, NULL);
 }
 
 int32_t psci_affinity_info(unsigned long target_affinity, 
                             uint32_t lowest_affinity_level)
 {
     return smc_call(PSCI_AFFINITY_INFO_AARCH64, target_affinity, 
-                                            lowest_affinity_level, 0, NULL);
+                    lowest_affinity_level, 0, 0, 0, NULL);
 }
