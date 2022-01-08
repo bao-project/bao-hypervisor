@@ -32,7 +32,7 @@ extern uint8_t _cpu_if_base;
 
 struct cpuif {
     struct list event_list;
-
+    struct cpuif_arch arch;
 } __attribute__((aligned(PAGE_SIZE))) ;
 
 struct vcpu;

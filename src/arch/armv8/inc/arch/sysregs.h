@@ -382,6 +382,9 @@
 #define ESR_ISS_DA_ISV_LEN (1)
 #define ESR_ISS_DA_ISV_BIT (1UL << 24)
 
+#define ESR_ISS_IA_IFSC_MSK (0x3f)
+#define ESR_ISS_IA_IFSC_ASF_LVL0 (0)
+
 #define ESR_ISS_DA_DSFC_CODE (0xf << 2)
 #define ESR_ISS_DA_DSFC_ADDRSZ (0x0)
 #define ESR_ISS_DA_DSFC_TRNSLT (0x4)

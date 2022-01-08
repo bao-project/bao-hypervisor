@@ -23,6 +23,7 @@
 struct vm_arch {
     struct vgicd vgicd;
     vaddr_t vgicr_addr;
+    unsigned long vttbr;
 };
 
 struct vcpu_arch {
@@ -40,6 +41,7 @@ struct arch_regs {
 
 struct vcpu* vm_get_vcpu_by_mpidr(struct vm* vm, unsigned long mpidr);
 void vcpu_arch_entry();
+void vcpu_arch_reset_vttbr(struct vcpu* vcpu);
 
 typedef struct vcpu vcpu_t;
 

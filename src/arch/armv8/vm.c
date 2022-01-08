@@ -44,6 +44,11 @@ static unsigned long vm_cpuid_to_mpidr(struct vm* vm, vcpuid_t cpuid)
     return platform_arch_cpuid_to_mpdir(&vm->config->platform, cpuid);
 }
 
+void vcpu_arch_reset_vttbr(struct vcpu* vcpu) {
+    if(vcpu == NULL) return;
+    MSR(VTTBR_EL2, vcpu->vm->arch.vttbr);
+}
+
 void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm)
 {
     vcpu->arch.vmpidr = vm_cpuid_to_mpidr(vm, vcpu->id);
@@ -53,8 +58,9 @@ void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm)
 
     paddr_t root_pt_pa;
     mem_translate(&cpu.as, (vaddr_t)vm->as.pt.root, &root_pt_pa);
-    MSR(VTTBR_EL2, ((vm->id << VTTBR_VMID_OFF) & VTTBR_VMID_MSK) |
-                       (root_pt_pa & ~VTTBR_VMID_MSK));
+    vm->arch.vttbr = ((vm->id << VTTBR_VMID_OFF) & VTTBR_VMID_MSK) |
+                        (root_pt_pa & ~VTTBR_VMID_MSK);
+    MSR(VTTBR_EL2, vm->arch.vttbr);
 
     ISB();  // make sure vmid is commited befor tlbi
     tlb_vm_inv_all(vm->id);

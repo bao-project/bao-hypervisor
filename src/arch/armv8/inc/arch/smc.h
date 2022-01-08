@@ -18,6 +18,8 @@
 
 #include <bao.h>
 
+#ifndef __ASSEMBLER__
+
 struct smc_res {
     unsigned long x0;
     unsigned long x1;
@@ -28,5 +30,7 @@ struct smc_res {
 unsigned long smc_call(unsigned long x0, unsigned long x1, unsigned long x2,
                     unsigned long x3, unsigned long x4, unsigned long x5,
                     struct smc_res *res);
+
+#endif /* __ASSEMBLER__ */
 
 #endif

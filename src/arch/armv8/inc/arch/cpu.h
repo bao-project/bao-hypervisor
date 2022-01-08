@@ -24,6 +24,11 @@
 struct cpu_arch {
     struct psci_off_state psci_off_state;
     unsigned long mpidr;
+    bool sdei_evt_is_active;
+};
+
+struct cpuif_arch {
+    bool uses_sdei_ipi;
 };
 
 unsigned long cpu_id_to_mpidr(cpuid_t id);

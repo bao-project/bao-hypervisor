@@ -49,7 +49,7 @@ unsigned long cpu_id_to_mpidr(cpuid_t id)
 
 void cpu_arch_idle()
 {
-    int64_t err = psci_power_down(PSCI_WAKEUP_IDLE);
+    int64_t err = psci_standby();
     if(err) {
         switch (err) {
             case PSCI_E_NOT_SUPPORTED:

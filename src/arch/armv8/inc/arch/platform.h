@@ -52,6 +52,8 @@ struct arch_platform {
         size_t num;
         size_t* core_num;
     } clusters;
+
+    uint32_t sdei_ipi_event;
 };
 
 struct platform_desc;

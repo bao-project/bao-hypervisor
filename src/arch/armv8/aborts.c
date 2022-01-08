@@ -139,10 +139,29 @@ void sysreg_handler(uint64_t iss, uint64_t far, uint64_t il)
     }
 }
 
+void aborts_instr_lower(uint64_t iss, uint64_t far, uint64_t il)
+{
+    if (cpu.arch.sdei_evt_is_active && 
+        ((iss & ESR_ISS_IA_IFSC_MSK) == ESR_ISS_IA_IFSC_ASF_LVL0)) {
+        /* 
+         * This means this abort is actually signaling an IPI sent via SDEI.
+         * We do this by setting invalid vttbr (guest page table base and vmid), 
+         * which will consequently trigger this exception when returning to 
+         * the guest. Therefore, we also need to reset vttbr.
+         */
+        cpu.arch.sdei_evt_is_active = false;
+        vcpu_arch_reset_vttbr(cpu.vcpu);
+        cpu_msg_handler();
+    } else {
+        ERROR("unknown instruction instruction abort cause (iss = 0x%x)", iss);
+    }
+}
+
 abort_handler_t abort_handlers[64] = {[ESR_EC_DALEL] = aborts_data_lower,
                                       [ESR_EC_SMC64] = smc64_handler,
                                       [ESR_EC_SYSRG] = sysreg_handler,
-                                      [ESR_EC_HVC64] = hvc64_handler};
+                                      [ESR_EC_HVC64] = hvc64_handler,
+                                      [ESR_EC_IALEL] = aborts_instr_lower};
 
 void aborts_sync_handler()
 {

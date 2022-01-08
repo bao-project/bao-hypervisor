@@ -16,6 +16,7 @@
 #include <arch/bao.h>
 #include <arch/sysregs.h>
 #include <asm_defs.h>
+#include <arch/sdei.h>
 
 #define ENTRY_SIZE   (0x80)
 
@@ -190,4 +191,23 @@ lower_el_aarch32_fiq:
 lower_el_aarch32_serror: 
     b	.
 
-.balign ENTRY_SIZE          
+/**
+ * SDEI events are essentially NMI, while the hypervisor is non-preemptible. 
+ * To get around this and guarantee no race conditions or deadlocks, we just 
+ * mark the virtual page table base register and current vmid with an invalid 
+ * value which will trigger an easily recognizable exception upon retur to the 
+ * guest. Then we can deal with the event in a atomic fashion and reuse the 
+ * same hypervisor code with no special cases. Also, a flag passed as a sdei 
+ * context cookie (x1) is set, to signal agnostic code,he "interrupt" is active.
+ */
+.balign 4
+.global sdei_ipi_handler
+sdei_ipi_handler:
+    ldr x0, =0xffffffffffffffff
+    msr vttbr_el2, x0
+    mov w0, 1
+    strb w0, [x1]
+    ldr x0, =SDEI_EVENT_COMPLETE
+    mov x1, #SDEI_EV_HANDLED
+    smc #0
+    b .

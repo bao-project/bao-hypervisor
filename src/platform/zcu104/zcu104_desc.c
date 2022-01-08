@@ -60,6 +60,8 @@ struct platform_desc platform = {
 
         .generic_timer = {
             .base_addr = 0xFF260000
-        }
+        },
+
+        .sdei_ipi_event = 0,
     }
 };

@@ -26,6 +26,7 @@
 #define SDEI_EV_HANDLED (0)
 #define SDEI_EV_FAILED  (1)
 
+#ifndef __ASSEMBLER__
 
 static inline int64_t sdei_version() {
     return (int64_t) smc_call(SDEI_VERSION, 0, 0, 0, 0, 0, NULL);
@@ -58,5 +59,6 @@ static inline int64_t sdei_event_signal(int32_t evt, uint64_t target_pe)
     return (int64_t) smc_call(SDEI_EVENT_SIGNAL, evt, target_pe, 0, 0, 0, NULL);
 }
 
+#endif /* __ASSEMBLER__ */
 
 #endif /* SDEI_H */
