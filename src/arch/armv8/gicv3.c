@@ -53,6 +53,13 @@ static inline void gicc_init()
     MSR(ICC_IGRPEN1_EL1, ICC_IGRPEN_EL1_ENB_BIT);
 }
 
+void gic_cpu_reset() {
+    MSR(ICC_PMR_EL1, 0);
+    MSR(ICC_CTLR_EL1, 0);
+    MSR(ICC_SRE_EL2, 0);
+    ISB();
+}
+
 static inline void gicr_init()
 {
     gicr[cpu.id].ICENABLER0 = -1;

@@ -125,6 +125,11 @@ void gic_cpu_init()
     gicc_init();
 }
 
+void gic_cpu_reset() {
+    gicc.PMR = 0;
+    gicc.CTLR = 0;
+}
+
 void gic_map_mmio()
 {
     mem_map_dev(&cpu.as, (vaddr_t)&gicc, platform.arch.gic.gicc_addr,

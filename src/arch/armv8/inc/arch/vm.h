@@ -55,4 +55,11 @@ static inline void vcpu_arch_inject_irq(vcpu_t* vcpu, uint64_t id)
     vgic_inject(vcpu, id, 0);
 }
 
+static inline void vcpu_arch_enable_direct_injection(vcpu_t *vcpu) {
+    MSR(HCR_EL2, MRS(HCR_EL2) & ~HCR_IMO_BIT);
+}
+static inline void vcpu_arch_disable_direct_injection(vcpu_t *vcpu) {
+    MSR(HCR_EL2, MRS(HCR_EL2) | HCR_IMO_BIT);
+}
+
 #endif /* __ARCH_VM_H__ */

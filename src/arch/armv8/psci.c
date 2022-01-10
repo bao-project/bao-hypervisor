@@ -85,10 +85,18 @@ int32_t psci_cpu_suspend_handler(uint32_t power_state, unsigned long entrypoint,
          * (currently, ATF), but when we do, we do not wake up on interrupts
          * on the current development target zcu104.
          * We should understand why. To circunvent this, we directly emmit a
-         * wfi 
+         * wfi.
+         * 
+         * In the case the VM has interrupt passtrhough enabled, we need to
+         * first disable the irq line passthrough so the hyperviso can 
+         * wake-up on interrupts targeted to the guest
          */
-        //ret = psci_standby();
+        
+        vcpu_arch_disable_direct_injection(cpu.vcpu);
         asm volatile("wfi\n\r");
+        if (cpu.vcpu->vm->config->direct_injection) {
+            vcpu_arch_enable_direct_injection(cpu.vcpu);
+        }
         ret = PSCI_E_SUCCESS;
     }
 

@@ -19,6 +19,7 @@
 #include <platform.h>
 #include <page_table.h>
 #include <arch/sysregs.h>
+#include <arch/sdei.h>
 
 cpuid_t CPU_MASTER __attribute__((section(".data")));
 
@@ -49,12 +50,19 @@ unsigned long cpu_id_to_mpidr(cpuid_t id)
 
 void cpu_arch_idle()
 {
-    int64_t err = psci_standby();
-    if(err) {
+    if(cpu.interface.arch.uses_sdei_ipi) {
+        while(!cpu.arch.sdei_evt_is_active) {
+            asm volatile("wfe" ::: "memory");
+        }
+    } else {
+        int64_t err = psci_power_down(PSCI_WAKEUP_IDLE);
         switch (err) {
+            case PSCI_E_SUCCESS:
+                break;
             case PSCI_E_NOT_SUPPORTED:
                 /**
-                 * If power down is not supported let's just wait for an interrupt
+                 * If power down is not supported let's just wait for an 
+                 * interrupt.
                  */
                 asm volatile("wfi");
                 break;

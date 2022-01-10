@@ -151,7 +151,9 @@ void vgic_init(struct vm *vm, const struct gic_dscrp *gic_dscrp)
         mem_alloc_vpage(&vm->as, SEC_VM_ANY, (vaddr_t)gic_dscrp->gicc_addr, n);
     if (va != (vaddr_t)gic_dscrp->gicc_addr)
         ERROR("failed to alloc vm address space to hold gicc");
-    mem_map_dev(&vm->as, va, (vaddr_t)platform.arch.gic.gicv_addr, n);
+    paddr_t gicc_addr = vm->config->direct_injection ?
+                        platform.arch.gic.gicc_addr : platform.arch.gic.gicv_addr;
+    mem_map_dev(&vm->as, va, gicc_addr, n);
 
     size_t vgic_int_size = vm->arch.vgicd.int_num * sizeof(struct vgic_int);
     vm->arch.vgicd.interrupts =
@@ -198,5 +200,7 @@ void vgic_cpu_init(struct vcpu *vcpu)
 
     for (size_t i = 0; i < GIC_MAX_SGIS; i++) {
         vcpu->arch.vgic_priv.interrupts[i].enabled = true;
+        vcpu->arch.vgic_priv.interrupts[i].hw = 
+            vcpu->vm->config->direct_injection;
     }
 }

@@ -80,6 +80,16 @@ struct vm_config {
     colormap_t colors;
 
     /**
+     * Only has effect on Arm arch (and GICv2-based platforms for now). It is
+     * also contingent if the firmware provides the SDEI. etting this option 
+     * will enable direct passthrough of the GIC CPU interface to the guest as 
+     * well of the IRQ interrupt line achieving direct injection without 
+     * hypervisor intervention. The hypervisor will then use SDEI events for 
+     * internal communication (i.e. IPIs).
+     */
+    bool direct_injection;
+
+    /**
      * A description of the virtual platform available to the guest, i.e.,
      * the virtual machine itself.
      */

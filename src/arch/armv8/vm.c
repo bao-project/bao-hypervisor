@@ -19,9 +19,27 @@
 #include <fences.h>
 #include <arch/tlb.h>
 #include <string.h>
+#include <arch/sdei.h>
+
+extern void sdei_ipi_handler();
 
 void vm_arch_init(struct vm* vm, const struct vm_config* config)
-{
+{   
+    if(config->direct_injection) {
+        if(sdei_version() != SDEI_NOT_SUPPORTED) {
+            int32_t evt = platform.arch.sdei_ipi_event;
+            sdei_event_register(evt, (uint64_t) sdei_ipi_handler,
+                (uint64_t) &cpu.arch.sdei_evt_is_active, 
+                SDEI_F_EP_ABS | SDEI_F_RM_PE, cpu.arch.mpidr);
+            sdei_event_enable(evt);
+            sdei_pe_unmask();
+            cpu.interface.arch.uses_sdei_ipi = true;
+        } else {
+            WARNING("Direct interrupt inejction enabled," 
+                " but SDEI is not available.");
+        }
+    }
+
     if (vm->master == cpu.id) {
         vgic_init(vm, &config->platform.arch.gic);
     }
@@ -64,6 +82,11 @@ void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm)
 
     ISB();  // make sure vmid is commited befor tlbi
     tlb_vm_inv_all(vm->id);
+
+    if (vm->config->direct_injection) {
+        gic_cpu_reset();
+        vcpu_arch_enable_direct_injection(cpu.vcpu);
+    }
 
     vgic_cpu_init(vcpu);
 }

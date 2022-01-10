@@ -199,6 +199,8 @@ lower_el_aarch32_serror:
  * guest. Then we can deal with the event in a atomic fashion and reuse the 
  * same hypervisor code with no special cases. Also, a flag passed as a sdei 
  * context cookie (x1) is set, to signal agnostic code,he "interrupt" is active.
+ * There is also the need for emitting an event in the case of the hypervisor
+ * being preempted right before entering idle mode.
  */
 .balign 4
 .global sdei_ipi_handler
@@ -207,6 +209,7 @@ sdei_ipi_handler:
     msr vttbr_el2, x0
     mov w0, 1
     strb w0, [x1]
+    sevl
     ldr x0, =SDEI_EVENT_COMPLETE
     mov x1, #SDEI_EV_HANDLED
     smc #0

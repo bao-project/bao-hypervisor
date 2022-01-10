@@ -24,28 +24,15 @@
 #include <arch/sysregs.h>
 #include <vm.h>
 #include <arch/sdei.h>
-#include <arch/psci.h>
 
 #ifndef GIC_VERSION
 #error "GIC_VERSION not defined for this platform"
 #endif
 
-extern void sdei_ipi_handler();
-
 void interrupts_arch_init()
 {
     gic_init();
     interrupts_cpu_enable(platform.arch.gic.maintenance_id, true);
-
-    if(sdei_version() != SDEI_NOT_SUPPORTED) {
-        int32_t evt = platform.arch.sdei_ipi_event;
-         sdei_event_register(evt, (uint64_t) sdei_ipi_handler,
-            (uint64_t) &cpu.arch.sdei_evt_is_active, 
-            SDEI_F_EP_ABS | SDEI_F_RM_PE, cpu.arch.mpidr);
-        sdei_event_enable(evt);
-        sdei_pe_unmask();
-        cpu.interface.arch.uses_sdei_ipi = true;
-    }
 }
 
 void interrupts_arch_ipi_send(cpuid_t target_cpu, irqid_t ipi_id)

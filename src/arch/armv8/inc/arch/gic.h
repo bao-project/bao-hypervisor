@@ -412,6 +412,7 @@ extern size_t NUM_LRS;
 
 void gic_init();
 void gic_cpu_init();
+void gic_cpu_reset();
 void gic_send_sgi(cpuid_t cpu_target, irqid_t sgi_num);
 
 void gicc_save_state(struct gicc_state *state);

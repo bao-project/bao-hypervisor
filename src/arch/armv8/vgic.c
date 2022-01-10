@@ -69,7 +69,7 @@ static inline struct vgic_int *vgic_get_int(struct vcpu *vcpu, irqid_t int_id,
 
 static inline bool vgic_int_is_hw(struct vgic_int *interrupt)
 {
-    return !(interrupt->id < GIC_MAX_SGIS) && interrupt->hw;
+    return interrupt->hw;
 }
 
 static inline int64_t gich_get_lr(struct vgic_int *interrupt, unsigned long *lr)
@@ -140,13 +140,19 @@ void vgic_yield_ownership(struct vcpu *vcpu, struct vgic_int *interrupt)
 
 void vgic_send_sgi_msg(struct vcpu *vcpu, cpumap_t pcpu_mask, irqid_t int_id)
 {
-    struct cpu_msg msg = {
-        VGIC_IPI_ID, VGIC_INJECT,
-        VGIC_MSG_DATA(cpu.vcpu->vm->id, 0, int_id, 0, cpu.vcpu->id)};
+    if(vcpu->vm->config->direct_injection) {
+        for (size_t i = 0; i < platform.cpu_num; i++) {
+         if (pcpu_mask & (1ull << i)) gic_send_sgi(i, int_id);
+        }
+    } else {
+        struct cpu_msg msg = {
+            VGIC_IPI_ID, VGIC_INJECT,
+            VGIC_MSG_DATA(cpu.vcpu->vm->id, 0, int_id, 0, cpu.vcpu->id)};
 
-    for (size_t i = 0; i < platform.cpu_num; i++) {
-        if (pcpu_mask & (1ull << i)) {
-            cpu_send_msg(i, &msg);
+        for (size_t i = 0; i < platform.cpu_num; i++) {
+            if (pcpu_mask & (1ull << i)) {
+                cpu_send_msg(i, &msg);
+            }
         }
     }
 }
@@ -427,7 +433,8 @@ void vgicd_emul_pidr_access(struct emul_access *acc,
 
 bool vgic_int_update_enable(struct vcpu *vcpu, struct vgic_int *interrupt, bool enable)
 {
-    if (GIC_VERSION == GICV2 && gic_is_sgi(interrupt->id)) {
+    if (!vcpu->vm->config->direct_injection &&
+        GIC_VERSION == GICV2 && gic_is_sgi(interrupt->id)) {
         return false;
     }
 
