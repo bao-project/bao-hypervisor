@@ -72,8 +72,13 @@ void cpu_arch_idle()
 
     /**
      * Power down was sucessful but did not jump to requested entry
-     * point. Manually rewind stack and jump to idle wake up.
+     * point. Manually rewind stack and jump to idle wake up. Therefore,
+     * we should not return after this point.
      */
-    asm volatile("mov sp, %0\n\r" ::"r"(&cpu.stack[STACK_SIZE]));
-    cpu_idle_wakeup();
+    asm volatile(
+        "mov sp, %0\n\r"
+        "b cpu_idle_wakeup\n\r"
+        ::"r"(&cpu.stack[STACK_SIZE]));
+
+    ERROR("returned from idle wake up");
 }
