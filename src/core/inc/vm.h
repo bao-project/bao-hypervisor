@@ -115,6 +115,16 @@ static inline bool vm_has_interrupt(struct vm* vm, irqid_t int_id)
     return !!bitmap_get(vm->interrupt_bitmap, int_id);
 }
 
+static inline void vcpu_inject_hw_irq(struct vcpu *vcpu, irqid_t id)
+{
+    vcpu_arch_inject_hw_irq(vcpu, id);
+}
+
+static inline void vcpu_inject_irq(struct vcpu *vcpu, irqid_t id)
+{
+    vcpu_arch_inject_irq(vcpu, id);
+}
+
 /* ------------------------------------------------------------*/
 
 void vm_arch_init(struct vm* vm, const struct vm_config* config);

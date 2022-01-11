@@ -59,7 +59,7 @@ static void ipc_notify(size_t shmem_id, size_t event_id) {
     struct ipc* ipc_obj = ipc_find_by_shmemid(cpu.vcpu->vm, shmem_id);
     if(ipc_obj != NULL && event_id < ipc_obj->interrupt_num) {
         irqid_t irq_id = ipc_obj->interrupts[event_id];
-        interrupts_vm_inject(cpu.vcpu->vm, irq_id);
+        vcpu_inject_hw_irq(cpu.vcpu, irq_id);
     }
 }
 

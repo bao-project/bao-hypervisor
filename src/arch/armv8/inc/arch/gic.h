@@ -444,23 +444,12 @@ void gicr_set_icfgr(irqid_t int_id, uint8_t cfg, cpuid_t gicr_id);
 void gicr_set_act(irqid_t int_id, bool act, cpuid_t gicr_id);
 uint8_t gicr_get_prio(irqid_t int_id, cpuid_t gicr_id);
 
-unsigned long gich_read_lr(size_t i);
-void gich_write_lr(size_t i, unsigned long val);
-uint32_t gich_get_hcr();
-void gich_set_hcr(uint32_t);
-uint32_t gich_get_misr();
-uint64_t gich_get_eisr();
-uint64_t gich_get_elrsr();
-
 void gic_maintenance_handler(irqid_t irq_id);
 
 extern volatile struct gicd_hw gicd;
 extern volatile struct gicr_hw *gicr;
 
 size_t gich_num_lrs();
-uint32_t gicc_iar();
-void gicc_eoir(uint32_t eoir);
-void gicc_dir(uint32_t dir);
 
 static inline size_t gic_num_irqs()
 {
