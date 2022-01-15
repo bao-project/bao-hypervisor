@@ -27,6 +27,7 @@
 #include <vm.h>
 #include <fences.h>
 #include <tlb.h>
+#include <config.h>
 
 extern uint8_t _image_start, _image_load_end, _image_end, _dmem_phys_beg,
      _dmem_beg, _cpu_private_beg, _cpu_private_end, _vm_beg, _vm_end,

@@ -20,6 +20,7 @@
 #include <bitmap.h>
 #include <bit.h>
 #include <arch/sysregs.h>
+#include <platform.h>
 
 #define SME_MAX_NUM 128
 #define CTX_MAX_NUM 128

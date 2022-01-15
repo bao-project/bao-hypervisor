@@ -19,6 +19,7 @@
 #include <arch/vplic.h>
 #include <arch/instructions.h>
 #include <string.h>
+#include <config.h>
 
 void vm_arch_init(struct vm *vm, const struct vm_config *config)
 {

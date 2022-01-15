@@ -19,6 +19,7 @@
 #include <fences.h>
 #include <arch/tlb.h>
 #include <string.h>
+#include <config.h>
 
 void vm_arch_init(struct vm* vm, const struct vm_config* config)
 {

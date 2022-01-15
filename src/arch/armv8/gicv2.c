@@ -22,6 +22,7 @@
 #include <cpu.h>
 #include <interrupts.h>
 #include <vm.h>
+#include <platform.h>
 
 extern volatile struct gicd_hw gicd;
 extern spinlock_t gicd_lock;

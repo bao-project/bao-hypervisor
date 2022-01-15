@@ -21,6 +21,7 @@
 #include <cpu.h>
 #include <interrupts.h>
 #include <vm.h>
+#include <platform.h>
 
 bool vgic_int_has_other_target(struct vcpu *vcpu, struct vgic_int *interrupt)
 {

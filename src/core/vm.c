@@ -18,6 +18,7 @@
 #include <string.h>
 #include <mem.h>
 #include <cache.h>
+#include <config.h>
 
 enum emul_type {EMUL_MEM, EMUL_REG};
 struct emul_node {

@@ -21,6 +21,7 @@
 #include <cpu.h>
 #include <interrupts.h>
 #include <vm.h>
+#include <platform.h>
 
 #define GICR_IS_REG(REG, offset)            \
     (((offset) >= offsetof(struct gicr_hw, REG)) && \

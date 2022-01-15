@@ -19,6 +19,7 @@
 #include <cpu.h>
 #include <vmm.h>
 #include <hypercall.h>
+#include <config.h>
 
 enum {IPC_NOTIFY};
 

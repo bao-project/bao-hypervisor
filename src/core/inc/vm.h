@@ -20,11 +20,9 @@
 #include <bao.h>
 #include <arch/vm.h>
 
-#include <platform.h>
 #include <mem.h>
 #include <cpu.h>
 #include <spinlock.h>
-#include <config.h>
 #include <emul.h>
 #include <objcache.h>
 #include <interrupts.h>

@@ -30,6 +30,7 @@
 #include <cpu.h>
 #include <interrupts.h>
 #include <vm.h>
+#include <platform.h>
 
 enum VGIC_EVENTS { VGIC_UPDATE_ENABLE, VGIC_ROUTE, VGIC_INJECT, VGIC_SET_REG };
 extern volatile const uint64_t VGIC_IPI_ID;

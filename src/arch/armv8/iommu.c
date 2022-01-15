@@ -17,6 +17,7 @@
 
 #include <iommu.h>
 #include <arch/smmuv2.h>
+#include <config.h>
 
 bool iommu_arch_init()
 {   
