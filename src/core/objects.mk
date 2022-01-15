@@ -25,3 +25,4 @@ core-objs-y+=config.o
 core-objs-y+=console.o
 core-objs-y+=iommu.o
 core-objs-y+=ipc.o
+core-objs-y+=objpool.o
