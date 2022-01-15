@@ -82,7 +82,7 @@ void vm_vcpu_init(struct vm* vm, const struct vm_config* config)
 }
 
 static void vm_copy_img_to_rgn(struct vm* vm, const struct vm_config* config,
-                               struct mem_region* reg)
+                               struct vm_mem_region* reg)
 {
     /* map original img address */
     size_t n_img = NUM_PAGES(config->image.size);
@@ -106,7 +106,7 @@ static void vm_copy_img_to_rgn(struct vm* vm, const struct vm_config* config,
     /*TODO: unmap */
 }
 
-void vm_map_mem_region(struct vm* vm, struct mem_region* reg)
+void vm_map_mem_region(struct vm* vm, struct vm_mem_region* reg)
 {
     size_t n = NUM_PAGES(reg->size);
     vaddr_t va = mem_alloc_vpage(&vm->as, SEC_VM_ANY,
@@ -125,7 +125,7 @@ void vm_map_mem_region(struct vm* vm, struct mem_region* reg)
 }
 
 static void vm_map_img_rgn_inplace(struct vm* vm, const struct vm_config* config,
-                                   struct mem_region* reg)
+                                   struct vm_mem_region* reg)
 {
     /* mem region pages before the img */
     size_t n_before = (config->image.base_addr - reg->base) / PAGE_SIZE;
@@ -178,7 +178,7 @@ static void vm_install_image(struct vm* vm) {
 }
 
 static void vm_map_img_rgn(struct vm* vm, const struct vm_config* config,
-                           struct mem_region* reg)
+                           struct vm_mem_region* reg)
 {
     if (reg->place_phys) {
         vm_copy_img_to_rgn(vm, config, reg);
@@ -194,7 +194,7 @@ static void vm_map_img_rgn(struct vm* vm, const struct vm_config* config,
 static void vm_init_mem_regions(struct vm* vm, const struct vm_config* config)
 {
     for (size_t i = 0; i < config->platform.region_num; i++) {
-        struct mem_region* reg = &config->platform.regions[i];
+        struct vm_mem_region* reg = &config->platform.regions[i];
         bool img_is_in_rgn = range_in_range(
             config->image.base_addr, config->image.size, reg->base, reg->size);
         if (img_is_in_rgn) {
@@ -221,7 +221,7 @@ static void vm_init_ipc(struct vm* vm, const struct vm_config* config)
             size = shmem->size;
             WARNING("Trying to map region to smaller shared memory. Truncated");
         }
-        struct mem_region reg = {
+        struct vm_mem_region reg = {
             .base = ipc->base,
             .size = size,
             .place_phys = true,
@@ -236,7 +236,7 @@ static void vm_init_ipc(struct vm* vm, const struct vm_config* config)
 static void vm_init_dev(struct vm* vm, const struct vm_config* config)
 {
     for (size_t i = 0; i < config->platform.dev_num; i++) {
-        struct dev_region* dev = &config->platform.devs[i];
+        struct vm_dev_region* dev = &config->platform.devs[i];
 
         size_t n = ALIGN(dev->size, PAGE_SIZE) / PAGE_SIZE;
 
@@ -252,7 +252,7 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* config)
     /* iommu */
     if (iommu_vm_init(vm, config)) {
         for (size_t i = 0; i < config->platform.dev_num; i++) {
-            struct dev_region* dev = &config->platform.devs[i];
+            struct vm_dev_region* dev = &config->platform.devs[i];
             if (dev->id) {
                 if(!iommu_vm_add_device(vm, dev->id)){
                     ERROR("Failed to add device to iommu");

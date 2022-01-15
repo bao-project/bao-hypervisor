@@ -1032,7 +1032,7 @@ bool mem_reserve_physical_memory(struct page_pool *pool)
         struct vm_config *vm_cfg = &config.vmlist[i];
         /* for every mem region */
         for (size_t j = 0; j < vm_cfg->platform.region_num; j++) {
-            struct mem_region *reg = &vm_cfg->platform.regions[j];
+            struct vm_mem_region *reg = &vm_cfg->platform.regions[j];
             if (reg->place_phys) {
                 size_t n_pg = NUM_PAGES(reg->size);
                 struct ppages ppages = mem_ppages_get(reg->phys, n_pg);

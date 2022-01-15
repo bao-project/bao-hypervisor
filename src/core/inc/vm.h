@@ -30,17 +30,34 @@
 #include <iommu.h>
 #include <ipc.h>
 
+struct vm_mem_region {
+    paddr_t base;
+    size_t size;
+    colormap_t colors;
+    bool place_phys;
+    paddr_t phys;
+};
+
+struct vm_dev_region {
+    paddr_t pa;
+    vaddr_t va;
+    size_t size;
+    size_t interrupt_num;
+    irqid_t *interrupts;
+    streamid_t id; /* bus master id for iommu effects */
+};
+    
 struct vm_platform {
     size_t cpu_num;
 
     size_t region_num;
-    struct mem_region *regions;
+    struct vm_mem_region *regions;
 
     size_t ipc_num;
     struct ipc *ipcs;
 
     size_t dev_num;
-    struct dev_region *devs;
+    struct vm_dev_region *devs;
 
     struct arch_vm_platform arch;
 };

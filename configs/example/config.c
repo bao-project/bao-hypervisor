@@ -69,7 +69,7 @@ struct config config = {
                 .cpu_num = 2,
                 
                 .region_num = 1,
-                .regions =  (struct mem_region[]) {
+                .regions =  (struct vm_mem_region[]) {
                     {
                         .base = 0x80000000,
                         .size = 0x100000 
@@ -77,7 +77,7 @@ struct config config = {
                 },
 
                 .dev_num = 1,
-                .devs =  (struct dev_region[]) {
+                .devs =  (struct vm_dev_region[]) {
                     {   
                         /* UART0 */
                         .pa = 0x1c090000,
@@ -124,7 +124,7 @@ struct config config = {
                 .cpu_num = 2,
                 
                 .region_num = 2,
-                .regions =  (struct mem_region[]) {
+                .regions =  (struct vm_mem_region[]) {
                     {
                         .base = 0x00000000,
                         .size = 0x80000000 
@@ -137,7 +137,7 @@ struct config config = {
                 },
 
                 .dev_num = 1,
-                .devs =  (struct dev_region[]) {
+                .devs =  (struct vm_dev_region[]) {
                     {   
                         /* UART1 */
                         .pa = 0x1C0B0000,

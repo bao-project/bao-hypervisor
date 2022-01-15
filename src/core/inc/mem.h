@@ -56,18 +56,6 @@ struct ppages {
 struct mem_region {
     paddr_t base;
     size_t size;
-    colormap_t colors;
-    bool place_phys;
-    paddr_t phys;
-};
-
-struct dev_region {
-    paddr_t pa;
-    vaddr_t va;
-    size_t size;
-    size_t interrupt_num;
-    irqid_t *interrupts;
-    streamid_t id; /* bus master id for iommu effects */
 };
 
 struct shmem {
