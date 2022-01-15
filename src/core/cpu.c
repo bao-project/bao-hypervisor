@@ -17,7 +17,7 @@
 #include <cpu.h>
 #include <interrupts.h>
 #include <platform.h>
-#include <objcache.h>
+#include <objpool.h>
 #include <vm.h>
 #include <fences.h>
 
@@ -26,11 +26,17 @@ struct cpu_msg_node {
     struct cpu_msg msg;
 };
 
+#define CPU_MSG_POOL_SIZE_DEFAULT (128)
+#ifndef CPU_MSG_POOL_SIZE
+#define CPU_MSG_POOL_SIZE CPU_MSG_POOL_SIZE_DEFAULT
+#endif
+
+OBJPOOL_ALLOC(msg_pool, struct cpu_msg_node, CPU_MSG_POOL_SIZE);
+
 struct cpu cpu __attribute__((section(".cpu_private")));
 
 struct cpu_synctoken cpu_glb_sync = {.ready = false};
 
-struct objcache msg_cache;
 extern uint8_t _ipi_cpumsg_handlers_start;
 extern uint8_t _ipi_cpumsg_handlers_size;
 extern uint8_t _ipi_cpumsg_handlers_id_start;
@@ -46,8 +52,6 @@ void cpu_init(cpuid_t cpu_id, paddr_t load_addr)
 
     if (cpu.id == CPU_MASTER) {
         cpu_sync_init(&cpu_glb_sync, platform.cpu_num);
-        objcache_init(&msg_cache, sizeof(struct cpu_msg_node), SEC_HYP_GLOBAL,
-                      false);
 
         ipi_cpumsg_handlers = (cpu_msg_handler_t*)&_ipi_cpumsg_handlers_start;
         ipi_cpumsg_handler_num =
@@ -62,7 +66,7 @@ void cpu_init(cpuid_t cpu_id, paddr_t load_addr)
 
 void cpu_send_msg(cpuid_t trgtcpu, struct cpu_msg *msg)
 {
-    struct cpu_msg_node *node = objcache_alloc(&msg_cache);
+    struct cpu_msg_node *node = objpool_alloc(&msg_pool);
     if (node == NULL) ERROR("cant allocate msg node");
     node->msg = *msg;
     list_push(&cpu_if(trgtcpu)->event_list, (node_t *)node);
@@ -76,7 +80,7 @@ bool cpu_get_msg(struct cpu_msg *msg)
     if ((node = (struct cpu_msg_node *)list_pop(&cpu.interface.event_list)) !=
         NULL) {
         *msg = node->msg;
-        objcache_free(&msg_cache, node);
+        objpool_free(&msg_pool, node);
         return true;
     }
     return false;
