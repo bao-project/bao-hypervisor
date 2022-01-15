@@ -36,9 +36,6 @@ void iommu_init()
 /* Configure architecture dependent stuff. */
 bool iommu_vm_init(struct vm *vm, const struct vm_config *config)
 {
-    objcache_init(&vm->iommu.dev_oc, sizeof(struct iommu_dev_node),
-                  SEC_HYP_GLOBAL, false);
-
     return iommu_arch_vm_init(vm, config);
 }
 
@@ -56,16 +53,6 @@ bool iommu_vm_add_device(struct vm *vm, streamid_t dev_id)
 
         /* Stream id is valid. Match this device with this VM specifically. */
         res = iommu_arch_vm_add_device(vm, dev_id);
-    }
-
-    if (res) {
-        struct iommu_dev_node *ptr = objcache_alloc(&vm->iommu.dev_oc);
-        if(ptr != NULL){
-            ptr->dev.id = dev_id;
-            list_push(&vm->iommu.dev_list, (node_t*)ptr);
-        } else {
-            res = false;
-        }
     }
 
     return res;

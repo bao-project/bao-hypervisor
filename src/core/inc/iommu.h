@@ -18,15 +18,12 @@
 
 #include <bao.h>
 #include <arch/iommu.h>
-#include <objcache.h>
 #include <list.h>
 
 struct vm_config;
 struct vm;
 
 struct iommu_vm {
-    struct list dev_list;
-    struct objcache dev_oc;
     struct iommu_vm_arch arch;
 };
 
