@@ -1114,7 +1114,7 @@ void gic_maintenance_handler(irqid_t irq_id)
     }
 }
 
-size_t vgic_get_itln(const struct gic_dscrp *gic_dscrp) {
+size_t vgic_get_itln(const struct vgic_dscrp *vgic_dscrp) {
 
     /**
      * By default the guest sees the real platforms interrupt line number
@@ -1126,8 +1126,8 @@ size_t vgic_get_itln(const struct gic_dscrp *gic_dscrp) {
     size_t vtyper_itln =
         bit32_extract(gicd.TYPER, GICD_TYPER_ITLN_OFF, GICD_TYPER_ITLN_LEN);
 
-    if(gic_dscrp->interrupt_num > GIC_MAX_PPIS) {
-        vtyper_itln = (ALIGN(gic_dscrp->interrupt_num, 32)/32 - 1) & 
+    if(vgic_dscrp->interrupt_num > GIC_MAX_PPIS) {
+        vtyper_itln = (ALIGN(vgic_dscrp->interrupt_num, 32)/32 - 1) & 
             BIT32_MASK(0, GICD_TYPER_ITLN_LEN);
     }
 

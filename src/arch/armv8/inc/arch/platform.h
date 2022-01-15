@@ -27,21 +27,12 @@ struct arch_platform {
         paddr_t gicr_addr;
 
         irqid_t maintenance_id;
-
-        size_t interrupt_num;
     } gic;
 
     struct {
         paddr_t base;
         irqid_t interrupt_id;
         streamid_t global_mask;
-
-        size_t group_num;
-        struct smmu_group {
-            streamid_t group_mask;
-            streamid_t group_id;
-        } *smmu_groups;
-
     } smmu;
 
     struct {

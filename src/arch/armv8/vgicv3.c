@@ -246,11 +246,11 @@ bool vgic_icc_sre_handler(struct emul_access *acc)
     return true;
 }
 
-void vgic_init(struct vm *vm, const struct gic_dscrp *gic_dscrp)
+void vgic_init(struct vm *vm, const struct vgic_dscrp *vgic_dscrp)
 {
-    vm->arch.vgicr_addr = gic_dscrp->gicr_addr;
+    vm->arch.vgicr_addr = vgic_dscrp->gicr_addr;
     vm->arch.vgicd.CTLR = 0;
-    size_t vtyper_itln = vgic_get_itln(gic_dscrp);
+    size_t vtyper_itln = vgic_get_itln(vgic_dscrp);
     vm->arch.vgicd.int_num = 32 * (vtyper_itln + 1);
     vm->arch.vgicd.TYPER =
         ((vtyper_itln << GICD_TYPER_ITLN_OFF) & GICD_TYPER_ITLN_MSK) |
@@ -279,7 +279,7 @@ void vgic_init(struct vm *vm, const struct gic_dscrp *gic_dscrp)
         vm->arch.vgicd.interrupts[i].enabled = false;
     }
 
-    struct emul_mem gicd_emu = {.va_base = gic_dscrp->gicd_addr,
+    struct emul_mem gicd_emu = {.va_base = vgic_dscrp->gicd_addr,
                            .size = ALIGN(sizeof(struct gicd_hw), PAGE_SIZE),
                            .handler = vgicd_emul_handler};
     vm_emul_add_mem(vm, &gicd_emu);
@@ -287,7 +287,7 @@ void vgic_init(struct vm *vm, const struct gic_dscrp *gic_dscrp)
     list_foreach(vm->vcpu_list, struct vcpu, vcpu)
     {
         struct emul_mem gicr_emu = {
-            .va_base = gic_dscrp->gicr_addr + sizeof(struct gicr_hw) * vcpu->id,
+            .va_base = vgic_dscrp->gicr_addr + sizeof(struct gicr_hw) * vcpu->id,
             .size = ALIGN(sizeof(struct gicr_hw), PAGE_SIZE),
             .handler = vgicr_emul_handler};
         vm_emul_add_mem(vm, &gicr_emu);

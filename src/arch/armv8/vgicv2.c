@@ -137,10 +137,10 @@ void vgic_inject_sgi(struct vcpu *vcpu, struct vgic_int *interrupt, vcpuid_t sou
     spin_unlock(&interrupt->lock);
 }
 
-void vgic_init(struct vm *vm, const struct gic_dscrp *gic_dscrp)
+void vgic_init(struct vm *vm, const struct vgic_dscrp *vgic_dscrp)
 {
     vm->arch.vgicd.CTLR = 0;
-    size_t vtyper_itln = vgic_get_itln(gic_dscrp);
+    size_t vtyper_itln = vgic_get_itln(vgic_dscrp);
     vm->arch.vgicd.int_num = 32 * (vtyper_itln + 1);
     vm->arch.vgicd.TYPER =
         ((vtyper_itln << GICD_TYPER_ITLN_OFF) & GICD_TYPER_ITLN_MSK) |
@@ -149,8 +149,8 @@ void vgic_init(struct vm *vm, const struct gic_dscrp *gic_dscrp)
 
     size_t n = NUM_PAGES(sizeof(struct gicc_hw));
     vaddr_t va =
-        mem_alloc_vpage(&vm->as, SEC_VM_ANY, (vaddr_t)gic_dscrp->gicc_addr, n);
-    if (va != (vaddr_t)gic_dscrp->gicc_addr)
+        mem_alloc_vpage(&vm->as, SEC_VM_ANY, (vaddr_t)vgic_dscrp->gicc_addr, n);
+    if (va != (vaddr_t)vgic_dscrp->gicc_addr)
         ERROR("failed to alloc vm address space to hold gicc");
     mem_map_dev(&vm->as, va, (vaddr_t)platform.arch.gic.gicv_addr, n);
 
@@ -174,7 +174,7 @@ void vgic_init(struct vm *vm, const struct gic_dscrp *gic_dscrp)
         vm->arch.vgicd.interrupts[i].enabled = false;
     }
 
-    struct emul_mem emu = {.va_base = gic_dscrp->gicd_addr,
+    struct emul_mem emu = {.va_base = vgic_dscrp->gicd_addr,
                       .size = ALIGN(sizeof(struct gicd_hw), PAGE_SIZE),
                       .handler = vgicd_emul_handler};
 

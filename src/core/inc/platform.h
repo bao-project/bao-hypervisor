@@ -21,19 +21,12 @@
 #include <plat/platform.h>
 #include <mem.h>
 #include <cache.h>
-#include <ipc.h>
 
 struct platform {
     size_t cpu_num;
 
     size_t region_num;
     struct mem_region *regions;
-
-    size_t ipc_num;
-    struct ipc *ipcs;
-
-    size_t dev_num;
-    struct dev_region *devs;
 
     struct {
         paddr_t base;

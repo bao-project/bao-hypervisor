@@ -21,6 +21,24 @@
 #include <arch/psci.h>
 #include <list.h>
 
+struct arch_vm_platform {
+    struct vgic_dscrp {
+        paddr_t gicd_addr;
+        paddr_t gicc_addr;
+        paddr_t gicr_addr;
+        size_t interrupt_num;
+    } gic;
+
+    struct {
+        streamid_t global_mask;
+        size_t group_num;
+        struct smmu_group {
+            streamid_t mask;
+            streamid_t id;
+        } *groups;
+    } smmu;
+};
+
 struct vm_arch {
     struct vgicd vgicd;
     vaddr_t vgicr_addr;

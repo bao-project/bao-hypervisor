@@ -52,6 +52,10 @@
 #define REG_T5 (30)
 #define REG_T6 (31)
 
+struct arch_vm_platform {
+    paddr_t plic_base;
+};
+
 struct vm_arch {
     struct vplic vplic;
 };

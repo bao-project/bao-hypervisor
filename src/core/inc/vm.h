@@ -30,6 +30,21 @@
 #include <iommu.h>
 #include <ipc.h>
 
+struct vm_platform {
+    size_t cpu_num;
+
+    size_t region_num;
+    struct mem_region *regions;
+
+    size_t ipc_num;
+    struct ipc *ipcs;
+
+    size_t dev_num;
+    struct dev_region *devs;
+
+    struct arch_vm_platform arch;
+};
+
 struct vm {
     vmid_t id;
 

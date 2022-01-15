@@ -22,7 +22,7 @@
 
 struct vm;
 struct vcpu;
-struct gic_dscrp;
+struct vgic_dscrp;
 
 /**
  * TODO: optimize the vgic_int struct's size
@@ -81,7 +81,7 @@ struct vgic_priv {
     struct vgic_int interrupts[GIC_CPU_PRIV];
 };
 
-void vgic_init(struct vm *vm, const struct gic_dscrp *gic_dscrp);
+void vgic_init(struct vm *vm, const struct vgic_dscrp *vgic_dscrp);
 void vgic_cpu_init(struct vcpu *vcpu);
 void vgic_set_hw(struct vm *vm, irqid_t id);
 void vgic_inject(struct vcpu *vcpu, irqid_t id, vcpuid_t source);
@@ -126,7 +126,7 @@ void vgic_yield_ownership(struct vcpu *vcpu, struct vgic_int *interrupt);
 void vgic_emul_generic_access(struct emul_access *, struct vgic_reg_handler_info *,
                               bool, vcpuid_t);
 void vgic_send_sgi_msg(struct vcpu *vcpu, cpumap_t pcpu_mask, irqid_t int_id);
-size_t vgic_get_itln(const struct gic_dscrp *gic_dscrp);
+size_t vgic_get_itln(const struct vgic_dscrp *vgic_dscrp);
 
 /* interface for version specific vgic */
 bool vgic_int_has_other_target(struct vcpu *vcpu, struct vgic_int *interrupt);

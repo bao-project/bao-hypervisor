@@ -42,7 +42,17 @@ struct vcpu* vm_get_vcpu_by_mpidr(struct vm* vm, unsigned long mpidr)
 
 static unsigned long vm_cpuid_to_mpidr(struct vm* vm, vcpuid_t cpuid)
 {
-    return platform_arch_cpuid_to_mpdir(&vm->config->platform, cpuid);
+    if (cpuid > vm->cpu_num) {
+        return ~(~MPIDR_RES1 & MPIDR_RES0_MSK); //return an invlid mpidr by inverting res bits
+    }
+
+    unsigned long mpidr = cpuid | MPIDR_RES1;
+
+    if (vm->cpu_num == 1) {
+        mpidr |= MPIDR_U_BIT;
+    }
+
+    return mpidr;
 }
 
 void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm)

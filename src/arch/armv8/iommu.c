@@ -90,8 +90,8 @@ bool iommu_arch_vm_init(struct vm *vm, const struct vm_config *config)
     for (size_t i = 0; i < config->platform.arch.smmu.group_num; i++) {
         /* Register each group. */
         const struct smmu_group *group =
-            &config->platform.arch.smmu.smmu_groups[i];
-        if(!iommu_vm_arch_add(vm, group->group_mask, group->group_id)){
+            &config->platform.arch.smmu.groups[i];
+        if(!iommu_vm_arch_add(vm, group->mask, group->id)){
             return false;
         }
     }
