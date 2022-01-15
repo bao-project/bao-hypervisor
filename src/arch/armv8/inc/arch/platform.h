@@ -54,7 +54,7 @@ struct arch_platform {
     } clusters;
 };
 
-struct platform_desc;
-unsigned long platform_arch_cpuid_to_mpdir(const struct platform_desc* plat,
+struct platform;
+unsigned long platform_arch_cpuid_to_mpdir(const struct platform* plat,
                                       cpuid_t cpuid);
 #endif /* __ARCH_PLATFORM_H__ */

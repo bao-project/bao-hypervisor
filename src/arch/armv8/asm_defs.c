@@ -48,8 +48,8 @@ void vcpu_defines()
 void platform_defines() __attribute__((used));
 void platform_defines()
 {
-    DEFINE_OFFSET(PLAT_CPUNUM_OFF, struct platform_desc, cpu_num);
-    DEFINE_OFFSET(PLAT_ARCH_OFF, struct platform_desc, arch);
+    DEFINE_OFFSET(PLAT_CPUNUM_OFF, struct platform, cpu_num);
+    DEFINE_OFFSET(PLAT_ARCH_OFF, struct platform, arch);
     DEFINE_OFFSET(PLAT_ARCH_CLUSTERS_OFF, struct arch_platform, clusters);
     DEFINE_OFFSET(PLAT_CLUSTERS_CORES_NUM_OFF, struct clusters, core_num);
 }

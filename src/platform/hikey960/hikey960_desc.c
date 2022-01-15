@@ -15,7 +15,7 @@
 
 #include <platform.h>
 
-struct platform_desc platform = {
+struct platform platform = {
     .cpu_num = 4, /* ONLY SUPORT A53 FOR NOW, cpu_num max is 4 */
     .region_num = 2,
 

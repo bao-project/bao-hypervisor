@@ -23,7 +23,7 @@
 #include <cache.h>
 #include <ipc.h>
 
-struct platform_desc {
+struct platform {
     size_t cpu_num;
 
     size_t region_num;
@@ -44,6 +44,6 @@ struct platform_desc {
     struct arch_platform arch;
 };
 
-extern struct platform_desc platform;
+extern struct platform platform;
 
 #endif /* __PLATFORM_H__ */

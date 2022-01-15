@@ -16,7 +16,7 @@
 
 #include <platform.h>
 
-struct platform_desc platform = {
+struct platform platform = {
     .cpu_num = 6,
     .region_num = 1,
     .regions =  (struct mem_region[]) {

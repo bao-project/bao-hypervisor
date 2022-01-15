@@ -16,7 +16,7 @@
 #include <platform.h>
 #include <arch/sysregs.h>
 
-unsigned long platform_arch_cpuid_to_mpdir(const struct platform_desc* plat,
+unsigned long platform_arch_cpuid_to_mpdir(const struct platform* plat,
                                       cpuid_t cpuid)
 {
     if (cpuid > plat->cpu_num) {

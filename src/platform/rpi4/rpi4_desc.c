@@ -16,7 +16,7 @@
 
 #include <platform.h>
 
-struct platform_desc platform = {
+struct platform platform = {
     .cpu_num = 4,
     .region_num = (RPI4_MEM_GB > 1) ? 2: 1,
     .regions =  (struct mem_region[]) {
