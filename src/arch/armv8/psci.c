@@ -21,7 +21,6 @@
 #include <page_table.h>
 #include <vm.h>
 #include <cpu.h>
-#include <objcache.h>
 #include <mem.h>
 #include <cache.h>
 
