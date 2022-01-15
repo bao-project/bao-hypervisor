@@ -7,13 +7,15 @@ void objpool_init(struct objpool *objpool) {
 }
 
 void* objpool_alloc(struct objpool *objpool) {
+    void *obj = NULL;
+    spin_lock(&objpool->lock);
     ssize_t n = bitmap_find_nth(objpool->bitmap, objpool->num, 1, 0, false);
-    if(n < 0) {
-        return NULL;
-    } else {
+    if (n >= 0) {
         bitmap_set(objpool->bitmap, n);
-        return objpool->pool + (objpool->objsize * n);
+        obj = objpool->pool + (objpool->objsize * n);
     }
+    spin_unlock(&objpool->lock);
+    return obj;
 }
 
 void objpool_free(struct objpool *objpool, void* obj) {
@@ -24,7 +26,9 @@ void objpool_free(struct objpool *objpool, void* obj) {
     bool aligned = IS_ALIGNED(obj_addr-pool_addr, objpool->objsize);
     if (in_pool && aligned) {
         size_t n = (obj_addr-pool_addr)/objpool->objsize;
+        spin_lock(&objpool->lock);
         bitmap_clear(objpool->bitmap, n);
+        spin_unlock(&objpool->lock);
     } else {
 	WARNING("leaked while trying to free stray object");
     }
