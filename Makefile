@@ -165,12 +165,12 @@ ifeq (, $(findstring $(MAKECMDGOALS), clean $(submakes)))
 endif
 
 $(ld_script_temp).d: $(ld_script) 
-	@echo "Creating dependecy	$(patsubst $(cur_dir)/%, %, $<)"
+	@echo "Creating dependency	$(patsubst $(cur_dir)/%, %, $<)"
 	@$(cc) -x assembler-with-cpp  -MM -MT "$(ld_script_temp) $@" \
 		$(addprefix -I, $(inc_dirs))  $< > $@
 
 $(build_dir)/%.d : $(src_dir)/%.[c,S] | $(gens)
-	@echo "Creating dependecy	$(patsubst $(cur_dir)/%, %, $<)"
+	@echo "Creating dependency	$(patsubst $(cur_dir)/%, %, $<)"
 	@$(cc) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $< > $@	
 
 $(objs-y):
@@ -191,7 +191,7 @@ $(asm_defs_hdr): $(asm_defs_src)
 		| awk '($$1 == "->") { print "#define " $$2 " " $$3 }' > $@
 
 $(asm_defs_hdr).d: $(asm_defs_src)
-	@echo "Creating dependecy	$(patsubst $(cur_dir)/%, %,\
+	@echo "Creating dependency	$(patsubst $(cur_dir)/%, %,\
 		 $(patsubst %.d,%, $@))"
 	@$(cc) -MM -MT "$(patsubst %.d,%, $@)" $(addprefix -I, $(inc_dirs)) $< > $@	
 endif
