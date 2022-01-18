@@ -308,27 +308,36 @@ bool vgic_add_lr(struct vcpu *vcpu, struct vgic_int *interrupt)
     }
 
     if (lr_ind < 0) {
-        unsigned min_prio_pend = 0, min_prio_act = 0;
+        unsigned min_prio_pend = interrupt->prio, min_prio_act = interrupt->prio;
+        unsigned min_id_act = interrupt->id, min_id_pend = interrupt->id;
         size_t pend_found = 0, act_found = 0;
         ssize_t pend_ind = -1, act_ind = -1;
 
         for (size_t i = 0; i < NUM_LRS; i++) {
             unsigned long lr = gich_read_lr(i);
+            unsigned lr_id = GICH_LR_VID(lr);
             unsigned lr_prio = (lr & GICH_LR_PRIO_MSK) >> GICH_LR_PRIO_OFF;
+            if (GIC_VERSION == GICV2) {
+                lr_prio = lr_prio << 3;
+            }
             unsigned lr_state = (lr & GICH_LR_STATE_MSK);
 
             if (lr_state & GICH_LR_STATE_ACT) {
-                if (lr_prio > min_prio_act) {
+                if (lr_prio > min_prio_act ||
+                    (lr_prio == min_prio_act && lr_id > min_id_act)) {
+                    min_id_act = lr_id;
                     min_prio_act = lr_prio;
                     act_ind = i;
                 }
-                pend_found++;
+                act_found++;
             } else if (lr_state & GICH_LR_STATE_PND) {
-                if (lr_prio > min_prio_pend) {
+                if (lr_prio > min_prio_pend ||
+                    (lr_prio == min_prio_pend && lr_id > min_id_pend)) {
+                    min_id_pend = lr_id;
                     min_prio_pend = lr_prio;
                     pend_ind = i;
                 }
-                act_found++;
+                pend_found++;
             }
         }
 
@@ -593,7 +602,8 @@ void vgic_int_set_cfg_hw(struct vcpu *vcpu, struct vgic_int *interrupt)
 bool vgic_int_set_prio(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t prio)
 {
     uint8_t prev_prio = interrupt->prio;
-    interrupt->prio = (uint8_t)prio;
+    interrupt->prio = (uint8_t)prio &
+        BIT_MASK(8-GICH_LR_PRIO_LEN, GICH_LR_PRIO_LEN);
     return prev_prio != prio;
 }
 
