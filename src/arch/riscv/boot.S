@@ -58,6 +58,8 @@
 .section ".rodata", "a"
 /* Symbol values */
 _image_start_sym: .8byte _image_start
+_image_load_end_sym: .8byte _image_load_end
+_image_noload_start_sym: .8byte _image_noload_start
 _image_end_sym: .8byte _image_end
 _dmem_beg_sym: .8byte _dmem_beg
 _enter_vas_sym: .8byte _enter_vas
@@ -94,12 +96,14 @@ _reset_handler:
     *      a2 -> config binary load address (originally passed in a1)
     *
     * The remaining code must use t0-t6 as scratchpad registers in the main
-    * flow and s0-s11 in auxiliary routines. a3-a7 are used as arguments and
-    * return values (can be also corrputed in auxiliary routines).
+    * flow and s0-s5 in auxiliary routines. s6-s11 are used to hold constants
+    * a3-a7 are used as arguments and return values (can be also corrputed in
+    * auxiliary routines).
     */
 
     mv      a2, a1
     la      a1, _image_start
+    la      s6, extra_allocated_phys_mem
 
     /**
      *  Setup stvec early. In case of we cause an exception in this boot code
@@ -147,10 +151,14 @@ _boot_lock:
 
  	la	    a3, _page_tables_start	
 	la	    a4, _page_tables_end	
+    add     a3, a3, s6
+    add     a4, a4, s6
 	call	clear		 
 
     la          t0, root_l1_pt
+    add         t0, t0, s6
     la          t1, root_l2_pt
+    add         t1, t1, s6
     PTE_FILL    t1, t1, PTE_HYP_FLAGS | PTE_TABLE
     li          t2, BAO_VAS_BASE
     PTE_PTR     t2, t0, 1, t2
@@ -158,9 +166,10 @@ _boot_lock:
 
 
     la          t0, root_l2_pt
+    add         t0, t0, s6
     LD_SYM      t1, _image_start_sym
     PTE_PTR     t1, t0, 2, t1
-    LD_SYM      t2, _image_end_sym
+    LD_SYM      t2, _image_load_end_sym
     PTE_PTR     t2, t0, 2, t2
 
     la          t0, _image_start
@@ -171,8 +180,16 @@ _boot_lock:
     add     t1, t1, 8
     add     t0, t0, 0x400
     j       1b
-
 2:
+    la          t0, root_l2_pt
+    add         t0, t0, s6
+    LD_SYM      t2, _image_end_sym
+    PTE_PTR     t2, t0, 2, t2
+    bge         t1, t2, 3f
+    la          t0, _image_noload_start
+    PTE_FILL    t0, t0, PTE_HYP_FLAGS | PTE_PAGE
+    j 1b
+3:
     fence   w, w
     la      t0, _barrier
     li      t1, 1
@@ -209,6 +226,7 @@ map_cpu:
 
     /* Add root l1 page table pointer to root page table */
     la          t2, root_l1_pt
+    add         t2, t2, s6
     PTE_FILL    t2, t2, PTE_HYP_FLAGS | PTE_TABLE
     li          t3, BAO_VAS_BASE
     PTE_PTR     t3, t1, 0, t3
@@ -253,6 +271,7 @@ map_cpu_interface:
     mul     t3, t3, a0
     add     t2, t2, t3
     la      t1, root_l2_pt
+    add     t1, t1, s6
     PTE_PTR     t1, t1, 2, t2
 
     li      t2, CPU_IF_OFF

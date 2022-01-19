@@ -56,6 +56,28 @@ SECTIONS
 
 	_ipi_cpumsg_handlers_size = SIZEOF(.ipi_cpumsg_handlers);
 
+    . = ALIGN(PAGE_SIZE);
+    _image_load_end = .;
+
+	/* Sections to be allocated only in physical memory, not in VA space */
+
+	.config : ALIGN(PAGE_SIZE) {
+		_config_start = .;
+		*(.config)
+	}
+
+	. = ALIGN(PAGE_SIZE);
+	_config_end = .;
+    _image_noload_start = .;
+    extra_allocated_phys_mem = _image_noload_start - _image_load_end;
+
+	/**
+	 * Rewind LC to reuse VMA addresses occupied by config and make VA
+	 * start immediately after image.
+	 * Also, force start address of next section to enforce this.
+	 */
+    . = _image_load_end;
+
 	/* Only no load regions below */
 	
 	.bss (NOLOAD) :  {	
@@ -73,24 +95,8 @@ SECTIONS
 	
 	. = ALIGN(PAGE_SIZE);
 	_image_end = ABSOLUTE(.);
+	_dmem_phys_beg = ABSOLUTE(.) + extra_allocated_phys_mem;
 
-	/* Sections to be allocated only in physical memory, not in VA space */
-
-	.config : ALIGN(PAGE_SIZE) {
-		_config_start = .;
-		*(.config)
-	}
-	. = ALIGN(PAGE_SIZE);
-	_config_end = .;
-
-	_dmem_phys_beg = ABSOLUTE(.);
-
-	/**
-	 * Rewind LC to reuse VMA addresses occupied by config and make VA 
-	 * start immediately after image.
-	 * Also, force start address of next section to enforce this.
-	 */
-	. = _image_end;
 	.devices _image_end (NOLOAD) : ALIGN(PAGE_SIZE) {
 		*(.devices)
 	}

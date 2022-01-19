@@ -28,9 +28,9 @@
 #include <fences.h>
 #include <tlb.h>
 
-extern uint8_t _image_start, _image_end, _dmem_phys_beg, _dmem_beg,
-    _cpu_private_beg, _cpu_private_end, _vm_beg, _vm_end, _config_start,
-    _config_end;
+extern uint8_t _image_start, _image_load_end, _image_end, _dmem_phys_beg,
+     _dmem_beg, _cpu_private_beg, _cpu_private_end, _vm_beg, _vm_end,
+     _config_start,  _config_end;
 
 void switch_space(struct cpu *, paddr_t);
 
@@ -911,18 +911,27 @@ bool root_pool_set_up_bitmap(paddr_t load_addr)
 
 bool pp_root_reserve_hyp_mem(paddr_t load_addr)
 {
-    size_t image_size = (size_t)(&_image_end - &_image_start);
+    size_t image_load_size = (size_t)(&_image_load_end - &_image_start);
+    size_t image_noload_size = (size_t)(&_image_end - &_image_load_end);
     size_t config_size = (size_t)(&_config_end - &_config_start);
-    uint64_t cpu_size = platform.cpu_num * cpu_boot_alloc_size();
-    paddr_t cpu_base_addr = load_addr + image_size + config_size;
+    size_t cpu_size = platform.cpu_num * cpu_boot_alloc_size();
+    paddr_t image_noload_addr = load_addr + image_load_size + config_size;
+    paddr_t cpu_base_addr = image_noload_addr + image_noload_size;
 
-    struct ppages images_ppages = mem_ppages_get(load_addr, NUM_PAGES(image_size));
-    struct ppages cpu_ppages = mem_ppages_get(cpu_base_addr, NUM_PAGES(cpu_size));
+    struct ppages images_load_ppages =
+        mem_ppages_get(load_addr, NUM_PAGES(image_load_size));
+    struct ppages images_noload_ppages =
+        mem_ppages_get(image_noload_addr, NUM_PAGES(image_noload_size));
+    struct ppages cpu_ppages =
+        mem_ppages_get(cpu_base_addr, NUM_PAGES(cpu_size));
 
-    bool image_reserved = mem_reserve_ppool_ppages(&root_pool, &images_ppages);
+    bool image_load_reserved =
+        mem_reserve_ppool_ppages(&root_pool, &images_load_ppages);
+    bool image_noload_reserved =
+        mem_reserve_ppool_ppages(&root_pool, &images_noload_ppages);
     bool cpu_reserved = mem_reserve_ppool_ppages(&root_pool, &cpu_ppages);
 
-    return image_reserved && cpu_reserved;
+    return image_load_reserved && image_noload_reserved && cpu_reserved;
 }
 
 static bool pp_root_init(paddr_t load_addr, struct mem_region *root_region)
@@ -1096,7 +1105,8 @@ bool mem_init_vm_config(paddr_t config_addr)
 
 struct mem_region *mem_find_root_region(paddr_t load_addr)
 {
-    size_t image_size = (size_t)(&_image_end - &_image_start);
+    size_t image_size = ((size_t)(&_image_load_end - &_image_start)) +
+        ((size_t)(&_config_end - &_config_start));
 
     /* Find the root memory region in which the hypervisor was loaded. */
     struct mem_region *root_mem_region = NULL;
@@ -1156,7 +1166,9 @@ void color_hypervisor(const paddr_t load_addr, const paddr_t config_addr)
     struct ppages p_bitmap;
     struct ppages p_interface;
 
-    size_t image_size = (size_t)(&_image_end - &_image_start);
+    size_t image_load_size = (size_t)(&_image_load_end - &_image_start);
+    size_t image_noload_size = (size_t)(&_image_end - &_image_load_end);
+    size_t image_size = image_load_size + image_noload_size;
     size_t cpu_boot_size = cpu_boot_alloc_size();
     size_t config_size = (size_t)(&_config_end - &_config_start);
     size_t bitmap_size = (root_pool.size / (8 * PAGE_SIZE) +
@@ -1305,8 +1317,14 @@ void color_hypervisor(const paddr_t load_addr, const paddr_t config_addr)
      * from `load_addr`. The bitmap region is on top of the root pool region.
      */
     if (cpu.id == CPU_MASTER) {
-        p_image = mem_ppages_get(load_addr, NUM_PAGES(image_size));
+        p_image = mem_ppages_get(load_addr, NUM_PAGES(image_load_size));
+        va = mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL, NULL_VA, p_image.size);
+        mem_map(&cpu.as, va, &p_image, p_image.size, PTE_HYP_FLAGS);
+        memset((void*)va, 0, p_image.size * PAGE_SIZE);
+        mem_free_vpage(&cpu.as, va, p_image.size, true);
 
+        p_image = mem_ppages_get(load_addr + image_load_size + config_size,
+            NUM_PAGES(image_noload_size));
         va = mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL, NULL_VA, p_image.size);
         mem_map(&cpu.as, va, &p_image, p_image.size, PTE_HYP_FLAGS);
         memset((void*)va, 0, p_image.size * PAGE_SIZE);
