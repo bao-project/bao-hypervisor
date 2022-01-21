@@ -41,13 +41,19 @@ platforms is presented below:
 - [x] 96Boards HiKey 960
 - [x] Raspberry Pi 4
 - [x] QEMU virt
-- [ ] NXP MCIMX8M-EVK (Armv8-A) - soon
-- [ ] 96Boards ROCK960 (Armv8-A) - wip
+- [ ] NXP MCIMX8M-EVK 
+- [ ] Arm Fixed Virtual Platform 
+- [ ] 96Boards ROCK960 
+
+
+**Armv8-R**
+- [ ] Arm Fixed Virtual Platform
 
 
 **RISC-V**
-- [x] QEMU virt (rv64)
-- [ ] Rocket w/ H-extension (rv64) - soon
+- [x] QEMU virt 
+- [ ] Rocket w/ H-extension 
+- [ ] CVA6 w/ H-extension 
 
 
 Community Resources
@@ -82,12 +88,11 @@ References
 ------------
 
 4. Bruno Sá, José Martins and Sandro Pinto. "**A First Look at RISC-V Virtualization from an Embedded Systems Perspective**".
-To be published, 2021.
-https://arxiv.org/abs/2103.14951
+In IEEE Transactions on Computers, doi: 10.1109/TC.2021.3124320.
 
 
 3. José Martins and Sandro Pinto. "**Static Partitioning Virtualization on RISC-V**".
-In RISC-V Summit, virtual, 2020. 
+In RISC-V Summit, virtual, 2020. https://www.youtube.com/watch?v=yuxMn4ZApEM
 
 
 2. José Martins and Sandro Pinto. "**Bao: a modern lightweight embedded hypervisor**".
