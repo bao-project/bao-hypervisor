@@ -93,7 +93,7 @@ static inline bool list_empty(struct list* list)
     return (list->head == NULL);
 }
 
-static inline bool list_rm(struct list* list, node_t node)
+static inline bool list_rm(struct list* list, node_t* node)
 {
     if (list != NULL && node != NULL) {
         spin_lock(&list->lock);
@@ -106,7 +106,15 @@ static inline bool list_rm(struct list* list, node_t node)
         }
         if (temp != NULL && temp == node) {
             /* found the node, remove it */
-            *temp_prev = *temp;
+            if(temp_prev != NULL) {
+                *temp_prev = *temp;
+            } else {
+                list->head = *temp;
+            }
+
+            if(list->head == NULL) {
+                list->tail = NULL;
+            }
         }
 
         spin_unlock(&list->lock);
