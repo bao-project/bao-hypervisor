@@ -308,6 +308,9 @@ void vgic_init(struct vm *vm, const struct gic_dscrp *gic_dscrp)
     struct emul_reg icc_sre_emu = {.addr = SYSREG_ENC_ADDR(3, 0, 12, 12, 5),
                               .handler = vgic_icc_sre_handler};
     vm_emul_add_reg(vm, &icc_sre_emu);
+
+    list_init(&vm->arch.vgic_spilled);
+    vm->arch.vgic_spilled_lock = SPINLOCK_INITVAL;
 }
 
 void vgic_cpu_init(struct vcpu *vcpu)
@@ -329,4 +332,6 @@ void vgic_cpu_init(struct vcpu *vcpu)
     for (size_t i = 0; i < GIC_MAX_SGIS; i++) {
         vcpu->arch.vgic_priv.interrupts[i].cfg = 0b10;
     }
+
+    list_init(&vcpu->arch.vgic_spilled);
 }

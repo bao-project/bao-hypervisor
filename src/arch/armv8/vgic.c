@@ -280,14 +280,41 @@ bool vgic_remove_lr(struct vcpu *vcpu, struct vgic_int *interrupt)
             }
         }
 #endif
+        uint32_t hcr = gich_get_hcr();
         if ((interrupt->state & PEND) && interrupt->enabled) {
-            gich_set_hcr(gich_get_hcr() | GICH_HCR_NPIE_BIT);
+            hcr |= GICH_HCR_NPIE_BIT;
         }
+        gich_set_hcr(hcr | GICH_HCR_UIE_BIT);
 
         ret = true;
     }
 
     return ret;
+}
+
+void vgic_add_spilled(struct vcpu *vcpu, struct vgic_int* interrupt) {
+    spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
+    struct list *spilled_list = NULL;
+    if (gic_is_priv(interrupt->id)) {
+        spilled_list = &vcpu->arch.vgic_spilled;
+    } else {
+        spilled_list = &vcpu->vm->arch.vgic_spilled;
+    }
+    list_push(spilled_list, (node_t*)interrupt);
+    spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
+}
+
+void vgic_spill_lr(struct vcpu *vcpu, unsigned lr_ind) {
+    unsigned long lr = gich_read_lr(lr_ind);
+    struct vgic_int *spilled_int = vgic_get_int(vcpu, GICH_LR_VID(lr), vcpu->id);
+
+    if (spilled_int != NULL) {
+        spin_lock(&spilled_int->lock);
+        vgic_remove_lr(vcpu, spilled_int);
+        vgic_add_spilled(vcpu, spilled_int);
+        vgic_yield_ownership(vcpu, spilled_int);
+        spin_unlock(&spilled_int->lock);
+    }
 }
 
 bool vgic_add_lr(struct vcpu *vcpu, struct vgic_int *interrupt)
@@ -348,16 +375,7 @@ bool vgic_add_lr(struct vcpu *vcpu, struct vgic_int *interrupt)
         }
 
         if (lr_ind >= 0) {
-            struct vgic_int *spilled_int =
-                vgic_get_int(vcpu, GICH_LR_VID(gich_read_lr(lr_ind)), vcpu->id);
-
-            if (spilled_int != NULL) {
-                // TODO: possible deadlock?
-                spin_lock(&spilled_int->lock);
-                vgic_remove_lr(vcpu, spilled_int);
-                vgic_yield_ownership(vcpu, spilled_int);
-                spin_unlock(&spilled_int->lock);
-            }
+            vgic_spill_lr(vcpu, lr_ind);
         }
     }
 
@@ -365,10 +383,7 @@ bool vgic_add_lr(struct vcpu *vcpu, struct vgic_int *interrupt)
         vgic_write_lr(vcpu, interrupt, lr_ind);
         ret = true;
     } else {
-        // turn on maintenance interrupts
-        if (vgic_get_state(interrupt) & PEND) {
-            gich_set_hcr(gich_get_hcr() | GICH_HCR_NPIE_BIT);
-        }
+        vgic_add_spilled(vcpu, interrupt);
     }
 
     return ret;
@@ -965,100 +980,84 @@ void vgic_ipi_handler(uint32_t event, uint64_t data)
     }
 }
 
-void vgic_refill_lrs(struct vcpu *vcpu)
-{
-    bool has_pend = false;
-    for (size_t i = 0; i < NUM_LRS; i++) {
-        unsigned long lr = gich_read_lr(i);
-        if (GICH_LR_STATE(lr) & PEND) {
-            has_pend = true;
-            break;
-        }
-    }
-
-    /**
-     * TODO: the following cycle can be highly otpimized using per-vcpu
-     * active/pending interrupt lists.
-     */
-    int64_t lr_ind;
-    uint64_t elrsr;
-    while (elrsr = gich_get_elrsr(),
-           (lr_ind = bitmap_find_nth((bitmap_t*)&elrsr, NUM_LRS, 1, 0, true)) >=
-               0) {
-        struct vgic_int *interrupt = NULL;
-        bool prev_pend = false;
-        uint8_t prev_prio = GIC_LOWEST_PRIO;
-
-        for (size_t i = 0; i < gic_num_irqs(); i++) {
-            struct vgic_int *temp_int = vgic_get_int(vcpu, i, vcpu->id);
-            if (temp_int == NULL) break;
-            spin_lock(&temp_int->lock);
-            if (vgic_get_ownership(vcpu, temp_int)) {
-                uint8_t temp_state = vgic_get_state(temp_int);
-                bool cpu_is_target = vgic_int_vcpu_is_target(vcpu, temp_int);
-                if (cpu_is_target && temp_state != INV && !temp_int->in_lr) {
-                    bool is_higher_prio = temp_int->prio < prev_prio;
-                    bool is_act = (temp_state & ACT) != 0;
-                    bool is_pend = (temp_state & PEND) != 0;
-                    bool is_first_pend = !has_pend && is_pend && !prev_pend;
-                    bool is_act_after_pend = has_pend && is_act && prev_pend;
-                    if ((interrupt == NULL) || is_first_pend ||
-                        is_act_after_pend || is_higher_prio) {
-                        prev_pend = is_pend;
-                        prev_prio = temp_int->prio;
-                        struct vgic_int *aux = interrupt;
-                        interrupt = temp_int;
-                        temp_int = aux;
-                    }
-                }
-            }
-
-            if (temp_int != NULL) {
-                vgic_yield_ownership(vcpu, temp_int);
-                spin_unlock(&temp_int->lock);
+/**
+ * Must be called holding the vgic_spilled_lock
+ */
+static inline 
+struct vgic_int* vgic_highest_prio_spilled(struct vcpu *vcpu, 
+                                           unsigned flags, 
+                                           struct list** outlist) {
+    struct vgic_int* irq = NULL;
+    struct list* spilled_lists[] = {
+        &vcpu->arch.vgic_spilled,
+        &vcpu->vm->arch.vgic_spilled,
+    };
+    size_t spilled_list_size = sizeof(spilled_lists)/sizeof(struct list*);
+    for(size_t i = 0; i< spilled_list_size; i++) {
+        struct list *list = spilled_lists[i];
+        list_foreach((*list), struct vgic_int, temp_irq) {
+            if(!(vgic_get_state(temp_irq) & flags)) { continue; }
+            bool irq_is_null = irq == NULL;
+            uint8_t irq_prio = irq_is_null ? GIC_LOWEST_PRIO : irq->prio;
+            irqid_t irq_id = irq_is_null ? GIC_MAX_VALID_INTERRUPTS : irq->id;
+            bool is_higher_prio = (temp_irq->prio < irq_prio);
+            bool is_same_prio = temp_irq->prio == irq_prio;
+            bool is_lower_id = temp_irq->id < irq_id;
+            if (is_higher_prio || (is_same_prio && is_lower_id)) {
+                irq = temp_irq;
+                *outlist = list;
             }
         }
-
-        if (interrupt != NULL) {
-            vgic_write_lr(vcpu, interrupt, lr_ind);
-            has_pend = has_pend || prev_pend;
-            spin_unlock(&interrupt->lock);
-        } else {
-            gich_set_hcr(gich_get_hcr() & ~(GICH_HCR_NPIE_BIT));
-            break;
-        }
     }
+    return irq;
 }
 
-void vgic_eoir_highest_spilled_active(struct vcpu *vcpu)
-{
-    struct vgic_int *interrupt = NULL;
-    for (size_t i = 0; i < gic_num_irqs(); i++) {
-        struct vgic_int *temp_int = vgic_get_int(vcpu, i, vcpu->id);
-        if (temp_int == NULL) break;
-
-        spin_lock(&temp_int->lock);
-        if (vgic_get_ownership(vcpu, temp_int) && (temp_int->state & ACT)) {
-            if (interrupt == NULL || (interrupt->prio < temp_int->prio)) {
-                struct vgic_int *aux = interrupt;
-                interrupt = temp_int;
-                temp_int = aux;
+static void vgic_refill_lrs(struct vcpu *vcpu, bool npie) {
+    uint64_t elrsr = gich_get_elrsr();
+    ssize_t  lr_ind = bitmap_find_nth((bitmap_t*)&elrsr, NUM_LRS, 1, 0, true);
+    unsigned flags = npie ? PEND : ACT | PEND;
+    spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
+    while(lr_ind >= 0) {
+        struct list* list = NULL;
+        struct vgic_int* irq = vgic_highest_prio_spilled(vcpu, flags, &list);
+        if (irq != NULL) {
+            spin_lock(&irq->lock);
+            bool got_ownership = vgic_get_ownership(vcpu, irq);
+            if(got_ownership) {
+                list_rm(list, &irq->node);
+                vgic_write_lr(vcpu, irq, lr_ind);
             }
-        }
-
-        if (temp_int != NULL) {
-            vgic_yield_ownership(vcpu, temp_int);
-            spin_unlock(&temp_int->lock);
-        }
-    }
-
-    if (interrupt) {
-        interrupt->state &= ~ACT;
-        if (vgic_int_is_hw(interrupt)) {
-            gic_set_act(interrupt->id, false);
+            spin_unlock(&irq->lock);
+            if(!got_ownership) { continue; }
         } else {
-            if (interrupt->state & PEND) {
-                vgic_add_lr(vcpu, interrupt);
+            uint32_t hcr = gich_get_hcr();
+            gich_set_hcr(hcr & ~(GICH_HCR_NPIE_BIT | GICH_HCR_UIE_BIT));
+            break;
+        }
+        flags = ACT | PEND;
+        elrsr = gich_get_elrsr();
+        lr_ind = bitmap_find_nth((bitmap_t*)&elrsr, NUM_LRS, 1, 0, true);
+    }
+    spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
+}
+
+
+static void vgic_eoir_highest_spilled_active(struct vcpu *vcpu)
+{   
+    struct list* list = NULL;
+    struct vgic_int *interrupt = 
+        vgic_highest_prio_spilled(vcpu, ACT, &list);
+
+    if (interrupt != NULL) {
+        spin_lock(&interrupt->lock);
+        if(vgic_get_ownership(vcpu, interrupt)) {
+            interrupt->state &= ~ACT;
+            if (vgic_int_is_hw(interrupt)) {
+                gic_set_act(interrupt->id, false);
+            } else {
+                if (interrupt->state & PEND) {
+                    vgic_add_lr(vcpu, interrupt);
+                }
             }
         }
         spin_unlock(&interrupt->lock);
@@ -1067,11 +1066,9 @@ void vgic_eoir_highest_spilled_active(struct vcpu *vcpu)
 
 void vgic_handle_trapped_eoir(struct vcpu *vcpu)
 {
-    int64_t lr_ind = -1;
-    uint64_t eisr = 0;
-    while (
-        eisr = gich_get_eisr(),
-        (lr_ind = bitmap_find_nth((bitmap_t*)&eisr, NUM_LRS, 1, 0, true)) >= 0) {
+    uint64_t eisr = gich_get_eisr();
+    int64_t lr_ind = bitmap_find_nth((bitmap_t*)&eisr, NUM_LRS, 1, 0, true);
+    while (lr_ind >= 0) {
         unsigned long lr_val = gich_read_lr(lr_ind);
         gich_write_lr(lr_ind, 0);
 
@@ -1087,6 +1084,8 @@ void vgic_handle_trapped_eoir(struct vcpu *vcpu)
             vgic_yield_ownership(vcpu, interrupt);
         }
         spin_unlock(&interrupt->lock);
+        eisr = gich_get_eisr();
+        lr_ind = bitmap_find_nth((bitmap_t*)&eisr, NUM_LRS, 1, 0, true);
     }
 }
 
@@ -1098,16 +1097,17 @@ void gic_maintenance_handler(irqid_t irq_id)
         vgic_handle_trapped_eoir(cpu.vcpu);
     }
 
-    if (misr & GICH_MISR_NP) {
-        vgic_refill_lrs(cpu.vcpu);
+    if (misr & (GICH_MISR_NP | GICH_MISR_U)) {
+        vgic_refill_lrs(cpu.vcpu, !!(misr & GICH_MISR_NP));
     }
 
     if (misr & GICH_MISR_LRPEN) {
-        uint32_t hcr_el2 = 0;
-        while (hcr_el2 = gich_get_hcr(), hcr_el2 & GICH_HCR_EOICount_MASK) {
+        uint32_t hcr_el2 = gich_get_hcr();
+        while (hcr_el2 & GICH_HCR_EOICount_MASK) {
             vgic_eoir_highest_spilled_active(cpu.vcpu);
             hcr_el2 -= (1U << GICH_HCR_EOICount_OFF);
             gich_set_hcr(hcr_el2);
+            hcr_el2 = gich_get_hcr();
         }
     }
 }

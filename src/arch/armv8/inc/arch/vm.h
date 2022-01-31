@@ -19,15 +19,19 @@
 #include <bao.h>
 #include <arch/vgic.h>
 #include <arch/psci.h>
+#include <list.h>
 
 struct vm_arch {
     struct vgicd vgicd;
     vaddr_t vgicr_addr;
+    struct list vgic_spilled;
+    spinlock_t vgic_spilled_lock;
 };
 
 struct vcpu_arch {
     unsigned long vmpidr;
     struct vgic_priv vgic_priv;
+    struct list vgic_spilled;
     struct psci_ctx psci_ctx;
 };
 

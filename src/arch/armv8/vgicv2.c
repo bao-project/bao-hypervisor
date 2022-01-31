@@ -178,6 +178,9 @@ void vgic_init(struct vm *vm, const struct gic_dscrp *gic_dscrp)
                       .handler = vgicd_emul_handler};
 
     vm_emul_add_mem(vm, &emu);
+
+    list_init(&vm->arch.vgic_spilled);
+    vm->arch.vgic_spilled_lock = SPINLOCK_INITVAL;
 }
 
 void vgic_cpu_init(struct vcpu *vcpu)
@@ -199,4 +202,6 @@ void vgic_cpu_init(struct vcpu *vcpu)
     for (size_t i = 0; i < GIC_MAX_SGIS; i++) {
         vcpu->arch.vgic_priv.interrupts[i].enabled = true;
     }
+
+    list_init(&vcpu->arch.vgic_spilled);
 }

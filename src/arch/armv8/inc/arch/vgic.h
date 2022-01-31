@@ -18,6 +18,7 @@
 
 #include <bao.h>
 #include <arch/gic.h>
+#include <list.h>
 
 struct vm;
 struct vcpu;
@@ -27,6 +28,7 @@ struct gic_dscrp;
  * TODO: optimize the vgic_int struct's size
  */
 struct vgic_int {
+    node_t node;
     struct vcpu *owner;
 #if (GIC_VERSION != GICV2)
     unsigned long route;
