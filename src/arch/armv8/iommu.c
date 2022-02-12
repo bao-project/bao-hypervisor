@@ -19,8 +19,8 @@
 #include <arch/smmuv2.h>
 
 bool iommu_arch_init()
-{
-    if(platform.arch.smmu.base){
+{   
+    if(cpu.id == CPU_MASTER && platform.arch.smmu.base){
         smmu_init();
         return true;
     }
