@@ -44,7 +44,7 @@ void psci_wake_from_off(){
     if(cpu.vcpu->arch.psci_ctx.state == ON_PENDING){
         vcpu_arch_reset(cpu.vcpu, cpu.vcpu->arch.psci_ctx.entrypoint);
         cpu.vcpu->arch.psci_ctx.state = ON;
-        cpu.vcpu->regs->x[0] = cpu.vcpu->arch.psci_ctx.context_id;
+        cpu.vcpu->regs.x[0] = cpu.vcpu->arch.psci_ctx.context_id;
     }
     spin_unlock(&cpu.vcpu->arch.psci_ctx.lock);
 }

@@ -64,10 +64,10 @@ void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm)
 
 void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
 {
-    memset(vcpu->regs, 0, sizeof(struct arch_regs));
+    memset(&vcpu->regs, 0, sizeof(struct arch_regs));
 
-    vcpu->regs->elr_el2 = entry;
-    vcpu->regs->spsr_el2 = SPSR_EL1h | SPSR_F | SPSR_I | SPSR_A | SPSR_D;
+    vcpu->regs.elr_el2 = entry;
+    vcpu->regs.spsr_el2 = SPSR_EL1h | SPSR_F | SPSR_I | SPSR_A | SPSR_D;
 
     MSR(CNTVOFF_EL2, 0);
 
@@ -88,23 +88,23 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
 unsigned long vcpu_readreg(struct vcpu* vcpu, unsigned long reg)
 {
     if (reg > 30) return 0;
-    return vcpu->regs->x[reg];
+    return vcpu->regs.x[reg];
 }
 
 void vcpu_writereg(struct vcpu* vcpu, unsigned long reg, unsigned long val)
 {
     if (reg > 30) return;
-    vcpu->regs->x[reg] = val;
+    vcpu->regs.x[reg] = val;
 }
 
 unsigned long vcpu_readpc(struct vcpu* vcpu)
 {
-    return vcpu->regs->elr_el2;
+    return vcpu->regs.elr_el2;
 }
 
 void vcpu_writepc(struct vcpu* vcpu, unsigned long pc)
 {
-    vcpu->regs->elr_el2 = pc;
+    vcpu->regs.elr_el2 = pc;
 }
 
 void vcpu_arch_run(struct vcpu* vcpu)

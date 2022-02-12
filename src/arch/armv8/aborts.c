@@ -67,22 +67,22 @@ void aborts_data_lower(uint64_t iss, uint64_t far, uint64_t il)
 
         if (handler(&emul)) {
             uint64_t pc_step = 2 + (2 * il);
-            cpu.vcpu->regs->elr_el2 += pc_step;
+            cpu.vcpu->regs.elr_el2 += pc_step;
         } else {
             ERROR("data abort emulation failed (0x%x)", far);
         }
     } else {
         ERROR("no emulation handler for abort(0x%x at 0x%x)", far,
-              cpu.vcpu->regs->elr_el2);
+              cpu.vcpu->regs.elr_el2);
     }
 }
 
 void smc64_handler(uint64_t iss, uint64_t far, uint64_t il)
 {
-    uint64_t smc_fid = cpu.vcpu->regs->x[0];
-    uint64_t x1 = cpu.vcpu->regs->x[1];
-    uint64_t x2 = cpu.vcpu->regs->x[2];
-    uint64_t x3 = cpu.vcpu->regs->x[3];
+    uint64_t smc_fid = cpu.vcpu->regs.x[0];
+    uint64_t x1 = cpu.vcpu->regs.x[1];
+    uint64_t x2 = cpu.vcpu->regs.x[2];
+    uint64_t x3 = cpu.vcpu->regs.x[3];
 
     int64_t ret = -1;
 
@@ -94,15 +94,15 @@ void smc64_handler(uint64_t iss, uint64_t far, uint64_t il)
 
     vcpu_writereg(cpu.vcpu, 0, ret);
     uint64_t pc_step = 2 + (2 * il);
-    cpu.vcpu->regs->elr_el2 += pc_step;
+    cpu.vcpu->regs.elr_el2 += pc_step;
 }
 
 void hvc64_handler(uint64_t iss, uint64_t far, uint64_t il)
 {
-    uint64_t hvc_fid = cpu.vcpu->regs->x[0];
-    uint64_t x1 = cpu.vcpu->regs->x[1];
-    uint64_t x2 = cpu.vcpu->regs->x[2];
-    uint64_t x3 = cpu.vcpu->regs->x[3];
+    uint64_t hvc_fid = cpu.vcpu->regs.x[0];
+    uint64_t x1 = cpu.vcpu->regs.x[1];
+    uint64_t x2 = cpu.vcpu->regs.x[2];
+    uint64_t x3 = cpu.vcpu->regs.x[3];
 
     int64_t ret = -HC_E_INVAL_ID;
     switch(hvc_fid){
@@ -129,13 +129,13 @@ void sysreg_handler(uint64_t iss, uint64_t far, uint64_t il)
 
         if (handler(&emul)) {
             uint64_t pc_step = 2 + (2 * il);
-            cpu.vcpu->regs->elr_el2 += pc_step;
+            cpu.vcpu->regs.elr_el2 += pc_step;
         } else {
             ERROR("register access emulation failed (0x%x)", reg_addr);
         }
     } else {
         ERROR("no emulation handler for register access (0x%x at 0x%x)", reg_addr,
-              cpu.vcpu->regs->elr_el2);
+              cpu.vcpu->regs.elr_el2);
     }
 }
 

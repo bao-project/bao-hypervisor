@@ -20,10 +20,9 @@
 .text 
 
 .macro VM_EXIT
-    
-    csrrw   x31, sscratch, x31 
-    add     x31, x31, -VCPU_REGS_SIZE
 
+    csrrw   x31, sscratch, x31
+    
     STORE   x1, 0*REGLEN(x31)
     STORE   x2, 1*REGLEN(x31)
     STORE   x3, 2*REGLEN(x31)
@@ -66,6 +65,10 @@
     csrr    t0, sepc
     STORE   t0, 33*REGLEN(sp)
 
+    la      sp, cpu
+    li      t0, (CPU_STACK_OFF + CPU_STACK_SIZE)
+    add     sp, sp, t0
+
     .option push
     .option norelax
     la  gp, __global_pointer$
@@ -74,16 +77,10 @@
 .endm
 
 
-.macro GET_VCPU_REGS_PTR reg 
-    la      \reg, cpu
-    LOAD    \reg, CPU_VCPU_OFF(\reg)
-    LOAD    \reg, VCPU_REGS_OFF(\reg)
-.endm
 
 .macro VM_ENTRY
-    GET_VCPU_REGS_PTR   x31
-    add    t0, x31, VCPU_REGS_SIZE
-    csrw   sscratch, t0
+
+    csrr   x31, sscratch
 
     LOAD   x1, 31*REGLEN(x31)
     csrw   CSR_HSTATUS, x1

@@ -63,7 +63,7 @@ struct vm {
 struct vcpu {
     node_t node;
 
-    struct arch_regs* regs;
+    struct arch_regs regs;
     struct vcpu_arch arch;
 
     vcpuid_t id;
@@ -71,8 +71,6 @@ struct vcpu {
     bool active;
 
     struct vm* vm;
-
-    uint8_t stack[STACK_SIZE] __attribute__((aligned(STACK_SIZE)));
 };
 
 extern struct vm vm;

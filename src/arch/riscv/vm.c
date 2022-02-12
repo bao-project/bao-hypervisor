@@ -40,13 +40,15 @@ void vcpu_arch_init(struct vcpu *vcpu, struct vm *vm) {
 
 void vcpu_arch_reset(struct vcpu *vcpu, vaddr_t entry)
 {
-    memset(vcpu->regs, 0, sizeof(struct arch_regs));
+    memset(&vcpu->regs, 0, sizeof(struct arch_regs));
+    
+    CSRW(sscratch, &vcpu->regs);
 
-    vcpu->regs->hstatus = HSTATUS_SPV | HSTATUS_VSXL_64;
-    vcpu->regs->sstatus = SSTATUS_SPP_BIT | SSTATUS_FS_DIRTY | SSTATUS_XS_DIRTY;
-    vcpu->regs->sepc = entry;
-    vcpu->regs->a0 = vcpu->arch.hart_id = vcpu->id;
-    vcpu->regs->a1 = 0;  // according to sbi it should be the dtb load address
+    vcpu->regs.hstatus = HSTATUS_SPV | HSTATUS_VSXL_64;
+    vcpu->regs.sstatus = SSTATUS_SPP_BIT | SSTATUS_FS_DIRTY | SSTATUS_XS_DIRTY;
+    vcpu->regs.sepc = entry;
+    vcpu->regs.a0 = vcpu->arch.hart_id = vcpu->id;
+    vcpu->regs.a1 = 0;  // according to sbi it should be the dtb load address
 
     CSRW(CSR_HCOUNTEREN, HCOUNTEREN_TM);
     CSRW(CSR_HTIMEDELTA, 0);
@@ -64,23 +66,23 @@ void vcpu_arch_reset(struct vcpu *vcpu, vaddr_t entry)
 unsigned long vcpu_readreg(struct vcpu *vcpu, unsigned long reg)
 {
     if ((reg <= 0) || (reg > 31)) return 0;
-    return vcpu->regs->x[reg - 1];
+    return vcpu->regs.x[reg - 1];
 }
 
 void vcpu_writereg(struct vcpu *vcpu, unsigned long reg, unsigned long val)
 {
     if ((reg <= 0) || (reg > 31)) return;
-    vcpu->regs->x[reg - 1] = val;
+    vcpu->regs.x[reg - 1] = val;
 }
 
 unsigned long vcpu_readpc(struct vcpu *vcpu)
 {
-    return vcpu->regs->sepc;
+    return vcpu->regs.sepc;
 }
 
 void vcpu_writepc(struct vcpu *vcpu, unsigned long pc)
 {
-    vcpu->regs->sepc = pc;
+    vcpu->regs.sepc = pc;
 }
 
 void vcpu_arch_run(struct vcpu *vcpu){

@@ -47,7 +47,6 @@
 .endm
 
 .macro VM_EXIT
-    sub sp, sp, #(VCPU_REGS_SIZE)
 
     stp x0, x1,   [sp, #(8*0)]
     stp x2, x3,   [sp, #(8*2)]
@@ -71,9 +70,8 @@
     stp x0, x1,   [sp, #(8*31)]
 
     ldr x0, =cpu
-    ldr x0, [x0, #CPU_VCPU_OFF]
-    mov x1, sp
-    str x1, [x0, #VCPU_REGS_OFF]
+    add x0, x0, #(CPU_STACK_OFF + CPU_STACK_SIZE)
+    mov sp, x0
 
 .endm
 
@@ -81,7 +79,7 @@
 vcpu_arch_entry:
     ldr x0, =cpu
     ldr x0, [x0, #CPU_VCPU_OFF]
-    ldr x0, [x0, #VCPU_REGS_OFF]
+    add x0, x0, #VCPU_REGS_OFF
     mov sp, x0
 
     ldp x0, x1, [sp, #(8*31)]
@@ -104,8 +102,6 @@ vcpu_arch_entry:
     ldp x26, x27, [sp, #(8*26)]
     ldp x28, x29, [sp, #(8*28)]
     ldr x30,      [sp, #(8*30)]
-
-    add sp, sp, #(VCPU_REGS_SIZE)
     
     eret
     b   .

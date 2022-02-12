@@ -74,10 +74,6 @@ void vm_vcpu_init(struct vm* vm, const struct vm_config* config)
         offset++;
     }
 
-    memset(vcpu->stack, 0, sizeof(vcpu->stack));
-    vcpu->regs = (struct arch_regs*)(vcpu->stack + sizeof(vcpu->stack) -
-                                     sizeof(*vcpu->regs));
-
     vcpu_arch_init(vcpu, vm);
     vcpu_arch_reset(vcpu, config->entry);
 

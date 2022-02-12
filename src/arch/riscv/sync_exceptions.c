@@ -157,7 +157,7 @@ void sync_exception_handler()
     unsigned long _scause = CSRR(scause);
 
     if(!(CSRR(CSR_HSTATUS) & HSTATUS_SPV)) {
-        internal_exception_handler(&cpu.vcpu->regs->x[0]);
+        internal_exception_handler(&cpu.vcpu->regs.x[0]);
     }
 
     // TODO: Do we need to check call comes from VS-mode and not VU-mode
@@ -169,5 +169,5 @@ void sync_exception_handler()
         ERROR("unkown synchronous exception (%d)", _scause);
     }
 
-    cpu.vcpu->regs->sepc += pc_step;
+    cpu.vcpu->regs.sepc += pc_step;
 }
