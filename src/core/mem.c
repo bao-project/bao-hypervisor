@@ -1012,7 +1012,7 @@ static void pp_init(struct page_pool *pool, paddr_t base, size_t size)
     memset((void*)pool->bitmap, 0, bitmap_size * PAGE_SIZE);
 
     pool->last = 0;
-    pool->free = pool->size - bitmap_size;
+    pool->free = pool->size;
 }
 
 bool mem_reserve_config(paddr_t config_addr, struct page_pool *pool)
