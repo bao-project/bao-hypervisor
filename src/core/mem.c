@@ -20,8 +20,6 @@
 #include <cpu.h>
 #include <page_table.h>
 #include <platform.h>
-#include <bitmap.h>
-#include <objcache.h>
 #include <cache.h>
 #include <string.h>
 #include <vm.h>
@@ -69,19 +67,7 @@ struct {
     [AS_VM] = {vm_secs, sizeof(vm_secs) / sizeof(struct section)},
 };
 
-struct page_pool {
-    node_t node;  // must be first element
-    paddr_t base;
-    size_t size;
-    size_t free;
-    size_t last;
-    bitmap_t* bitmap;
-    spinlock_t lock;
-};
-
 static struct list page_pool_list;
-static struct page_pool root_pool;
-static struct objcache pagepool_cache;
 
 static inline size_t pp_next_clr(paddr_t base, size_t from, colormap_t colors)
 {
@@ -918,15 +904,15 @@ static size_t cpu_boot_alloc_size() {
     return size;
 }
 
-bool root_pool_set_up_bitmap(paddr_t load_addr)
+bool root_pool_set_up_bitmap(paddr_t load_addr, struct page_pool *root_pool)
 {
     size_t image_size = (size_t)(&_image_end - &_image_start);
     size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);
     size_t cpu_size = platform.cpu_num * cpu_boot_alloc_size();
 
-    size_t bitmap_size = root_pool.size / (8 * PAGE_SIZE) +
-                           ((root_pool.size % (8 * PAGE_SIZE) != 0) ? 1 : 0);
-    if (root_pool.size <= bitmap_size) return false;
+    size_t bitmap_size = root_pool->size / (8 * PAGE_SIZE) +
+                           ((root_pool->size % (8 * PAGE_SIZE) != 0) ? 1 : 0);
+    if (root_pool->size <= bitmap_size) return false;
     size_t bitmap_base = load_addr + image_size + vm_image_size + cpu_size;
 
     struct ppages bitmap_pp = mem_ppages_get(bitmap_base, bitmap_size);
@@ -934,14 +920,14 @@ bool root_pool_set_up_bitmap(paddr_t load_addr)
         mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL, NULL_VA, bitmap_size);
     if (root_bitmap == NULL) return false;
 
-    root_pool.bitmap = root_bitmap;
-    mem_map(&cpu.as, (vaddr_t)root_pool.bitmap, &bitmap_pp, bitmap_size, PTE_HYP_FLAGS);
-    memset((void*)root_pool.bitmap, 0, bitmap_size * PAGE_SIZE);
+    root_pool->bitmap = root_bitmap;
+    mem_map(&cpu.as, (vaddr_t)root_pool->bitmap, &bitmap_pp, bitmap_size, PTE_HYP_FLAGS);
+    memset((void*)root_pool->bitmap, 0, bitmap_size * PAGE_SIZE);
 
-    return mem_reserve_ppool_ppages(&root_pool, &bitmap_pp);
+    return mem_reserve_ppool_ppages(root_pool, &bitmap_pp);
 }
 
-bool pp_root_reserve_hyp_mem(paddr_t load_addr)
+bool pp_root_reserve_hyp_mem(paddr_t load_addr, struct page_pool *root_pool)
 {
     size_t image_load_size = (size_t)(&_image_load_end - &_image_start);
     size_t image_noload_size = (size_t)(&_image_end - &_image_load_end);
@@ -958,31 +944,30 @@ bool pp_root_reserve_hyp_mem(paddr_t load_addr)
         mem_ppages_get(cpu_base_addr, NUM_PAGES(cpu_size));
 
     bool image_load_reserved =
-        mem_reserve_ppool_ppages(&root_pool, &images_load_ppages);
+        mem_reserve_ppool_ppages(root_pool, &images_load_ppages);
     bool image_noload_reserved =
-        mem_reserve_ppool_ppages(&root_pool, &images_noload_ppages);
-    bool cpu_reserved = mem_reserve_ppool_ppages(&root_pool, &cpu_ppages);
+        mem_reserve_ppool_ppages(root_pool, &images_noload_ppages);
+    bool cpu_reserved = mem_reserve_ppool_ppages(root_pool, &cpu_ppages);
 
     return image_load_reserved && image_noload_reserved && cpu_reserved;
 }
 
 static bool pp_root_init(paddr_t load_addr, struct mem_region *root_region)
 {
-    memset((void*)&root_pool, 0, sizeof(struct page_pool));
-
-    root_pool.base = ALIGN(root_region->base, PAGE_SIZE);
-    root_pool.size =
+    struct page_pool *root_pool = &root_region->page_pool;
+    root_pool->base = ALIGN(root_region->base, PAGE_SIZE);
+    root_pool->size =
         root_region->size / PAGE_SIZE; /* TODO: what if not aligned? */
-    root_pool.free = root_pool.size;
+    root_pool->free = root_pool->size;
 
-    if (!root_pool_set_up_bitmap(load_addr)) {
+    if (!root_pool_set_up_bitmap(load_addr, root_pool)) {
         return false;
     }
-    if (!pp_root_reserve_hyp_mem(load_addr)) {
+    if (!pp_root_reserve_hyp_mem(load_addr, root_pool)) {
         return false;
     }
 
-    root_pool.last = 0;
+    root_pool->last = 0;
     return true;
 }
 
@@ -1060,12 +1045,10 @@ bool mem_reserve_physical_memory(struct page_pool *pool)
 
 bool mem_create_ppools(struct mem_region *root_mem_region)
 {
-    /* Add remaining memory regions to a temporary page pool list */
-    objcache_init(&pagepool_cache, sizeof(struct page_pool), SEC_HYP_GLOBAL, true);
     for (size_t i = 0; i < platform.region_num; i++) {
         if (&platform.regions[i] != root_mem_region) {
             struct mem_region *reg = &platform.regions[i];
-            struct page_pool *pool = objcache_alloc(&pagepool_cache);
+            struct page_pool *pool = &reg->page_pool;
             if (pool != NULL) {
                 pp_init(pool, reg->base, reg->size);
                 if (!mem_reserve_physical_memory(pool)) {
@@ -1131,7 +1114,7 @@ void *copy_space(void *base, const size_t size, struct ppages *pages)
  * structure, so true coloring is actually never achieved. The drawbacks of
  * this limitation are yet to be seen, and are in need of more testing.
  */
-void color_hypervisor(const paddr_t load_addr)
+void color_hypervisor(const paddr_t load_addr, struct mem_region *root_region)
 {
     volatile static pte_t shared_pte;
     vaddr_t va = NULL_VA;
@@ -1146,8 +1129,9 @@ void color_hypervisor(const paddr_t load_addr)
     size_t image_size = image_load_size + image_noload_size;
     size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);    
     size_t cpu_boot_size = cpu_boot_alloc_size();
-    size_t bitmap_size = (root_pool.size / (8 * PAGE_SIZE) +
-                          !!(root_pool.size % (8 * PAGE_SIZE) != 0)) *
+    struct page_pool *root_pool = &root_region->page_pool;
+    size_t bitmap_size = (root_pool->size / (8 * PAGE_SIZE) +
+                          !!(root_pool->size % (8 * PAGE_SIZE) != 0)) *
                          PAGE_SIZE;
     colormap_t colors = config.hyp_colors;
 
@@ -1236,12 +1220,12 @@ void color_hypervisor(const paddr_t load_addr)
      */
     if (cpu.id == CPU_MASTER) {
         /* Copy root pool bitmap */
-        copy_space((void*)root_pool.bitmap, bitmap_size, &p_bitmap);
+        copy_space((void*)root_pool->bitmap, bitmap_size, &p_bitmap);
         va = mem_alloc_vpage(&cpu_new->as, SEC_HYP_GLOBAL,
-                             (vaddr_t)root_pool.bitmap,
+                             (vaddr_t)root_pool->bitmap,
                              NUM_PAGES(bitmap_size));
 
-        if (va != (vaddr_t)root_pool.bitmap)
+        if (va != (vaddr_t)root_pool->bitmap)
             ERROR("Can't allocate address for cpu interface");
 
         mem_map(&cpu_new->as, va, &p_bitmap,
@@ -1292,7 +1276,7 @@ void color_hypervisor(const paddr_t load_addr)
         memset((void*)va, 0, p_image.size * PAGE_SIZE);
         mem_free_vpage(&cpu.as, va, p_image.size, true);
 
-        p_image = mem_ppages_get(load_addr + image_load_size + config_size,
+        p_image = mem_ppages_get(load_addr + image_load_size + vm_image_size,
             NUM_PAGES(image_noload_size));
         va = mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL, NULL_VA, p_image.size);
         mem_map(&cpu.as, va, &p_image, p_image.size, PTE_HYP_FLAGS);
@@ -1356,11 +1340,11 @@ void mem_init(paddr_t load_addr)
 
         /* Insert root pool in pool list */
         list_init(&page_pool_list);
-        list_push(&page_pool_list, &(root_pool.node));
+        list_push(&page_pool_list, &(root_mem_region->page_pool.node));
 
         config_adjust_vm_image_addr(load_addr);
 
-        if (!mem_reserve_physical_memory(&root_pool)) {
+        if (!mem_reserve_physical_memory(&root_mem_region->page_pool)) {
             ERROR("failed reserving memory in root pool");
         }
     }
@@ -1368,7 +1352,7 @@ void mem_init(paddr_t load_addr)
     cpu_sync_barrier(&cpu_glb_sync);
 
     if (!all_clrs(config.hyp_colors)) {
-        color_hypervisor(load_addr);
+        color_hypervisor(load_addr, root_mem_region);
     }
 
     if (cpu.id == CPU_MASTER) {

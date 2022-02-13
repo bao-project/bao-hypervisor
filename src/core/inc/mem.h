@@ -22,6 +22,7 @@
 #include <list.h>
 #include <spinlock.h>
 #include <cache.h>
+#include <bitmap.h>
 
 #ifndef __ASSEMBLER__
 
@@ -53,9 +54,20 @@ struct ppages {
     colormap_t colors;
 };
 
+struct page_pool {
+    node_t node;
+    paddr_t base;
+    size_t size;
+    size_t free;
+    size_t last;
+    bitmap_t* bitmap;
+    spinlock_t lock;
+};
+
 struct mem_region {
     paddr_t base;
     size_t size;
+    struct page_pool page_pool;
 };
 
 struct shmem {
