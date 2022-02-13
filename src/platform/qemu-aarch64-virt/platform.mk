@@ -22,6 +22,8 @@ GIC_VERSION:=GICV3
 
 drivers = pl011_uart
 
+platform_description:=virt_desc.c
+
 platform-cppflags =
 platform-cflags = -mcpu=$(CPU)
 platform-asflags =

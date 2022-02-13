@@ -23,6 +23,8 @@ RPI4_MEM_GB:=4
 
 drivers = 8250_uart
 
+platform_description:=rpi4_desc.c
+
 platform-cppflags =
 platform-cflags = -mcpu=$(CPU) -DRPI4_MEM_GB=$(RPI4_MEM_GB)
 platform-asflags =

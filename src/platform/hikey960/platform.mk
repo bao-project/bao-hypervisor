@@ -22,6 +22,8 @@ GIC_VERSION:=GICV2
 
 drivers = pl011_uart
 
+platform_description:=hikey960_desc.c
+
 platform-cppflags =
 platform-cflags = -mcpu=$(CPU)
 platform-asflags =

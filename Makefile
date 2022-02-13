@@ -124,14 +124,24 @@ config_src:=$(wildcard $(config_dir)/config.c)
 endif
 
 config_build_dir:=$(build_dir)/config
+platform_build_dir:=$(build_dir)/platform
 scripts_build_dir:=$(build_dir)/scripts
-directories+=$(config_build_dir) $(scripts_build_dir)
+directories+=$(config_build_dir) $(platform_build_dir) $(scripts_build_dir)
 
 config_def_generator_src:=$(scripts_dir)/config_defs_gen.c
 config_def_generator:=$(scripts_build_dir)/config_defs_gen
 config_defs:=$(config_build_dir)/config_defs.h
 gens+=$(config_def_generator) $(config_defs)
 inc_dirs+=$(config_build_dir)
+
+platform_def_generator_src:=$(scripts_dir)/platform_defs_gen.c \
+    $(scripts_dir)/arch/$(ARCH)/platform_defs_gen.c
+platform_def_generator:=$(scripts_build_dir)/platform_defs_gen
+platform_defs:=$(platform_build_dir)/platform_defs.h
+platform_description:=$(platform_dir)/$(platform_description)
+gens+=$(platform_defs) $(platform_def_generator)
+inc_dirs+=$(platform_build_dir)
+
 
 ifneq ($(MAKECMDGOALS), clean)
 ifeq ($(CONFIG),)
@@ -211,7 +221,7 @@ $(deps): | $(gens)
 ifneq ($(wildcard $(asm_defs_src)),)
 $(asm_defs_hdr): $(asm_defs_src)
 	@echo "Generating header	$(patsubst $(cur_dir)/%, %, $@)"
-	@$(cc) -S $(CFLAGS) $< -o - \
+	@$(cc) -S $(CFLAGS) -DGENERATING_DEFS $< -o - \
 		| awk '($$1 == "->") { print "#define " $$2 " " $$3 }' > $@
 
 $(asm_defs_hdr).d: $(asm_defs_src)
@@ -228,11 +238,21 @@ $(config_dep): $(config_src)
 
 $(config_def_generator): $(config_def_generator_src) $(config_src)
 	@echo "Compiling generator	$(patsubst $(cur_dir)/%, %, $@)"
-	@$(HOST_CC) $^ -DGENERATING_CONFIG_DEFS $(addprefix -I, $(inc_dirs)) -o $@
+	@$(HOST_CC) $^ -DGENERATING_DEFS $(addprefix -I, $(inc_dirs)) -o $@
 
 $(config_defs): $(config_def_generator)
 	@echo "Generating header	$(patsubst $(cur_dir)/%, %, $@)"
 	@$(config_def_generator) > $(config_defs)
+
+$(platform_def_generator): $(platform_def_generator_src) $(platform_description)
+	@echo "Compiling generator	$(patsubst $(cur_dir)/%, %, $@)"
+	@$(HOST_CC) $^ -DGENERATING_DEFS -D$(ARCH) \
+		$(addprefix -I, $(inc_dirs)) -o $@
+
+$(platform_defs): $(platform_def_generator)
+	@echo "Generating header	$(patsubst $(cur_dir)/%, %, $@)"
+	@$(platform_def_generator) > $(platform_defs)
+
 
 #Generate directories for object, dependency and generated files
 

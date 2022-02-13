@@ -22,6 +22,8 @@ GIC_VERSION:=GICV2
 
 drivers = zynq_uart
 
+platform_description:=zcu102_desc.c
+
 platform-cppflags =
 platform-cflags = -mcpu=$(CPU)
 platform-asflags =
