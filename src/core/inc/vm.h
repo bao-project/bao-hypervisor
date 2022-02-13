@@ -74,7 +74,6 @@ struct vcpu {
 };
 
 extern struct vm vm;
-extern struct config* vm_config_ptr;
 
 void vm_init(struct vm* vm, const struct vm_config* config, bool master, vmid_t vm_id);
 void vm_start(struct vm* vm, vaddr_t entry);

@@ -19,42 +19,46 @@
 #include <bao.h>
 #include <platform.h>
 
-extern uint8_t _config_end, _images_end;
-
-#define CONFIG_HEADER_SIZE ((size_t)&_config_end)
-#define CONFIG_SIZE ((size_t)&_images_end)
-
-#define VM_IMAGE_OFFSET(vm_name) ((paddr_t)&_##vm_name##_vm_beg)
-#define VM_IMAGE_SIZE(vm_name) ((size_t)&_##vm_name##_vm_size)
-
-#define VM_IMAGE(vm_name, image)                                            \
-    extern uint8_t _##vm_name##_vm_size;                                   \
-    extern uint8_t _##vm_name##_vm_beg;                                    \
-    asm(".pushsection .vm_image_" XSTR(vm_name) ", \"a\"\n\t"               \
-        ".global _" XSTR(vm_name) "_vm_beg\n\t"                             \
-        "_" XSTR(vm_name) "_vm_beg:\n\t"                                    \
-        ".incbin " XSTR(image) "\n\t"                                       \
-        "_" XSTR(vm_name) "_vm_end:\n\t"                                    \
-        ".global _" XSTR(vm_name) "_vm_size\n\t"                            \
-        ".set _" XSTR(vm_name) "_vm_size,  (_" XSTR(vm_name) "_vm_end - _"  \
-        #vm_name "_vm_beg)\n\t"                                             \
+#define VM_IMAGE(img_name, img_path)                                         \
+    extern uint8_t _##img_name##_vm_size;                                    \
+    extern uint8_t _##img_name##_vm_beg;                                     \
+    asm(".pushsection .vm_image_" XSTR(img_name) ", \"a\"\n\t"               \
+        ".global _" XSTR(img_name) "_vm_beg\n\t"                             \
+        "_" XSTR(img_name) "_vm_beg:\n\t"                                    \
+        ".incbin " XSTR(img_path) "\n\t"                                     \
+        "_" XSTR(img_name) "_vm_end:\n\t"                                    \
+        ".global _" XSTR(img_name) "_vm_size\n\t"                            \
+        ".set _" XSTR(img_name) "_vm_size,  (_" XSTR(img_name) "_vm_end - _" \
+        #img_name "_vm_beg)\n\t"                                             \
         ".popsection");
 
-#define CONFIG_HEADER                              \
-    .fdt_header =                                  \
-        {                                          \
-            .magic = 0xedfe0dd0,                   \
-            .totalsize = 0x28000000,               \
-            .off_dt_struct = 0x28000000,           \
-            .off_dt_strings = 0x28000000,          \
-            .version = 0x11000000,                 \
-            .last_comp_version = 0x2000000,        \
-            .off_mem_rsvmap = 0x28000000,          \
-    },                                             \
-    .config_header_size = CONFIG_HEADER_SIZE, \
-    .config_size = CONFIG_SIZE,
+#define VM_IMAGE_OFFSET(img_name) ((paddr_t)&_##img_name##_vm_beg)
+#define VM_IMAGE_SIZE(img_name) ((size_t)&_##img_name##_vm_size)
+
+#define VM_IMAGE_BUILTIN(img_name, image_base_addr) \
+    {\
+        .base_addr = image_base_addr,\
+        .load_addr = VM_IMAGE_OFFSET(img_name),\
+        .size = VM_IMAGE_SIZE(img_name),\
+        .separately_loaded = false,\
+    }
+
+#define VM_IMAGE_LOADED(image_base_addr, image_load_addr, image_size) \
+    {\
+        .base_addr = image_base_addr,\
+        .load_addr = image_load_addr,\
+        .size = image_size,\
+        .separately_loaded = true,\
+    }
+
+/* CONFIG_HEADER is just defined for compatibility with older configs */
+#define CONFIG_HEADER
 
 struct vm_config {
+    /**
+     * To setup the image field either the VM_IMAGE_BUILTIN or VM_IMAGE_LOADED
+     * macros should be used.
+     */
     struct {
         /* Image load address in VM's address space */
         vaddr_t base_addr;
@@ -62,6 +66,11 @@ struct vm_config {
         paddr_t load_addr;
         /* Image size */
         size_t size;
+        /**
+         * Informs the hypervisor if the VM image is to be loaded
+         * separately by a bootloader.
+         */
+        bool separately_loaded;
         /* Dont copy the image */
         bool inplace;
     } image;
@@ -90,31 +99,7 @@ struct vm_config {
 
 };
 
-struct fdt_header {
-    uint32_t magic;
-    uint32_t totalsize;
-    uint32_t off_dt_struct;
-    uint32_t off_dt_strings;
-    uint32_t off_mem_rsvmap;
-    uint32_t version;
-    uint32_t last_comp_version;
-    uint32_t boot_cpuid_phys;
-    uint32_t size_dt_strings;
-    uint32_t size_dt_struct;
-};
-
 extern struct config {
-    /**
-     *  Faking the fdt header allows to boot using u-boot mechanisms passing
-     * this configuration as the dtb.
-     */
-    struct fdt_header fdt_header;
-
-    /* The of this struct aligned to page size */
-    size_t config_header_size;
-    /* The size of the full configuration binary, including VM images */
-    size_t config_size;
-
     /* Hypervisor colors */
     colormap_t hyp_colors;
 
@@ -128,13 +113,8 @@ extern struct config {
     /* Array list with VM configuration */
     struct vm_config vmlist[];
 
-} config __attribute__((section(".config")));
+} config;
 
-void config_adjust_to_va(struct config *config, paddr_t phys);
-void config_arch_adjust_to_va(struct config *config, paddr_t phys);
-bool config_is_builtin();
-
-#define adjust_ptr(p, o)\
-    ((p) = (p) ? (typeof(p))(  (uintptr_t)(p) + (size_t)(o)) : (p))
+void config_adjust_vm_image_addr(paddr_t load_addr);
 
 #endif /* __CONFIG_H__ */

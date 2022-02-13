@@ -30,7 +30,7 @@
 
 extern uint8_t _image_start, _image_load_end, _image_end, _dmem_phys_beg,
      _dmem_beg, _cpu_private_beg, _cpu_private_end, _vm_beg, _vm_end,
-     _config_start,  _config_end;
+     _vm_image_start, _vm_image_end;
 
 void switch_space(struct cpu *, paddr_t);
 
@@ -81,8 +81,6 @@ struct page_pool {
 static struct list page_pool_list;
 static struct page_pool root_pool;
 static struct objcache pagepool_cache;
-
-static bool config_found = false;
 
 static inline size_t pp_next_clr(paddr_t base, size_t from, colormap_t colors)
 {
@@ -922,13 +920,13 @@ static size_t cpu_boot_alloc_size() {
 bool root_pool_set_up_bitmap(paddr_t load_addr)
 {
     size_t image_size = (size_t)(&_image_end - &_image_start);
-    size_t config_size = (size_t)(&_config_end - &_config_start);
+    size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);
     size_t cpu_size = platform.cpu_num * cpu_boot_alloc_size();
 
     size_t bitmap_size = root_pool.size / (8 * PAGE_SIZE) +
                            ((root_pool.size % (8 * PAGE_SIZE) != 0) ? 1 : 0);
     if (root_pool.size <= bitmap_size) return false;
-    size_t bitmap_base = load_addr + image_size + config_size + cpu_size;
+    size_t bitmap_base = load_addr + image_size + vm_image_size + cpu_size;
 
     struct ppages bitmap_pp = mem_ppages_get(bitmap_base, bitmap_size);
     bitmap_t* root_bitmap = (bitmap_t*)
@@ -946,9 +944,9 @@ bool pp_root_reserve_hyp_mem(paddr_t load_addr)
 {
     size_t image_load_size = (size_t)(&_image_load_end - &_image_start);
     size_t image_noload_size = (size_t)(&_image_end - &_image_load_end);
-    size_t config_size = (size_t)(&_config_end - &_config_start);
+    size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);
     size_t cpu_size = platform.cpu_num * cpu_boot_alloc_size();
-    paddr_t image_noload_addr = load_addr + image_load_size + config_size;
+    paddr_t image_noload_addr = load_addr + image_load_size + vm_image_size;
     paddr_t cpu_base_addr = image_noload_addr + image_noload_size;
 
     struct ppages images_load_ppages =
@@ -1015,26 +1013,22 @@ static void pp_init(struct page_pool *pool, paddr_t base, size_t size)
     pool->free = pool->size;
 }
 
-bool mem_reserve_config(paddr_t config_addr, struct page_pool *pool)
+bool mem_reserve_physical_memory(struct page_pool *pool)
 {
-    if (config_found) return true;
+    if (pool == NULL) return false;
 
-    bool cfg_in_pool = range_in_range(config_addr, vm_config_ptr->config_size,
-                                      pool->base, pool->size * PAGE_SIZE);
-    if (cfg_in_pool) {
-        size_t n_pg = NUM_PAGES(vm_config_ptr->config_size);
-        struct ppages pp = mem_ppages_get(config_addr, n_pg);
-        if (!mem_reserve_ppool_ppages(pool, &pp)) return false;
-        config_found = true;
+    for (size_t i = 0; i < config.vmlist_size; i++) {
+        struct vm_config *vm_cfg = &config.vmlist[i];
+        size_t n_pg = NUM_PAGES(vm_cfg->image.size);
+        struct ppages ppages = mem_ppages_get(vm_cfg->image.load_addr, n_pg);
+        if (!mem_reserve_ppool_ppages(pool, &ppages)) {
+            return false;
+        }
     }
-    return true;
-}
 
-bool mem_reserve_vm_cfg(struct page_pool *pool)
-{
     /* for every vm config */
-    for (size_t i = 0; i < vm_config_ptr->vmlist_size; i++) {
-        struct vm_config *vm_cfg = &vm_config_ptr->vmlist[i];
+    for (size_t i = 0; i < config.vmlist_size; i++) {
+        struct vm_config *vm_cfg = &config.vmlist[i];
         /* for every mem region */
         for (size_t j = 0; j < vm_cfg->platform.region_num; j++) {
             struct mem_region *reg = &vm_cfg->platform.regions[j];
@@ -1048,8 +1042,8 @@ bool mem_reserve_vm_cfg(struct page_pool *pool)
         }
     }
 
-    for (size_t i = 0; i < vm_config_ptr->shmemlist_size; i++) {
-        struct shmem *shmem = &vm_config_ptr->shmemlist[i];
+    for (size_t i = 0; i < config.shmemlist_size; i++) {
+        struct shmem *shmem = &config.shmemlist[i];
         if(shmem->place_phys) {
             size_t n_pg = NUM_PAGES(shmem->size);
             struct ppages ppages = mem_ppages_get(shmem->phys, n_pg);
@@ -1063,24 +1057,7 @@ bool mem_reserve_vm_cfg(struct page_pool *pool)
     return true;
 }
 
-/* true: no reserving necessary, or reserve was successful
- * false: nedded to reserve memory, but error occured */
-bool mem_reserve_physical_memory(paddr_t config_addr, struct page_pool *pool)
-{
-    if (pool == NULL) return false;
-
-    if (!mem_reserve_vm_cfg(pool)) {
-        return false;
-    }
-
-    if (!mem_reserve_config(config_addr, pool)) {
-        return false;
-    }
-
-    return true;
-}
-
-bool mem_create_ppools(paddr_t config_addr, struct mem_region *root_mem_region)
+bool mem_create_ppools(struct mem_region *root_mem_region)
 {
     /* Add remaining memory regions to a temporary page pool list */
     objcache_init(&pagepool_cache, sizeof(struct page_pool), SEC_HYP_GLOBAL, true);
@@ -1090,7 +1067,7 @@ bool mem_create_ppools(paddr_t config_addr, struct mem_region *root_mem_region)
             struct page_pool *pool = objcache_alloc(&pagepool_cache);
             if (pool != NULL) {
                 pp_init(pool, reg->base, reg->size);
-                if (!mem_reserve_physical_memory(config_addr, pool)) {
+                if (!mem_reserve_physical_memory(pool)) {
                     return false;
                 }
                 list_push(&page_pool_list, &pool->node);
@@ -1101,45 +1078,9 @@ bool mem_create_ppools(paddr_t config_addr, struct mem_region *root_mem_region)
     return true;
 }
 
-bool mem_map_vm_config(paddr_t config_addr)
-{
-    vm_config_ptr =
-        (struct config*)mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL, NULL_VA, 1);
-    if (vm_config_ptr == NULL) return false;
-
-    struct ppages pages = mem_ppages_get(config_addr, 1);
-    mem_map(&cpu.as, (vaddr_t)vm_config_ptr, &pages, 1, PTE_HYP_FLAGS);
-    if (vm_config_ptr->config_header_size > PAGE_SIZE) {
-        size_t n =
-            NUM_PAGES(((size_t)vm_config_ptr->config_header_size) - PAGE_SIZE);
-        vaddr_t va = mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL,
-                            ((vaddr_t)vm_config_ptr) + PAGE_SIZE, n);
-        if (va == NULL_VA) return false;
-        pages = mem_ppages_get(config_addr + PAGE_SIZE, n);
-        mem_map(&cpu.as, va, &pages, n, PTE_HYP_FLAGS);
-    }
-    config_adjust_to_va(vm_config_ptr, config_addr);
-
-    return true;
-}
-
-bool mem_init_vm_config(paddr_t config_addr)
-{
-    if (!mem_map_vm_config(config_addr)) {
-        return false;
-    }
-
-    if (!mem_reserve_physical_memory(config_addr, &root_pool)) {
-        return false;
-    }
-
-    return true;
-}
-
 struct mem_region *mem_find_root_region(paddr_t load_addr)
 {
-    size_t image_size = ((size_t)(&_image_load_end - &_image_start)) +
-        ((size_t)(&_config_end - &_config_start));
+    size_t image_size = (size_t)(&_image_end - &_image_start);
 
     /* Find the root memory region in which the hypervisor was loaded. */
     struct mem_region *root_mem_region = NULL;
@@ -1189,7 +1130,7 @@ void *copy_space(void *base, const size_t size, struct ppages *pages)
  * structure, so true coloring is actually never achieved. The drawbacks of
  * this limitation are yet to be seen, and are in need of more testing.
  */
-void color_hypervisor(const paddr_t load_addr, const paddr_t config_addr)
+void color_hypervisor(const paddr_t load_addr)
 {
     volatile static pte_t shared_pte;
     vaddr_t va = NULL_VA;
@@ -1202,15 +1143,15 @@ void color_hypervisor(const paddr_t load_addr, const paddr_t config_addr)
     size_t image_load_size = (size_t)(&_image_load_end - &_image_start);
     size_t image_noload_size = (size_t)(&_image_end - &_image_load_end);
     size_t image_size = image_load_size + image_noload_size;
+    size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);    
     size_t cpu_boot_size = cpu_boot_alloc_size();
-    size_t config_size = (size_t)(&_config_end - &_config_start);
     size_t bitmap_size = (root_pool.size / (8 * PAGE_SIZE) +
                           !!(root_pool.size % (8 * PAGE_SIZE) != 0)) *
                          PAGE_SIZE;
-    colormap_t colors = vm_config_ptr->hyp_colors;
+    colormap_t colors = config.hyp_colors;
 
     /* Set hypervisor colors in current address space */
-    cpu.as.colors = vm_config_ptr->hyp_colors;
+    cpu.as.colors = config.hyp_colors;
 
     /*
      * Copy the CPU space into a colored region.
@@ -1293,12 +1234,6 @@ void color_hypervisor(const paddr_t load_addr, const paddr_t config_addr)
      * allocation will be tracked.
      */
     if (cpu.id == CPU_MASTER) {
-        /* Map configuration onto new space */
-        size_t config_size = NUM_PAGES(vm_config_ptr->config_header_size);
-        struct ppages config_pages = mem_ppages_get(config_addr, config_size);
-        mem_map(&cpu_new->as, (vaddr_t)vm_config_ptr, &config_pages,
-                config_size, PTE_HYP_FLAGS);
-
         /* Copy root pool bitmap */
         copy_space((void*)root_pool.bitmap, bitmap_size, &p_bitmap);
         va = mem_alloc_vpage(&cpu_new->as, SEC_HYP_GLOBAL,
@@ -1363,7 +1298,7 @@ void color_hypervisor(const paddr_t load_addr, const paddr_t config_addr)
         memset((void*)va, 0, p_image.size * PAGE_SIZE);
         mem_free_vpage(&cpu.as, va, p_image.size, true);
 
-        p_bitmap = mem_ppages_get(load_addr + image_size + config_size +
+        p_bitmap = mem_ppages_get(load_addr + image_size + vm_image_size +
                                       (cpu_boot_size * platform.cpu_num),
                                   NUM_PAGES(bitmap_size));
 
@@ -1374,7 +1309,7 @@ void color_hypervisor(const paddr_t load_addr, const paddr_t config_addr)
     }
 
     p_cpu = mem_ppages_get(
-        load_addr + image_size + config_size + (cpu_boot_size * cpu.id),
+        load_addr + image_size + vm_image_size +(cpu_boot_size * cpu.id),
         cpu_boot_size / PAGE_SIZE);
     va = mem_alloc_vpage(&cpu.as, SEC_HYP_PRIVATE, NULL_VA, p_cpu.size);
     mem_map(&cpu.as, va, &p_cpu, p_cpu.size, PTE_HYP_FLAGS);
@@ -1405,7 +1340,7 @@ void as_init(struct addr_space *as, enum AS_TYPE type, asid_t id,
     as_arch_init(as);
 }
 
-void mem_init(paddr_t load_addr, paddr_t config_addr)
+void mem_init(paddr_t load_addr)
 {
     as_init(&cpu.as, AS_HYP, HYP_ASID, cpu.root_pt, 0);
 
@@ -1422,29 +1357,23 @@ void mem_init(paddr_t load_addr, paddr_t config_addr)
         list_init(&page_pool_list);
         list_push(&page_pool_list, &(root_pool.node));
 
-        if (config_is_builtin()) {
-            config_addr =
-                (paddr_t)(&_config_start - &_image_start) + load_addr;
-        }
+        config_adjust_vm_image_addr(load_addr);
 
-        if (!mem_init_vm_config(config_addr)) {
-            ERROR("couldn't init config");
+        if (!mem_reserve_physical_memory(&root_pool)) {
+            ERROR("failed reserving memory in root pool");
         }
     }
 
     cpu_sync_barrier(&cpu_glb_sync);
 
-    if (!all_clrs(vm_config_ptr->hyp_colors)) {
-        color_hypervisor(load_addr, config_addr);
+    if (!all_clrs(config.hyp_colors)) {
+        color_hypervisor(load_addr);
     }
 
     if (cpu.id == CPU_MASTER) {
-        if (!mem_create_ppools(config_addr, root_mem_region)) {
+        if (!mem_create_ppools(root_mem_region)) {
             ERROR("couldn't create additional page pools");
         }
-
-        if (!config_found)
-            ERROR("config was not loaded in a defined platform region");
     }
 
     /* Wait for master core to initialize memory management */

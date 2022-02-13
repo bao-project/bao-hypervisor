@@ -38,8 +38,8 @@ static bool vmm_assign_vcpu(bool *master, vmid_t *vm_id) {
     bool assigned = false;
     *master = false;
     /* Assign cpus according to vm affinity. */
-    for (size_t i = 0; i < vm_config_ptr->vmlist_size && !assigned; i++) {
-        if (vm_config_ptr->vmlist[i].cpu_affinity & (1UL << cpu.id)) {
+    for (size_t i = 0; i < config.vmlist_size && !assigned; i++) {
+        if (config.vmlist[i].cpu_affinity & (1UL << cpu.id)) {
             spin_lock(&vm_assign[i].lock);
             if (!vm_assign[i].master) {
                 vm_assign[i].master = true;
@@ -49,7 +49,7 @@ static bool vmm_assign_vcpu(bool *master, vmid_t *vm_id) {
                 assigned = true;
                 *vm_id = i;
             } else if (vm_assign[i].ncpus <
-                       vm_config_ptr->vmlist[i].platform.cpu_num) {
+                       config.vmlist[i].platform.cpu_num) {
                 assigned = true;
                 vm_assign[i].ncpus++;
                 vm_assign[i].cpus |= (1UL << cpu.id);
@@ -63,10 +63,10 @@ static bool vmm_assign_vcpu(bool *master, vmid_t *vm_id) {
 
     /* Assign remaining cpus not assigned by affinity. */
     if (assigned == false) {
-        for (size_t i = 0; i < vm_config_ptr->vmlist_size && !assigned; i++) {
+        for (size_t i = 0; i < config.vmlist_size && !assigned; i++) {
             spin_lock(&vm_assign[i].lock);
             if (vm_assign[i].ncpus <
-                vm_config_ptr->vmlist[i].platform.cpu_num) {
+                config.vmlist[i].platform.cpu_num) {
                 if (!vm_assign[i].master) {
                     vm_assign[i].master = true;
                     vm_assign[i].ncpus++;
@@ -111,7 +111,7 @@ static size_t vmass_npages = 0;
 static void vmm_alloc_assign_array() {
     if (cpu.id == CPU_MASTER) {
         vmass_npages =
-            ALIGN(sizeof(struct vm_assignment) * vm_config_ptr->vmlist_size,
+            ALIGN(sizeof(struct vm_assignment) * config.vmlist_size,
                   PAGE_SIZE) /
             PAGE_SIZE;
         vm_assign = mem_alloc_page(vmass_npages, SEC_HYP_GLOBAL, false);
@@ -141,7 +141,7 @@ void vmm_init()
     
     bool vm_assigned = vmm_assign_vcpu(&master, &vm_id);
     if (vm_assigned) {
-        vm_config = &vm_config_ptr->vmlist[vm_id];
+        vm_config = &config.vmlist[vm_id];
         vm = vmm_alloc_vm(vm_id, master);
     }
 

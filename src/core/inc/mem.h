@@ -89,7 +89,7 @@ static inline bool all_clrs(colormap_t clrs)
            ((clrs & ((1ULL << COLOR_NUM) - 1)) == ((1ULL << COLOR_NUM) - 1));
 }
 
-void mem_init(paddr_t load_addr, paddr_t config_addr);
+void mem_init(paddr_t load_addr);
 void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, 
             pte_t* root_pt, colormap_t colors);
 void* mem_alloc_page(size_t n, enum AS_SEC sec, bool phys_aligned);

@@ -31,7 +31,6 @@ size=		$(CROSS_COMPILE)size
 #Makefile arguments and default values
 DEBUG:=y
 OPTIMIZATIONS:=2
-CONFIG_BUILTIN=n
 CONFIG=
 PLATFORM=
 
@@ -47,12 +46,6 @@ core_dir=$(src_dir)/core
 platforms_dir=$(src_dir)/platform
 configs_dir=$(cur_dir)/configs
 CONFIG_REPO?=$(configs_dir)
-
-ifeq ($(CONFIG_BUILTIN), y)
-ifeq ($(CONFIG),)
- $(error Buil-in configuration enabled but no configuration (CONFIG) specified)
-endif
-endif
 
 #Plataform must be defined excpet for clean target
 ifeq ($(PLATFORM),) 
@@ -75,12 +68,8 @@ cpu_impl_dir=$(cpu_arch_dir)/impl/$(CPU)
 
 
 build_dir:=$(cur_dir)/build/$(PLATFORM)
-builtin_build_dir:=$(build_dir)/builtin-configs
-bin_dir:=$(cur_dir)/bin/$(PLATFORM)
-ifeq ($(CONFIG_BUILTIN), y)
-bin_dir:=$(bin_dir)/builtin-configs/$(CONFIG)
-endif
-directories:=$(build_dir) $(bin_dir) $(builtin_build_dir) 
+bin_dir:=$(cur_dir)/bin/$(PLATFORM)/$(CONFIG)
+directories:=$(build_dir) $(bin_dir)
 
 src_dirs:= $(cpu_arch_dir) $(cpu_impl_dir) $(lib_dir) $(core_dir)\
 	$(platform_dir) $(addprefix $(drivers_dir)/, $(drivers))
@@ -95,10 +84,7 @@ objs-y+=$(addprefix $(lib_dir)/, $(lib-objs-y))
 objs-y+=$(addprefix $(core_dir)/, $(core-objs-y))
 objs-y+=$(addprefix $(platform_dir)/, $(boards-objs-y))
 objs-y+=$(addprefix $(drivers_dir)/, $(drivers-objs-y))
-ifeq ($(CONFIG_BUILTIN), y)
-builtin-config-obj:=$(builtin_build_dir)/$(CONFIG).o
-objs-y+=$(builtin-config-obj)
-endif
+
 
 deps+=$(patsubst %.o,%.d,$(objs-y))
 objs-y:=$(patsubst $(src_dir)%, $(build_dir)%, $(objs-y))
@@ -125,6 +111,30 @@ deps+=$(asm_defs_hdr).d
 
 gens:=
 gens+=$(asm_defs_hdr)
+
+
+config_dir:=$(CONFIG_REPO)
+config_src:=$(wildcard $(config_dir)/$(CONFIG).c)
+ifeq ($(config_src),)
+config_dir:=$(CONFIG_REPO)/$(CONFIG)
+config_src:=$(wildcard $(config_dir)/config.c)
+endif
+
+
+ifneq ($(MAKECMDGOALS), clean)
+ifeq ($(CONFIG),)
+$(error Configuration (CONFIG) not defined.)
+endif
+ifeq ($(config_src),)
+$(error Cant find file for $(CONFIG) config!)
+endif
+endif
+
+config_obj:=$(config_src:%.c=%.o)
+config_dep:=$(config_src:%.c=%.d)
+
+deps+=$(config_dep)
+objs-y+=$(config_obj)
 
 # Toolchain flags
 override CPPFLAGS+=$(addprefix -I, $(inc_dirs)) $(arch-cppflags) $(platform-cppflags)
@@ -196,16 +206,9 @@ $(asm_defs_hdr).d: $(asm_defs_src)
 	@$(cc) -MM -MT "$(patsubst %.d,%, $@)" $(addprefix -I, $(inc_dirs)) $< > $@	
 endif
 
-ifdef CONFIG
-include $(configs_dir)/configs.mk
-all: config
-endif
-
-ifeq ($(CONFIG_BUILTIN), y)
-override CPPFLAGS+=-DCONFIG_BIN=$(CONFIG_BIN)
-builtin-config-src:=$(core_dir)/builtin-config.S
-$(builtin-config-obj): $(builtin-config-src) $(CONFIG_BIN)
-endif
+$(config_dep): $(config_src)
+	@$(cc) $(CPPFLAGS) -S $< -o - | grep ".incbin" | $(as) -MD $@ -o $@
+	@$(cc) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $(filter %.c, $^) > $@
 
 #Generate directories for object, dependency and generated files
 

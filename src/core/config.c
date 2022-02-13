@@ -15,32 +15,13 @@
 
 #include <config.h>
 
-void config_adjust_to_va(struct config *config, paddr_t phys)
+void config_adjust_vm_image_addr(paddr_t load_addr)
 {
-    adjust_ptr(config->shmemlist, config);
-
-    for (size_t i = 0; i < config->vmlist_size; i++) {
-        adjust_ptr(config->vmlist[i].image.load_addr, phys);
-
-	    adjust_ptr(config->vmlist[i].platform.regions, config);
-
-	    if(adjust_ptr(config->vmlist[i].platform.devs, config)){
-	        for (size_t j = 0; j < config->vmlist[i].platform.dev_num; j++) {
-	    	    adjust_ptr(config->vmlist[i].platform.devs[j].interrupts, config);
-	        }
-	    }
-
-	    if(adjust_ptr(config->vmlist[i].platform.ipcs, config)){
-	        for (size_t j = 0; j < config->vmlist[i].platform.ipc_num; j++) {
-	    	    adjust_ptr(config->vmlist[i].platform.ipcs[j].interrupts, config);
-	        }
-	    }
+    for (size_t i = 0; i < config.vmlist_size; i++) {
+        struct vm_config *vm_config = &config.vmlist[i];
+        if (!vm_config->image.separately_loaded) {
+            vm_config->image.load_addr =
+                (vm_config->image.load_addr - BAO_VAS_BASE) + load_addr;
+        }
     }
-
-    config_arch_adjust_to_va(config, phys);
-}
-
-bool config_is_builtin() {
-    extern uint8_t _config_start, _config_end;
-    return &_config_start != &_config_end;
 }
