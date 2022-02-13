@@ -20,16 +20,6 @@
 #include <cache.h>
 #include <config.h>
 
-enum emul_type {EMUL_MEM, EMUL_REG};
-struct emul_node {
-    node_t node;
-    enum emul_type type;
-    union {
-        struct emul_mem emu_mem;
-        struct emul_reg emu_reg;
-    };
-};
-
 static void vm_master_init(struct vm* vm, const struct vm_config* config, vmid_t vm_id)
 {
     vm->master = cpu.id;
@@ -40,9 +30,6 @@ static void vm_master_init(struct vm* vm, const struct vm_config* config, vmid_t
     cpu_sync_init(&vm->sync, vm->cpu_num);
 
     as_init(&vm->as, AS_VM, vm_id, NULL, config->colors);
-
-    list_init(&vm->emul_list);
-    objcache_init(&vm->emul_oc, sizeof(struct emul_node), SEC_HYP_VM, false);
 }
 
 void vm_cpu_init(struct vm* vm)
@@ -318,64 +305,38 @@ struct vcpu* vm_get_vcpu(struct vm* vm, vcpuid_t vcpuid)
 
 void vm_emul_add_mem(struct vm* vm, struct emul_mem* emu)
 {
-    struct emul_node* ptr = objcache_alloc(&vm->emul_oc);
-    if (ptr != NULL) {
-        ptr->type = EMUL_MEM;
-        ptr->emu_mem = *emu;
-        list_push(&vm->emul_list, (node_t*)ptr);
-        // TODO: if we plan to grow the VM's PAS dynamically, after
-        // inialization,
-        // the pages for this emulation region must be reserved in the stage 2
-        // page table.
-    }
+    list_push(&vm->emul_mem_list, &emu->node);
 }
 
 void vm_emul_add_reg(struct vm* vm, struct emul_reg* emu)
 {
-    struct emul_node* ptr = objcache_alloc(&vm->emul_oc);
-    if (ptr != NULL) {
-        ptr->type = EMUL_REG;
-        ptr->emu_reg = *emu;
-        list_push(&vm->emul_list, (node_t*)ptr);
-        // TODO: if we plan to grow the VM's PAS dynamically, after
-        // inialization,
-        // the pages for this emulation region must be reserved in the stage 2
-        // page table.
-    }
-
+    list_push(&vm->emul_reg_list, &emu->node);
 }    
 
-static inline emul_handler_t vm_emul_get(struct vm* vm, enum emul_type type, vaddr_t addr)
+emul_handler_t vm_emul_get_mem(struct vm* vm, vaddr_t addr)
 {
     emul_handler_t handler = NULL;
-    list_foreach(vm->emul_list, struct emul_node, node)
-    {
-        if (node->type == EMUL_MEM) {
-            struct emul_mem* emu = &node->emu_mem;
-            if (addr >= emu->va_base && (addr < (emu->va_base + emu->size))) {
-                handler = emu->handler;
-                break;
-            }
-        } else {
-            struct emul_reg *emu = &node->emu_reg;
-            if(emu->addr == addr) {
-                handler = emu->handler;
-                break; 
-            }
+    list_foreach(vm->emul_mem_list, struct emul_mem, emu) {
+        if (addr >= emu->va_base && (addr < (emu->va_base + emu->size))) {
+            handler = emu->handler;
+            break;
         }
     }
 
     return handler;
 }
 
-emul_handler_t vm_emul_get_mem(struct vm* vm, vaddr_t addr)
-{
-    return vm_emul_get(vm, EMUL_MEM, addr);
-}
-
 emul_handler_t vm_emul_get_reg(struct vm* vm, vaddr_t addr)
 {
-    return vm_emul_get(vm, EMUL_REG, addr);
+    emul_handler_t handler = NULL;
+    list_foreach(vm->emul_reg_list, struct emul_reg, emu) {
+        if(emu->addr == addr) {
+            handler = emu->handler;
+            break; 
+        }
+    }
+
+    return handler;
 }
 
 void vm_msg_broadcast(struct vm* vm, struct cpu_msg* msg)

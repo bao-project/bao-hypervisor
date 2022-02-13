@@ -279,21 +279,15 @@ void vgic_init(struct vm *vm, const struct vgic_dscrp *vgic_dscrp)
         vm->arch.vgicd.interrupts[i].enabled = false;
     }
 
-    struct emul_mem gicd_emu = {.va_base = vgic_dscrp->gicd_addr,
-                           .size = ALIGN(sizeof(struct gicd_hw), PAGE_SIZE),
-                           .handler = vgicd_emul_handler};
-    vm_emul_add_mem(vm, &gicd_emu);
+    vm->arch.vgicd_emul = (struct emul_mem) {
+        .va_base = vgic_dscrp->gicd_addr,
+        .size = ALIGN(sizeof(struct gicd_hw), PAGE_SIZE),
+        .handler = vgicd_emul_handler
+    };
+    vm_emul_add_mem(vm, &vm->arch.vgicd_emul);
 
     list_foreach(vm->vcpu_list, struct vcpu, vcpu)
     {
-        struct emul_mem gicr_emu = {
-            .va_base = vgic_dscrp->gicr_addr + sizeof(struct gicr_hw) * vcpu->id,
-            .size = ALIGN(sizeof(struct gicr_hw), PAGE_SIZE),
-            .handler = vgicr_emul_handler};
-        vm_emul_add_mem(vm, &gicr_emu);
-
-        vcpu->arch.vgic_priv.vgicr.CTLR = 0;
-
         uint64_t typer = (uint64_t)vcpu->id << GICR_TYPER_PRCNUM_OFF;
         typer |= (vcpu->arch.vmpidr & MPIDR_AFF_MSK) << GICR_TYPER_AFFVAL_OFF;
         typer |= !!(vcpu->id == vcpu->vm->cpu_num - 1) << GICR_TYPER_LAST_OFF;
@@ -302,13 +296,24 @@ void vgic_init(struct vm *vm, const struct vgic_dscrp *vgic_dscrp)
         vcpu->arch.vgic_priv.vgicr.IIDR = gicr[cpu.id].IIDR;
     }
 
-    struct emul_reg icc_sgir_emu = {.addr = SYSREG_ENC_ADDR(3, 0, 12, 11, 5),
-                               .handler = vgic_icc_sgir_handler};
-    vm_emul_add_reg(vm, &icc_sgir_emu);
+    vm->arch.vgicr_emul = (struct emul_mem) {
+        .va_base = vgic_dscrp->gicr_addr,
+        .size = ALIGN(sizeof(struct gicr_hw), PAGE_SIZE) * vm->cpu_num,
+        .handler = vgicr_emul_handler
+    };
+    vm_emul_add_mem(vm, &vm->arch.vgicr_emul);
 
-    struct emul_reg icc_sre_emu = {.addr = SYSREG_ENC_ADDR(3, 0, 12, 12, 5),
-                              .handler = vgic_icc_sre_handler};
-    vm_emul_add_reg(vm, &icc_sre_emu);
+    vm->arch.icc_sgir_emul = (struct emul_reg) {
+        .addr = SYSREG_ENC_ADDR(3, 0, 12, 11, 5),
+        .handler = vgic_icc_sgir_handler
+    };
+    vm_emul_add_reg(vm, &vm->arch.icc_sgir_emul);
+
+    vm->arch.icc_sre_emul = (struct emul_reg) {
+        .addr = SYSREG_ENC_ADDR(3, 0, 12, 12, 5),
+        .handler = vgic_icc_sre_handler
+    };
+    vm_emul_add_reg(vm, &vm->arch.icc_sre_emul);
 
     list_init(&vm->arch.vgic_spilled);
     vm->arch.vgic_spilled_lock = SPINLOCK_INITVAL;

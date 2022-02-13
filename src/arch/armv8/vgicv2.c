@@ -174,11 +174,12 @@ void vgic_init(struct vm *vm, const struct vgic_dscrp *vgic_dscrp)
         vm->arch.vgicd.interrupts[i].enabled = false;
     }
 
-    struct emul_mem emu = {.va_base = vgic_dscrp->gicd_addr,
-                      .size = ALIGN(sizeof(struct gicd_hw), PAGE_SIZE),
-                      .handler = vgicd_emul_handler};
-
-    vm_emul_add_mem(vm, &emu);
+    vm->arch.vgicd_emul = (struct emul_mem) {
+        .va_base = vgic_dscrp->gicd_addr,
+        .size = ALIGN(sizeof(struct gicd_hw), PAGE_SIZE),
+        .handler = vgicd_emul_handler
+    };
+    vm_emul_add_mem(vm, &vm->arch.vgicd_emul);
 
     list_init(&vm->arch.vgic_spilled);
     vm->arch.vgic_spilled_lock = SPINLOCK_INITVAL;

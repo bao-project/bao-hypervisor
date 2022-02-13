@@ -24,7 +24,6 @@
 #include <cpu.h>
 #include <spinlock.h>
 #include <emul.h>
-#include <objcache.h>
 #include <interrupts.h>
 #include <bitmap.h>
 #include <iommu.h>
@@ -79,8 +78,8 @@ struct vm {
 
     struct vm_arch arch;
 
-    struct list emul_list;
-    struct objcache emul_oc;
+    struct list emul_mem_list;
+    struct list emul_reg_list;
 
     struct iommu_vm iommu;
 
