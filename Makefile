@@ -48,6 +48,7 @@ core_dir=$(src_dir)/core
 platforms_dir=$(src_dir)/platform
 configs_dir=$(cur_dir)/configs
 CONFIG_REPO?=$(configs_dir)
+scripts_dir:=$(cur_dir)/scripts
 
 #Plataform must be defined excpet for clean target
 ifeq ($(PLATFORM),) 
@@ -121,11 +122,13 @@ ifeq ($(config_src),)
 config_dir:=$(CONFIG_REPO)/$(CONFIG)
 config_src:=$(wildcard $(config_dir)/config.c)
 endif
-config_build_dir:=$(build_dir)/config
-directories+=$(config_build_dir)
 
-config_def_generator_src:=$(src_dir)/config_defs_gen.c
-config_def_generator:=$(config_def_generator_src:$(src_dir)/%.c=$(build_dir)/%)
+config_build_dir:=$(build_dir)/config
+scripts_build_dir:=$(build_dir)/scripts
+directories+=$(config_build_dir) $(scripts_build_dir)
+
+config_def_generator_src:=$(scripts_dir)/config_defs_gen.c
+config_def_generator:=$(scripts_build_dir)/config_defs_gen
 config_defs:=$(config_build_dir)/config_defs.h
 gens+=$(config_def_generator) $(config_defs)
 inc_dirs+=$(config_build_dir)
