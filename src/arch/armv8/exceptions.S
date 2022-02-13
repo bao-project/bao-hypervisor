@@ -69,7 +69,7 @@
     mrs x1, SPSR_EL2
     stp x0, x1,   [sp, #(8*31)]
 
-    ldr x0, =cpu
+    ldr x0, =BAO_CPU_BASE
     add x0, x0, #(CPU_STACK_OFF + CPU_STACK_SIZE)
     mov sp, x0
 
@@ -77,7 +77,7 @@
 
 .global vcpu_arch_entry
 vcpu_arch_entry:
-    ldr x0, =cpu
+    ldr x0, =BAO_CPU_BASE
     ldr x0, [x0, #CPU_VCPU_OFF]
     add x0, x0, #VCPU_REGS_OFF
     mov sp, x0

@@ -55,12 +55,12 @@ static inline void gicc_init()
 
 static inline void gicr_init()
 {
-    gicr[cpu.id].ICENABLER0 = -1;
-    gicr[cpu.id].ICPENDR0 = -1;
-    gicr[cpu.id].ICACTIVER0 = -1;
+    gicr[cpu()->id].ICENABLER0 = -1;
+    gicr[cpu()->id].ICPENDR0 = -1;
+    gicr[cpu()->id].ICACTIVER0 = -1;
 
     for (size_t i = 0; i < GIC_NUM_PRIO_REGS(GIC_CPU_PRIV); i++) {
-        gicr[cpu.id].IPRIORITYR[i] = -1;
+        gicr[cpu()->id].IPRIORITYR[i] = -1;
     }
 }
 
@@ -68,10 +68,10 @@ void gicc_save_state(struct gicc_state *state)
 {
     state->PMR = MRS(ICC_PMR_EL1);
     state->BPR = MRS(ICC_BPR1_EL1);
-    state->priv_ISENABLER = gicr[cpu.id].ISENABLER0;
+    state->priv_ISENABLER = gicr[cpu()->id].ISENABLER0;
 
     for (size_t i = 0; i < GIC_NUM_PRIO_REGS(GIC_CPU_PRIV); i++) {
-        state->priv_IPRIORITYR[i] = gicr[cpu.id].IPRIORITYR[i];
+        state->priv_IPRIORITYR[i] = gicr[cpu()->id].IPRIORITYR[i];
     }
 
     state->HCR = MRS(ICH_HCR_EL2);
@@ -87,10 +87,10 @@ void gicc_restore_state(struct gicc_state *state)
     MSR(ICC_IGRPEN1_EL1, ICC_IGRPEN_EL1_ENB_BIT);
     MSR(ICC_PMR_EL1, state->PMR);
     MSR(ICC_BPR1_EL1, state->BPR);
-    gicr[cpu.id].ISENABLER0 = state->priv_ISENABLER;
+    gicr[cpu()->id].ISENABLER0 = state->priv_ISENABLER;
 
     for (size_t i = 0; i < GIC_NUM_PRIO_REGS(GIC_CPU_PRIV); i++) {
-        gicr[cpu.id].IPRIORITYR[i] = state->priv_IPRIORITYR[i];
+        gicr[cpu()->id].IPRIORITYR[i] = state->priv_IPRIORITYR[i];
     }
 
     MSR(ICH_HCR_EL2, state->HCR);
@@ -107,11 +107,11 @@ void gic_cpu_init()
 
 void gic_map_mmio()
 {
-    mem_map_dev(&cpu.as, (vaddr_t)&gicd, platform.arch.gic.gicd_addr,
+    mem_map_dev(&cpu()->as, (vaddr_t)&gicd, platform.arch.gic.gicd_addr,
                 NUM_PAGES(sizeof(gicd)));
     size_t gicr_size = NUM_PAGES(sizeof(struct gicr_hw)) * platform.cpu_num;
-    gicr = (struct gicr_hw *)mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL, NULL_VA, gicr_size);
-    mem_map_dev(&cpu.as, (vaddr_t)gicr, platform.arch.gic.gicr_addr, gicr_size);
+    gicr = (struct gicr_hw *)mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, gicr_size);
+    mem_map_dev(&cpu()->as, (vaddr_t)gicr, platform.arch.gic.gicr_addr, gicr_size);
 }
 
 void gicr_set_prio(irqid_t int_id, uint8_t prio, cpuid_t gicr_id)
@@ -244,7 +244,7 @@ void gic_set_prio(irqid_t int_id, uint8_t prio)
     if (!gic_is_priv(int_id)) {
         gicd_set_prio(int_id, prio);
     } else {
-        gicr_set_prio(int_id, prio, cpu.id);
+        gicr_set_prio(int_id, prio, cpu()->id);
     }
 }
 
@@ -253,7 +253,7 @@ uint8_t gic_get_prio(irqid_t int_id)
     if (!gic_is_priv(int_id)) {
         return gicd_get_prio(int_id);
     } else {
-        return gicr_get_prio(int_id, cpu.id);
+        return gicr_get_prio(int_id, cpu()->id);
     }
 }
 
@@ -262,7 +262,7 @@ void gic_set_icfgr(irqid_t int_id, uint8_t cfg)
     if (!gic_is_priv(int_id)) {
         gicd_set_icfgr(int_id, cfg);
     } else {
-        gicr_set_icfgr(int_id, cfg, cpu.id);
+        gicr_set_icfgr(int_id, cfg, cpu()->id);
     }
 }
 
@@ -271,7 +271,7 @@ void gic_set_pend(irqid_t int_id, bool pend)
     if (!gic_is_priv(int_id)) {
         gicd_set_pend(int_id, pend);
     } else {
-        gicr_set_pend(int_id, pend, cpu.id);
+        gicr_set_pend(int_id, pend, cpu()->id);
     }
 }
 
@@ -280,7 +280,7 @@ bool gic_get_pend(irqid_t int_id)
     if (!gic_is_priv(int_id)) {
         return gicd_get_pend(int_id);
     } else {
-        return gicr_get_pend(int_id, cpu.id);
+        return gicr_get_pend(int_id, cpu()->id);
     }
 }
 
@@ -289,7 +289,7 @@ void gic_set_act(irqid_t int_id, bool act)
     if (!gic_is_priv(int_id)) {
         gicd_set_act(int_id, act);
     } else {
-        gicr_set_act(int_id, act, cpu.id);
+        gicr_set_act(int_id, act, cpu()->id);
     }
 }
 
@@ -298,7 +298,7 @@ bool gic_get_act(irqid_t int_id)
     if (!gic_is_priv(int_id)) {
         return gicd_get_act(int_id);
     } else {
-        return gicr_get_act(int_id, cpu.id);
+        return gicr_get_act(int_id, cpu()->id);
     }
 }
 
@@ -307,6 +307,6 @@ void gic_set_enable(irqid_t int_id, bool en)
     if (!gic_is_priv(int_id)) {
         gicd_set_enable(int_id, en);
     } else {
-        gicr_set_enable(int_id, en, cpu.id);
+        gicr_set_enable(int_id, en, cpu()->id);
     }
 }

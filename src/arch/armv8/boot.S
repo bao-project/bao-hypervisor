@@ -345,7 +345,7 @@ setup_cpu:
 	/* set up cpu stack */
 	mov x3, #(SPSel_SP)								
 	msr SPSEL, x3	
-	ldr x3, =cpu
+	ldr x3, =BAO_CPU_BASE
 	add x3, x3, #(CPU_STACK_OFF + CPU_STACK_SIZE)
 	mov SP, x3
 
@@ -379,7 +379,7 @@ _enter_vas:
 	msr	VBAR_EL2, x3
 
 	/* Remove temporary mapping - the L1 page holding it leaks */
-	ldr x4, =cpu
+	ldr x4, =BAO_CPU_BASE
 	add x4, x4, #CPU_ROOT_PT_OFF
 	PTE_INDEX_ASM x5, x1, 0 
 	str xzr, [x4, x5]
@@ -518,7 +518,7 @@ warm_boot:
 
 _enter_vas_warm:
 	/* Unmap bootstrat flat mappings */
-	ldr x4, =cpu
+	ldr x4, =BAO_CPU_BASE
 	add x3, x4, #(CPU_STACK_OFF+CPU_STACK_SIZE)
 
 	add x4, x4, #CPU_ROOT_PT_OFF

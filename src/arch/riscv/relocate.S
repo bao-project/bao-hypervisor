@@ -28,7 +28,7 @@
 switch_space:
 
     /* Get current CPU space stack start */
-    la a6, cpu
+    li a6, BAO_CPU_BASE
     li t0, CPU_STACK_OFF + CPU_STACK_SIZE
     add a6, a6, t0
 

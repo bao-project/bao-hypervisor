@@ -28,7 +28,7 @@ void internal_exception_handler(unsigned long gprs[]) {
     printk("sstatus:\t0x%0lx\n", CSRR(sstatus));
     printk("stval:\t\t0x%0lx\n", CSRR(stval));
     printk("sepc:\t\t0x%0lx\n", CSRR(sepc));
-    ERROR("cpu%d internal hypervisor abort - PANIC\n", cpu.id);
+    ERROR("cpu%d internal hypervisor abort - PANIC\n", cpu()->id);
 }
 
 static uint32_t read_ins(uintptr_t ins_addr)
@@ -94,7 +94,7 @@ size_t guest_page_fault_handler()
 {
     vaddr_t addr = CSRR(CSR_HTVAL) << 2;
 
-    emul_handler_t handler = vm_emul_get_mem(cpu.vcpu->vm, addr);
+    emul_handler_t handler = vm_emul_get_mem(cpu()->vcpu->vm, addr);
     if (handler != NULL) {
 
         unsigned long ins = CSRR(CSR_HTINST);
@@ -157,7 +157,7 @@ void sync_exception_handler()
     unsigned long _scause = CSRR(scause);
 
     if(!(CSRR(CSR_HSTATUS) & HSTATUS_SPV)) {
-        internal_exception_handler(&cpu.vcpu->regs.x[0]);
+        internal_exception_handler(&cpu()->vcpu->regs.x[0]);
     }
 
     // TODO: Do we need to check call comes from VS-mode and not VU-mode
@@ -169,5 +169,5 @@ void sync_exception_handler()
         ERROR("unkown synchronous exception (%d)", _scause);
     }
 
-    cpu.vcpu->regs.sepc += pc_step;
+    cpu()->vcpu->regs.sepc += pc_step;
 }

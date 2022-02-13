@@ -57,7 +57,7 @@ static inline void gicc_init()
         ERROR("cant find gic cpu id");
     }
 
-    gic_cpu_map[cpu.id] = (cpuid_t)gic_cpu_id;
+    gic_cpu_map[cpu()->id] = (cpuid_t)gic_cpu_id;
 }
 
 void gicc_save_state(struct gicc_state *state)
@@ -128,11 +128,11 @@ void gic_cpu_init()
 
 void gic_map_mmio()
 {
-    mem_map_dev(&cpu.as, (vaddr_t)&gicc, platform.arch.gic.gicc_addr,
+    mem_map_dev(&cpu()->as, (vaddr_t)&gicc, platform.arch.gic.gicc_addr,
                 NUM_PAGES(sizeof(gicc)));
-    mem_map_dev(&cpu.as, (vaddr_t)&gich, platform.arch.gic.gich_addr,
+    mem_map_dev(&cpu()->as, (vaddr_t)&gich, platform.arch.gic.gich_addr,
                 NUM_PAGES(sizeof(gich)));
-    mem_map_dev(&cpu.as, (vaddr_t)&gicd, platform.arch.gic.gicd_addr,
+    mem_map_dev(&cpu()->as, (vaddr_t)&gicd, platform.arch.gic.gicd_addr,
                 NUM_PAGES(sizeof(gicd)));
 }
 
@@ -211,7 +211,7 @@ void gic_set_pend(irqid_t int_id, bool pend)
         size_t off = GICD_SGI_OFF(int_id);
 
         if (pend) {
-            gicd.SPENDSGIR[reg_ind] = (1U) << (off + cpu.id);
+            gicd.SPENDSGIR[reg_ind] = (1U) << (off + cpu()->id);
         } else {
             gicd.CPENDSGIR[reg_ind] = BIT32_MASK(off, 8);
         }

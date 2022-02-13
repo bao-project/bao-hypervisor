@@ -84,7 +84,7 @@ void gic_map_mmio();
 
 void gic_init()
 {
-    if (cpu.id == CPU_MASTER) {
+    if (cpu()->id == CPU_MASTER) {
         gic_map_mmio();
         gicd_init();
         NUM_LRS = gich_num_lrs();

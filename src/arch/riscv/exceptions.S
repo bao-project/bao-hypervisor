@@ -65,7 +65,7 @@
     csrr    t0, sepc
     STORE   t0, 33*REGLEN(sp)
 
-    la      sp, cpu
+    li      sp, BAO_CPU_BASE
     li      t0, (CPU_STACK_OFF + CPU_STACK_SIZE)
     add     sp, sp, t0
 

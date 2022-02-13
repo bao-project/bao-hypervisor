@@ -56,8 +56,8 @@ void plic_init()
 
 void plic_cpu_init()
 {
-    cpu.arch.plic_cntxt = plic_plat_cntxt_to_id((struct plic_cntxt){cpu.id, PRIV_S});
-    plic_hart[cpu.arch.plic_cntxt].threshold = 0;
+    cpu()->arch.plic_cntxt = plic_plat_cntxt_to_id((struct plic_cntxt){cpu()->id, PRIV_S});
+    plic_hart[cpu()->arch.plic_cntxt].threshold = 0;
 }
 
 bool plic_cntxt_valid(unsigned cntxt_id) {
@@ -135,11 +135,11 @@ uint32_t plic_get_thrshold(unsigned cntxt)
 
 void plic_handle()
 {
-    uint32_t id = plic_hart[cpu.arch.plic_cntxt].claim;
+    uint32_t id = plic_hart[cpu()->arch.plic_cntxt].claim;
 
     if (id != 0) {
         enum irq_res res = interrupts_handle(id);
-        if (res == HANDLED_BY_HYP) plic_hart[cpu.arch.plic_cntxt].complete = id;
+        if (res == HANDLED_BY_HYP) plic_hart[cpu()->arch.plic_cntxt].complete = id;
     }
 }
 

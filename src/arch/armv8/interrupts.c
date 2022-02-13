@@ -44,9 +44,9 @@ void interrupts_arch_enable(irqid_t int_id, bool en)
     gic_set_enable(int_id, en);
     gic_set_prio(int_id, 0x01);
     if (GIC_VERSION == GICV2) {
-        gicd_set_trgt(int_id, 1 << cpu.id);
+        gicd_set_trgt(int_id, 1 << cpu()->id);
     } else {
-        gicd_set_route(int_id, cpu.arch.mpidr);
+        gicd_set_route(int_id, cpu()->arch.mpidr);
     }
 }
 

@@ -26,6 +26,10 @@ struct cpu_arch {
     unsigned long mpidr;
 };
 
+static inline struct cpu* cpu() {
+    return (struct cpu*)BAO_CPU_BASE;
+}
+
 unsigned long cpu_id_to_mpidr(cpuid_t id);
 
 extern cpuid_t CPU_MASTER;

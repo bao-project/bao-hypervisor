@@ -27,11 +27,11 @@
 
 void interrupts_arch_init()
 {
-    if (cpu.id == CPU_MASTER) {
-        mem_map_dev(&cpu.as, (vaddr_t)&plic_global, platform.arch.plic_base,
+    if (cpu()->id == CPU_MASTER) {
+        mem_map_dev(&cpu()->as, (vaddr_t)&plic_global, platform.arch.plic_base,
                     ALIGN(sizeof(plic_global), PAGE_SIZE) / PAGE_SIZE);
 
-        mem_map_dev(&cpu.as, (vaddr_t)plic_hart,
+        mem_map_dev(&cpu()->as, (vaddr_t)plic_hart,
                     platform.arch.plic_base + PLIC_CLAIMCMPLT_OFF,
                     ALIGN(sizeof(plic_hart), PAGE_SIZE) / PAGE_SIZE);
 
@@ -78,7 +78,7 @@ void interrupts_arch_enable(irqid_t int_id, bool en)
         else
             CSRC(sie, SIE_STIE);
     } else {
-        plic_set_enbl(cpu.arch.plic_cntxt, int_id, en);
+        plic_set_enbl(cpu()->arch.plic_cntxt, int_id, en);
         plic_set_prio(int_id, 0xFE);
     }
 }

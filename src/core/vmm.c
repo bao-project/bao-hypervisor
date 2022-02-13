@@ -39,12 +39,12 @@ static bool vmm_assign_vcpu(bool *master, vmid_t *vm_id) {
     *master = false;
     /* Assign cpus according to vm affinity. */
     for (size_t i = 0; i < config.vmlist_size && !assigned; i++) {
-        if (config.vmlist[i].cpu_affinity & (1UL << cpu.id)) {
+        if (config.vmlist[i].cpu_affinity & (1UL << cpu()->id)) {
             spin_lock(&vm_assign[i].lock);
             if (!vm_assign[i].master) {
                 vm_assign[i].master = true;
                 vm_assign[i].ncpus++;
-                vm_assign[i].cpus |= (1UL << cpu.id);
+                vm_assign[i].cpus |= (1UL << cpu()->id);
                 *master = true;
                 assigned = true;
                 *vm_id = i;
@@ -52,7 +52,7 @@ static bool vmm_assign_vcpu(bool *master, vmid_t *vm_id) {
                        config.vmlist[i].platform.cpu_num) {
                 assigned = true;
                 vm_assign[i].ncpus++;
-                vm_assign[i].cpus |= (1UL << cpu.id);
+                vm_assign[i].cpus |= (1UL << cpu()->id);
                 *vm_id = i;
             }
             spin_unlock(&vm_assign[i].lock);
@@ -72,12 +72,12 @@ static bool vmm_assign_vcpu(bool *master, vmid_t *vm_id) {
                     vm_assign[i].ncpus++;
                     *master = true;
                     assigned = true;
-                    vm_assign[i].cpus |= (1UL << cpu.id);
+                    vm_assign[i].cpus |= (1UL << cpu()->id);
                     *vm_id = i;
                 } else {
                     assigned = true;
                     vm_assign[i].ncpus++;
-                    vm_assign[i].cpus |= (1UL << cpu.id);
+                    vm_assign[i].cpus |= (1UL << cpu()->id);
                     *vm_id = i;
                 }
             }
@@ -96,10 +96,10 @@ static struct vm* vmm_alloc_vm(vmid_t vm_id, bool master) {
         memset(vm_assign[vm_id].vm, 0, sizeof(struct vm));
         fence_ord_write();
         vm_assign[vm_id].vm_shared_table =
-            *pt_get_pte(&cpu.as.pt, 0, (vaddr_t)vm_assign[vm_id].vm);
+            *pt_get_pte(&cpu()->as.pt, 0, (vaddr_t)vm_assign[vm_id].vm);
     } else {
         while (vm_assign[vm_id].vm_shared_table == 0);
-        pte_t* pte = pt_get_pte(&cpu.as.pt, 0, (vaddr_t)vm_assign[vm_id].vm);
+        pte_t* pte = pt_get_pte(&cpu()->as.pt, 0, (vaddr_t)vm_assign[vm_id].vm);
         *pte = vm_assign[vm_id].vm_shared_table;
         fence_sync_write();
     }
@@ -109,7 +109,7 @@ static struct vm* vmm_alloc_vm(vmid_t vm_id, bool master) {
 static size_t vmass_npages = 0;
 
 static void vmm_alloc_assign_array() {
-    if (cpu.id == CPU_MASTER) {
+    if (cpu()->id == CPU_MASTER) {
         vmass_npages =
             ALIGN(sizeof(struct vm_assignment) * config.vmlist_size,
                   PAGE_SIZE) /
@@ -121,8 +121,8 @@ static void vmm_alloc_assign_array() {
 }
 
 static void vmm_free_assign_array() {
-    if (cpu.id == CPU_MASTER) {
-        mem_free_vpage(&cpu.as, (vaddr_t)vm_assign, vmass_npages, true);
+    if (cpu()->id == CPU_MASTER) {
+        mem_free_vpage(&cpu()->as, (vaddr_t)vm_assign, vmass_npages, true);
     }
 }
 
@@ -152,7 +152,7 @@ void vmm_init()
 
     if (vm_assigned) {
         vm_init(vm, vm_config, master, vm_id);
-        vcpu_run(cpu.vcpu);
+        vcpu_run(cpu()->vcpu);
     } else {
         cpu_idle();
     }

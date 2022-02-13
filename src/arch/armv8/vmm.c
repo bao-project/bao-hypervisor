@@ -42,7 +42,7 @@ void vmm_arch_init()
 
     cpu_sync_barrier(&cpu_glb_sync);
 
-    if (cpu.id == CPU_MASTER) {
+    if (cpu()->id == CPU_MASTER) {
         parange = min_parange;
         if (parange_table[parange] < 44) {
             for (size_t i = 0; i < vm_pt_dscr->lvls - 1; i++) {

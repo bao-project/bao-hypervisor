@@ -140,8 +140,8 @@ void smmu_init()
      * allocate smmu registers.
      */
     vaddr_t smmu_glbl_rs0 = mem_alloc_vpage(
-        &cpu.as, SEC_HYP_GLOBAL, NULL_VA, NUM_PAGES(sizeof(struct smmu_glbl_rs0_hw)));
-    mem_map_dev(&cpu.as, smmu_glbl_rs0, platform.arch.smmu.base,
+        &cpu()->as, SEC_HYP_GLOBAL, NULL_VA, NUM_PAGES(sizeof(struct smmu_glbl_rs0_hw)));
+    mem_map_dev(&cpu()->as, smmu_glbl_rs0, platform.arch.smmu.base,
                 NUM_PAGES(sizeof(struct smmu_glbl_rs0_hw)));
 
     smmu.hw.glbl_rs0 = (struct smmu_glbl_rs0_hw*)smmu_glbl_rs0;
@@ -156,13 +156,13 @@ void smmu_init()
         smmu.hw.glbl_rs0->IDR1, SMMUV2_IDR1_NUMCB_OFF, SMMUV2_IDR1_NUMCB_LEN);
 
     vaddr_t smmu_glbl_rs1 = mem_alloc_vpage(
-        &cpu.as, SEC_HYP_GLOBAL, NULL_VA, NUM_PAGES(sizeof(struct smmu_glbl_rs1_hw)));
-    mem_map_dev(&cpu.as, smmu_glbl_rs1, platform.arch.smmu.base + pg_size,
+        &cpu()->as, SEC_HYP_GLOBAL, NULL_VA, NUM_PAGES(sizeof(struct smmu_glbl_rs1_hw)));
+    mem_map_dev(&cpu()->as, smmu_glbl_rs1, platform.arch.smmu.base + pg_size,
                 NUM_PAGES(sizeof(struct smmu_glbl_rs1_hw)));
 
-    vaddr_t smmu_cntxt = mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL, NULL_VA,
+    vaddr_t smmu_cntxt = mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA,
         NUM_PAGES((pg_size * ctx_bank_num)));
-    mem_map_dev(&cpu.as, smmu_cntxt,
+    mem_map_dev(&cpu()->as, smmu_cntxt,
                 platform.arch.smmu.base + (num_page * pg_size),
                 NUM_PAGES(pg_size * ctx_bank_num));
 

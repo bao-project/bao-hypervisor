@@ -54,9 +54,6 @@ struct cpu {
     struct cpuif interface __attribute__((aligned(PAGE_SIZE)));
 
 } __attribute__((aligned(PAGE_SIZE)));
-
-extern struct cpu cpu;
-
 struct cpu_msg {
     uint32_t handler;
     uint32_t event;

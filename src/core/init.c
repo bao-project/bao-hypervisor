@@ -35,7 +35,7 @@ void init(cpuid_t cpu_id, paddr_t load_addr)
 
     /* -------------------------------------------------------------- */
 
-    if (cpu.id == CPU_MASTER) {
+    if (cpu()->id == CPU_MASTER) {
         console_init();
         printk("Bao Hypervisor\n\r");
     }

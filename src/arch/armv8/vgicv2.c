@@ -26,7 +26,7 @@
 bool vgic_int_has_other_target(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     bool priv = gic_is_priv(interrupt->id);
-    bool has_other_targets = (interrupt->targets & ~(1 << cpu.id)) != 0;
+    bool has_other_targets = (interrupt->targets & ~(1 << cpu()->id)) != 0;
     return !priv && has_other_targets;
 }
 
@@ -66,7 +66,7 @@ void vgicd_emul_sgiregs_access(struct emul_access *acc,
                                struct vgic_reg_handler_info *handlers,
                                bool gicr_access, vcpuid_t vgicr_id)
 {
-    unsigned long val = acc->write ? vcpu_readreg(cpu.vcpu, acc->reg) : 0;
+    unsigned long val = acc->write ? vcpu_readreg(cpu()->vcpu, acc->reg) : 0;
 
     if ((acc->addr & 0xfff) == (((uintptr_t)&gicd.SGIR) & 0xfff)) {
         if (acc->write) {
@@ -75,20 +75,20 @@ void vgicd_emul_sgiregs_access(struct emul_access *acc,
             switch (GICD_SGIR_TRGLSTFLT(val)) {
                 case 0:
                     trgtlist = vm_translate_to_pcpu_mask(
-                        cpu.vcpu->vm, GICD_SGIR_CPUTRGLST(val),
+                        cpu()->vcpu->vm, GICD_SGIR_CPUTRGLST(val),
                         GIC_TARGET_BITS);
                     break;
                 case 1:
-                    trgtlist = cpu.vcpu->vm->cpus & ~(1U << cpu.vcpu->phys_id);
+                    trgtlist = cpu()->vcpu->vm->cpus & ~(1U << cpu()->vcpu->phys_id);
                     break;
                 case 2:
-                    trgtlist = (1U << cpu.id);
+                    trgtlist = (1U << cpu()->id);
                     break;
                 case 3:
                     return;
             }
 
-            vgic_send_sgi_msg(cpu.vcpu, trgtlist, int_id);
+            vgic_send_sgi_msg(cpu()->vcpu, trgtlist, int_id);
         }
 
     } else {

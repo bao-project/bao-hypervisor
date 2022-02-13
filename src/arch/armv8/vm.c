@@ -23,7 +23,7 @@
 
 void vm_arch_init(struct vm* vm, const struct vm_config* config)
 {
-    if (vm->master == cpu.id) {
+    if (vm->master == cpu()->id) {
         vgic_init(vm, &config->platform.arch.gic);
     }
 }
@@ -63,7 +63,7 @@ void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm)
     vcpu->arch.psci_ctx.state = vcpu->id == 0 ? ON : OFF;
 
     paddr_t root_pt_pa;
-    mem_translate(&cpu.as, (vaddr_t)vm->as.pt.root, &root_pt_pa);
+    mem_translate(&cpu()->as, (vaddr_t)vm->as.pt.root, &root_pt_pa);
     MSR(VTTBR_EL2, ((vm->id << VTTBR_VMID_OFF) & VTTBR_VMID_MSK) |
                        (root_pt_pa & ~VTTBR_VMID_MSK));
 

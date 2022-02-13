@@ -115,8 +115,8 @@
 #define PT_ROOT_FLAGS_REC_IND_MSK \
     BIT64_MASK(PT_ROOT_FLAGS_REC_IND_OFF, PT_ROOT_FLAGS_REC_IND_LEN)
 
-#define PT_CPU_REC_IND (pt_nentries(&cpu.as.pt, 0) - 1)
-#define PT_VM_REC_IND (pt_nentries(&cpu.as.pt, 0) - 2)
+#define PT_CPU_REC_IND (pt_nentries(&cpu()->as.pt, 0) - 1)
+#define PT_VM_REC_IND (pt_nentries(&cpu()->as.pt, 0) - 2)
 
 #define PTE_INVALID (0)
 #define PTE_HYP_FLAGS (PTE_ATTR(1) | PTE_AP_RW | PTE_SH_IS | PTE_AF)

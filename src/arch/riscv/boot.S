@@ -65,7 +65,6 @@ _dmem_beg_sym: .8byte _dmem_beg
 _enter_vas_sym: .8byte _enter_vas
 _bss_start_sym: .8byte _bss_start
 _bss_end_sym: .8byte _bss_end
-_cpu_sym:   .8byte cpu
 
 .data 
 .align 3
@@ -318,7 +317,7 @@ _enter_vas:
 
     /* Init stack pointer and global pointer */
     /* TODO: what about tp? */
-    LD_SYM  t0, _cpu_sym
+    li      t0, BAO_CPU_BASE
     li      sp, CPU_STACK_OFF + CPU_STACK_SIZE
     add     sp, t0, sp
 

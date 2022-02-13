@@ -22,7 +22,7 @@
 
 static void vm_master_init(struct vm* vm, const struct vm_config* config, vmid_t vm_id)
 {
-    vm->master = cpu.id;
+    vm->master = cpu()->id;
     vm->config = config;
     vm->cpu_num = config->platform.cpu_num;
     vm->id = vm_id;
@@ -35,7 +35,7 @@ static void vm_master_init(struct vm* vm, const struct vm_config* config, vmid_t
 void vm_cpu_init(struct vm* vm)
 {
     spin_lock(&vm->lock);
-    vm->cpus |= (1UL << cpu.id);
+    vm->cpus |= (1UL << cpu()->id);
     spin_unlock(&vm->lock);
 }
 
@@ -46,13 +46,13 @@ void vm_vcpu_init(struct vm* vm, const struct vm_config* config)
     if(vcpu == NULL){ ERROR("failed to allocate vcpu"); }
     memset(vcpu, 0, n * PAGE_SIZE);
 
-    cpu.vcpu = vcpu;
-    vcpu->phys_id = cpu.id;
+    cpu()->vcpu = vcpu;
+    vcpu->phys_id = cpu()->id;
     vcpu->vm = vm;
 
     size_t count = 0, offset = 0;
     while (count < vm->cpu_num) {
-        if (offset == cpu.id) {
+        if (offset == cpu()->id) {
             vcpu->id = count;
             break;
         }
@@ -74,8 +74,8 @@ static void vm_copy_img_to_rgn(struct vm* vm, const struct vm_config* config,
     /* map original img address */
     size_t n_img = NUM_PAGES(config->image.size);
     struct ppages src_pa_img = mem_ppages_get(config->image.load_addr, n_img);
-    vaddr_t src_va = mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL, NULL_VA, n_img);
-    if (!mem_map(&cpu.as, src_va, &src_pa_img, n_img, PTE_HYP_FLAGS)) {
+    vaddr_t src_va = mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, n_img);
+    if (!mem_map(&cpu()->as, src_va, &src_pa_img, n_img, PTE_HYP_FLAGS)) {
         ERROR("mem_map failed %s", __func__);
     }
 
@@ -83,8 +83,8 @@ static void vm_copy_img_to_rgn(struct vm* vm, const struct vm_config* config,
     size_t offset = config->image.base_addr - reg->base;
     size_t dst_phys = reg->phys + offset;
     struct ppages dst_pp = mem_ppages_get(dst_phys, n_img);
-    vaddr_t dst_va = mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL, NULL_VA, n_img);
-    if (!mem_map(&cpu.as, dst_va, &dst_pp, n_img, PTE_HYP_FLAGS)) {
+    vaddr_t dst_va = mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, n_img);
+    if (!mem_map(&cpu()->as, dst_va, &dst_pp, n_img, PTE_HYP_FLAGS)) {
         ERROR("mem_map failed %s", __func__);
     }
 
@@ -342,7 +342,7 @@ emul_handler_t vm_emul_get_reg(struct vm* vm, vaddr_t addr)
 void vm_msg_broadcast(struct vm* vm, struct cpu_msg* msg)
 {
     for (size_t i = 0, n = 0; n < vm->cpu_num - 1; i++) {
-        if (((1U << i) & vm->cpus) && (i != cpu.id)) {
+        if (((1U << i) & vm->cpus) && (i != cpu()->id)) {
             n++;
             cpu_send_msg(i, msg);
         }
@@ -381,6 +381,6 @@ __attribute__((weak)) cpumap_t vm_translate_to_vcpu_mask(struct vm* vm,
 
 void vcpu_run(struct vcpu* vcpu)
 {
-    cpu.vcpu->active = true;
+    cpu()->vcpu->active = true;
     vcpu_arch_run(vcpu);
 }

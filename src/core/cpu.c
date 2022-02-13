@@ -33,8 +33,6 @@ struct cpu_msg_node {
 
 OBJPOOL_ALLOC(msg_pool, struct cpu_msg_node, CPU_MSG_POOL_SIZE);
 
-struct cpu cpu __attribute__((section(".cpu_private")));
-
 struct cpu_synctoken cpu_glb_sync = {.ready = false};
 
 extern uint8_t _ipi_cpumsg_handlers_start;
@@ -47,10 +45,10 @@ void cpu_init(cpuid_t cpu_id, paddr_t load_addr)
 {
     cpu_arch_init(cpu_id, load_addr);
 
-    cpu.id = cpu_id;
-    list_init(&cpu.interface.event_list);
+    cpu()->id = cpu_id;
+    list_init(&cpu()->interface.event_list);
 
-    if (cpu.id == CPU_MASTER) {
+    if (cpu()->id == CPU_MASTER) {
         cpu_sync_init(&cpu_glb_sync, platform.cpu_num);
 
         ipi_cpumsg_handlers = (cpu_msg_handler_t*)&_ipi_cpumsg_handlers_start;
@@ -77,7 +75,7 @@ void cpu_send_msg(cpuid_t trgtcpu, struct cpu_msg *msg)
 bool cpu_get_msg(struct cpu_msg *msg)
 {
     struct cpu_msg_node *node = NULL;
-    if ((node = (struct cpu_msg_node *)list_pop(&cpu.interface.event_list)) !=
+    if ((node = (struct cpu_msg_node *)list_pop(&cpu()->interface.event_list)) !=
         NULL) {
         *msg = node->msg;
         objpool_free(&msg_pool, node);
@@ -116,8 +114,8 @@ void cpu_idle_wakeup()
         cpu_msg_handler();
     }
 
-    if (cpu.vcpu != NULL) {
-        vcpu_run(cpu.vcpu);
+    if (cpu()->vcpu != NULL) {
+        vcpu_run(cpu()->vcpu);
     } else {
         cpu_idle();
     }

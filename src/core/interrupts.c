@@ -50,7 +50,7 @@ inline void interrupts_init()
 {
     interrupts_arch_init();
 
-    if (cpu.id == CPU_MASTER) {
+    if (cpu()->id == CPU_MASTER) {
         interrupts_reserve(IPI_CPU_MSG, cpu_msg_handler);
     }
 
@@ -64,8 +64,8 @@ static inline bool interrupt_is_reserved(irqid_t int_id)
 
 enum irq_res interrupts_handle(irqid_t int_id)
 {
-    if (vm_has_interrupt(cpu.vcpu->vm, int_id)) {
-        vcpu_inject_hw_irq(cpu.vcpu, int_id);
+    if (vm_has_interrupt(cpu()->vcpu->vm, int_id)) {
+        vcpu_inject_hw_irq(cpu()->vcpu, int_id);
 
         return FORWARD_TO_VM;
 

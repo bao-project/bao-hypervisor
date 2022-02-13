@@ -109,10 +109,6 @@ SECTIONS
 	. = BAO_CPU_BASE;
 	_cpu_private_beg = ABSOLUTE(.);
 
-	.cpu_private (NOLOAD) : ALIGN(PAGE_SIZE) {
-		*(.cpu_private)
-	}
-
 	. = BAO_VM_BASE;
 	_cpu_private_end = ABSOLUTE(.);
 	_vm_beg = ABSOLUTE(.);

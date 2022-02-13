@@ -32,7 +32,7 @@ void internal_abort_handler(uint64_t gprs[]) {
     printk("ESR_EL2:\t0x%0lx\n", MRS(ESR_EL2));
     printk("ELR_EL2:\t0x%0lx\n", MRS(ELR_EL2));
     printk("FAR_EL2:\t0x%0lx\n", MRS(FAR_EL2));
-    ERROR("cpu%d internal hypervisor abort - PANIC\n", cpu.id);
+    ERROR("cpu%d internal hypervisor abort - PANIC\n", cpu()->id);
 }
 
 void aborts_data_lower(uint64_t iss, uint64_t far, uint64_t il)
@@ -49,7 +49,7 @@ void aborts_data_lower(uint64_t iss, uint64_t far, uint64_t il)
     }
 
     vaddr_t addr = far;
-    emul_handler_t handler = vm_emul_get_mem(cpu.vcpu->vm, addr);
+    emul_handler_t handler = vm_emul_get_mem(cpu()->vcpu->vm, addr);
     if (handler != NULL) {
         struct emul_access emul;
         emul.addr = addr;
@@ -67,22 +67,22 @@ void aborts_data_lower(uint64_t iss, uint64_t far, uint64_t il)
 
         if (handler(&emul)) {
             uint64_t pc_step = 2 + (2 * il);
-            cpu.vcpu->regs.elr_el2 += pc_step;
+            cpu()->vcpu->regs.elr_el2 += pc_step;
         } else {
             ERROR("data abort emulation failed (0x%x)", far);
         }
     } else {
         ERROR("no emulation handler for abort(0x%x at 0x%x)", far,
-              cpu.vcpu->regs.elr_el2);
+              cpu()->vcpu->regs.elr_el2);
     }
 }
 
 void smc64_handler(uint64_t iss, uint64_t far, uint64_t il)
 {
-    uint64_t smc_fid = cpu.vcpu->regs.x[0];
-    uint64_t x1 = cpu.vcpu->regs.x[1];
-    uint64_t x2 = cpu.vcpu->regs.x[2];
-    uint64_t x3 = cpu.vcpu->regs.x[3];
+    uint64_t smc_fid = cpu()->vcpu->regs.x[0];
+    uint64_t x1 = cpu()->vcpu->regs.x[1];
+    uint64_t x2 = cpu()->vcpu->regs.x[2];
+    uint64_t x3 = cpu()->vcpu->regs.x[3];
 
     int64_t ret = -1;
 
@@ -92,17 +92,17 @@ void smc64_handler(uint64_t iss, uint64_t far, uint64_t il)
         INFO("unknown smc_fid 0x%lx", smc_fid);
     }
 
-    vcpu_writereg(cpu.vcpu, 0, ret);
+    vcpu_writereg(cpu()->vcpu, 0, ret);
     uint64_t pc_step = 2 + (2 * il);
-    cpu.vcpu->regs.elr_el2 += pc_step;
+    cpu()->vcpu->regs.elr_el2 += pc_step;
 }
 
 void hvc64_handler(uint64_t iss, uint64_t far, uint64_t il)
 {
-    uint64_t hvc_fid = cpu.vcpu->regs.x[0];
-    uint64_t x1 = cpu.vcpu->regs.x[1];
-    uint64_t x2 = cpu.vcpu->regs.x[2];
-    uint64_t x3 = cpu.vcpu->regs.x[3];
+    uint64_t hvc_fid = cpu()->vcpu->regs.x[0];
+    uint64_t x1 = cpu()->vcpu->regs.x[1];
+    uint64_t x2 = cpu()->vcpu->regs.x[2];
+    uint64_t x3 = cpu()->vcpu->regs.x[3];
 
     int64_t ret = -HC_E_INVAL_ID;
     switch(hvc_fid){
@@ -111,13 +111,13 @@ void hvc64_handler(uint64_t iss, uint64_t far, uint64_t il)
         break;
     }
 
-    vcpu_writereg(cpu.vcpu, 0, ret);
+    vcpu_writereg(cpu()->vcpu, 0, ret);
 }
 
 void sysreg_handler(uint64_t iss, uint64_t far, uint64_t il)
 {
     vaddr_t reg_addr = iss & ESR_ISS_SYSREG_ADDR;
-    emul_handler_t handler = vm_emul_get_reg(cpu.vcpu->vm, reg_addr);
+    emul_handler_t handler = vm_emul_get_reg(cpu()->vcpu->vm, reg_addr);
     if(handler != NULL){
         struct emul_access emul;
         emul.addr = reg_addr;
@@ -129,13 +129,13 @@ void sysreg_handler(uint64_t iss, uint64_t far, uint64_t il)
 
         if (handler(&emul)) {
             uint64_t pc_step = 2 + (2 * il);
-            cpu.vcpu->regs.elr_el2 += pc_step;
+            cpu()->vcpu->regs.elr_el2 += pc_step;
         } else {
             ERROR("register access emulation failed (0x%x)", reg_addr);
         }
     } else {
         ERROR("no emulation handler for register access (0x%x at 0x%x)", reg_addr,
-              cpu.vcpu->regs.elr_el2);
+              cpu()->vcpu->regs.elr_el2);
     }
 }
 
