@@ -69,7 +69,7 @@ cpu_impl_dir=$(cpu_arch_dir)/impl/$(CPU)
 -include $(cpu_arch_dir)/arch.mk
 
 
-build_dir:=$(cur_dir)/build/$(PLATFORM)
+build_dir:=$(cur_dir)/build/$(PLATFORM)/$(CONFIG)
 bin_dir:=$(cur_dir)/bin/$(PLATFORM)/$(CONFIG)
 directories:=$(build_dir) $(bin_dir)
 
@@ -121,13 +121,14 @@ ifeq ($(config_src),)
 config_dir:=$(CONFIG_REPO)/$(CONFIG)
 config_src:=$(wildcard $(config_dir)/config.c)
 endif
+config_build_dir:=$(build_dir)/config
+directories+=$(config_build_dir)
 
 config_def_generator_src:=$(src_dir)/config_defs_gen.c
-config_def_generator:= \
-	$(config_def_generator_src:$(src_dir)/%.c=$(build_dir)/%)
-config_defs:=$(config_dir)/config_defs.h
-gens+=$(config_defs)
-inc_dirs+=$(dir $(config_defs))
+config_def_generator:=$(config_def_generator_src:$(src_dir)/%.c=$(build_dir)/%)
+config_defs:=$(config_build_dir)/config_defs.h
+gens+=$(config_def_generator) $(config_defs)
+inc_dirs+=$(config_build_dir)
 
 ifneq ($(MAKECMDGOALS), clean)
 ifeq ($(CONFIG),)
@@ -138,8 +139,8 @@ $(error Cant find file for $(CONFIG) config!)
 endif
 endif
 
-config_obj:=$(config_src:%.c=%.o)
-config_dep:=$(config_src:%.c=%.d)
+config_obj:=$(config_src:$(config_dir)/%.c=$(config_build_dir)/%.o)
+config_dep:=$(config_src:$(config_dir)/%.c=$(config_build_dir)/%.d)
 
 deps+=$(config_dep)
 objs-y+=$(config_obj)
@@ -187,7 +188,7 @@ $(ld_script_temp).d: $(ld_script)
 	@$(cc) -x assembler-with-cpp  -MM -MT "$(ld_script_temp) $@" \
 		$(addprefix -I, $(inc_dirs))  $< > $@
 
-$(build_dir)/%.d : $(src_dir)/%.[c,S] | $(gens)
+$(build_dir)/%.d : $(src_dir)/%.[c,S]
 	@echo "Creating dependency	$(patsubst $(cur_dir)/%, %, $<)"
 	@$(cc) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $< > $@	
 
@@ -198,6 +199,8 @@ $(objs-y):
 %.bin: %.elf
 	@echo "Generating binary	$(patsubst $(cur_dir)/%, %, $@)"
 	@$(objcopy) -S -O binary $< $@
+
+$(deps): | $(gens)
 
 #Generate assembly macro definitions from arch/$(ARCH)/$(asm_defs_src) if such
 #	file exists
