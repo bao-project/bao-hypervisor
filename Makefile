@@ -166,8 +166,7 @@ ifeq ($(DEBUG), y)
 endif
 
 override CFLAGS+=-O$(OPTIMIZATIONS) -Wall -Werror -ffreestanding -std=gnu11 \
-	 -mstrict-align -fno-pic $(arch-cflags) $(platform-cflags) $(CPPFLAGS) \
-	 $(debug_flags)
+	-fno-pic $(arch-cflags) $(platform-cflags) $(CPPFLAGS) $(debug_flags)
 
 override ASFLAGS+=$(CFLAGS) $(arch-asflags) $(platform-asflags)
 override LDFLAGS+=-build-id=none -nostdlib $(arch-ldflags) $(plattform-ldflags)
