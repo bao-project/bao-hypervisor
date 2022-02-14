@@ -14,8 +14,7 @@ void cpu_defines()
     DEFINE_OFFSET(CPU_STACK_OFF, struct cpu, stack);
     DEFINE_SIZE(CPU_STACK_SIZE, ((struct cpu*)NULL)->stack);
 
-    DEFINE_OFFSET(CPU_IF_OFF, struct cpu, interface);
-    DEFINE_SIZE(CPU_IF_SIZE, ((struct cpu*)NULL)->interface);
+    DEFINE_SIZE(CPU_IF_SIZE, struct cpuif);
 
     DEFINE_OFFSET(CPU_VCPU_OFF, struct cpu, vcpu);
 }

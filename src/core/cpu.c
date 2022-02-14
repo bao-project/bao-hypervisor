@@ -46,7 +46,9 @@ void cpu_init(cpuid_t cpu_id, paddr_t load_addr)
     cpu_arch_init(cpu_id, load_addr);
 
     cpu()->id = cpu_id;
-    list_init(&cpu()->interface.event_list);
+    cpu()->interface = cpu_if(cpu()->id);
+
+    list_init(&cpu()->interface->event_list);
 
     if (cpu()->id == CPU_MASTER) {
         cpu_sync_init(&cpu_glb_sync, platform.cpu_num);
@@ -75,7 +77,7 @@ void cpu_send_msg(cpuid_t trgtcpu, struct cpu_msg *msg)
 bool cpu_get_msg(struct cpu_msg *msg)
 {
     struct cpu_msg_node *node = NULL;
-    if ((node = (struct cpu_msg_node *)list_pop(&cpu()->interface.event_list)) !=
+    if ((node = (struct cpu_msg_node *)list_pop(&cpu()->interface->event_list)) !=
         NULL) {
         *msg = node->msg;
         objpool_free(&msg_pool, node);

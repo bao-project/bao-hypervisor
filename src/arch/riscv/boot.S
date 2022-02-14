@@ -16,6 +16,7 @@
 #include <arch/csrs.h>
 #include <arch/page_table.h>
 #include <asm_defs.h>
+#include <platform_defs.h>
 
 #define PT_SIZE PAGE_SIZE
 #define PT_LVLS 3
@@ -65,6 +66,7 @@ _dmem_beg_sym: .8byte _dmem_beg
 _enter_vas_sym: .8byte _enter_vas
 _bss_start_sym: .8byte _bss_start
 _bss_end_sym: .8byte _bss_end
+_cpu_if_base_sym: .8byte _cpu_if_base
 
 .data 
 .align 3
@@ -205,6 +207,10 @@ wait_for_bsp:
 map_cpu:
     /* Calculate base phys address of CPU struct -> t0 */
     la      t0, _dmem_phys_beg
+    li      t1, PLAT_CPU_NUM
+    li      t2, CPU_IF_SIZE
+    mul     t1, t1, t2
+    add     t0, t0, t1
     li      t1, (CPU_SIZE + (PT_SIZE*(PT_LVLS-1)))
     mul     t2, t1, a0
     add     t0, t0, t2
@@ -265,7 +271,7 @@ map_cpu:
 
 
 map_cpu_interface:
-    LD_SYM  t2,_dmem_beg_sym
+    LD_SYM  t2,_cpu_if_base_sym
     li      t3, CPU_IF_SIZE
     mul     t3, t3, a0
     add     t2, t2, t3
@@ -273,7 +279,9 @@ map_cpu_interface:
     add     t1, t1, s6
     PTE_PTR     t1, t1, 2, t2
 
-    li      t2, CPU_IF_OFF
+    la      t0, _dmem_phys_beg
+    li      t2, CPU_IF_SIZE
+    mul     t2, t2, a0
     add     t0, t0, t2
     PTE_FILL    t0, t0, PTE_HYP_FLAGS | PTE_PAGE
    
@@ -288,6 +296,10 @@ map_cpu_interface:
     
 setup_cpu:
     la      t0, _dmem_phys_beg
+    li      t1, PLAT_CPU_NUM
+    li      t2, CPU_IF_SIZE
+    mul     t1, t1, t2
+    add     t0, t0, t1
     li      t1, (CPU_SIZE + (PT_SIZE*(PT_LVLS-1)))
     mul     t1, t1, a0
     add     t0, t0, t1   

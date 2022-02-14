@@ -908,7 +908,7 @@ bool root_pool_set_up_bitmap(paddr_t load_addr, struct page_pool *root_pool)
 {
     size_t image_size = (size_t)(&_image_end - &_image_start);
     size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);
-    size_t cpu_size = platform.cpu_num * cpu_boot_alloc_size();
+    size_t cpu_size = platform.cpu_num * (cpu_boot_alloc_size() + sizeof(struct cpuif));
 
     size_t bitmap_size = root_pool->size / (8 * PAGE_SIZE) +
                            ((root_pool->size % (8 * PAGE_SIZE) != 0) ? 1 : 0);
@@ -932,7 +932,7 @@ bool pp_root_reserve_hyp_mem(paddr_t load_addr, struct page_pool *root_pool)
     size_t image_load_size = (size_t)(&_image_load_end - &_image_start);
     size_t image_noload_size = (size_t)(&_image_end - &_image_load_end);
     size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);
-    size_t cpu_size = platform.cpu_num * cpu_boot_alloc_size();
+    size_t cpu_size = platform.cpu_num * (cpu_boot_alloc_size() + sizeof(struct cpuif));
     paddr_t image_noload_addr = load_addr + image_load_size + vm_image_size;
     paddr_t cpu_base_addr = image_noload_addr + image_noload_size;
 
@@ -1128,7 +1128,7 @@ void color_hypervisor(const paddr_t load_addr, struct mem_region *root_region)
     size_t image_noload_size = (size_t)(&_image_end - &_image_load_end);
     size_t image_size = image_load_size + image_noload_size;
     size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);    
-    size_t cpu_boot_size = cpu_boot_alloc_size();
+    size_t cpu_boot_size = cpu_boot_alloc_size() + sizeof(struct cpuif);
     struct page_pool *root_pool = &root_region->page_pool;
     size_t bitmap_size = (root_pool->size / (8 * PAGE_SIZE) +
                           !!(root_pool->size % (8 * PAGE_SIZE) != 0)) *
@@ -1193,20 +1193,17 @@ void color_hypervisor(const paddr_t load_addr, struct mem_region *root_region)
      * all the other CPUs, it is therefore needed to allocate this additional
      * virtual page into global space to allow communication.
      */
-    paddr_t p_intferface_addr;
-    mem_translate(&cpu()->as, (vaddr_t)&cpu_new->interface, &p_intferface_addr);
-    p_interface = mem_ppages_get(
-        p_intferface_addr,
-        NUM_PAGES(sizeof(cpu_new->interface)));
+    p_interface = 
+        mem_alloc_ppages(colors, NUM_PAGES(sizeof(struct cpuif)), false);
     va = mem_alloc_vpage(
         &cpu_new->as, SEC_HYP_GLOBAL,
-        (vaddr_t)&_cpu_if_base + (cpu()->id * sizeof(cpu_new->interface)),
-        NUM_PAGES(sizeof(cpu_new->interface)));
-    if (va != (vaddr_t)&_cpu_if_base + (cpu()->id * sizeof(cpu_new->interface)))
+        (vaddr_t)&_cpu_if_base + (cpu()->id * sizeof(struct cpuif)),
+        NUM_PAGES(sizeof(struct cpuif)));
+    if (va != (vaddr_t)&_cpu_if_base + (cpu()->id * sizeof(struct cpuif)))
         ERROR("Can't allocate address for cpu interface");
 
     mem_map(&cpu_new->as, va, &p_interface,
-            NUM_PAGES(sizeof(cpu_new->interface)),
+            NUM_PAGES(sizeof(struct cpuif)),
             PTE_HYP_FLAGS);
     cpu_sync_barrier(&cpu_glb_sync);
 

@@ -18,6 +18,7 @@
 #include <arch/sysregs.h>
 #include <arch/page_table.h>
 #include <asm_defs.h>
+#include <platform_defs.h>
 
 .data 
 .align 3
@@ -234,8 +235,11 @@ map_cpu:
 	 */
 
 	/* get cpu root pt */
+    adrp x3, _dmem_phys_beg
+    mov x7, #PLAT_CPU_NUM
+    mov x8, #CPU_IF_SIZE
+    madd x3, x7, x8, x3
 	mov x8, #(CPU_SIZE + (PT_SIZE*(PT_LVLS-1)))
-	adrp x3, _dmem_phys_beg
 	madd x3, x0, x8, x3
 	
 	mov	x16, x3	
@@ -295,11 +299,13 @@ map_cpu_interface:
 
 	adr x4, root_l3_pt
 	add x4, x4, x18
-	add x6, x3, #CPU_IF_OFF
+
+    adrp x3, _dmem_phys_beg
+    mov x8, #CPU_IF_SIZE
+	madd x6, x0, x8, x3
 	add x6, x6, #(PTE_HYP_FLAGS | PTE_TABLE)
 
-	mov x8, #CPU_IF_SIZE
-	ldr x7, =_dmem_beg
+	ldr x7, =_cpu_if_base
 	madd x7, x0, x8, x7
 	add x8, x8, x7
 
@@ -336,8 +342,11 @@ setup_cpu:
 	ldr x3, =MAIR_EL2_DFLT
 	msr	MAIR_EL2, x3
 
+    adrp x3, _dmem_phys_beg
+    mov x7, #PLAT_CPU_NUM
+    mov x8, #CPU_IF_SIZE
+    madd x3, x7, x8, x3
 	mov x8, #(CPU_SIZE + (PT_SIZE*(PT_LVLS-1)))
-	adrp x3, _dmem_phys_beg
 	madd x3, x0, x8, x3
 	add x3, x3, #CPU_ROOT_PT_OFF
 	msr TTBR0_EL2, x3
