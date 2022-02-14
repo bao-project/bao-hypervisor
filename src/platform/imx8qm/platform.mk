@@ -25,6 +25,6 @@ drivers = nxp_uart
 platform_description:=imx8qm_desc.c
 
 platform-cppflags =
-platform-cflags = -mcpu=$(CPU)
+platform-cflags = -mtune=$(CPU)
 platform-asflags =
 platform-ldflags =
