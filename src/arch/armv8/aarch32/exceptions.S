@@ -20,3 +20,7 @@
 vcpu_arch_entry:
     # TBD
     b   .
+
+.global _hyp_vector_table
+_hyp_vector_table:
+    b .

@@ -1,5 +1,5 @@
-#ifndef ARCH_PROFILE_CPU
-#define ARCH_PROFILE_CPU
+#ifndef ARCH_PROFILE_CPU_H
+#define ARCH_PROFILE_CPU_H
 
 #include <bao.h>
 #include <arch/psci.h>
@@ -12,4 +12,4 @@ static inline struct cpu* cpu() {
     return (struct cpu*)BAO_CPU_BASE;
 }
 
-#endif /* ARCH_PROFILE_CPU */
+#endif /* ARCH_PROFILE_CPU_H */

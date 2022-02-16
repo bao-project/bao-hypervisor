@@ -26,8 +26,6 @@ SECTIONS
 
 	.boot : {
 		*(.boot)
-        ASSERT((SIZEOF(.boot) <= PAGE_SIZE), 
-			"boot section must fit in one page");
 	}
 
 	.text :  {

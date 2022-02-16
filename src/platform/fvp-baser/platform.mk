@@ -16,6 +16,7 @@
 # Architecture definition
 ARCH:=armv8
 ARCH_PROFILE:=armv8-r
+ARCH_SUB:=aarch32
 # CPU definition
 CPU:=cortex-r52
 

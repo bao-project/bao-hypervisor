@@ -18,6 +18,7 @@
 
 #include <bao.h>
 #include <arch/profile/vm.h>
+#include <arch/subarch/vm.h>
 #include <arch/vgic.h>
 #include <list.h>
 
@@ -57,18 +58,12 @@ struct vcpu_arch {
     struct list vgic_spilled;
 };
 
-struct arch_regs {
-    uint64_t x[31];
-    uint64_t elr_el2;
-    uint64_t spsr_el2;
-} __attribute__((aligned(16)));  // makes size always aligned to 16 to respect
-                                 // stack alignment
-
 struct vcpu* vm_get_vcpu_by_mpidr(struct vm* vm, unsigned long mpidr);
 void vcpu_arch_entry();
 
 bool vcpu_arch_profile_on(struct vcpu* vcpu);
 void vcpu_arch_profile_init(struct vcpu* vcpu, struct vm* vm);
+void vcpu_arch_profile_reset(struct vcpu* vcpu);
 
 static inline void vcpu_arch_inject_hw_irq(struct vcpu* vcpu, uint64_t id)
 {

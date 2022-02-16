@@ -20,7 +20,7 @@
 
 void as_arch_init(struct addr_space* as)
 {
-    /* TBD */
+
 }
 
 bool mem_translate(struct addr_space* as, vaddr_t va, paddr_t* pa)

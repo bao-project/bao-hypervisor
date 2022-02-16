@@ -25,4 +25,6 @@ void vmm_arch_init()
                    HCR_TSC_BIT;
 
     sysreg_hcr_el2_write(hcr);
+
+    sysreg_cptr_el2_write(0);
 }

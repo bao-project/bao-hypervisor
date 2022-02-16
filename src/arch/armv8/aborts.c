@@ -20,27 +20,27 @@
 #include <emul.h>
 #include <hypercall.h>
 
-typedef void (*abort_handler_t)(uint64_t, uint64_t, uint64_t);
+typedef void (*abort_handler_t)(unsigned long, unsigned long, unsigned long);
 
-void internal_abort_handler(uint64_t gprs[]) {
+void internal_abort_handler(unsigned long gprs[]) {
 
     for(size_t i = 0; i < 31; i++) {
         printk("x%d:\t\t0x%0lx\n", i, gprs[i]);
     }
-    printk("SP_EL2:\t\t0x%0lx\n", gprs[32]);
-    printk("ESR_EL2:\t0x%0lx\n", sysreg_esr_el2_read());
-    printk("ELR_EL2:\t0x%0lx\n", sysreg_elr_el2_read());
-    printk("FAR_EL2:\t0x%0lx\n", sysreg_far_el2_read());
+    printk("SP:\t\t0x%0lx\n", gprs[32]);
+    printk("ESR:\t0x%0lx\n", sysreg_esr_el2_read());
+    printk("ELR:\t0x%0lx\n", sysreg_elr_el2_read());
+    printk("FAR:\t0x%0lx\n", sysreg_far_el2_read());
     ERROR("cpu%d internal hypervisor abort - PANIC\n", cpu()->id);
 }
 
-void aborts_data_lower(uint64_t iss, uint64_t far, uint64_t il)
+void aborts_data_lower(unsigned long iss, unsigned long far, unsigned long il)
 {
     if (!(iss & ESR_ISS_DA_ISV_BIT) || (iss & ESR_ISS_DA_FnV_BIT)) {
         ERROR("no information to handle data abort (0x%x)", far);
     }
 
-    uint64_t DSFC =
+    unsigned long DSFC =
         bit64_extract(iss, ESR_ISS_DA_DSFC_OFF, ESR_ISS_DA_DSFC_LEN) & (0xf << 2);
 
     if (DSFC != ESR_ISS_DA_DSFC_TRNSLT) {
@@ -65,29 +65,29 @@ void aborts_data_lower(uint64_t iss, uint64_t far, uint64_t il)
         // the vm
 
         if (handler(&emul)) {
-            uint64_t pc_step = 2 + (2 * il);
-            cpu()->vcpu->regs.elr_el2 += pc_step;
+            unsigned long pc_step = 2 + (2 * il);
+            vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + pc_step);
         } else {
             ERROR("data abort emulation failed (0x%x)", far);
         }
     } else {
         ERROR("no emulation handler for abort(0x%x at 0x%x)", far,
-              cpu()->vcpu->regs.elr_el2);
+              vcpu_readpc(cpu()->vcpu));
     }
 }
 
 __attribute__((weak))
-void smc64_handler(uint64_t iss, uint64_t far, uint64_t il)
+void smc_handler(unsigned long iss, unsigned long far, unsigned long il)
 {
     WARNING("smc call but there is no handler");
 }
 
-void hvc64_handler(uint64_t iss, uint64_t far, uint64_t il)
+void hvc_handler(unsigned long iss, unsigned long far, unsigned long il)
 {
-    uint64_t hvc_fid = cpu()->vcpu->regs.x[0];
-    uint64_t x1 = cpu()->vcpu->regs.x[1];
-    uint64_t x2 = cpu()->vcpu->regs.x[2];
-    uint64_t x3 = cpu()->vcpu->regs.x[3];
+    unsigned long hvc_fid = vcpu_readreg(cpu()->vcpu, 0);
+    unsigned long x1 = vcpu_readreg(cpu()->vcpu, 1);
+    unsigned long x2 = vcpu_readreg(cpu()->vcpu, 2);
+    unsigned long x3 = vcpu_readreg(cpu()->vcpu, 3);
 
     int64_t ret = -HC_E_INVAL_ID;
     switch(hvc_fid){
@@ -99,7 +99,7 @@ void hvc64_handler(uint64_t iss, uint64_t far, uint64_t il)
     vcpu_writereg(cpu()->vcpu, 0, ret);
 }
 
-void sysreg_handler(uint64_t iss, uint64_t far, uint64_t il)
+void sysreg_handler(unsigned long iss, unsigned long far, unsigned long il)
 {
     vaddr_t reg_addr = iss & ESR_ISS_SYSREG_ADDR;
     emul_handler_t handler = vm_emul_get_reg(cpu()->vcpu->vm, reg_addr);
@@ -113,34 +113,37 @@ void sysreg_handler(uint64_t iss, uint64_t far, uint64_t il)
         emul.sign_ext = false;
 
         if (handler(&emul)) {
-            uint64_t pc_step = 2 + (2 * il);
-            cpu()->vcpu->regs.elr_el2 += pc_step;
+            unsigned long pc_step = 2 + (2 * il);
+            vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + pc_step);
         } else {
             ERROR("register access emulation failed (0x%x)", reg_addr);
         }
     } else {
         ERROR("no emulation handler for register access (0x%x at 0x%x)", reg_addr,
-              cpu()->vcpu->regs.elr_el2);
+              vcpu_readpc(cpu()->vcpu));
     }
 }
 
 abort_handler_t abort_handlers[64] = {[ESR_EC_DALEL] = aborts_data_lower,
-                                      [ESR_EC_SMC64] = smc64_handler,
+                                      [ESR_EC_SMC32] = smc_handler,
+                                      [ESR_EC_SMC64] = smc_handler,
                                       [ESR_EC_SYSRG] = sysreg_handler,
-                                      [ESR_EC_HVC64] = hvc64_handler};
+                                      [ESR_EC_SYSRG] = sysreg_handler,
+                                      [ESR_EC_HVC32] = hvc_handler,
+                                      [ESR_EC_HVC64] = hvc_handler,};
 
 void aborts_sync_handler()
 {
-    uint64_t esr = sysreg_esr_el2_read();
-    uint64_t far = sysreg_far_el2_read();
-    uint64_t hpfar = sysreg_hpfar_el2_read();
-    uint64_t ipa_fault_addr = 0;
+    unsigned long esr = sysreg_esr_el2_read();
+    unsigned long far = sysreg_far_el2_read();
+    unsigned long hpfar = sysreg_hpfar_el2_read();
+    unsigned long ipa_fault_addr = 0;
 
     ipa_fault_addr = (far & 0xFFF) | (hpfar << 8);
 
-    uint64_t ec = bit64_extract(esr, ESR_EC_OFF, ESR_EC_LEN);
-    uint64_t il = bit64_extract(esr, ESR_IL_OFF, ESR_IL_LEN);
-    uint64_t iss = bit64_extract(esr, ESR_ISS_OFF, ESR_ISS_LEN);
+    unsigned long ec = bit64_extract(esr, ESR_EC_OFF, ESR_EC_LEN);
+    unsigned long il = bit64_extract(esr, ESR_IL_OFF, ESR_IL_LEN);
+    unsigned long iss = bit64_extract(esr, ESR_ISS_OFF, ESR_ISS_LEN);
 
     abort_handler_t handler = abort_handlers[ec];
     if (handler)
