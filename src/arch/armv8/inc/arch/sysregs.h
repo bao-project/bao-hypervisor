@@ -18,6 +18,7 @@
 
 #include <bao.h>
 #include <bit.h>
+#include <arch/profile/sysregs.h>
 
 /* ID_AA64MMFR0_EL1, AArch64 Memory Model Feature Register 0 */
 #define ID_AA64MMFR0_PAR_OFF 0
@@ -34,7 +35,7 @@
 /* MPIDR_EL1, Multiprocessor Affinity Register */
 
 #define MPIDR_RES1 (0x80000000)
-#define MPIDR_RES0_MSK  ~((0xffffffull << 49) | (0x1full << 25))
+#define MPIDR_RES0_MSK  ~(0x1ful << 25)
 #define MPIDR_AFFINITY_BITS (8)
 #define MPIDR_U_BIT (1UL << 30)
 #define MPIDR_AFF_MSK (0xffff) //we are only supporting 2 affinity levels
@@ -454,14 +455,6 @@
 #define ICH_LR15_EL2        S3_4_C12_C13_7
 
 #ifndef __ASSEMBLER__
-
-#define MRS(reg) ({\
-    unsigned long _temp;\
-    asm volatile("mrs %0, " XSTR(reg) "\n\r" : "=r"(_temp));\
-    _temp;\
-})
-
-#define MSR(reg, var) asm volatile("msr " XSTR(reg)  ", %0\n\r" ::"r"(var))
 
 #define SYSREG_ENC_ADDR(Op0, Op1, CRn, CRm, Op2) \
     ((((Op0) & 0x3) << 20) | \

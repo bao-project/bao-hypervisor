@@ -34,7 +34,7 @@ bool vgic_int_has_other_target(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     bool priv = gic_is_priv(interrupt->id);
     bool routed_here =
-        !priv && !(interrupt->phys.route ^ (MRS(MPIDR_EL1) & MPIDR_AFF_MSK));
+        !priv && !(interrupt->phys.route ^ (sysreg_mpidr_el1_read() & MPIDR_AFF_MSK));
     bool route_valid = interrupt->phys.route != GICD_IROUTER_INV;
     bool any = !priv && vgic_broadcast(vcpu, interrupt);
     return any || (!routed_here && route_valid);
@@ -50,7 +50,7 @@ uint8_t vgic_int_ptarget_mask(struct vcpu *vcpu, struct vgic_int *interrupt)
 }
 
 bool vgic_int_set_route(struct vcpu *vcpu, struct vgic_int *interrupt, 
-                        unsigned long route)
+                        uint64_t route)
 {
     unsigned long phys_route;
     unsigned long prev_route = interrupt->route;
@@ -74,7 +74,7 @@ bool vgic_int_set_route(struct vcpu *vcpu, struct vgic_int *interrupt,
     return prev_route != interrupt->route;
 }
 
-unsigned long vgic_int_get_route(struct vcpu *vcpu, struct vgic_int *interrupt)
+uint64_t vgic_int_get_route(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     if (gic_is_priv(interrupt->id)) return 0;
     return interrupt->route;
@@ -289,7 +289,7 @@ void vgic_init(struct vm *vm, const struct vgic_dscrp *vgic_dscrp)
     list_foreach(vm->vcpu_list, struct vcpu, vcpu)
     {
         uint64_t typer = (uint64_t)vcpu->id << GICR_TYPER_PRCNUM_OFF;
-        typer |= (vcpu->arch.vmpidr & MPIDR_AFF_MSK) << GICR_TYPER_AFFVAL_OFF;
+        typer |= ((uint64_t)vcpu->arch.vmpidr & MPIDR_AFF_MSK) << GICR_TYPER_AFFVAL_OFF;
         typer |= !!(vcpu->id == vcpu->vm->cpu_num - 1) << GICR_TYPER_LAST_OFF;
         vcpu->arch.vgic_priv.vgicr.TYPER = typer;
 

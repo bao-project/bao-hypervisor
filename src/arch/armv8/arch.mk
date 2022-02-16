@@ -13,9 +13,12 @@
  #
 ##
 
-CROSS_COMPILE ?= aarch64-none-elf-
+ARCH_PROFILE?=armv8-a
+arch_profile_dir:=$(cpu_arch_dir)/$(ARCH_PROFILE)
+include $(arch_profile_dir)/profile.mk
+src_dirs+=$(arch_profile_dir)
 
-arch-cppflags = -DGIC_VERSION=$(GIC_VERSION)
-arch-cflags = -march=armv8-a -mcmodel=large -mgeneral-regs-only -mstrict-align
-arch-asflags =
-arch-ldflags =
+arch-cppflags+=-DGIC_VERSION=$(GIC_VERSION)
+arch-cflags+=
+arch-asflags+=
+arch-ldflags+=

@@ -39,6 +39,7 @@ struct vcpu;
 
 struct cpu {
     cpuid_t id;
+    
     struct addr_space as;
 
     struct vcpu* vcpu;
@@ -46,8 +47,6 @@ struct cpu {
     struct cpu_arch arch;
 
     struct cpuif* interface;
-
-    pte_t root_pt[HYP_ROOT_PT_SIZE/sizeof(pte_t)] __attribute__((aligned(HYP_ROOT_PT_SIZE)));
 
     uint8_t stack[STACK_SIZE] __attribute__((aligned(PAGE_SIZE)));
     

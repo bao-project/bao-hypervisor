@@ -53,7 +53,8 @@ _reset_handler:
 	 * as arguments:
 	 * 		x0 -> contains cpu id
 	 *		x1 -> contains image base load address
-	 * Register x9 is reserved to indicate if the current cpu is master (negated)
+	 * Register x9 is reserved to indicate if the current cpu is master (negated).
+     * Register x1 is reserved to contain the cpu root page table address.
 	 * Register x18 contains the size of the allocated physical memory between
 	 * the loadable sections of the image and the non-loadable
 	 */
@@ -239,7 +240,7 @@ map_cpu:
     mov x7, #PLAT_CPU_NUM
     mov x8, #CPU_IF_SIZE
     madd x3, x7, x8, x3
-	mov x8, #(CPU_SIZE + (PT_SIZE*(PT_LVLS-1)))
+	mov x8, #(CPU_SIZE + (PT_SIZE*PT_LVLS))
 	madd x3, x0, x8, x3
 	
 	mov	x16, x3	
@@ -247,7 +248,7 @@ map_cpu:
 	bl	clear	
 
 	/* Get pointer to root page table */
-	add x4, x3, #CPU_ROOT_PT_OFF
+	add x4, x3, #CPU_SIZE
 
 	/* map original bootstrap flat mappings */
 	PTE_INDEX_ASM x5, x1, 0 
@@ -263,13 +264,11 @@ map_cpu:
 	str x6, [x4, x5]
 
 	ldr x5, =(PTE_INDEX(0, BAO_CPU_BASE)*8)
-	//add x6, x4, #PT_SIZE
-    add x6, x3, #CPU_SIZE
+	add x6, x4, #PT_SIZE
 	add x6, x6, #(PTE_HYP_FLAGS | PTE_TABLE)
 	str x6, [x4, x5]
 
-	//add x4, x4, #PT_SIZE
-    add x4, x3, #CPU_SIZE
+	add x4, x4, #PT_SIZE
 	ldr x5, =(PTE_INDEX(1, BAO_CPU_BASE)*8)
 	add x6, x4, #PT_SIZE
 	add x6, x6, #(PTE_HYP_FLAGS | PTE_TABLE)
@@ -283,7 +282,7 @@ map_cpu:
 
 	add x4, x4, #PT_SIZE
 	ldr x7, =BAO_CPU_BASE
-	add x8, x7, #CPU_SIZE
+	add x8, x7, #(CPU_SIZE+PT_SIZE)
 	mov x6, x3
 	add x6, x6, #(PTE_HYP_FLAGS | PTE_TABLE)
 1:
@@ -346,9 +345,9 @@ setup_cpu:
     mov x7, #PLAT_CPU_NUM
     mov x8, #CPU_IF_SIZE
     madd x3, x7, x8, x3
-	mov x8, #(CPU_SIZE + (PT_SIZE*(PT_LVLS-1)))
+	mov x8, #(CPU_SIZE + (PT_SIZE*PT_LVLS))
 	madd x3, x0, x8, x3
-	add x3, x3, #CPU_ROOT_PT_OFF
+	add x3, x3, #CPU_SIZE
 	msr TTBR0_EL2, x3
 
 	/* set up cpu stack */
@@ -389,7 +388,7 @@ _enter_vas:
 
 	/* Remove temporary mapping - the L1 page holding it leaks */
 	ldr x4, =BAO_CPU_BASE
-	add x4, x4, #CPU_ROOT_PT_OFF
+	add x4, x4, #CPU_SIZE
 	PTE_INDEX_ASM x5, x1, 0 
 	str xzr, [x4, x5]
 
@@ -530,7 +529,7 @@ _enter_vas_warm:
 	ldr x4, =BAO_CPU_BASE
 	add x3, x4, #(CPU_STACK_OFF+CPU_STACK_SIZE)
 
-	add x4, x4, #CPU_ROOT_PT_OFF
+	add x4, x4, #CPU_SIZE
 	PTE_INDEX_ASM x5, x1, 0 
 	str xzr, [x4, x5]
     tlbi	alle2

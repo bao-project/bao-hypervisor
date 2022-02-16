@@ -49,6 +49,7 @@ platforms_dir=$(src_dir)/platform
 configs_dir=$(cur_dir)/configs
 CONFIG_REPO?=$(configs_dir)
 scripts_dir:=$(cur_dir)/scripts
+src_dirs:=
 
 #Plataform must be defined excpet for clean target
 ifeq ($(PLATFORM),) 
@@ -67,14 +68,17 @@ endif
 -include $(platform_dir)/platform.mk	# must define ARCH and CPU variables
 cpu_arch_dir=$(src_dir)/arch/$(ARCH)
 -include $(cpu_arch_dir)/arch.mk
+ifneq ($(MAKECMDGOALS), clean)
+ core_mem_prot_dir:=$(core_dir)/$(arch_mem_prot)
+endif
 
 
 build_dir:=$(cur_dir)/build/$(PLATFORM)/$(CONFIG)
 bin_dir:=$(cur_dir)/bin/$(PLATFORM)/$(CONFIG)
 directories:=$(build_dir) $(bin_dir)
 
-src_dirs:= $(cpu_arch_dir) $(lib_dir) $(core_dir) $(platform_dir) \
-    $(addprefix $(drivers_dir)/, $(drivers))
+src_dirs+=$(cpu_arch_dir) $(lib_dir) $(core_dir) $(core_mem_prot_dir) \
+	$(platform_dir) $(addprefix $(drivers_dir)/, $(drivers))
 inc_dirs:=$(addsuffix /inc, $(src_dirs))
 
 # Setup list of objects for compilation
@@ -86,7 +90,6 @@ objs-y+=$(addprefix $(lib_dir)/, $(lib-objs-y))
 objs-y+=$(addprefix $(core_dir)/, $(core-objs-y))
 objs-y+=$(addprefix $(platform_dir)/, $(boards-objs-y))
 objs-y+=$(addprefix $(drivers_dir)/, $(drivers-objs-y))
-
 
 deps+=$(patsubst %.o,%.d,$(objs-y))
 objs-y:=$(patsubst $(src_dir)%, $(build_dir)%, $(objs-y))

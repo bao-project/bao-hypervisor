@@ -13,30 +13,25 @@
  *
  */
 
-#ifndef __IOMMU_H__
-#define __IOMMU_H__
+#ifndef IO_H
+#define IO_H
 
 #include <bao.h>
-#include <arch/iommu.h>
+#include <mem_prot/io.h>
 #include <list.h>
 
 struct vm_config;
 struct vm;
 
-struct iommu_vm {
-    struct iommu_vm_arch arch;
+struct vm_io {
+    struct io_prot prot;
 };
 
 /* Mainly for HW initialization. */
-void iommu_init();
+void io_init();
 
 /* iommu api for vms. */
-bool iommu_vm_init(struct vm *vm, const struct vm_config *config);
-bool iommu_vm_add_device(struct vm *vm, streamid_t dev_id);
+bool io_vm_init(struct vm *vm, const struct vm_config *config);
+bool io_vm_add_device(struct vm *vm, streamid_t dev_id);
 
-/* Must be implemented by architecture. */
-bool iommu_arch_init();
-bool iommu_arch_vm_init(struct vm *vm, const struct vm_config *config);
-bool iommu_arch_vm_add_device(struct vm *vm, streamid_t id);
-
-#endif
+#endif /* IO_H_ */

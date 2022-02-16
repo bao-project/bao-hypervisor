@@ -26,7 +26,7 @@
 #include <emul.h>
 #include <interrupts.h>
 #include <bitmap.h>
-#include <iommu.h>
+#include <io.h>
 #include <ipc.h>
 
 struct vm_mem_region {
@@ -81,7 +81,7 @@ struct vm {
     struct list emul_mem_list;
     struct list emul_reg_list;
 
-    struct iommu_vm iommu;
+    struct vm_io io;
 
     BITMAP_ALLOC(interrupt_bitmap, MAX_INTERRUPTS);
 
@@ -150,6 +150,10 @@ static inline void vcpu_inject_irq(struct vcpu *vcpu, irqid_t id)
 {
     vcpu_arch_inject_irq(vcpu, id);
 }
+
+/* ------------------------------------------------------------*/
+
+void vm_mem_prot_init(struct vm* vm, const struct vm_config* config);
 
 /* ------------------------------------------------------------*/
 

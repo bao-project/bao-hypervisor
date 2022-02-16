@@ -15,7 +15,7 @@
  *
  */
 
-#include <iommu.h>
+#include <io.h>
 #include <arch/smmuv2.h>
 #include <config.h>
 
@@ -31,7 +31,7 @@ bool iommu_arch_init()
 
 static ssize_t iommu_vm_arch_init_ctx(struct vm *vm)
 {
-    ssize_t ctx_id = vm->iommu.arch.ctx_id;
+    ssize_t ctx_id = vm->io.prot.mmu.ctx_id;
     if (ctx_id < 0) {
 
         /* Set up ctx bank to vm address space in an available ctx. */
@@ -40,7 +40,7 @@ static ssize_t iommu_vm_arch_init_ctx(struct vm *vm)
             paddr_t rootpt;
             mem_translate(&cpu()->as, (vaddr_t)vm->as.pt.root, &rootpt);
             smmu_write_ctxbnk(ctx_id, rootpt, vm->id);
-            vm->iommu.arch.ctx_id = ctx_id;
+            vm->io.prot.mmu.ctx_id = ctx_id;
         } else {
             INFO("iommu: smmuv2 could not allocate ctx for vm: %d", vm->id);
         }
@@ -53,7 +53,7 @@ static ssize_t iommu_vm_arch_init_ctx(struct vm *vm)
 static bool iommu_vm_arch_add(struct vm *vm, streamid_t mask, streamid_t id)
 {
     ssize_t vm_ctx = iommu_vm_arch_init_ctx(vm);
-    streamid_t glbl_mask = vm->iommu.arch.global_mask;
+    streamid_t glbl_mask = vm->io.prot.mmu.global_mask;
     streamid_t prep_mask = (mask & SMMU_ID_MSK) | glbl_mask;
     streamid_t prep_id = (id & SMMU_ID_MSK);
     bool group = (bool) mask;
@@ -82,9 +82,9 @@ inline bool iommu_arch_vm_add_device(struct vm *vm, streamid_t id)
 
 bool iommu_arch_vm_init(struct vm *vm, const struct vm_config *config)
 {
-    vm->iommu.arch.global_mask = 
+    vm->io.prot.mmu.global_mask = 
         config->platform.arch.smmu.global_mask | platform.arch.smmu.global_mask;
-    vm->iommu.arch.ctx_id = -1;
+    vm->io.prot.mmu.ctx_id = -1;
 
     /* This section relates only to arm's iommu so we parse it here. */
     for (size_t i = 0; i < config->platform.arch.smmu.group_num; i++) {

@@ -121,7 +121,7 @@ static void smmu_check_features()
     size_t ipasize = bit32_extract(smmu.hw.glbl_rs0->IDR2, SMMUV2_IDR2_IAS_OFF,
                               SMMUV2_IDR2_IAS_LEN);
     size_t parange = 0;
-    parange = MRS(ID_AA64MMFR0_EL1);
+    parange = sysreg_id_aa64mmfr0_el1_read();
     parange &= ID_AA64MMFR0_PAR_MSK;
 
     if (pasize < parange) {

@@ -15,32 +15,27 @@
  *
  */
 
-#include <iommu.h>
+#include <io.h>
 #include <vm.h>
 
 struct iommu_device {
     streamid_t id;
 };
 
-struct iommu_dev_node {
-    node_t node;
-    struct iommu_device dev;
-};
-
 /* Mainly for HW initialization. */
-void iommu_init()
+void io_init()
 {
     iommu_arch_init();
 }
 
 /* Configure architecture dependent stuff. */
-bool iommu_vm_init(struct vm *vm, const struct vm_config *config)
+bool io_vm_init(struct vm *vm, const struct vm_config *config)
 {
     return iommu_arch_vm_init(vm, config);
 }
 
 /* Allows vms to add devices to their address space. */
-bool iommu_vm_add_device(struct vm *vm, streamid_t dev_id)
+bool io_vm_add_device(struct vm *vm, streamid_t dev_id)
 {
     bool res = false;
 

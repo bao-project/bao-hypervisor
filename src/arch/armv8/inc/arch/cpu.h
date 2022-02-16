@@ -17,20 +17,18 @@
 #define __ARCH_CPU_H__
 
 #include <bao.h>
-#include <arch/psci.h>
+#include <arch/profile/cpu.h>
 
 #define CPU_MAX (8UL)
 
 struct cpu_arch {
-    struct psci_off_state psci_off_state;
+    struct cpu_arch_profile profile;
     unsigned long mpidr;
 };
 
-static inline struct cpu* cpu() {
-    return (struct cpu*)BAO_CPU_BASE;
-}
-
 unsigned long cpu_id_to_mpidr(cpuid_t id);
+void cpu_arch_profile_init(cpuid_t cpuid, paddr_t load_addr);
+void cpu_arch_profile_idle();
 
 extern cpuid_t CPU_MASTER;
 

@@ -35,7 +35,7 @@ void cache_arch_enumerate(struct cache *dscrp)
 
     dscrp->lvls = 0;
 
-    clidr = MRS(CLIDR_EL1);
+    clidr = sysreg_clidr_el1_read();
     for(size_t i = 0; i < CLIDR_CTYPE_NUM; i++){
         if((temp = bit64_extract(clidr, i*CLIDR_CTYPE_LEN, CLIDR_CTYPE_LEN)) != 0){
             dscrp->lvls++;
@@ -72,8 +72,8 @@ void cache_arch_enumerate(struct cache *dscrp)
 
         if(dscrp->type[lvl] != INSTRUCTION){
             csselr = bit64_clear(csselr, CSSELR_IND_BIT);
-            MSR(CSSELR_EL1, csselr);
-            ccsidr = MRS(CCSIDR_EL1);
+            sysreg_csselr_el1_write(csselr);
+            ccsidr = sysreg_ccsidr_el1_read();
 
             dscrp->line_size[lvl][0] = 1UL << (bit64_extract(ccsidr, 
                 CCSIDR_LINESIZE_OFF, CCSIDR_LINESIZE_LEN) + 4);
@@ -87,8 +87,8 @@ void cache_arch_enumerate(struct cache *dscrp)
         
         if(dscrp->type[lvl] == SEPARATE || dscrp->type[lvl] == INSTRUCTION){
             csselr = bit64_set(csselr, CSSELR_IND_BIT);
-            MSR(CSSELR_EL1, csselr);
-            ccsidr = MRS(CCSIDR_EL1);
+            sysreg_csselr_el1_write(csselr);
+            ccsidr = sysreg_ccsidr_el1_read();
 
             dscrp->line_size[lvl][1] = 1UL << (bit64_extract(ccsidr, 
                 CCSIDR_LINESIZE_OFF, CCSIDR_LINESIZE_LEN) + 4);
@@ -97,7 +97,7 @@ void cache_arch_enumerate(struct cache *dscrp)
             dscrp->numset[lvl][1] = bit64_extract(ccsidr, CCSIDR_NUMSETS_OFF, 
                 CCSIDR_NUMSETS_LEN) + 1;
 
-            ctr = MRS(CTR_EL0);
+            ctr = sysreg_ctr_el0_read();
             if((ctr & BIT64_MASK(CTR_L1LP_OFF, CTR_L1LP_LEN)) == CTR_L1LP_PIPT){
                 dscrp->indexed[lvl][1] = PIPT;
             } else {
@@ -111,14 +111,12 @@ void cache_arch_enumerate(struct cache *dscrp)
 void cache_flush_range(vaddr_t base, size_t size)
 {
     vaddr_t cache_addr = base;
-    uint64_t ctr = MRS(CTR_EL0);
+    uint64_t ctr = sysreg_ctr_el0_read();
     size_t min_line_size = 1UL << bit64_extract(ctr, CTR_DMINLINE_OFF,
         CTR_DMINLINE_LEN);
 
     while(cache_addr < (base + size)){
-        asm volatile (
-            "dc civac, %0\n\t" 
-            :: "r"(cache_addr));
+        arm_dc_civac(cache_addr);
         cache_addr += min_line_size;
     }
 

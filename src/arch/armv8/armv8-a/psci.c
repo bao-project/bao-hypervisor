@@ -39,13 +39,13 @@ void psci_wake_from_off(){
     }
 
     /* update vcpu()->psci_ctx */
-    spin_lock(&cpu()->vcpu->arch.psci_ctx.lock);
-    if(cpu()->vcpu->arch.psci_ctx.state == ON_PENDING){
-        vcpu_arch_reset(cpu()->vcpu, cpu()->vcpu->arch.psci_ctx.entrypoint);
-        cpu()->vcpu->arch.psci_ctx.state = ON;
-        cpu()->vcpu->regs.x[0] = cpu()->vcpu->arch.psci_ctx.context_id;
+    spin_lock(&cpu()->vcpu->arch.profile.psci_ctx.lock);
+    if(cpu()->vcpu->arch.profile.psci_ctx.state == ON_PENDING){
+        vcpu_arch_reset(cpu()->vcpu, cpu()->vcpu->arch.profile.psci_ctx.entrypoint);
+        cpu()->vcpu->arch.profile.psci_ctx.state = ON;
+        cpu()->vcpu->regs.x[0] = cpu()->vcpu->arch.profile.psci_ctx.context_id;
     }
-    spin_unlock(&cpu()->vcpu->arch.psci_ctx.lock);
+    spin_unlock(&cpu()->vcpu->arch.profile.psci_ctx.lock);
 }
 
 void psci_cpumsg_handler(uint32_t event, uint64_t data){
@@ -72,10 +72,10 @@ int32_t psci_cpu_suspend_handler(uint32_t power_state, unsigned long entrypoint,
 
     if(state_type){
         //PSCI_STATE_TYPE_POWERDOWN:
-        spin_lock(&cpu()->vcpu->arch.psci_ctx.lock);
-        cpu()->vcpu->arch.psci_ctx.entrypoint = entrypoint;
-        cpu()->vcpu->arch.psci_ctx.context_id = context_id;
-        spin_unlock(&cpu()->vcpu->arch.psci_ctx.lock);
+        spin_lock(&cpu()->vcpu->arch.profile.psci_ctx.lock);
+        cpu()->vcpu->arch.profile.psci_ctx.entrypoint = entrypoint;
+        cpu()->vcpu->arch.profile.psci_ctx.context_id = context_id;
+        spin_unlock(&cpu()->vcpu->arch.profile.psci_ctx.lock);
         ret = psci_power_down(PSCI_WAKEUP_POWERDOWN);
     } else {
         //PSCI_STATE_TYPE_STANDBY:
@@ -103,15 +103,15 @@ int32_t psci_cpu_off_handler(void)
      *  call cpu_on on this vcpu()-> 
      */
 
-    spin_lock(&cpu()->vcpu->arch.psci_ctx.lock);
-    cpu()->vcpu->arch.psci_ctx.state = OFF;
-    spin_unlock(&cpu()->vcpu->arch.psci_ctx.lock);
+    spin_lock(&cpu()->vcpu->arch.profile.psci_ctx.lock);
+    cpu()->vcpu->arch.profile.psci_ctx.state = OFF;
+    spin_unlock(&cpu()->vcpu->arch.profile.psci_ctx.lock);
 
     cpu_idle();
 
-    spin_lock(&cpu()->vcpu->arch.psci_ctx.lock);
-    cpu()->vcpu->arch.psci_ctx.state = ON;
-    spin_unlock(&cpu()->vcpu->arch.psci_ctx.lock);
+    spin_lock(&cpu()->vcpu->arch.profile.psci_ctx.lock);
+    cpu()->vcpu->arch.profile.psci_ctx.state = ON;
+    spin_unlock(&cpu()->vcpu->arch.profile.psci_ctx.lock);
 
     return PSCI_E_DENIED;
 }
@@ -126,15 +126,15 @@ int32_t psci_cpu_on_handler(unsigned long target_cpu, unsigned long entrypoint,
     if (target_vcpu != NULL){
 
         bool already_on = true;
-        spin_lock(&cpu()->vcpu->arch.psci_ctx.lock);
-        if(target_vcpu->arch.psci_ctx.state == OFF){
-            target_vcpu->arch.psci_ctx.state = ON_PENDING;
-            target_vcpu->arch.psci_ctx.entrypoint = entrypoint;
-            target_vcpu->arch.psci_ctx.context_id = context_id;
+        spin_lock(&cpu()->vcpu->arch.profile.psci_ctx.lock);
+        if(target_vcpu->arch.profile.psci_ctx.state == OFF){
+            target_vcpu->arch.profile.psci_ctx.state = ON_PENDING;
+            target_vcpu->arch.profile.psci_ctx.entrypoint = entrypoint;
+            target_vcpu->arch.profile.psci_ctx.context_id = context_id;
             fence_sync_write();
             already_on = false;
         } 
-        spin_unlock(&cpu()->vcpu->arch.psci_ctx.lock);
+        spin_unlock(&cpu()->vcpu->arch.profile.psci_ctx.lock);
 
         if(already_on){
             return PSCI_E_ALREADY_ON;
@@ -241,27 +241,27 @@ extern uint8_t root_l1_flat_pt;
 
 static void psci_save_state(enum wakeup_reason wakeup_reason){
 
-    cpu()->arch.psci_off_state.tcr_el2 = MRS(TCR_EL2);
-    cpu()->arch.psci_off_state.ttbr0_el2 = MRS(TTBR0_EL2);
-    cpu()->arch.psci_off_state.mair_el2 = MRS(MAIR_EL2);
-    cpu()->arch.psci_off_state.cptr_el2 = MRS(CPTR_EL2);
-    cpu()->arch.psci_off_state.hcr_el2 = MRS(HCR_EL2);
-    cpu()->arch.psci_off_state.vmpidr_el2 = MRS(VMPIDR_EL2);
-    cpu()->arch.psci_off_state.vtcr_el2 = MRS(VTCR_EL2);
-    cpu()->arch.psci_off_state.vttbr_el2 = MRS(VTTBR_EL2);
+    cpu()->arch.profile.psci_off_state.tcr_el2 = sysreg_tcr_el2_read();
+    cpu()->arch.profile.psci_off_state.ttbr0_el2 = sysreg_ttbr0_el2_read();
+    cpu()->arch.profile.psci_off_state.mair_el2 = sysreg_mair_el2_read();
+    cpu()->arch.profile.psci_off_state.cptr_el2 = sysreg_cptr_el2_read();
+    cpu()->arch.profile.psci_off_state.hcr_el2 = sysreg_hcr_el2_read();
+    cpu()->arch.profile.psci_off_state.vmpidr_el2 = sysreg_vmpidr_el2_read();
+    cpu()->arch.profile.psci_off_state.vtcr_el2 = sysreg_vtcr_el2_read();
+    cpu()->arch.profile.psci_off_state.vttbr_el2 = sysreg_vttbr_el2_read();
     mem_translate(&cpu()->as, (vaddr_t)&root_l1_flat_pt,
-                    &cpu()->arch.psci_off_state.flat_map);
-    cpu()->arch.psci_off_state.wakeup_reason = wakeup_reason;
+                    &cpu()->arch.profile.psci_off_state.flat_map);
+    cpu()->arch.profile.psci_off_state.wakeup_reason = wakeup_reason;
 
     /**
      * Although the real PSCI implementation is responsible for managing cache
      * state, make sure the saved state is in memory as we'll use this on wake
      * up before enabling cache to restore basic processor state. 
      */
-    cache_flush_range((vaddr_t)&cpu()->arch.psci_off_state,
-                    sizeof(cpu()->arch.psci_off_state));
+    cache_flush_range((vaddr_t)&cpu()->arch.profile.psci_off_state,
+                    sizeof(cpu()->arch.profile.psci_off_state));
 
-    gicc_save_state(&cpu()->arch.psci_off_state.gicc_state);
+    gicc_save_state(&cpu()->arch.profile.psci_off_state.gicc_state);
 }
 
 
@@ -272,7 +272,7 @@ static void psci_restore_state(){
      *  psci_boot_entry.
      */
     
-    gicc_restore_state(&cpu()->arch.psci_off_state.gicc_state);
+    gicc_restore_state(&cpu()->arch.profile.psci_off_state.gicc_state);
 }
 
 void psci_wake_from_powerdown(){
@@ -281,8 +281,8 @@ void psci_wake_from_powerdown(){
         ERROR("cpu woke up but theres no vcpu to run");
     }
 
-    vcpu_arch_reset(cpu()->vcpu, cpu()->vcpu->arch.psci_ctx.entrypoint);
-    vcpu_writereg(cpu()->vcpu, 0, cpu()->vcpu->arch.psci_ctx.context_id);
+    vcpu_arch_reset(cpu()->vcpu, cpu()->vcpu->arch.profile.psci_ctx.entrypoint);
+    vcpu_writereg(cpu()->vcpu, 0, cpu()->vcpu->arch.profile.psci_ctx.context_id);
     vcpu_run(cpu()->vcpu);
 }
 
@@ -325,7 +325,7 @@ int32_t psci_power_down(enum wakeup_reason reason){
     psci_save_state(reason);
     paddr_t cntxt_paddr;
     paddr_t psci_wakeup_addr;
-    mem_translate(&cpu()->as, (vaddr_t)&cpu()->arch.psci_off_state, &cntxt_paddr);
+    mem_translate(&cpu()->as, (vaddr_t)&cpu()->arch.profile.psci_off_state, &cntxt_paddr);
     mem_translate(&cpu()->as, (vaddr_t)&psci_boot_entry, &psci_wakeup_addr);
 
     return psci_cpu_suspend(pwr_state_aux, psci_wakeup_addr, cntxt_paddr);

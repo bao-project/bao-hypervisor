@@ -17,8 +17,8 @@
 #define __ARCH_VM_H__
 
 #include <bao.h>
+#include <arch/profile/vm.h>
 #include <arch/vgic.h>
-#include <arch/psci.h>
 #include <list.h>
 
 struct arch_vm_platform {
@@ -52,9 +52,9 @@ struct vm_arch {
 
 struct vcpu_arch {
     unsigned long vmpidr;
+    struct vcpu_arch_profile profile;
     struct vgic_priv vgic_priv;
     struct list vgic_spilled;
-    struct psci_ctx psci_ctx;
 };
 
 struct arch_regs {
@@ -67,14 +67,15 @@ struct arch_regs {
 struct vcpu* vm_get_vcpu_by_mpidr(struct vm* vm, unsigned long mpidr);
 void vcpu_arch_entry();
 
-typedef struct vcpu vcpu_t;
+bool vcpu_arch_profile_on(struct vcpu* vcpu);
+void vcpu_arch_profile_init(struct vcpu* vcpu, struct vm* vm);
 
-static inline void vcpu_arch_inject_hw_irq(vcpu_t* vcpu, uint64_t id)
+static inline void vcpu_arch_inject_hw_irq(struct vcpu* vcpu, uint64_t id)
 {
     vgic_inject_hw(vcpu, id);
 }
 
-static inline void vcpu_arch_inject_irq(vcpu_t* vcpu, uint64_t id)
+static inline void vcpu_arch_inject_irq(struct vcpu* vcpu, uint64_t id)
 {
     vgic_inject(vcpu, id, 0);
 }

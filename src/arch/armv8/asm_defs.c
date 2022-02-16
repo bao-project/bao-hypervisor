@@ -23,17 +23,12 @@ void cpu_defines()
 {
     DEFINE_SIZE(CPU_SIZE, struct cpu);
 
-    DEFINE_OFFSET(CPU_ROOT_PT_OFF, struct cpu, root_pt);
-
     DEFINE_OFFSET(CPU_STACK_OFF, struct cpu, stack);
     DEFINE_SIZE(CPU_STACK_SIZE, ((struct cpu*)NULL)->stack);
 
     DEFINE_SIZE(CPU_IF_SIZE, struct cpuif);
 
     DEFINE_OFFSET(CPU_VCPU_OFF, struct cpu, vcpu);
-
-    DEFINE_OFFSET(CPU_ARCH_OFF, struct cpu, arch);
-    DEFINE_OFFSET(CPU_ARCH_OFFSTATE_OFF, struct cpu_arch, psci_off_state);
 }
 
 void vcpu_defines() __attribute__((used));

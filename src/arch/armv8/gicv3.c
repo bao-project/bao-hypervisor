@@ -33,24 +33,24 @@ size_t NUM_LRS;
 
 size_t gich_num_lrs()
 {
-    return ((MRS(ICH_VTR_EL2) & ICH_VTR_MSK) >> ICH_VTR_OFF) + 1;
+    return ((sysreg_ich_vtr_el2_read() & ICH_VTR_MSK) >> ICH_VTR_OFF) + 1;
 }
 
 static inline void gicc_init()
 {
     /* Enable system register interface i*/
-    MSR(ICC_SRE_EL2, ICC_SRE_SRE_BIT);
+    sysreg_icc_sre_el2_write(ICC_SRE_SRE_BIT);
     ISB();
 
     for (size_t i = 0; i < gich_num_lrs(); i++) {
         gich_write_lr(i, 0);
     }
 
-    MSR(ICC_PMR_EL1, GIC_LOWEST_PRIO);
-    MSR(ICC_BPR1_EL1, 0x0);
-    MSR(ICC_CTLR_EL1, ICC_CTLR_EOIMode_BIT);
-    MSR(ICH_HCR_EL2, MRS(ICH_HCR_EL2) | ICH_HCR_LRENPIE_BIT);
-    MSR(ICC_IGRPEN1_EL1, ICC_IGRPEN_EL1_ENB_BIT);
+    sysreg_icc_pmr_el1_write(GIC_LOWEST_PRIO);
+    sysreg_icc_bpr1_el1_write(0x0);
+    sysreg_icc_ctlr_el1_write(ICC_CTLR_EOIMode_BIT);
+    sysreg_ich_hcr_el2_write(sysreg_ich_hcr_el2_read() | ICH_HCR_LRENPIE_BIT);
+    sysreg_icc_igrpen1_el1_write(ICC_IGRPEN_EL1_ENB_BIT);
 }
 
 static inline void gicr_init()
@@ -66,15 +66,15 @@ static inline void gicr_init()
 
 void gicc_save_state(struct gicc_state *state)
 {
-    state->PMR = MRS(ICC_PMR_EL1);
-    state->BPR = MRS(ICC_BPR1_EL1);
+    state->PMR = sysreg_icc_pmr_el1_read();
+    state->BPR = sysreg_icc_bpr1_el1_read();
     state->priv_ISENABLER = gicr[cpu()->id].ISENABLER0;
 
     for (size_t i = 0; i < GIC_NUM_PRIO_REGS(GIC_CPU_PRIV); i++) {
         state->priv_IPRIORITYR[i] = gicr[cpu()->id].IPRIORITYR[i];
     }
 
-    state->HCR = MRS(ICH_HCR_EL2);
+    state->HCR = sysreg_ich_hcr_el2_read();
     for (size_t i = 0; i < gich_num_lrs(); i++) {
         state->LR[i] = gich_read_lr(i);
     }
@@ -82,18 +82,18 @@ void gicc_save_state(struct gicc_state *state)
 
 void gicc_restore_state(struct gicc_state *state)
 {
-    MSR(ICC_SRE_EL2, ICC_SRE_SRE_BIT);
-    MSR(ICC_CTLR_EL1, ICC_CTLR_EOIMode_BIT);
-    MSR(ICC_IGRPEN1_EL1, ICC_IGRPEN_EL1_ENB_BIT);
-    MSR(ICC_PMR_EL1, state->PMR);
-    MSR(ICC_BPR1_EL1, state->BPR);
+    sysreg_icc_sre_el2_write(ICC_SRE_SRE_BIT);
+    sysreg_icc_ctlr_el1_write(ICC_CTLR_EOIMode_BIT);
+    sysreg_icc_igrpen1_el1_write(ICC_IGRPEN_EL1_ENB_BIT);
+    sysreg_icc_pmr_el1_write(state->PMR);
+    sysreg_icc_bpr1_el1_write(state->BPR);
     gicr[cpu()->id].ISENABLER0 = state->priv_ISENABLER;
 
     for (size_t i = 0; i < GIC_NUM_PRIO_REGS(GIC_CPU_PRIV); i++) {
         gicr[cpu()->id].IPRIORITYR[i] = state->priv_IPRIORITYR[i];
     }
 
-    MSR(ICH_HCR_EL2, state->HCR);
+    sysreg_ich_hcr_el2_write(state->HCR);
     for (size_t i = 0; i < gich_num_lrs(); i++) {
         gich_write_lr(i, state->LR[i]);
     }
@@ -235,7 +235,7 @@ void gic_send_sgi(cpuid_t cpu_target, irqid_t sgi_num)
         uint64_t sgi = (MPIDR_AFF_LVL(mpidr, 1) << ICC_SGIR_AFF1_OFFSET) |
                        (1UL << MPIDR_AFF_LVL(mpidr, 0)) |
                        (sgi_num << ICC_SGIR_SGIINTID_OFF);             
-        MSR(ICC_SGI1R_EL1, sgi);
+        sysreg_icc_sgi1r_el1_write(sgi);
     }
 }
 

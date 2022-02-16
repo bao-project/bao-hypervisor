@@ -211,7 +211,7 @@ map_cpu:
     li      t2, CPU_IF_SIZE
     mul     t1, t1, t2
     add     t0, t0, t1
-    li      t1, (CPU_SIZE + (PT_SIZE*(PT_LVLS-1)))
+    li      t1, (CPU_SIZE + (PT_SIZE*PT_LVLS))
     mul     t2, t1, a0
     add     t0, t0, t2
     mv      a3, t0
@@ -219,7 +219,7 @@ map_cpu:
     call    clear
 
     /* Calculate phys address page table -> t1 */
-    li      t2, CPU_ROOT_PT_OFF
+    li      t2, CPU_SIZE
     add     t1, t0, t2
 
     /* Flat mapping to switch to VAS. */
@@ -238,17 +238,14 @@ map_cpu:
     STORE       t2, 0(t3)
 
     li      t4, PAGE_SIZE
-    li      t5, CPU_SIZE
 
-    //add         t2, t1, t4
-    add         t2, t0, t5
+    add         t2, t1, t4
     PTE_FILL    t2, t2, PTE_HYP_FLAGS | PTE_TABLE
     li          t3, BAO_CPU_BASE
     PTE_PTR     t3, t1, 0, t3
     STORE       t2, 0(t3)
 
-    //add         t1, t1, t4
-    add         t1, t0, t5
+    add         t1, t1, t4
     add         t2, t1, t4
     PTE_FILL    t2, t2, PTE_HYP_FLAGS | PTE_TABLE
     li          t3, BAO_CPU_BASE
@@ -260,7 +257,7 @@ map_cpu:
     li          t2, BAO_CPU_BASE
     PTE_PTR     t1, t1, 2, t2
     PTE_FILL    t2, t0, PTE_HYP_FLAGS | PTE_PAGE
-    li          t3, CPU_SIZE
+    li          t3, CPU_SIZE+PT_SIZE
 1:
     blez    t3, map_cpu_interface
     STORE   t2, 0(t1)
@@ -300,10 +297,10 @@ setup_cpu:
     li      t2, CPU_IF_SIZE
     mul     t1, t1, t2
     add     t0, t0, t1
-    li      t1, (CPU_SIZE + (PT_SIZE*(PT_LVLS-1)))
+    li      t1, (CPU_SIZE + (PT_SIZE*PT_LVLS))
     mul     t1, t1, a0
     add     t0, t0, t1   
-    li      t1, CPU_ROOT_PT_OFF
+    li      t1, CPU_SIZE
     add     t0, t0, t1
     srl     t0, t0, PAGE_SHIFT
     li      t2, SATP_MODE_DFLT

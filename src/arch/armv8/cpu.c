@@ -17,7 +17,6 @@
 #include <bao.h>
 #include <cpu.h>
 #include <platform.h>
-#include <page_table.h>
 #include <arch/sysregs.h>
 
 cpuid_t CPU_MASTER __attribute__((section(".data")));
@@ -25,21 +24,8 @@ cpuid_t CPU_MASTER __attribute__((section(".data")));
 /* Perform architecture dependent cpu cores initializations */
 void cpu_arch_init(cpuid_t cpuid, paddr_t load_addr)
 {   
-    cpu()->arch.mpidr = MRS(MPIDR_EL1);
-    if (cpuid == CPU_MASTER) {
-        /* power on necessary, but still sleeping, secondary cpu cores
-         * Assumes CPU zero is doing this */
-        for (size_t cpu_core_id = 0; cpu_core_id < platform.cpu_num;
-             cpu_core_id++) {
-            if(cpu_core_id == cpuid) continue;
-            unsigned long mpdir = cpu_id_to_mpidr(cpu_core_id);
-            // TODO: pass config addr in contextid (x0 register)
-            int32_t result = psci_cpu_on(mpdir, load_addr, 0);
-            if (!(result == PSCI_E_SUCCESS || result == PSCI_E_ALREADY_ON)) {
-                ERROR("cant wake up cpu %d", cpu_core_id);
-            }
-        }
-    }
+    cpu()->arch.mpidr = sysreg_mpidr_el1_read();
+    cpu_arch_profile_init(cpuid, load_addr);
 }
 
 unsigned long cpu_id_to_mpidr(cpuid_t id)
@@ -49,24 +35,12 @@ unsigned long cpu_id_to_mpidr(cpuid_t id)
 
 void cpu_arch_idle()
 {
-    int64_t err = psci_power_down(PSCI_WAKEUP_IDLE);
-    if(err) {
-        switch (err) {
-            case PSCI_E_NOT_SUPPORTED:
-                /**
-                 * If power down is not supported let's just wait for an interrupt
-                 */
-                asm volatile("wfi");
-                break;
-            default:
-                ERROR("PSCI cpu%d power down failed with error %ld", cpu()->id, err);
-        }
-    }
+    cpu_arch_profile_idle();
 
-    /**
-     * Power down was sucessful but did not jump to requested entry
-     * point. Manually rewind stack and jump to idle wake up. Therefore,
-     * we should not return after this point.
+    /*
+     * In case the profile implementation does not jump to a predefined wake-up
+     * point and just returns from the profile, manually rewind stack and jump 
+     * to idle wake up. Therefore, we should not return after this point.
      */
     asm volatile(
         "mov sp, %0\n\r"

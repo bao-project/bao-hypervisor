@@ -18,7 +18,6 @@
 #include <vm.h>
 #include <config.h>
 #include <cpu.h>
-#include <iommu.h>
 #include <spinlock.h>
 #include <fences.h>
 #include <string.h>
@@ -31,7 +30,9 @@ volatile static struct vm_assignment {
     size_t ncpus;
     cpumap_t cpus;
     struct vm *vm;
-    pte_t vm_shared_table;
+    struct vm_install_info vm_install_info;
+    bool install_info_ready;
+    // pte_t vm_shared_table;
 } *vm_assign;
 
 static bool vmm_assign_vcpu(bool *master, vmid_t *vm_id) {
@@ -94,13 +95,14 @@ static struct vm* vmm_alloc_vm(vmid_t vm_id, bool master) {
         vm_assign[vm_id].vm = (struct vm*)
             mem_alloc_page(NUM_PAGES(sizeof(struct vm)), SEC_HYP_VM, false);
         memset(vm_assign[vm_id].vm, 0, sizeof(struct vm));
+        vm_assign[vm_id].vm_install_info = 
+            vmm_get_vm_install_info(vm_assign[vm_id].vm);
         fence_ord_write();
-        vm_assign[vm_id].vm_shared_table =
-            *pt_get_pte(&cpu()->as.pt, 0, (vaddr_t)vm_assign[vm_id].vm);
+        vm_assign[vm_id].install_info_ready = true;
     } else {
-        while (vm_assign[vm_id].vm_shared_table == 0);
-        pte_t* pte = pt_get_pte(&cpu()->as.pt, 0, (vaddr_t)vm_assign[vm_id].vm);
-        *pte = vm_assign[vm_id].vm_shared_table;
+        while (!vm_assign[vm_id].install_info_ready);
+        vmm_vm_install(vm_assign[vm_id].vm, 
+            (struct vm_install_info*)&vm_assign[vm_id].vm_install_info);
         fence_sync_write();
     }
     return vm_assign[vm_id].vm;
@@ -129,7 +131,7 @@ static void vmm_free_assign_array() {
 void vmm_init()
 {       
     vmm_arch_init();
-    iommu_init();
+    vmm_io_init();
 
     vmm_alloc_assign_array();
     cpu_sync_barrier(&cpu_glb_sync);

@@ -43,16 +43,16 @@ bool mem_translate(struct addr_space* as, vaddr_t va, paddr_t* pa)
      * TODO: are barriers needed in this operation?
      */
 
-    par_saved = MRS(PAR_EL1);
+    par_saved = sysreg_par_el1_read();
 
     if (as->type == AS_HYP || as->type == AS_HYP_CPY)
-        asm volatile("AT S1E2W, %0" ::"r"(va));
+        arm_at_s1e2w(va);
     else
-        asm volatile("AT S12E1W, %0" ::"r"(va));
+        arm_at_s12e1w(va);
 
     ISB();
-    par = MRS(PAR_EL1);
-    MSR(PAR_EL1, par_saved);
+    par = sysreg_par_el1_read();
+    sysreg_par_el1_write(par_saved);
     if (par & PAR_F) {
         return false;
     } else {

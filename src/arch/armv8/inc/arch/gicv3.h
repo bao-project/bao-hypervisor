@@ -25,22 +25,22 @@ static inline uint64_t gich_read_lr(size_t i)
     }
 
     switch (i) {
-        case 0: return MRS(ICH_LR0_EL2);
-        case 1: return MRS(ICH_LR1_EL2);
-        case 2: return MRS(ICH_LR2_EL2);
-        case 3: return MRS(ICH_LR3_EL2);
-        case 4: return MRS(ICH_LR4_EL2);
-        case 5: return MRS(ICH_LR5_EL2);
-        case 6: return MRS(ICH_LR6_EL2);
-        case 7: return MRS(ICH_LR7_EL2);
-        case 8: return MRS(ICH_LR8_EL2);
-        case 9: return MRS(ICH_LR9_EL2);
-        case 10: return MRS(ICH_LR10_EL2);
-        case 11: return MRS(ICH_LR11_EL2);
-        case 12: return MRS(ICH_LR12_EL2);
-        case 13: return MRS(ICH_LR13_EL2);
-        case 14: return MRS(ICH_LR14_EL2);
-        case 15: return MRS(ICH_LR15_EL2);
+        case 0: return sysreg_ich_lr0_el2_read();
+        case 1: return sysreg_ich_lr1_el2_read();
+        case 2: return sysreg_ich_lr2_el2_read();
+        case 3: return sysreg_ich_lr3_el2_read();
+        case 4: return sysreg_ich_lr4_el2_read();
+        case 5: return sysreg_ich_lr5_el2_read();
+        case 6: return sysreg_ich_lr6_el2_read();
+        case 7: return sysreg_ich_lr7_el2_read();
+        case 8: return sysreg_ich_lr8_el2_read();
+        case 9: return sysreg_ich_lr9_el2_read();
+        case 10: return sysreg_ich_lr10_el2_read();
+        case 11: return sysreg_ich_lr11_el2_read();
+        case 12: return sysreg_ich_lr12_el2_read();
+        case 13: return sysreg_ich_lr13_el2_read();
+        case 14: return sysreg_ich_lr14_el2_read();
+        case 15: return sysreg_ich_lr15_el2_read();
         default: return 0;
     }
 }
@@ -52,60 +52,60 @@ static inline void gich_write_lr(size_t i, uint64_t val)
     }
 
     switch (i) {
-        case 0: MSR(ICH_LR0_EL2, val);   break;        
-        case 1: MSR(ICH_LR1_EL2, val);   break;         
-        case 2: MSR(ICH_LR2_EL2, val);   break;         
-        case 3: MSR(ICH_LR3_EL2, val);   break;         
-        case 4: MSR(ICH_LR4_EL2, val);   break;         
-        case 5: MSR(ICH_LR5_EL2, val);   break;         
-        case 6: MSR(ICH_LR6_EL2, val);   break;         
-        case 7: MSR(ICH_LR7_EL2, val);   break;         
-        case 8: MSR(ICH_LR8_EL2, val);   break;         
-        case 9: MSR(ICH_LR9_EL2, val);   break;         
-        case 10: MSR(ICH_LR10_EL2, val); break;           
-        case 11: MSR(ICH_LR11_EL2, val); break;           
-        case 12: MSR(ICH_LR12_EL2, val); break;           
-        case 13: MSR(ICH_LR13_EL2, val); break;           
-        case 14: MSR(ICH_LR14_EL2, val); break;           
-        case 15: MSR(ICH_LR15_EL2, val); break;
+        case 0: sysreg_ich_lr0_el2_write(val);   break;        
+        case 1: sysreg_ich_lr1_el2_write(val);   break;         
+        case 2: sysreg_ich_lr2_el2_write(val);   break;         
+        case 3: sysreg_ich_lr3_el2_write(val);   break;         
+        case 4: sysreg_ich_lr4_el2_write(val);   break;         
+        case 5: sysreg_ich_lr5_el2_write(val);   break;         
+        case 6: sysreg_ich_lr6_el2_write(val);   break;         
+        case 7: sysreg_ich_lr7_el2_write(val);   break;         
+        case 8: sysreg_ich_lr8_el2_write(val);   break;         
+        case 9: sysreg_ich_lr9_el2_write(val);   break;         
+        case 10: sysreg_ich_lr10_el2_write(val); break;           
+        case 11: sysreg_ich_lr11_el2_write(val); break;           
+        case 12: sysreg_ich_lr12_el2_write(val); break;           
+        case 13: sysreg_ich_lr13_el2_write(val); break;           
+        case 14: sysreg_ich_lr14_el2_write(val); break;           
+        case 15: sysreg_ich_lr15_el2_write(val); break;
     }
 }
 
 static inline uint32_t gich_get_hcr()
 {
-    return MRS(ICH_HCR_EL2);
+    return sysreg_ich_hcr_el2_read();
 }
 
 static inline void gich_set_hcr(uint32_t hcr)
 {
-    MSR(ICH_HCR_EL2, hcr);
+    sysreg_ich_hcr_el2_write(hcr);
 }
 
 static inline uint32_t gich_get_misr()
 {
-    return MRS(ICH_MISR_EL2);
+    return sysreg_ich_misr_el2_read();
 }
 
 static inline uint64_t gich_get_eisr()
 {
-    return MRS(ICH_EISR_EL2);
+    return sysreg_ich_eisr_el2_read();
 }
 
 static inline uint64_t gich_get_elrsr()
 {
-    return MRS(ICH_ELRSR_EL2);
+    return sysreg_ich_elrsr_el2_read();
 }
 
 static inline uint32_t gicc_iar() {
-    return MRS(ICC_IAR1_EL1);
+    return sysreg_icc_iar1_el1_read();
 }
 
 static inline void gicc_eoir(uint32_t eoir) {
-    MSR(ICC_EOIR1_EL1, eoir);
+    sysreg_icc_eoir1_el1_write(eoir);
 }
 
 static inline void gicc_dir(uint32_t dir) {
-    MSR(ICC_DIR_EL1, dir);
+    sysreg_icc_dir_el1_write(dir);
 }
 
 #endif /* __GICV3_H__ */

@@ -18,7 +18,6 @@
 #include <cpu.h>
 #include <vm.h>
 #include <emul.h>
-#include <arch/psci.h>
 #include <hypercall.h>
 
 typedef void (*abort_handler_t)(uint64_t, uint64_t, uint64_t);
@@ -29,9 +28,9 @@ void internal_abort_handler(uint64_t gprs[]) {
         printk("x%d:\t\t0x%0lx\n", i, gprs[i]);
     }
     printk("SP_EL2:\t\t0x%0lx\n", gprs[32]);
-    printk("ESR_EL2:\t0x%0lx\n", MRS(ESR_EL2));
-    printk("ELR_EL2:\t0x%0lx\n", MRS(ELR_EL2));
-    printk("FAR_EL2:\t0x%0lx\n", MRS(FAR_EL2));
+    printk("ESR_EL2:\t0x%0lx\n", sysreg_esr_el2_read());
+    printk("ELR_EL2:\t0x%0lx\n", sysreg_elr_el2_read());
+    printk("FAR_EL2:\t0x%0lx\n", sysreg_far_el2_read());
     ERROR("cpu%d internal hypervisor abort - PANIC\n", cpu()->id);
 }
 
@@ -77,24 +76,10 @@ void aborts_data_lower(uint64_t iss, uint64_t far, uint64_t il)
     }
 }
 
+__attribute__((weak))
 void smc64_handler(uint64_t iss, uint64_t far, uint64_t il)
 {
-    uint64_t smc_fid = cpu()->vcpu->regs.x[0];
-    uint64_t x1 = cpu()->vcpu->regs.x[1];
-    uint64_t x2 = cpu()->vcpu->regs.x[2];
-    uint64_t x3 = cpu()->vcpu->regs.x[3];
-
-    int64_t ret = -1;
-
-    if (is_psci_fid(smc_fid)) {
-        ret = psci_smc_handler(smc_fid, x1, x2, x3);
-    } else {
-        INFO("unknown smc_fid 0x%lx", smc_fid);
-    }
-
-    vcpu_writereg(cpu()->vcpu, 0, ret);
-    uint64_t pc_step = 2 + (2 * il);
-    cpu()->vcpu->regs.elr_el2 += pc_step;
+    WARNING("smc call but there is no handler");
 }
 
 void hvc64_handler(uint64_t iss, uint64_t far, uint64_t il)
@@ -146,9 +131,9 @@ abort_handler_t abort_handlers[64] = {[ESR_EC_DALEL] = aborts_data_lower,
 
 void aborts_sync_handler()
 {
-    uint64_t esr = MRS(ESR_EL2);
-    uint64_t far = MRS(FAR_EL2);
-    uint64_t hpfar = MRS(HPFAR_EL2);
+    uint64_t esr = sysreg_esr_el2_read();
+    uint64_t far = sysreg_far_el2_read();
+    uint64_t hpfar = sysreg_hpfar_el2_read();
     uint64_t ipa_fault_addr = 0;
 
     ipa_fault_addr = (far & 0xFFF) | (hpfar << 8);

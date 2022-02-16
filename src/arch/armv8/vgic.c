@@ -33,13 +33,13 @@
 #include <platform.h>
 
 enum VGIC_EVENTS { VGIC_UPDATE_ENABLE, VGIC_ROUTE, VGIC_INJECT, VGIC_SET_REG };
-extern volatile const uint64_t VGIC_IPI_ID;
+extern volatile const size_t VGIC_IPI_ID;
 
 #define GICD_IS_REG(REG, offset)            \
     (((offset) >= offsetof(struct gicd_hw, REG)) && \
      (offset) < (offsetof(struct gicd_hw, REG) + sizeof(gicd.REG)))
 #define GICD_REG_GROUP(REG) ((offsetof(struct gicd_hw, REG) & 0xff80) >> 7)
-#define GICD_REG_MASK(ADDR) ((ADDR)&(GIC_VERSION == GICV2 ? 0xfffULL : 0xffffULL))
+#define GICD_REG_MASK(ADDR) ((ADDR)&(GIC_VERSION == GICV2 ? 0xfffUL : 0xffffUL))
 #define GICD_REG_IND(REG) (offsetof(struct gicd_hw, REG) & 0x7f)
 
 #define VGIC_MSG_DATA(VM_ID, VGICRID, INT_ID, REG, VAL)                 \
@@ -197,23 +197,23 @@ static inline void vgic_write_lr(struct vcpu *vcpu, struct vgic_int *interrupt,
 
     unsigned state = vgic_get_state(interrupt);
 
-    unsigned long lr = ((interrupt->id << GICH_LR_VID_OFF) & GICH_LR_VID_MSK);
+    gic_lr_t lr = ((interrupt->id << GICH_LR_VID_OFF) & GICH_LR_VID_MSK);
 
 #if (GIC_VERSION == GICV2)
-    lr |= (((unsigned long)interrupt->prio >> 3) << GICH_LR_PRIO_OFF) &
+    lr |= (((gic_lr_t)interrupt->prio >> 3) << GICH_LR_PRIO_OFF) &
           GICH_LR_PRIO_MSK;
 #else
-    lr |= (((unsigned long)interrupt->prio << GICH_LR_PRIO_OFF) & GICH_LR_PRIO_MSK) |
+    lr |= (((gic_lr_t)interrupt->prio << GICH_LR_PRIO_OFF) & GICH_LR_PRIO_MSK) |
           GICH_LR_GRP_BIT;
 #endif
 
     if (vgic_int_is_hw(interrupt)) {
         lr |= GICH_LR_HW_BIT;
-        lr |= ((unsigned long)interrupt->id << GICH_LR_PID_OFF) & GICH_LR_PID_MSK;
+        lr |= ((gic_lr_t)interrupt->id << GICH_LR_PID_OFF) & GICH_LR_PID_MSK;
         if (state == PENDACT) {
             lr |= GICH_LR_STATE_ACT;
         } else {
-            lr |= ((unsigned long)state << GICH_LR_STATE_OFF) & GICH_LR_STATE_MSK;
+            lr |= ((gic_lr_t)state << GICH_LR_STATE_OFF) & GICH_LR_STATE_MSK;
         }
     }
 #if (GIC_VERSION == GICV2)
@@ -244,7 +244,7 @@ static inline void vgic_write_lr(struct vcpu *vcpu, struct vgic_int *interrupt,
             lr |= GICH_LR_EOI_BIT;
         }
 
-        lr |= ((unsigned long)state << GICH_LR_STATE_OFF) & GICH_LR_STATE_MSK;
+        lr |= ((gic_lr_t)state << GICH_LR_STATE_OFF) & GICH_LR_STATE_MSK;
     }
 
     interrupt->state = 0;

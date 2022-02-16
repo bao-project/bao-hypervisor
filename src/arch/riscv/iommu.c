@@ -13,7 +13,7 @@
  *
  */
 
-#include <iommu.h>
+#include <io.h>
 
 /**
  * TODO: No IOMMU available in riscv

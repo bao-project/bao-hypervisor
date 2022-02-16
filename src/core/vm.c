@@ -29,7 +29,7 @@ static void vm_master_init(struct vm* vm, const struct vm_config* config, vmid_t
 
     cpu_sync_init(&vm->sync, vm->cpu_num);
 
-    as_init(&vm->as, AS_VM, vm_id, NULL, config->colors);
+    vm_mem_prot_init(vm, config);
 }
 
 void vm_cpu_init(struct vm* vm)
@@ -142,7 +142,6 @@ static void vm_map_img_rgn_inplace(struct vm* vm, const struct vm_config* config
         /* recolour img */
         mem_map_reclr(&vm->as, va + n_before * PAGE_SIZE, &pa_img, n_img,
                       PTE_VM_FLAGS);
-        /* TODO: reserve phys mem? */
     }
     /* map pages after img */
     mem_map(&vm->as, va + (n_before + n_img) * PAGE_SIZE, NULL, n_aft,
@@ -236,12 +235,11 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* config)
         }
     }
 
-    /* iommu */
-    if (iommu_vm_init(vm, config)) {
+    if (io_vm_init(vm, config)) {
         for (size_t i = 0; i < config->platform.dev_num; i++) {
             struct vm_dev_region* dev = &config->platform.devs[i];
             if (dev->id) {
-                if(!iommu_vm_add_device(vm, dev->id)){
+                if(!io_vm_add_device(vm, dev->id)){
                     ERROR("Failed to add device to iommu");
                 }
             }

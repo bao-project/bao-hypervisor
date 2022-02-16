@@ -13,25 +13,15 @@
  #
 ##
 
-cpu-objs-y+=boot.o
-cpu-objs-y+=exceptions.o
-cpu-objs-y+=pagetables.o
-cpu-objs-y+=page_table.o
 cpu-objs-y+=cache.o
 cpu-objs-y+=interrupts.o
-cpu-objs-y+=mem.o
-cpu-objs-y+=vmm.o
 cpu-objs-y+=vm.o
 cpu-objs-y+=aborts.o
-cpu-objs-y+=smc.o
-cpu-objs-y+=psci.o
 cpu-objs-y+=cpu.o
 cpu-objs-y+=platform.o
-cpu-objs-y+=relocate.o
-cpu-objs-y+=iommu.o
-cpu-objs-y+=smmuv2.o
 cpu-objs-y+=gic.o
 cpu-objs-y+=vgic.o
+cpu-objs-y+=vmm.o
 
 ifeq ($(GIC_VERSION), GICV2)
 	cpu-objs-y+=vgicv2.o

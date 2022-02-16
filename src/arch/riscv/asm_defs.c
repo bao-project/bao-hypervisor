@@ -9,8 +9,6 @@ void cpu_defines()
 {
     DEFINE_SIZE(CPU_SIZE, struct cpu);
 
-    DEFINE_OFFSET(CPU_ROOT_PT_OFF, struct cpu, root_pt);
-
     DEFINE_OFFSET(CPU_STACK_OFF, struct cpu, stack);
     DEFINE_SIZE(CPU_STACK_SIZE, ((struct cpu*)NULL)->stack);
 
