@@ -23,7 +23,6 @@
 #include <string.h>
 #include <ipc.h>
 
-struct config* vm_config_ptr;
 volatile static struct vm_assignment {
     spinlock_t lock;
     bool master;
@@ -32,8 +31,7 @@ volatile static struct vm_assignment {
     struct vm *vm;
     struct vm_install_info vm_install_info;
     bool install_info_ready;
-    // pte_t vm_shared_table;
-} *vm_assign;
+} vm_assign[CONFIG_VM_NUM];
 
 static bool vmm_assign_vcpu(bool *master, vmid_t *vm_id) {
     bool assigned = false;
@@ -108,32 +106,11 @@ static struct vm* vmm_alloc_vm(vmid_t vm_id, bool master) {
     return vm_assign[vm_id].vm;
 }
 
-static size_t vmass_npages = 0;
-
-static void vmm_alloc_assign_array() {
-    if (cpu()->id == CPU_MASTER) {
-        vmass_npages =
-            ALIGN(sizeof(struct vm_assignment) * config.vmlist_size,
-                  PAGE_SIZE) /
-            PAGE_SIZE;
-        vm_assign = mem_alloc_page(vmass_npages, SEC_HYP_GLOBAL, false);
-        if (vm_assign == NULL) ERROR("cant allocate vm assignemnt pages");
-        memset((void*)vm_assign, 0, vmass_npages * PAGE_SIZE);
-    }
-}
-
-static void vmm_free_assign_array() {
-    if (cpu()->id == CPU_MASTER) {
-        mem_free_vpage(&cpu()->as, (vaddr_t)vm_assign, vmass_npages, true);
-    }
-}
-
 void vmm_init()
-{       
+{
     vmm_arch_init();
     vmm_io_init();
 
-    vmm_alloc_assign_array();
     cpu_sync_barrier(&cpu_glb_sync);
 
     bool master = false;
@@ -148,7 +125,6 @@ void vmm_init()
     }
 
     cpu_sync_barrier(&cpu_glb_sync);
-    vmm_free_assign_array();
 
     ipc_init();
 
