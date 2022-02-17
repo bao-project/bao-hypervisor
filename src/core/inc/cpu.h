@@ -100,10 +100,10 @@ static inline void cpu_sync_barrier(struct cpu_synctoken* token)
     while (token->count < next_count);
 }
 
+extern struct cpuif cpu_interfaces[];
 static inline struct cpuif* cpu_if(cpuid_t cpu_id)
 {
-    return (struct cpuif*)(((vaddr_t)&_cpu_if_base) +
-           (cpu_id * ALIGN(sizeof(struct cpuif), PAGE_SIZE)));
+    return &cpu_interfaces[cpu_id];
 }
 
 void cpu_init(cpuid_t cpu_id, paddr_t load_addr);

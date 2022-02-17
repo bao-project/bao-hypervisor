@@ -41,6 +41,8 @@ extern uint8_t _ipi_cpumsg_handlers_id_start;
 cpu_msg_handler_t *ipi_cpumsg_handlers;
 size_t ipi_cpumsg_handler_num;
 
+struct cpuif cpu_interfaces[PLAT_CPU_NUM];
+
 void cpu_init(cpuid_t cpu_id, paddr_t load_addr)
 {
     cpu_arch_init(cpu_id, load_addr);

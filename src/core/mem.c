@@ -204,7 +204,7 @@ bool root_pool_set_up_bitmap(paddr_t load_addr, struct page_pool *root_pool)
 {
     size_t image_size = (size_t)(&_image_end - &_image_start);
     size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);
-    size_t cpu_size = platform.cpu_num * (mem_cpu_boot_alloc_size() + sizeof(struct cpuif));
+    size_t cpu_size = platform.cpu_num * mem_cpu_boot_alloc_size();
 
     size_t bitmap_size = root_pool->size / (8 * PAGE_SIZE) +
                            ((root_pool->size % (8 * PAGE_SIZE) != 0) ? 1 : 0);
@@ -228,7 +228,7 @@ bool pp_root_reserve_hyp_mem(paddr_t load_addr, struct page_pool *root_pool)
     size_t image_load_size = (size_t)(&_image_load_end - &_image_start);
     size_t image_noload_size = (size_t)(&_image_end - &_image_load_end);
     size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);
-    size_t cpu_size = platform.cpu_num * (mem_cpu_boot_alloc_size() + sizeof(struct cpuif));
+    size_t cpu_size = platform.cpu_num * mem_cpu_boot_alloc_size();
     paddr_t image_noload_addr = load_addr + image_load_size + vm_image_size;
     paddr_t cpu_base_addr = image_noload_addr + image_noload_size;
 

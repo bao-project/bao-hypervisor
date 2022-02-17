@@ -108,9 +108,6 @@ map_cpu:
 
 	/* get cpu root pt */
     adrp x3, _dmem_phys_beg
-    mov x7, #PLAT_CPU_NUM
-    mov x8, #CPU_IF_SIZE
-    madd x3, x7, x8, x3
 	mov x8, #(CPU_SIZE + (PT_SIZE*PT_LVLS))
 	madd x3, x0, x8, x3
 	
@@ -158,37 +155,12 @@ map_cpu:
 	add x6, x6, #(PTE_HYP_FLAGS | PTE_TABLE)
 1:
 	cmp	x7, x8
-	b.ge map_cpu_interface
+	b.ge setup_cpu
 	PTE_INDEX_ASM x5, x7, 3
 	str x6, [x4, x5]
 	add x6, x6, #PAGE_SIZE
 	add x7, x7, #PAGE_SIZE
 	b	1b
-
-map_cpu_interface:
-
-	adr x4, root_l3_pt
-	add x4, x4, x18
-
-    adrp x3, _dmem_phys_beg
-    mov x8, #CPU_IF_SIZE
-	madd x6, x0, x8, x3
-	add x6, x6, #(PTE_HYP_FLAGS | PTE_TABLE)
-
-	ldr x7, =_cpu_if_base
-	madd x7, x0, x8, x7
-	add x8, x8, x7
-
-1:
-	cmp	x7, x8
-	b.ge setup_cpu
-	PTE_INDEX_ASM x5, x7, 3 
-	str x6, [x4, x5]
-
-	add x7, x7, #PAGE_SIZE
-	add x6, x6, #PAGE_SIZE
-
-	b 1b
 
 setup_cpu:
 
@@ -206,9 +178,6 @@ setup_cpu:
 	msr	MAIR_EL2, x3
 
     adrp x3, _dmem_phys_beg
-    mov x7, #PLAT_CPU_NUM
-    mov x8, #CPU_IF_SIZE
-    madd x3, x7, x8, x3
 	mov x8, #(CPU_SIZE + (PT_SIZE*PT_LVLS))
 	madd x3, x0, x8, x3
 	add x3, x3, #CPU_SIZE

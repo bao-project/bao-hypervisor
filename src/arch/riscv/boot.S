@@ -207,10 +207,6 @@ wait_for_bsp:
 map_cpu:
     /* Calculate base phys address of CPU struct -> t0 */
     la      t0, _dmem_phys_beg
-    li      t1, PLAT_CPU_NUM
-    li      t2, CPU_IF_SIZE
-    mul     t1, t1, t2
-    add     t0, t0, t1
     li      t1, (CPU_SIZE + (PT_SIZE*PT_LVLS))
     mul     t2, t1, a0
     add     t0, t0, t2
@@ -259,44 +255,15 @@ map_cpu:
     PTE_FILL    t2, t0, PTE_HYP_FLAGS | PTE_PAGE
     li          t3, CPU_SIZE+PT_SIZE
 1:
-    blez    t3, map_cpu_interface
+    blez    t3, setup_cpu
     STORE   t2, 0(t1)
     add     t1, t1, 8
     add     t2, t2, 0x400
     sub     t3, t3, t4
     j       1b
-
-
-map_cpu_interface:
-    LD_SYM  t2,_cpu_if_base_sym
-    li      t3, CPU_IF_SIZE
-    mul     t3, t3, a0
-    add     t2, t2, t3
-    la      t1, root_l2_pt
-    add     t1, t1, s6
-    PTE_PTR     t1, t1, 2, t2
-
-    la      t0, _dmem_phys_beg
-    li      t2, CPU_IF_SIZE
-    mul     t2, t2, a0
-    add     t0, t0, t2
-    PTE_FILL    t0, t0, PTE_HYP_FLAGS | PTE_PAGE
-   
-    li      t3, CPU_IF_SIZE
-1:
-    blez    t3, setup_cpu
-    STORE   t0, 0(t1)
-    add     t1, t1, 8
-    add     t0, t0, 0x400
-    sub     t3, t3, t4
-    j       1b
     
 setup_cpu:
     la      t0, _dmem_phys_beg
-    li      t1, PLAT_CPU_NUM
-    li      t2, CPU_IF_SIZE
-    mul     t1, t1, t2
-    add     t0, t0, t1
     li      t1, (CPU_SIZE + (PT_SIZE*PT_LVLS))
     mul     t1, t1, a0
     add     t0, t0, t1   
