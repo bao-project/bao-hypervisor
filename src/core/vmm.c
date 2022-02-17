@@ -150,7 +150,7 @@ void vmm_init()
     cpu_sync_barrier(&cpu_glb_sync);
     vmm_free_assign_array();
 
-    ipc_init(vm_config, master);
+    ipc_init();
 
     if (vm_assigned) {
         vm_init(vm, vm_config, master, vm_id);

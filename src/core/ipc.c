@@ -123,37 +123,15 @@ static void ipc_alloc_shmem() {
     }
 }
 
-static void ipc_setup_masters(const struct vm_config* vm_config, bool vm_master) {
-    
-    static spinlock_t lock = SPINLOCK_INITVAL;
+void ipc_init() {
 
-    for(size_t i = 0; i < config.shmemlist_size; i++) {
-        config.shmemlist[i].cpu_masters = 0;
-    }
+    if(cpu()->id == CPU_MASTER) {
+        shmem_table_size = config.shmemlist_size;
+        shmem_table = config.shmemlist;
+        ipc_alloc_shmem();
 
-    cpu_sync_barrier(&cpu_glb_sync);
-
-    if(vm_master) {
-        for(size_t i = 0; i < vm_config->platform.ipc_num; i++) {
-            spin_lock(&lock);
-            struct shmem *shmem = ipc_get_shmem(vm_config->platform.ipcs[i].shmem_id);
-            if(shmem != NULL) {
-                shmem->cpu_masters |= (1ULL << cpu()->id);
-            }
-            spin_unlock(&lock);
+        for(size_t i = 0; i < config.shmemlist_size; i++) {
+            config.shmemlist[i].cpu_masters = 0;
         }
     }
-}
-
-void ipc_init(const struct vm_config* vm_config, bool vm_master) {
-
-    shmem_table_size = config.shmemlist_size;
-    shmem_table = config.shmemlist;
-    
-    if(cpu()->id == CPU_MASTER) {
-        ipc_alloc_shmem();
-    }
-
-    ipc_setup_masters(vm_config, vm_master);
-
 }

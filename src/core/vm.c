@@ -207,6 +207,11 @@ static void vm_init_ipc(struct vm* vm, const struct vm_config* config)
             size = shmem->size;
             WARNING("Trying to map region to smaller shared memory. Truncated");
         }
+        
+        spin_lock(&shmem->lock);
+        shmem->cpu_masters |= (1ULL << cpu()->id);
+        spin_unlock(&shmem->lock);
+
         struct vm_mem_region reg = {
             .base = ipc->base,
             .size = size,
