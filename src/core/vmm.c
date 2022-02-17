@@ -110,26 +110,15 @@ void vmm_init()
 {
     vmm_arch_init();
     vmm_io_init();
+    ipc_init();
 
     cpu_sync_barrier(&cpu_glb_sync);
 
     bool master = false;
     vmid_t vm_id = -1;
-    struct vm_config *vm_config = NULL;
-    struct vm* vm = NULL;
-    
-    bool vm_assigned = vmm_assign_vcpu(&master, &vm_id);
-    if (vm_assigned) {
-        vm_config = &config.vmlist[vm_id];
-        vm = vmm_alloc_vm(vm_id, master);
-    }
-
-    cpu_sync_barrier(&cpu_glb_sync);
-
-    ipc_init();
-
-    if (vm_assigned) {
-        vm_init(vm, vm_config, master, vm_id);
+    if (vmm_assign_vcpu(&master, &vm_id)) {
+        struct vm* vm = vmm_alloc_vm(vm_id, master);
+        vm_init(vm, &config.vmlist[vm_id], master, vm_id);
         vcpu_run(cpu()->vcpu);
     } else {
         cpu_idle();
