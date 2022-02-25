@@ -213,7 +213,7 @@ static bool pp_alloc(struct page_pool *pool, size_t n, bool aligned,
      *  If we need a contigous segment aligned to its size, lets start
      * at an already aligned index.
      */
-    size_t start = aligned ?  n - (pool->base / PAGE_SIZE % n) : 0;
+    size_t start = aligned ? pool->base / PAGE_SIZE % n : 0;
     size_t curr = pool->last + ((pool->last + start) % n);
 
     /**
