@@ -21,6 +21,7 @@
 
 /* align VAL to TO which must be power a two */
 #define ALIGN(VAL, TO) ((((VAL) + (TO)-1) / (TO)) * TO)
+#define ALIGN_FLOOR(VAL, TO) ((VAL) & ~((TO)-1))
 #define NUM_PAGES(SZ) (ALIGN(SZ, PAGE_SIZE)/PAGE_SIZE)
 #define PAGE_OFFSET_MASK ((PAGE_SIZE)-1)
 #define PAGE_FRAME_MASK (~(PAGE_OFFSET_MASK))
