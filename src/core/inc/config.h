@@ -62,6 +62,8 @@ struct vm_config {
         paddr_t load_addr;
         /* Image size */
         size_t size;
+        /* Dont copy the image */
+        bool inplace;
     } image;
 
     /* Entry point address in VM's address space */
