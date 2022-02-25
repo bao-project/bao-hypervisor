@@ -89,8 +89,12 @@ pte_t pt_pte_type(struct page_table* pt, size_t lvl)
 
 bool pte_page(struct page_table* pt, pte_t* pte, size_t lvl)
 {
-    if (lvl != pt->dscr->lvls - 1) {
+    if(!pt_lvl_terminal(pt, lvl)) {
         return false;
+    }
+
+    if (lvl != pt->dscr->lvls - 1) {
+        return (*pte & PTE_TYPE_MSK) == PTE_SUPERPAGE;
     }
 
     return (*pte & PTE_TYPE_MSK) == PTE_PAGE;
