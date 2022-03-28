@@ -108,8 +108,8 @@ static inline void cpu_sync_barrier(cpu_synctoken_t* token)
 
 static inline cpuif_t* cpu_if(uint64_t cpu_id)
 {
-    return ((void*)&_cpu_if_base) +
-           (cpu_id * ALIGN(sizeof(cpuif_t), PAGE_SIZE));
+    return (cpuif_t*)(((uintptr_t)&_cpu_if_base) +
+           (cpu_id * ALIGN(sizeof(cpuif_t), PAGE_SIZE)));
 }
 
 void cpu_init(uint64_t cpu_id, uint64_t load_addr);
