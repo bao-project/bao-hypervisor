@@ -275,6 +275,9 @@ ssize_t smmu_alloc_sme()
     spin_lock(&smmu.sme_lock);
     /* Find a free sme. */
     ssize_t nth = bitmap_find_nth(smmu.sme_bitmap, smmu.sme_num, 1, 0, false);
+    if(nth >= 0) {
+        bitmap_set(smmu.sme_bitmap, nth);
+    }
     spin_unlock(&smmu.sme_lock);
 
     return nth;
@@ -309,9 +312,9 @@ bool smmu_compatible_sme_exists(streamid_t mask, streamid_t id, size_t ctx,
 
         if (!diff_id) {
             /* Only group-to-group or device-to-group can be merged */
-            if ((group || (smmu_sme_is_group(sme) &&
-                (mask_r == mask || mask_r == sme_mask)) ||
-                (ctx == smmu_sme_get_ctx(sme)))) {
+            if (((group || smmu_sme_is_group(sme)) &&
+                (mask_r == mask || mask_r == sme_mask)) &&
+                ctx == smmu_sme_get_ctx(sme)) {
 
                 /* Compatible entry found.
                  *
@@ -340,13 +343,12 @@ bool smmu_compatible_sme_exists(streamid_t mask, streamid_t id, size_t ctx,
 void smmu_write_sme(size_t sme, streamid_t mask, streamid_t id, bool group)
 {
     spin_lock(&smmu.sme_lock);
-    if (bitmap_get(smmu.sme_bitmap, sme)) {
+    if (!bitmap_get(smmu.sme_bitmap, sme)) {
         ERROR("smmu: trying to write unallocated sme %d", sme);
     } else {
         smmu.hw.glbl_rs0->SMR[sme] = mask << SMMU_SMR_MASK_OFF;
         smmu.hw.glbl_rs0->SMR[sme] |= id & SMMU_ID_MSK;
         smmu.hw.glbl_rs0->SMR[sme] |= SMMUV2_SMR_VALID;
-        bitmap_set(smmu.sme_bitmap, sme);
 
         if (group) {
             bitmap_set(smmu.grp_bitmap, sme);
@@ -358,8 +360,10 @@ void smmu_write_sme(size_t sme, streamid_t mask, streamid_t id, bool group)
 void smmu_write_s2c(size_t sme, size_t ctx_id)
 {
     spin_lock(&smmu.sme_lock);
-    if (!bitmap_get(smmu.sme_bitmap, sme)) {
-        ERROR("smmu: trying to write unallocated s2c %d", sme);
+    if (!bitmap_get(smmu.ctxbank_bitmap, ctx_id)) {
+        ERROR("smmu: trying to write unallocated s2c %d", ctx_id);
+    } else if (!bitmap_get(smmu.sme_bitmap, sme)) {
+        ERROR("smmu: trying to bind unallocated sme %d", sme);
     } else {
         /* Initial contex is a translation context. */
         uint32_t s2cr = smmu.hw.glbl_rs0->S2CR[sme];

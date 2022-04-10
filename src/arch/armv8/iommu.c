@@ -62,7 +62,7 @@ static bool iommu_vm_arch_add(struct vm *vm, streamid_t mask, streamid_t id)
     }
 
     if (!smmu_compatible_sme_exists(prep_mask, prep_id, vm_ctx, group)) {
-        size_t sme = smmu_alloc_sme();
+        ssize_t sme = smmu_alloc_sme();
         if(sme < 0){
             INFO("iommu: smmuv2 no more free sme available.");
             return false;
