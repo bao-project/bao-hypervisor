@@ -16,6 +16,7 @@
 #include <mem.h>
 #include <cpu.h>
 #include <arch/sysregs.h>
+#include <arch/fences.h>
 
 void as_arch_init(struct addr_space* as)
 {
@@ -49,6 +50,7 @@ bool mem_translate(struct addr_space* as, vaddr_t va, paddr_t* pa)
     else
         asm volatile("AT S12E1W, %0" ::"r"(va));
 
+    ISB();
     par = MRS(PAR_EL1);
     MSR(PAR_EL1, par_saved);
     if (par & PAR_F) {
