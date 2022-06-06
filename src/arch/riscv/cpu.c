@@ -40,4 +40,5 @@ void cpu_arch_idle()
     asm volatile("wfi\n\t" ::: "memory");
     asm volatile("mv sp, %0\n\r"
                  "j cpu_idle_wakeup\n\r" ::"r"(&cpu.stack[STACK_SIZE]));
+    ERROR("returned from idle wake up");
 }
