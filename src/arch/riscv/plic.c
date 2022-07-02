@@ -19,22 +19,20 @@
 
 size_t PLIC_IMPL_INTERRUPTS;
 
-volatile struct plic_global_hw plic_global
-    __attribute__((section(".devices")));
+volatile struct plic_global_hw *plic_global;
 
-volatile struct plic_hart_hw plic_hart[PLIC_PLAT_CNTXT_NUM]
-    __attribute__((section(".devices")));
+volatile struct plic_hart_hw *plic_hart;
 
 static size_t plic_scan_max_int()
 {
     size_t res = 0;
     for (size_t i = 1; i < PLIC_MAX_INTERRUPTS; i++) {
-        plic_global.prio[i] = -1;
-        if (plic_global.prio[i] == 0) {
+        plic_global->prio[i] = -1;
+        if (plic_global->prio[i] == 0) {
             res = i - 1;
             break;
         }
-        plic_global.prio[i] = 0;
+        plic_global->prio[i] = 0;
     }
     return res;
 }
@@ -44,12 +42,12 @@ void plic_init()
     PLIC_IMPL_INTERRUPTS = plic_scan_max_int();
 
     for (size_t i = 0; i <= PLIC_IMPL_INTERRUPTS; i++) {
-        plic_global.prio[i] = 0;
+        plic_global->prio[i] = 0;
     }
 
     for (size_t i = 0; i < PLIC_PLAT_CNTXT_NUM; i++) {
         for (size_t j = 0; j < PLIC_NUM_ENBL_REGS; j++) {
-            plic_global.enbl[i][j] = 0;
+            plic_global->enbl[i][j] = 0;
         }
     }
 }
@@ -73,9 +71,9 @@ void plic_set_enbl(unsigned cntxt, irqid_t int_id, bool en)
     
     if (int_id <= PLIC_IMPL_INTERRUPTS && plic_cntxt_valid(cntxt)) { 
         if (en) {
-            plic_global.enbl[cntxt][reg_ind] |= mask;
+            plic_global->enbl[cntxt][reg_ind] |= mask;
         } else {
-            plic_global.enbl[cntxt][reg_ind] &= ~mask;
+            plic_global->enbl[cntxt][reg_ind] &= ~mask;
         }
     }
 }
@@ -86,7 +84,7 @@ bool plic_get_enbl(unsigned cntxt, irqid_t int_id)
     uint32_t mask = 1U << (int_id % (sizeof(uint32_t) * 8));
 
     if (int_id <= PLIC_IMPL_INTERRUPTS && plic_cntxt_valid(cntxt))
-        return plic_global.enbl[cntxt][reg_ind] & mask;
+        return plic_global->enbl[cntxt][reg_ind] & mask;
     else
         return false;
 }
@@ -94,14 +92,14 @@ bool plic_get_enbl(unsigned cntxt, irqid_t int_id)
 void plic_set_prio(irqid_t int_id, uint32_t prio)
 {
     if (int_id <= PLIC_IMPL_INTERRUPTS) {
-        plic_global.prio[int_id] = prio;
+        plic_global->prio[int_id] = prio;
     }
 }
 
 uint32_t plic_get_prio(irqid_t int_id)
 {
     if (int_id <= PLIC_IMPL_INTERRUPTS)
-        return plic_global.prio[int_id];
+        return plic_global->prio[int_id];
     else
         return 0;
 }
@@ -112,7 +110,7 @@ bool plic_get_pend(irqid_t int_id)
     int mask = (1U << (int_id % 32));
 
     if (int_id <= PLIC_IMPL_INTERRUPTS)
-        return plic_global.pend[reg_ind] & mask;
+        return plic_global->pend[reg_ind] & mask;
     else
         return false;
 }

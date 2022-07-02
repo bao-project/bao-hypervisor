@@ -136,8 +136,7 @@ config_defs:=$(config_build_dir)/config_defs.h
 gens+=$(config_def_generator) $(config_defs)
 inc_dirs+=$(config_build_dir)
 
-platform_def_generator_src:=$(scripts_dir)/platform_defs_gen.c \
-    $(scripts_dir)/arch/$(ARCH)/platform_defs_gen.c
+platform_def_generator_src:=$(scripts_dir)/platform_defs_gen.c
 platform_def_generator:=$(scripts_build_dir)/platform_defs_gen
 platform_defs:=$(platform_build_dir)/platform_defs.h
 platform_description:=$(platform_dir)/$(platform_description)

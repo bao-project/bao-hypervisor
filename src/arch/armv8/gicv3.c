@@ -23,7 +23,7 @@
 #include <interrupts.h>
 #include <fences.h>
 
-extern volatile struct gicd_hw gicd;
+extern volatile struct gicd_hw *gicd;
 volatile struct gicr_hw *gicr;
 
 static spinlock_t gicd_lock;
@@ -107,8 +107,8 @@ void gic_cpu_init()
 
 void gic_map_mmio()
 {
-    mem_map_dev(&cpu()->as, (vaddr_t)&gicd, platform.arch.gic.gicd_addr,
-                NUM_PAGES(sizeof(gicd)));
+    gicd = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, 
+        platform.arch.gic.gicd_addr, NUM_PAGES(sizeof(struct gicd_hw)));
     gicr = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, 
        platform.arch.gic.gicr_addr, 
        NUM_PAGES(sizeof(struct gicr_hw) * PLAT_CPU_NUM));
@@ -222,7 +222,7 @@ void gicd_set_route(irqid_t int_id, unsigned long route)
 
     spin_lock(&gicd_lock);
 
-    gicd.IROUTER[int_id] = route & GICD_IROUTER_AFF_MSK;
+    gicd->IROUTER[int_id] = route & GICD_IROUTER_AFF_MSK;
 
     spin_unlock(&gicd_lock);
 }

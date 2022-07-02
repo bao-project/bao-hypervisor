@@ -37,7 +37,7 @@ extern volatile const size_t VGIC_IPI_ID;
 
 #define GICD_IS_REG(REG, offset)            \
     (((offset) >= offsetof(struct gicd_hw, REG)) && \
-     (offset) < (offsetof(struct gicd_hw, REG) + sizeof(gicd.REG)))
+     (offset) < (offsetof(struct gicd_hw, REG) + sizeof(gicd->REG)))
 #define GICD_REG_GROUP(REG) ((offsetof(struct gicd_hw, REG) & 0xff80) >> 7)
 #define GICD_REG_MASK(ADDR) ((ADDR)&(GIC_VERSION == GICV2 ? 0xfffUL : 0xffffUL))
 #define GICD_REG_IND(REG) (offsetof(struct gicd_hw, REG) & 0x7f)
@@ -447,7 +447,7 @@ void vgicd_emul_pidr_access(struct emul_access *acc,
 {
     if (!acc->write) {
         vcpu_writereg(cpu()->vcpu, acc->reg,
-                      gicd.ID[((acc->addr & 0xff) - 0xd0) / 4]);
+                      gicd->ID[((acc->addr & 0xff) - 0xd0) / 4]);
     }
 }
 
@@ -1124,7 +1124,7 @@ size_t vgic_get_itln(const struct vgic_dscrp *vgic_dscrp) {
      */
 
     size_t vtyper_itln =
-        bit32_extract(gicd.TYPER, GICD_TYPER_ITLN_OFF, GICD_TYPER_ITLN_LEN);
+        bit32_extract(gicd->TYPER, GICD_TYPER_ITLN_OFF, GICD_TYPER_ITLN_LEN);
 
     if(vgic_dscrp->interrupt_num > GIC_MAX_PPIS) {
         vtyper_itln = (ALIGN(vgic_dscrp->interrupt_num, 32)/32 - 1) & 

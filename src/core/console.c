@@ -23,8 +23,7 @@
 #include <fences.h>
 #include <spinlock.h>
 
-volatile bao_uart_t uart
-    __attribute__((section(".devices"), aligned(PAGE_SIZE)));
+volatile bao_uart_t *uart;
 bool ready = false;
 static spinlock_t print_lock = SPINLOCK_INITVAL;
 
@@ -34,13 +33,13 @@ void console_init()
         WARNING("console base must be page aligned");
     }
 
-    mem_map_dev(&cpu()->as, (vaddr_t)&uart, platform.console.base,
-                NUM_PAGES(sizeof(uart)));
+    uart = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA,
+        platform.console.base, NUM_PAGES(sizeof(uart)));
 
     fence_sync_write();
 
-    uart_init(&uart);
-    uart_enable(&uart);
+    uart_init(uart);
+    uart_enable(uart);
 
     ready = true;
 }
@@ -49,6 +48,6 @@ void console_write(char const* const str)
 {
     if (!ready) return;
     spin_lock(&print_lock);
-    uart_puts(&uart, str);
+    uart_puts(uart, str);
     spin_unlock(&print_lock);
 }

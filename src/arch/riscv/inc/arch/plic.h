@@ -42,8 +42,8 @@ struct plic_hart_hw {
     uint8_t res[0x1000 - 0x0008];
 } __attribute__((__packed__, aligned(PAGE_SIZE)));
 
-extern volatile struct plic_global_hw plic_global;
-extern volatile struct plic_hart_hw plic_hart[PLIC_PLAT_CNTXT_NUM];
+extern volatile struct plic_global_hw *plic_global;
+extern volatile struct plic_hart_hw *plic_hart;
 extern size_t PLIC_IMPL_INTERRUPTS;
 
 void plic_init();

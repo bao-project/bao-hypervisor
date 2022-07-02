@@ -94,10 +94,6 @@ SECTIONS
 	_image_end = ABSOLUTE(.);
 	_dmem_phys_beg = ABSOLUTE(.) + extra_allocated_phys_mem;
 
-	.devices _image_end (NOLOAD) : ALIGN(PAGE_SIZE) {
-		*(.devices)
-	}
-
 	. = ALIGN(PAGE_SIZE);
 	_dmem_beg = ABSOLUTE(.);
 	_cpu_if_base = ABSOLUTE(.);

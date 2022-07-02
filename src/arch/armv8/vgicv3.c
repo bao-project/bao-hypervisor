@@ -260,7 +260,7 @@ void vgic_init(struct vm *vm, const struct vgic_dscrp *vgic_dscrp)
         ((vtyper_itln << GICD_TYPER_ITLN_OFF) & GICD_TYPER_ITLN_MSK) |
         (((vm->cpu_num - 1) << GICD_TYPER_CPUNUM_OFF) & GICD_TYPER_CPUNUM_MSK) |
         (((10 - 1) << GICD_TYPER_IDBITS_OFF) & GICD_TYPER_IDBITS_MSK);
-    vm->arch.vgicd.IIDR = gicd.IIDR;
+    vm->arch.vgicd.IIDR = gicd->IIDR;
 
     size_t vgic_int_size = vm->arch.vgicd.int_num * sizeof(struct vgic_int);
     vm->arch.vgicd.interrupts =

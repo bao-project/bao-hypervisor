@@ -68,7 +68,7 @@ void vgicd_emul_sgiregs_access(struct emul_access *acc,
 {
     unsigned long val = acc->write ? vcpu_readreg(cpu()->vcpu, acc->reg) : 0;
 
-    if ((acc->addr & 0xfff) == (((uintptr_t)&gicd.SGIR) & 0xfff)) {
+    if ((acc->addr & 0xfff) == (((uintptr_t)&gicd->SGIR) & 0xfff)) {
         if (acc->write) {
             cpumap_t trgtlist = 0;
             irqid_t int_id = GICD_SGIR_SGIINTID(val);
@@ -145,7 +145,7 @@ void vgic_init(struct vm *vm, const struct vgic_dscrp *vgic_dscrp)
     vm->arch.vgicd.TYPER =
         ((vtyper_itln << GICD_TYPER_ITLN_OFF) & GICD_TYPER_ITLN_MSK) |
         (((vm->cpu_num - 1) << GICD_TYPER_CPUNUM_OFF) & GICD_TYPER_CPUNUM_MSK);
-    vm->arch.vgicd.IIDR = gicd.IIDR;
+    vm->arch.vgicd.IIDR = gicd->IIDR;
 
     size_t n = NUM_PAGES(sizeof(struct gicc_hw));
     mem_alloc_map_dev(&vm->as, SEC_VM_ANY,(vaddr_t)vgic_dscrp->gicc_addr, 

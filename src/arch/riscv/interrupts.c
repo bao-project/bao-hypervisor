@@ -28,12 +28,12 @@
 void interrupts_arch_init()
 {
     if (cpu()->id == CPU_MASTER) {
-        mem_map_dev(&cpu()->as, (vaddr_t)&plic_global, platform.arch.plic_base,
-                    ALIGN(sizeof(plic_global), PAGE_SIZE) / PAGE_SIZE);
+        plic_global = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, 
+            platform.arch.plic_base, NUM_PAGES(sizeof(struct plic_global_hw)));
 
-        mem_map_dev(&cpu()->as, (vaddr_t)plic_hart,
-                    platform.arch.plic_base + PLIC_CLAIMCMPLT_OFF,
-                    ALIGN(sizeof(plic_hart), PAGE_SIZE) / PAGE_SIZE);
+        plic_global = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, 
+            platform.arch.plic_base + PLIC_CLAIMCMPLT_OFF,
+            NUM_PAGES(sizeof(struct plic_hart_hw)*PLIC_PLAT_CNTXT_NUM));
 
         fence_sync();
 

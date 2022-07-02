@@ -391,9 +391,9 @@ struct gicv_hw {
     uint32_t DIR;
 } __attribute__((__packed__, aligned(0x1000)));
 
-extern volatile struct gicd_hw gicd;
-extern volatile struct gicc_hw gicc;
-extern volatile struct gich_hw gich;
+extern volatile struct gicd_hw *gicd;
+extern volatile struct gicc_hw *gicc;
+extern volatile struct gich_hw *gich;
 
 enum int_state { INV, PEND, ACT, PENDACT };
 
@@ -450,7 +450,7 @@ uint8_t gicr_get_prio(irqid_t int_id, cpuid_t gicr_id);
 
 void gic_maintenance_handler(irqid_t irq_id);
 
-extern volatile struct gicd_hw gicd;
+extern volatile struct gicd_hw *gicd;
 extern volatile struct gicr_hw *gicr;
 
 size_t gich_num_lrs();
@@ -458,7 +458,7 @@ size_t gich_num_lrs();
 static inline size_t gic_num_irqs()
 {
     size_t itlinenumber =
-        bit32_extract(gicd.TYPER, GICD_TYPER_ITLN_OFF, GICD_TYPER_ITLN_LEN);
+        bit32_extract(gicd->TYPER, GICD_TYPER_ITLN_OFF, GICD_TYPER_ITLN_LEN);
     return 32 * itlinenumber + 1;
 }
 
