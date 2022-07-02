@@ -1,3 +1,8 @@
+/**
+ * SPDX-License-Identifier: GPL-2.0
+ * Copyright (c) Bao Project and Contributors. All rights reserved.
+ */
+
 #include <arch/bao.h>
 #include <arch/sysregs.h>
 #include <arch/page_table.h>

@@ -1,4 +1,9 @@
 /**
+ * SPDX-License-Identifier: GPL-2.0 
+ * Copyright (c) Bao Project and Contributors. All rights reserved
+ */
+
+/**
  * baohu separation kernel
  *
  * Copyright (c) Jose Martins, Sandro Pinto, David Cerdeira

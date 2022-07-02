@@ -1,3 +1,8 @@
+/**
+ * SPDX-License-Identifier: GPL-2.0 
+ * Copyright (c) Bao Project and Contributors. All rights reserved.
+ */
+
 #include <platform.h>
 
 struct platform platform = {

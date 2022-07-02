@@ -1,3 +1,6 @@
+## SPDX-License-Identifier: GPL-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
 CROSS_COMPILE ?= aarch64-none-elf-
 
 arch-cppflags+= 

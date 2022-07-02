@@ -1,5 +1,9 @@
-#include <mem.h>
+/**
+ * SPDX-License-Identifier: GPL-2.0
+ * Copyright (c) Bao Project and Contributors. All rights reserved.
+ */
 
+#include <mem.h>
 #include <cpu.h>
 
 void mem_prot_init() {

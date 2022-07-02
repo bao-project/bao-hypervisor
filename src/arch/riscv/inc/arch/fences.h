@@ -1,16 +1,6 @@
 /**
- * Bao Hypervisor
- *
- * Copyright (c) Bao Project (www.bao-project.org), 2019-
- *
- * Authors:
- *      Jose Martins <jose.martins@bao-project.org>
- *
- * Bao is free software; you can redistribute it and/or modify it under the
- * terms of the GNU General Public License version 2 as published by the Free
- * Software Foundation, with a special exception exempting guest code from such
- * license. See the COPYING file in the top-level directory for details.
- *
+ * SPDX-License-Identifier: GPL-2.0
+ * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 #ifndef __FENCES_ARCH_H__
 #define __FENCES_ARCH_H__

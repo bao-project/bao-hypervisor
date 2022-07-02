@@ -1,3 +1,7 @@
+/**
+ * SPDX-License-Identifier: GPL-2.0
+ * Copyright (c) Bao Project and Contributors. All rights reserved.
+ */
 
 #ifndef VM_SUBARCH_H
 #define VM_SUBARCH_H
