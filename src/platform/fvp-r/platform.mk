@@ -12,7 +12,7 @@ GIC_VERSION:=GICV3
 
 drivers = pl011_uart
 
-platform_description:=fvpbaser_desc.c
+platform_description:=fvpr_desc.c
 
 platform-cppflags =
 platform-cflags = -mtune=$(CPU)
