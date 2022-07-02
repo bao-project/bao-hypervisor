@@ -17,8 +17,18 @@ vaddr_t mem_alloc_vpage(struct addr_space *as, enum AS_SEC section,
     return NULL_VA;
 }
 
+void mem_free_vpage(struct addr_space* as, vaddr_t at, size_t n,
+                    bool free_ppages) {
+
+}
+
 bool mem_map(struct addr_space *as, vaddr_t va, struct ppages *ppages,
             size_t n, mem_flags_t flags)
 {
     return false;
+}
+
+vaddr_t mem_map_cpy(struct addr_space *ass, struct addr_space *asd, vaddr_t vas,
+                vaddr_t vad, size_t n) {
+    return vas;
 }
