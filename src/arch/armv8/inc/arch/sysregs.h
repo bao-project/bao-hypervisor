@@ -18,7 +18,7 @@
 
 #include <bao.h>
 #include <bit.h>
-#include <arch/profile/sysregs.h>
+#include <arch/subarch/sysregs.h>
 
 /* ID_AA64MMFR0_EL1, AArch64 Memory Model Feature Register 0 */
 #define ID_AA64MMFR0_PAR_OFF 0
