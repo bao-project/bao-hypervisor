@@ -109,9 +109,9 @@ void gic_map_mmio()
 {
     mem_map_dev(&cpu()->as, (vaddr_t)&gicd, platform.arch.gic.gicd_addr,
                 NUM_PAGES(sizeof(gicd)));
-    size_t gicr_size = NUM_PAGES(sizeof(struct gicr_hw)) * platform.cpu_num;
-    gicr = (struct gicr_hw *)mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, gicr_size);
-    mem_map_dev(&cpu()->as, (vaddr_t)gicr, platform.arch.gic.gicr_addr, gicr_size);
+    gicr = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, 
+       platform.arch.gic.gicr_addr, 
+       NUM_PAGES(sizeof(struct gicr_hw) * PLAT_CPU_NUM));
 }
 
 void gicr_set_prio(irqid_t int_id, uint8_t prio, cpuid_t gicr_id)

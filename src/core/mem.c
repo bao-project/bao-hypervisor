@@ -187,14 +187,7 @@ void *mem_alloc_page(size_t n, enum AS_SEC sec, bool phys_aligned)
     struct ppages ppages = mem_alloc_ppages(cpu()->as.colors, n, phys_aligned);
 
     if (ppages.size == n) {
-        vpage = mem_alloc_vpage(&cpu()->as, sec, NULL_VA, n);
-
-        if (vpage == NULL_VA) {
-            // TODO: free allocated ppage
-            ERROR("failed to allocate virtual page");
-        } else {
-            mem_map(&cpu()->as, vpage, &ppages, n, PTE_HYP_FLAGS);
-        }
+        vpage = mem_alloc_map(&cpu()->as, sec, &ppages, NULL_VA, n, PTE_HYP_FLAGS);
     }
 
     return (void*)vpage;
@@ -211,13 +204,10 @@ bool root_pool_set_up_bitmap(paddr_t load_addr, struct page_pool *root_pool)
     if (root_pool->size <= bitmap_size) return false;
     size_t bitmap_base = load_addr + image_size + vm_image_size + cpu_size;
 
-    struct ppages bitmap_pp = mem_ppages_get(bitmap_base, bitmap_size);
-    bitmap_t* root_bitmap = (bitmap_t*)
-        mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, bitmap_size);
-    if (root_bitmap == NULL) return false;
-
+    struct ppages bitmap_pp = mem_ppages_get(bitmap_base, bitmap_size);    
+    bitmap_t* root_bitmap = (bitmap_t*) 
+        mem_alloc_map(&cpu()->as, SEC_HYP_GLOBAL, &bitmap_pp, NULL_VA, bitmap_size, PTE_HYP_FLAGS);
     root_pool->bitmap = root_bitmap;
-    mem_map(&cpu()->as, (vaddr_t)root_pool->bitmap, &bitmap_pp, bitmap_size, PTE_HYP_FLAGS);
     memset((void*)root_pool->bitmap, 0, bitmap_size * PAGE_SIZE);
 
     return mem_reserve_ppool_ppages(root_pool, &bitmap_pp);
@@ -284,11 +274,10 @@ static void pp_init(struct page_pool *pool, paddr_t base, size_t size)
     pages = mem_alloc_ppages(cpu()->as.colors, bitmap_size, false);
     if (pages.size != bitmap_size) return;
 
-    if ((pool->bitmap = (bitmap_t*)mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL,
-                                    NULL_VA, bitmap_size)) == NULL)
+    if ((pool->bitmap = (bitmap_t*)mem_alloc_map(&cpu()->as, SEC_HYP_GLOBAL, &pages, 
+                                    NULL_VA, bitmap_size, PTE_HYP_FLAGS)) == NULL)
         return;
 
-    mem_map(&cpu()->as, (vaddr_t)pool->bitmap, &pages, bitmap_size, PTE_HYP_FLAGS);
     memset((void*)pool->bitmap, 0, bitmap_size * PAGE_SIZE);
 
     pool->last = 0;

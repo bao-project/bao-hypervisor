@@ -935,3 +935,23 @@ void mem_prot_init() {
         ALIGN(((vaddr_t)cpu()) + sizeof(struct cpu), PAGE_SIZE);
     as_init(&cpu()->as, AS_HYP, HYP_ASID, root_pt, 0);
 }
+
+vaddr_t mem_alloc_map(struct addr_space* as, enum AS_SEC section, struct ppages *page, 
+                        vaddr_t at, size_t size, mem_flags_t flags)
+{
+    vaddr_t address = mem_alloc_vpage (as, section, at, size);
+    // if (address != at) ERROR("Can't allocate address");
+    mem_map(as, address, page, size, flags);
+
+    return address;
+}
+
+vaddr_t mem_alloc_map_dev(struct addr_space* as, enum AS_SEC section, 
+                             vaddr_t at, paddr_t pa, size_t size)
+{
+    vaddr_t address = mem_alloc_vpage(as, section, at, size);
+    if (address == NULL_VA) ERROR("Can't allocate dev address");
+    mem_map_dev(as, address, pa, size);
+
+    return address;
+}

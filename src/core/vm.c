@@ -74,18 +74,20 @@ static void vm_copy_img_to_rgn(struct vm* vm, const struct vm_config* config,
     /* map original img address */
     size_t n_img = NUM_PAGES(config->image.size);
     struct ppages src_pa_img = mem_ppages_get(config->image.load_addr, n_img);
-    vaddr_t src_va = mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, n_img);
-    if (!mem_map(&cpu()->as, src_va, &src_pa_img, n_img, PTE_HYP_FLAGS)) {
-        ERROR("mem_map failed %s", __func__);
+    vaddr_t src_va = mem_alloc_map(&cpu()->as, SEC_HYP_GLOBAL, &src_pa_img,
+                                     NULL_VA, n_img, PTE_HYP_FLAGS);
+    if (src_va == NULL_VA) {
+        ERROR("mem_alloc_map failed %s", __func__);
     }
 
     /* map new address */
     size_t offset = config->image.base_addr - reg->base;
     size_t dst_phys = reg->phys + offset;
     struct ppages dst_pp = mem_ppages_get(dst_phys, n_img);
-    vaddr_t dst_va = mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, n_img);
-    if (!mem_map(&cpu()->as, dst_va, &dst_pp, n_img, PTE_HYP_FLAGS)) {
-        ERROR("mem_map failed %s", __func__);
+    vaddr_t dst_va = mem_alloc_map(&cpu()->as, SEC_HYP_GLOBAL, &dst_pp,
+                                     NULL_VA, n_img, PTE_HYP_FLAGS);
+    if (dst_va == NULL_VA) {
+        ERROR("mem_alloc_map failed %s", __func__);
     }
 
     memcpy((void*)dst_va, (void*)src_va, n_img * PAGE_SIZE);
@@ -96,18 +98,22 @@ static void vm_copy_img_to_rgn(struct vm* vm, const struct vm_config* config,
 void vm_map_mem_region(struct vm* vm, struct vm_mem_region* reg)
 {
     size_t n = NUM_PAGES(reg->size);
-    vaddr_t va = mem_alloc_vpage(&vm->as, SEC_VM_ANY,
-                    (vaddr_t)reg->base, n);
-    if (va != (vaddr_t)reg->base) {
-        ERROR("failed to allocate vm's dev address");
-    }
 
     if (reg->place_phys) {
         struct ppages pa_reg = mem_ppages_get(reg->phys, n);
-        pa_reg.colors = reg->colors;
-        mem_map(&vm->as, va, &pa_reg, n, PTE_VM_FLAGS);
+        pa_reg.colors = reg->colors;        
+        vaddr_t va = mem_alloc_map(&vm->as, SEC_VM_ANY, &pa_reg,
+                    (vaddr_t)reg->base, n, PTE_VM_FLAGS);
+        
+        if (va != (vaddr_t)reg->base) {
+            ERROR("failed to allocate vm's dev address");
+        }   
     } else {
-        mem_map(&vm->as, va, NULL, n, PTE_VM_FLAGS);
+        vaddr_t va = mem_alloc_map(&vm->as, SEC_VM_ANY, NULL,
+                    (vaddr_t)reg->base, n, PTE_VM_FLAGS);
+        if (va != (vaddr_t)reg->base) {
+            ERROR("failed to allocate vm's dev address");
+        }
     }
 }
 
@@ -123,19 +129,16 @@ static void vm_map_img_rgn_inplace(struct vm* vm, const struct vm_config* config
     /* mem region pages for img */
     size_t n_img = NUM_PAGES(config->image.size);
 
-    size_t n_total = n_before + n_aft + n_img;
 
     /* map img in place */
     struct ppages pa_img = mem_ppages_get(config->image.load_addr, n_img);
-    vaddr_t va = mem_alloc_vpage(&vm->as, SEC_VM_ANY,
-                                    (vaddr_t)reg->base, n_total);
 
-    /* map pages before img */
-    mem_map(&vm->as, va, NULL, n_before, PTE_VM_FLAGS);
+    vaddr_t va = mem_alloc_map(&vm->as, SEC_VM_ANY,
+                            NULL, (vaddr_t)reg->base, n_before, PTE_VM_FLAGS);
 
     if (all_clrs(vm->as.colors)) {
         /* map img in place */
-        mem_map(&vm->as, va + n_before * PAGE_SIZE, &pa_img, n_img,
+        mem_alloc_map(&vm->as, SEC_VM_ANY, &pa_img, va + n_before * PAGE_SIZE, n_img,
                 PTE_VM_FLAGS);
         /* we are mapping in place, config is already reserved */
     } else {
@@ -144,7 +147,7 @@ static void vm_map_img_rgn_inplace(struct vm* vm, const struct vm_config* config
                       PTE_VM_FLAGS);
     }
     /* map pages after img */
-    mem_map(&vm->as, va + (n_before + n_img) * PAGE_SIZE, NULL, n_aft,
+    mem_alloc_map(&vm->as, SEC_VM_ANY, NULL, va + (n_before + n_img) * PAGE_SIZE, n_aft,
             PTE_VM_FLAGS);
 }
 
@@ -152,9 +155,8 @@ static void vm_install_image(struct vm* vm) {
     size_t img_num_pages = NUM_PAGES(vm->config->image.size);
     struct ppages img_ppages =
         mem_ppages_get(vm->config->image.load_addr, img_num_pages);
-    vaddr_t src_va =
-        mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, img_num_pages);
-    mem_map(&cpu()->as, src_va, &img_ppages, img_num_pages, PTE_HYP_FLAGS);
+    vaddr_t src_va = mem_alloc_map(&cpu()->as, SEC_HYP_GLOBAL, &img_ppages,
+        NULL_VA, img_num_pages, PTE_HYP_FLAGS);
     vaddr_t dst_va = mem_map_cpy(&vm->as, &cpu()->as, vm->config->image.base_addr,
                                 NULL_VA, img_num_pages);
     memcpy((void*)dst_va, (void*)src_va, vm->config->image.size);
@@ -231,9 +233,9 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* config)
 
         size_t n = ALIGN(dev->size, PAGE_SIZE) / PAGE_SIZE;
 
-        vaddr_t va = mem_alloc_vpage(&vm->as, SEC_VM_ANY,
-                                        (vaddr_t)dev->va, n);
-        mem_map_dev(&vm->as, va, dev->pa, n);
+        if (dev->va != NULL_VA) {
+            mem_alloc_map_dev(&vm->as, SEC_VM_ANY, (vaddr_t)dev->va, dev->pa, n);
+        }
 
         for (size_t j = 0; j < dev->interrupt_num; j++) {
             interrupts_vm_assign(vm, dev->interrupts[j]);
