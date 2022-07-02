@@ -415,7 +415,7 @@ vaddr_t mem_alloc_vpage(struct addr_space *as, enum AS_SEC section,
     return vpage;
 }
 
-void mem_free_vpage(struct addr_space *as, vaddr_t at, size_t n,
+void mem_unmap(struct addr_space *as, vaddr_t at, size_t n,
                     bool free_ppages)
 {
     vaddr_t vaddr = at;
@@ -679,8 +679,8 @@ bool mem_map_reclr(struct addr_space *as, vaddr_t va, struct ppages *ppages,
     };
     mem_free_ppages(&unused_pages);
 
-    mem_free_vpage(&cpu()->as, reclrd_va_base, reclrd_num, false);
-    mem_free_vpage(&cpu()->as, phys_va_base, n, false);
+    mem_unmap(&cpu()->as, reclrd_va_base, reclrd_num, false);
+    mem_unmap(&cpu()->as, phys_va_base, n, false);
 
     return true;
 }
@@ -879,14 +879,14 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region *root_regio
         va = mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, p_image.size);
         mem_map(&cpu()->as, va, &p_image, p_image.size, PTE_HYP_FLAGS);
         memset((void*)va, 0, p_image.size * PAGE_SIZE);
-        mem_free_vpage(&cpu()->as, va, p_image.size, true);
+        mem_unmap(&cpu()->as, va, p_image.size, true);
 
         p_image = mem_ppages_get(load_addr + image_load_size + vm_image_size,
             NUM_PAGES(image_noload_size));
         va = mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, p_image.size);
         mem_map(&cpu()->as, va, &p_image, p_image.size, PTE_HYP_FLAGS);
         memset((void*)va, 0, p_image.size * PAGE_SIZE);
-        mem_free_vpage(&cpu()->as, va, p_image.size, true);
+        mem_unmap(&cpu()->as, va, p_image.size, true);
 
         p_bitmap = mem_ppages_get(load_addr + image_size + vm_image_size +
                                       (cpu_boot_size * platform.cpu_num),
@@ -895,7 +895,7 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region *root_regio
         va = mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, p_bitmap.size);
         mem_map(&cpu()->as, va, &p_bitmap, p_bitmap.size, PTE_HYP_FLAGS);
         memset((void*)va, 0, p_bitmap.size * PAGE_SIZE);
-        mem_free_vpage(&cpu()->as, va, p_bitmap.size, true);
+        mem_unmap(&cpu()->as, va, p_bitmap.size, true);
     }
 
     p_cpu = mem_ppages_get(
@@ -904,7 +904,7 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region *root_regio
     va = mem_alloc_vpage(&cpu()->as, SEC_HYP_PRIVATE, NULL_VA, p_cpu.size);
     mem_map(&cpu()->as, va, &p_cpu,p_cpu.size, PTE_HYP_FLAGS);
     memset((void*)va, 0,p_cpu.size * PAGE_SIZE);
-    mem_free_vpage(&cpu()->as, va,p_cpu.size, false);
+    mem_unmap(&cpu()->as, va,p_cpu.size, false);
 }
 
 void as_init(struct addr_space *as, enum AS_TYPE type, asid_t id, 

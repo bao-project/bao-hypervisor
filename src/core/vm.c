@@ -153,14 +153,14 @@ static void vm_install_image(struct vm* vm) {
     struct ppages img_ppages =
         mem_ppages_get(vm->config->image.load_addr, img_num_pages);
     vaddr_t src_va =
-        mem_alloc_vpage(&cpu.as, SEC_HYP_GLOBAL, NULL_VA, img_num_pages);
-    mem_map(&cpu.as, src_va, &img_ppages, img_num_pages, PTE_HYP_FLAGS);
-    vaddr_t dst_va = mem_map_cpy(&vm->as, &cpu.as, vm->config->image.base_addr,
+        mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, img_num_pages);
+    mem_map(&cpu()->as, src_va, &img_ppages, img_num_pages, PTE_HYP_FLAGS);
+    vaddr_t dst_va = mem_map_cpy(&vm->as, &cpu()->as, vm->config->image.base_addr,
                                 NULL_VA, img_num_pages);
     memcpy((void*)dst_va, (void*)src_va, vm->config->image.size);
     cache_flush_range((vaddr_t)dst_va, vm->config->image.size);
-    mem_free_vpage(&cpu.as, src_va, img_num_pages, false);
-    mem_free_vpage(&cpu.as, dst_va, img_num_pages, false);
+    mem_unmap(&cpu()->as, src_va, img_num_pages, false);
+    mem_unmap(&cpu()->as, dst_va, img_num_pages, false);
 }
 
 static void vm_map_img_rgn(struct vm* vm, const struct vm_config* config,

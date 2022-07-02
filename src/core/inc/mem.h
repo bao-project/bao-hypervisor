@@ -84,7 +84,7 @@ void* mem_alloc_page(size_t n, enum AS_SEC sec, bool phys_aligned);
 struct ppages mem_alloc_ppages(colormap_t colors, size_t n, bool aligned);
 vaddr_t mem_alloc_vpage(struct addr_space* as, enum AS_SEC section,
                     vaddr_t at, size_t n);
-void mem_free_vpage(struct addr_space* as, vaddr_t at, size_t n,
+void mem_unmap(struct addr_space* as, vaddr_t at, size_t n,
                     bool free_ppages);
 bool mem_map(struct addr_space* as, vaddr_t va, struct ppages* ppages,
             size_t n, mem_flags_t flags);
