@@ -22,3 +22,7 @@ void vcpu_writepc(struct vcpu* vcpu, unsigned long pc)
 {
     vcpu->regs.elr_hyp = pc;
 }
+
+void vcpu_subarch_reset(struct vcpu* vcpu) {
+
+}

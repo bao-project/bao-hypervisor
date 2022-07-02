@@ -15,11 +15,6 @@ void vcpu_arch_profile_init(struct vcpu* vcpu, struct vm* vm) {
     tlb_vm_inv_all(vm->id);
 }
 
-void vcpu_arch_profile_reset(struct vcpu* vcpu) {
-    vcpu->regs.spsr_el2 = SPSR_EL1h | SPSR_F | SPSR_I | SPSR_A | SPSR_D;
-}
-
-
 bool vcpu_arch_profile_on(struct vcpu* vcpu) {
     return vcpu->arch.profile.psci_ctx.state == ON;
 }

@@ -67,7 +67,7 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
 {
     memset(&vcpu->regs, 0, sizeof(struct arch_regs));
 
-    vcpu_arch_profile_reset(vcpu);
+    vcpu_subarch_reset(vcpu);
 
     vcpu_writepc(vcpu, entry);
 

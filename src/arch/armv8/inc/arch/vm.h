@@ -63,7 +63,7 @@ void vcpu_arch_entry();
 
 bool vcpu_arch_profile_on(struct vcpu* vcpu);
 void vcpu_arch_profile_init(struct vcpu* vcpu, struct vm* vm);
-void vcpu_arch_profile_reset(struct vcpu* vcpu);
+void vcpu_subarch_reset(struct vcpu* vcpu);
 
 static inline void vcpu_arch_inject_hw_irq(struct vcpu* vcpu, uint64_t id)
 {

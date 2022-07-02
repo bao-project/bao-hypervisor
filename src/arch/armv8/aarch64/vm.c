@@ -22,3 +22,7 @@ void vcpu_writepc(struct vcpu* vcpu, unsigned long pc)
 {
     vcpu->regs.elr_el2 = pc;
 }
+
+void vcpu_subarch_reset(struct vcpu* vcpu) {
+    vcpu->regs.spsr_el2 = SPSR_EL1h | SPSR_F | SPSR_I | SPSR_A | SPSR_D;
+}
