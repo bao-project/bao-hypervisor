@@ -38,10 +38,6 @@ size_t gich_num_lrs()
 
 static inline void gicc_init()
 {
-    /* Enable system register interface i*/
-    sysreg_icc_sre_el2_write(ICC_SRE_SRE_BIT);
-    ISB();
-
     for (size_t i = 0; i < gich_num_lrs(); i++) {
         gich_write_lr(i, 0);
     }

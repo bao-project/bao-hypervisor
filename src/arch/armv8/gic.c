@@ -28,6 +28,7 @@
 #include <cpu.h>
 #include <spinlock.h>
 #include <platform.h>
+#include <fences.h>
 
 volatile struct gicd_hw *gicd;
 spinlock_t gicd_lock;
@@ -85,6 +86,11 @@ void gic_map_mmio();
 
 void gic_init()
 {
+    if (GIC_VERSION == GICV3) {
+        sysreg_icc_sre_el2_write(ICC_SRE_SRE_BIT | ICC_SRE_ENB_BIT);
+        ISB();
+    }
+
     if (cpu()->id == CPU_MASTER) {
         gic_map_mmio();
         gicd_init();
