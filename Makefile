@@ -160,7 +160,17 @@ deps+=$(config_dep)
 objs-y+=$(config_obj)
 
 # Toolchain flags
-override CPPFLAGS+=$(addprefix -I, $(inc_dirs)) $(arch-cppflags) $(platform-cppflags)
+
+build_macros:=
+ifeq ($(arch_mem_prot),mmu)
+build_macros+=-DMEM_PROT_MMU
+endif
+ifeq ($(arch_mem_prot),mpu)
+build_macros+=-DMEM_PROT_MPU
+endif
+
+override CPPFLAGS+=$(addprefix -I, $(inc_dirs)) $(arch-cppflags) \
+	$(platform-cppflags) $(build_macros)
 vpath:.=CPPFLAGS
 
 ifeq ($(DEBUG), y)
@@ -189,8 +199,8 @@ endif
 
 $(ld_script_temp):
 	@echo "Pre-processing		$(patsubst $(cur_dir)/%, %, $(ld_script))"
-	@$(cc) -E $(addprefix -I, $(inc_dirs)) -x assembler-with-cpp $(ld_script) \
-		| grep -v '^\#' > $(ld_script_temp)
+	@$(cc) -E $(addprefix -I, $(inc_dirs)) -x assembler-with-cpp  $(CPPFLAGS) \
+		$(ld_script) | grep -v '^\#' > $(ld_script_temp)
 
 ifeq (, $(findstring $(MAKECMDGOALS), clean $(submakes)))
 -include $(deps)
