@@ -60,3 +60,8 @@ pte_t* pt_get(struct page_table* pt, size_t lvl, vaddr_t va)
     uintptr_t pte = (uintptr_t)pt_get_pte(pt, lvl, va);
     return (pte_t*)(pte & ~(pt_size(pt, lvl) - 1));
 }
+
+bool pte_page(struct page_table* pt, pte_t* pte, size_t lvl)
+{
+    return ((*pte & PTE_VALID) != 0) && ((*pte & PTE_RWX) != 0);
+}
