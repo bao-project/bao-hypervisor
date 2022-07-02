@@ -51,6 +51,10 @@ static inline void gicc_init()
 
 static inline void gicr_init()
 {
+    gicr[cpu()->id].WAKER &= ~GICR_WAKER_ProcessorSleep_BIT;
+    while(gicr[cpu()->id].WAKER & GICR_WAKER_ChildrenASleep_BIT);
+
+    gicr[cpu()->id].IGROUPR0 = -1;
     gicr[cpu()->id].ICENABLER0 = -1;
     gicr[cpu()->id].ICPENDR0 = -1;
     gicr[cpu()->id].ICACTIVER0 = -1;
