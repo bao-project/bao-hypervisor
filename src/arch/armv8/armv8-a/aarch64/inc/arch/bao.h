@@ -21,6 +21,7 @@
 #define BAO_VM_BASE     (0xfe8000000000)
 #define BAO_VAS_TOP     (0xff0000000000)
 #define PAGE_SIZE       (0x1000)
+#define STACK_SIZE      (PAGE_SIZE)
 
 #ifndef __ASSEMBLER__
 

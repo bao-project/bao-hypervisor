@@ -24,8 +24,6 @@
 #include <mem.h>
 #include <list.h>
 
-#define STACK_SIZE (PAGE_SIZE)
-
 #ifndef __ASSEMBLER__
 
 struct cpuif {
