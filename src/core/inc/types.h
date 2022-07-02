@@ -27,6 +27,7 @@ typedef unsigned long asid_t;
 typedef unsigned long vmid_t;
 
 typedef uintptr_t paddr_t;
+typedef uintptr_t regaddr_t;
 typedef uintptr_t vaddr_t;
 #define NULL_VA ((vaddr_t)NULL)
 #define MAX_VA  ((vaddr_t)-1)

@@ -346,6 +346,8 @@
 
 #define ESR_EC_UNKWN (0x00)
 #define ESR_EC_WFIE (0x01)
+#define ESR_EC_RG_32 (0x03)
+#define ESR_EC_RG_64 (0x04)
 #define ESR_EC_SVC32 (0x11)
 #define ESR_EC_HVC32 (0x12)
 #define ESR_EC_SMC32 (0x13)
@@ -397,9 +399,15 @@
 #define ESR_ISS_DA_DSFC_PERMIS (0xC)
 
 #define ESR_ISS_SYSREG_ADDR ((0xfff << 10) | (0xf << 1))
+#define ESR_ISS_SYSREG_ADDR_32 (0xFFC1E)
+#define ESR_ISS_SYSREG_ADDR_64 (0xF001E)
 #define ESR_ISS_SYSREG_DIR (0x1)
 #define ESR_ISS_SYSREG_REG_OFF (5)
 #define ESR_ISS_SYSREG_REG_LEN (5)
+
+#define OP0_MRS_CP15 ((0x3)<<20)
+
+#define UNDEFINED_REG_ADDR (0xFFFFFFFFUL)
 
 /* VTTBR_EL2, Virtualization Translation Table Base Register */
 
@@ -435,6 +443,9 @@
 #define ICC_CTLR_EL3        S3_6_C12_C12_4 
 #define ICC_SRE_EL3         S3_6_C12_C12_5
 #define ICC_IGRPEN1_EL3     S3_6_C12_C12_7
+
+#define ICC_SGI1R_CASE (0x18)
+#define ICC_SGI1R_ADDR (0x3A3016)
 
 // #define ICH_AP0R<n>_EL2     S3_4_C12_C8 _0-3
 // #define ICH_AP1R<n>_EL2     S3_4_C12_C9 _0-3
