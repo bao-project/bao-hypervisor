@@ -219,7 +219,11 @@ bool vgicr_emul_handler(struct emul_access *acc)
 bool vgic_icc_sgir_handler(struct emul_access *acc)
 {
     if (acc->write) {
-        unsigned long sgir = vcpu_readreg(cpu()->vcpu, acc->reg);
+        uint64_t sgir = vcpu_readreg(cpu()->vcpu, acc->reg);
+        if (acc->multi_reg) {
+            uint64_t sgir_high = vcpu_readreg(cpu()->vcpu, acc->reg_high); 
+            sgir |= (sgir_high<<32);
+        }
         irqid_t int_id = ICC_SGIR_SGIINTID(sgir);
         cpumap_t trgtlist;
         if (sgir & ICC_SGIR_IRM_BIT) {

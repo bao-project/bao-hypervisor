@@ -25,6 +25,8 @@ struct emul_access {
     bool sign_ext;
     size_t width;
     unsigned long reg;
+    unsigned long reg_high;
+    bool multi_reg;
     size_t reg_width;
 };
 
