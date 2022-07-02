@@ -24,5 +24,5 @@ void vcpu_writepc(struct vcpu* vcpu, unsigned long pc)
 }
 
 void vcpu_subarch_reset(struct vcpu* vcpu) {
-
+    vcpu->regs.spsr_hyp = SPSR_SVC | SPSR_F | SPSR_I | SPSR_A;
 }
