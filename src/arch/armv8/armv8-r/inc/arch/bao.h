@@ -17,12 +17,7 @@
 #ifndef __ARCH_BAO_H__
 #define __ARCH_BAO_H__
 
-#define BAO_AS_BASE     (0x80000000) // TBD
-
-#define BAO_VAS_BASE    (0x80000000) // TBD
-#define BAO_CPU_BASE    (0x00000000) // TBD
-#define BAO_VM_BASE     (0x00000000) // TBD
-#define BAO_VAS_TOP     (0x00000000) // TBD
+#define BAO_VAS_BASE    CONFIG_HYP_BASE_ADDR
 #define PAGE_SIZE       (64)
 #define STACK_SIZE      (0x1000)
 

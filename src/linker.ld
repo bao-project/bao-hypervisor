@@ -14,6 +14,8 @@
  */
 
 #include <bao.h>
+#include <platform_defs.h>
+#include <config_defs.h>
 
 ENTRY(_image_start)
 

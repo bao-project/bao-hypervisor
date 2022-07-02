@@ -758,10 +758,10 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region *root_regio
     size_t bitmap_size = (root_pool->size / (8 * PAGE_SIZE) +
                           !!(root_pool->size % (8 * PAGE_SIZE) != 0)) *
                          PAGE_SIZE;
-    colormap_t colors = config.hyp_colors;
+    colormap_t colors = config.hyp.colors;
 
     /* Set hypervisor colors in current address space */
-    cpu()->as.colors = config.hyp_colors;
+    cpu()->as.colors = config.hyp.colors;
 
     /*
      * Copy the CPU space into a colored region.

@@ -104,8 +104,21 @@ struct vm_config {
 };
 
 extern struct config {
-    /* Hypervisor colors */
-    colormap_t hyp_colors;
+
+    struct {
+        /**
+         * Only meaningful for MPU-based platforms. The hypervisor base address
+         * will default to the platform's base address, i.e., the base address
+         * of the first region defined in the target platform's description. 
+         * If the user wishes to relocate it to another address, they must set 
+         * relocate to true and provide the new base address.
+         */
+        bool relocate;
+        paddr_t base_addr;
+
+        /* Hypervisor colors */
+        colormap_t colors;
+    } hyp;
 
     /* Definition of shared memory regions to be used by VMs */
     size_t shmemlist_size;

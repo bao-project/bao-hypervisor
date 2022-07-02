@@ -437,7 +437,7 @@ void mem_init(paddr_t load_addr)
 
     cpu_sync_barrier(&cpu_glb_sync);
 
-    if (!all_clrs(config.hyp_colors)) {
+    if (!all_clrs(config.hyp.colors)) {
         mem_color_hypervisor(load_addr, root_mem_region);
     }
 
