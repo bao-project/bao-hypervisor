@@ -223,7 +223,8 @@ ifneq ($(wildcard $(asm_defs_src)),)
 $(asm_defs_hdr): $(asm_defs_src)
 	@echo "Generating header	$(patsubst $(cur_dir)/%, %, $@)"
 	@$(cc) -S $(CFLAGS) -DGENERATING_DEFS $< -o - \
-		| awk '($$1 == "->") { print "#define " $$2 " " $$3 }' > $@
+		| awk '($$1 == "->") \
+			{ gsub("#", "", $$3); print "#define " $$2 " " $$3 }' > $@
 
 $(asm_defs_hdr).d: $(asm_defs_src)
 	@echo "Creating dependency	$(patsubst $(cur_dir)/%, %,\
