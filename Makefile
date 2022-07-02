@@ -234,8 +234,9 @@ endif
 $(config_dep): $(config_src)
 	@echo "Creating dependency	$(patsubst $(cur_dir)/%, %,\
 		 $(patsubst %.d,%, $@))"
-	@$(cc) $(CPPFLAGS) -S $< -o - | grep ".incbin" | $(as) -MD $@ -o $@
-	@$(cc) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $(filter %.c, $^) > $@
+	@$(cc) -MM -MG -MT "$(config_obj) $@" $(CPPFLAGS) $(filter %.c, $^) > $@
+	@$(cc) $(CPPFLAGS) -S $(config_src) -o - | grep ".incbin" | \
+		awk '{ gsub("\"", "", $$2); print "$(config_obj): " $$2 }' >> $@
 
 $(config_def_generator): $(config_def_generator_src) $(config_src)
 	@echo "Compiling generator	$(patsubst $(cur_dir)/%, %, $@)"
