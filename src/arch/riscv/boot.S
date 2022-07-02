@@ -66,7 +66,6 @@ _dmem_beg_sym: .8byte _dmem_beg
 _enter_vas_sym: .8byte _enter_vas
 _bss_start_sym: .8byte _bss_start
 _bss_end_sym: .8byte _bss_end
-_cpu_if_base_sym: .8byte _cpu_if_base
 
 .data 
 .align 3

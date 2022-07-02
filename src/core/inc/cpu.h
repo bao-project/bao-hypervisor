@@ -28,8 +28,6 @@
 
 #ifndef __ASSEMBLER__
 
-extern uint8_t _cpu_if_base;
-
 struct cpuif {
     struct list event_list;
 
