@@ -3,20 +3,22 @@
 
 unsigned long vcpu_readreg(struct vcpu* vcpu, unsigned long reg)
 {
-    return 0;
+    if (reg > 14) return 0;
+    return vcpu->regs.x[reg];
 }
 
 void vcpu_writereg(struct vcpu* vcpu, unsigned long reg, unsigned long val)
 {
-
+    if (reg > 14) return;
+    vcpu->regs.x[reg] = val;
 }
 
 unsigned long vcpu_readpc(struct vcpu* vcpu)
 {
-    return 0;
+    return vcpu->regs.elr_hyp;
 }
 
 void vcpu_writepc(struct vcpu* vcpu, unsigned long pc)
 {
-
+    vcpu->regs.elr_hyp = pc;
 }
