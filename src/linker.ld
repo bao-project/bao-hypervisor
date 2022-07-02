@@ -68,12 +68,14 @@ SECTIONS
     _image_noload_start = .;
     extra_allocated_phys_mem = _image_noload_start - _image_load_end;
 
+#ifdef MEM_PROT_MMU
 	/**
 	 * Rewind LC to reuse VMA addresses occupied by config and make VA
 	 * start immediately after image.
 	 * Also, force start address of next section to enforce this.
 	 */
     . = _image_load_end;
+#endif
 
 	/* Only no load regions below */
 	
@@ -96,7 +98,8 @@ SECTIONS
 
 	. = ALIGN(PAGE_SIZE);
 	_dmem_beg = ABSOLUTE(.);
-	
+
+#ifdef MEM_PROT_MMU	
 	/* Global dynamic memory virtual address space here */
 
 	. = BAO_CPU_BASE;
@@ -108,4 +111,5 @@ SECTIONS
 
 	. = BAO_VAS_TOP;
 	_vm_end = ABSOLUTE(.);
+#endif
  }
