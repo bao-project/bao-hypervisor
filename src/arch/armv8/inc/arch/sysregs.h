@@ -223,6 +223,7 @@
 #define SCTLR_C (1 << 2)
 #define SCTLR_SA (1 << 3)
 #define SCTLR_I (1 << 12)
+#define SCTLR_BR (1 << 17)
 #define SCTLR_WXN (1 << 19)
 #define SCTLR_EE (1 << 25)
 
@@ -463,6 +464,29 @@
 #define ICH_LR13_EL2        S3_4_C12_C13_5
 #define ICH_LR14_EL2        S3_4_C12_C13_6
 #define ICH_LR15_EL2        S3_4_C12_C13_7
+
+/* MPU registers */
+
+#define MPUIR_REGION_MSK    (0xFFUL)
+#define MPUIR_REGION(MPUIR) ((MPUIR) & MPUIR_REGION_MSK)
+
+#define PRBAR_XN            (1UL << 0)
+#define PRBAR_AP_RW_EL2     (0 << 1)
+#define PRBAR_AP_RW_ALL     (1UL << 1)
+#define PRBAR_AP_RO_EL2     (2UL << 1)
+#define PRBAR_AP_RO_ALL     (3UL << 1)
+#define PRBAR_SH_NS         (0 << 3)
+#define PRBAR_SH_OS         (2UL << 3)
+#define PRBAR_SH_IS         (3UL << 3)
+#define PRBAR_BASE_MSK      (~0x3FUL)
+#define PRBAR_BASE(BASE)    ((BASE) & PRBAR_BASE_MSK)
+
+#define PRLAR_EN            (0x1UL)
+#define PRLAR_ATTR_OFF      (1)
+#define PRLAR_ATTR_MSK      (0x3UL << PRLAR_ATTR_OFF)
+#define PRLAR_ATTR(N)       (((N) << PRLAR_ATTR_OFF) & PRLAR_ATTR_MSK)
+#define PRLAR_LIMIT_MSK     (~0x3FUL)
+#define PRLAR_LIMIT(BASE)   ((BASE) & PRLAR_LIMIT_MSK)
 
 #ifndef __ASSEMBLER__
 

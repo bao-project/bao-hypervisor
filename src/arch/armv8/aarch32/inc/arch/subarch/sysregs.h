@@ -86,6 +86,12 @@ SYSREG_GEN_ACCESSORS(hcr2, 4, c6, c0, 0);
 SYSREG_GEN_ACCESSORS_MERGE(hcr_el2, hcr, hcr2);
 SYSREG_GEN_ACCESSORS(cntfrq_el0, 0, c14, c0, 0);
 
+SYSREG_GEN_ACCESSORS(mpuir_el2, 4, c0, c0, 4);
+SYSREG_GEN_ACCESSORS(prselr_el2, 4, c6, c2, 1);
+SYSREG_GEN_ACCESSORS(prbar_el2, 4, c6, c3, 0);
+SYSREG_GEN_ACCESSORS(prlar_el2, 4, c6, c3, 1);
+SYSREG_GEN_ACCESSORS(prenr_el2, 4, c6, c1, 1);
+
 SYSREG_GEN_ACCESSORS(ich_misr_el2, 4, c12, c11, 2);
 SYSREG_GEN_ACCESSORS(ich_eisr_el2, 4, c12, c11, 3);
 SYSREG_GEN_ACCESSORS(ich_elrsr_el2, 4, c12, c11, 5);
