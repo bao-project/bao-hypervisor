@@ -66,27 +66,24 @@ _reset_handler:
 
 .pushsection .data
 _master_set:
-    .8byte 0
+    .4byte 0
 .popsection
-
-
 /**
- * For setting the master CPU, we assume only one CPU is initially activated 
- * which later will turn on all the others. Therefore, there is no concurrency 
- * when setting CPU_MASTER and no atomic operations are needed.
- * As a result r9 should be set to !is_cpu_master
+ * Setting CPU_MASTER by lottery, the first cpu to atomically set _master_set,
+ * becomes the cpu master. As a result r9 should is set to !is_cpu_master.
  */
-_set_master_cpu:
+    mov	r5, #1
     get_phys_addr r3, r4, _master_set
-    ldr r9, [r3]
+_set_master_cpu:
+    ldaex r9, [r3]
     cmp r9, #0
-    bne 7f
-    mov	r9, #1
-    str r9, [r3]
-    mov r9, #0
+    bne 1f
+    stlex r9, r5, [r3]
+    cmp r9, #0
+    bne _set_master_cpu
     get_phys_addr r3, r4, CPU_MASTER
     str r0, [r3]
-7:
+1:
 
     /** 
      * TODO: bring the system to a well known state. This includes disabling 

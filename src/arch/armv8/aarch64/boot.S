@@ -90,21 +90,19 @@ _master_set:
 	.8byte 	0
 .popsection
 /**
- * For setting the master cpu, we assume only one cpu is initially activated 
- * which later will turn on all the others. Therefore, there is no concurrency 
- * when setting CPU_MASTER and no atomic operations are needed.
- * As a result x9 should be set to !is_cpu_master
+ * Setting CPU_MASTER by lottery, the first cpu to atomically set _master_set,
+ * becomes the cpu master. As a result x9 should is set to !is_cpu_master.
  */
+    mov x5, #1
+    adr	x3, _master_set
 _set_master_cpu:
-	adr	x3, _master_set
-	ldr x9, [x3]
-	cbnz x9, 7f
-	mov	x9, #1
-	str x9, [x3]
-	mov x9, xzr
+	ldaxr w9, [x3]
+	cbnz w9, 1f
+	stlxr w9, x5, [x3]
+	cbnz w9, _set_master_cpu
 	adr x3, CPU_MASTER
 	str x0, [x3]
-7: 
+1: 
 
 	/** 
 	 * TODO: bring the system to a well known state. This includes disabling 
