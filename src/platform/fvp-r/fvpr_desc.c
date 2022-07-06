@@ -30,6 +30,10 @@ struct platform platform = {
             .gicr_addr = 0xAF100000,
             .maintenance_id = 25
         },
+
+        .generic_timer = {
+            .base_addr = 0xAA430000
+        }
     }
 
 };
