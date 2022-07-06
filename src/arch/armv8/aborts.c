@@ -21,7 +21,7 @@ void aborts_data_lower(unsigned long iss, unsigned long far, unsigned long il, u
     unsigned long DSFC =
         bit64_extract(iss, ESR_ISS_DA_DSFC_OFF, ESR_ISS_DA_DSFC_LEN) & (0xf << 2);
 
-    if (DSFC != ESR_ISS_DA_DSFC_TRNSLT) {
+    if (DSFC != ESR_ISS_DA_DSFC_TRNSLT && DSFC != ESR_ISS_DA_DSFC_PERMIS) {
         ERROR("data abort is not translation fault - cant deal with it");
     }
 
