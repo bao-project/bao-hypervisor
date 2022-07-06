@@ -110,7 +110,7 @@ SYSREG_GEN_ACCESSORS_64(icc_sgi1r_el1, 0, c12);
 #define SYSREG_GEN_GIC_LR(n, crn1, crn2, op2) \
     SYSREG_GEN_ACCESSORS(ich_lr##n, 4, c12, crn1, op2); \
     SYSREG_GEN_ACCESSORS(ich_lrc##n, 4, c12, crn2, op2); \
-    SYSREG_GEN_ACCESSORS_MERGE(ich_lr##n##_el2, ich_lrc##n, ich_lr##n); \
+    SYSREG_GEN_ACCESSORS_MERGE(ich_lr##n##_el2, ich_lr##n, ich_lrc##n); \
 
 SYSREG_GEN_GIC_LR(0, c12, c14, 0);
 SYSREG_GEN_GIC_LR(1, c12, c14, 1);
