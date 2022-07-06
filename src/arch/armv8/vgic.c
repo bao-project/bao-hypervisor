@@ -44,7 +44,7 @@ extern volatile const size_t VGIC_IPI_ID;
 void vgic_ipi_handler(uint32_t event, uint64_t data);
 CPU_MSG_HANDLER(vgic_ipi_handler, VGIC_IPI_ID);
 
-static inline struct vgic_int *vgic_get_int(struct vcpu *vcpu, irqid_t int_id,
+inline struct vgic_int *vgic_get_int(struct vcpu *vcpu, irqid_t int_id,
                                        vcpuid_t vgicr_id)
 {
     if (int_id < GIC_CPU_PRIV) {

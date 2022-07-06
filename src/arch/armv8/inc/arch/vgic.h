@@ -117,6 +117,12 @@ void vgic_emul_generic_access(struct emul_access *, struct vgic_reg_handler_info
                               bool, vcpuid_t);
 void vgic_send_sgi_msg(struct vcpu *vcpu, cpumap_t pcpu_mask, irqid_t int_id);
 size_t vgic_get_itln(const struct vgic_dscrp *vgic_dscrp);
+struct vgic_int *vgic_get_int(struct vcpu *vcpu, irqid_t int_id,
+                                       vcpuid_t vgicr_id);
+void vgic_int_set_field(struct vgic_reg_handler_info *handlers, struct vcpu *vcpu,
+                        struct vgic_int *interrupt, uint64_t data);
+void vgic_emul_razwi(struct emul_access *acc, struct vgic_reg_handler_info *handlers,
+                     bool gicr_access, cpuid_t vgicr_id);
 
 /* interface for version specific vgic */
 bool vgic_int_has_other_target(struct vcpu *vcpu, struct vgic_int *interrupt);
