@@ -59,7 +59,7 @@ struct {
 size_t mem_cpu_boot_alloc_size() {
     size_t size = ALIGN(sizeof(struct cpu), PAGE_SIZE);
     for (size_t i = 0; i < cpu()->as.pt.dscr->lvls; i++) {
-        size += pt_size(&cpu()->as.pt, i);
+        size += ALIGN(pt_size(&cpu()->as.pt, i), PAGE_SIZE);
     }
     return size;
 }
@@ -203,13 +203,13 @@ static inline pte_t *mem_alloc_pt(struct addr_space *as, pte_t *parent, size_t l
                                   vaddr_t addr)
 {
     /* Must have lock on as and va section to call */
-    size_t ptsize = pt_size(&as->pt, lvl) / PAGE_SIZE;
+    size_t ptsize = NUM_PAGES(pt_size(&as->pt, lvl + 1));
     struct ppages ppage = mem_alloc_ppages(as->colors, ptsize, ptsize > 1 ? true : false);
     if (ppage.size == 0) return NULL;
     pte_set(parent, ppage.base, PTE_TABLE | PTE_HYP_FLAGS);
     fence_sync_write();
     pte_t *temp_pt = pt_get(&as->pt, lvl + 1, addr);
-    memset(temp_pt, 0, PAGE_SIZE);
+    memset(temp_pt, 0, ptsize*PAGE_SIZE);
     return temp_pt;
 }
 
@@ -907,7 +907,7 @@ void as_init(struct addr_space *as, enum AS_TYPE type, asid_t id,
     as->id = id;
 
     if (root_pt == NULL) {
-        size_t n = pt_size(&as->pt, 0) / PAGE_SIZE;
+        size_t n = NUM_PAGES(pt_size(&as->pt, 0));
         root_pt = (pte_t*) mem_alloc_page(n,
             type == AS_HYP || type == AS_HYP_CPY ? SEC_HYP_PRIVATE : SEC_HYP_VM, 
             true);
