@@ -42,9 +42,22 @@
 #define max(n1, n2) (((n1) > (n2)) ? (n1) : (n2))
 #define min(n1, n2) (((n1) < (n2)) ? (n1) : (n2))
 
-/* WARNING! does not check for overflow! */
-#define range_in_range(_base1, _size1, _base2, _size2) \
-    (((_base1) >= (_base2)) && ((_base1 + _size1) <= ((_base2) + (_size2))))
+static inline bool range_in_range(unsigned long base1, unsigned long size1,
+    unsigned long base2, unsigned long size2) {
+
+    unsigned long limit1 = base1 + size1;
+    unsigned long limit2 = base2 + size2;
+
+    /* Saturate possible overflows */
+    if (limit1 < base1)  {
+        limit1 = ULONG_MAX;
+    }
+    if (limit2 < base2) {
+        limit2= ULONG_MAX;
+    }
+
+    return (base1 >= base2) && (limit1 <= limit2);
+}
 
 /* WARNING! does not check for overflow! */
 #define in_range(_addr, _base, _size) range_in_range(_addr, 0, _base, _size)
