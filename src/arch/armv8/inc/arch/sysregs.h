@@ -117,6 +117,9 @@
     (TCR_RES1 | TCR_TG0_4K | TCR_PS_48B | TCR_ORGN0_WB_RA_WA | \
      TCR_IRGN0_WB_RA_WA | TCR_T0SZ(16) | TCR_SH0_IS)
 
+#define HTCR_DFLT                                           \
+    (TCR_SH0_IS | TCR_ORGN0_WB_RA_WA | TCR_IRGN0_WB_RA_WA | TCR_T0SZ(0))
+
 /* TCR - Translation Control Register */
 
 #define VTCR_RES1 (1UL << 31)

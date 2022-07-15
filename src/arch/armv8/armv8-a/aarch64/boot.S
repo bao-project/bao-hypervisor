@@ -9,6 +9,8 @@
 #include <asm_defs.h>
 #include <platform_defs.h>
 
+#define PT_LVLS 4
+
 .section ".boot", "ax"
 .global boot_arch_profile_init
 boot_arch_profile_init:

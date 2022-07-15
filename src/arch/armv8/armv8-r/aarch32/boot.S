@@ -59,10 +59,5 @@ _enter_vas:
     /* Save CPU_X phys base address on Hyp Soft Thread ID */
     mcr p15, 4, r3, c13, c0, 2 // write HTPIDR
 
-    /* Initialize stack pointer */
-    mov r4, #(CPU_STACK_OFF + CPU_STACK_SIZE)
-    add r3, r3, r4
-    mov sp, r3
-
     bx lr
 

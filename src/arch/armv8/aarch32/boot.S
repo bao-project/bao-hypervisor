@@ -6,22 +6,23 @@
 #include <arch/bao.h>
 #include <arch/sysregs.h>
 #include <asm_defs.h>
+#include <config_defs.h>
+#include <platform_defs.h>
 
 .macro get_phys_addr rd, ra, label
-    adr \rd, _el2_entry
-    ldr \ra, =_el2_entry
-    sub \rd, \ra, \rd
-    ldr \ra, =\label
-    sub \rd, \ra, \rd
+    ldr \rd, =\label
+    ldr \ra, =BAO_VAS_BASE
+    sub \rd, \rd, \ra
+    add \rd, \rd, r1
 .endm
 
 .data 
-.align 3
+.balign 4
 /**
  * barrier is used to minimal synchronization in boot - other cores wait for
  * bsp to set it.
  */
-_barrier: .8byte 0			
+_barrier: .4byte 0			
 
 /**
  * 	The following code MUST be at the base of the image, as this is bao's entry
@@ -55,7 +56,7 @@ _reset_handler:
      * processors per cluster.
      */
 
-    get_phys_addr r1, r3, _image_start
+    adr r1, _el2_entry
 
     /* 
      * Install vector table physical address early, in case exception occurs
@@ -112,7 +113,7 @@ _set_master_cpu:
     /* Call boot subarch specific */
     bl boot_arch_profile_init
 
-    /* If this is bsp (cpu 0) clear bss */
+    /* If this is the cpu master, clear bss */
     cmp r9, #0
     bne 1f
     ldr r11, =_bss_start	
@@ -121,7 +122,7 @@ _set_master_cpu:
 
     ldr r5, =_barrier
     mov r7, #2
-    str r7, [r5]	
+    str r7, [r5]
 
 1:
     /* wait for bsp to finish clearing bss */
@@ -131,6 +132,12 @@ _set_master_cpu:
     blt 1b
 
     isb
+
+    /* Initialize stack pointer */
+    mrc p15, 4, r3, c13, c0, 2 // HTPIDR
+    mov r4, #(CPU_STACK_OFF + CPU_STACK_SIZE)
+    add r3, r3, r4
+    mov sp, r3
 
     b init
 

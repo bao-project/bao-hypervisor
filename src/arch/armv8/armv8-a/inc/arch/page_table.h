@@ -11,7 +11,6 @@
 
 #ifdef __ASSEMBLER__
 #define PT_SIZE PAGE_SIZE
-#define PT_LVLS 4
 
 #define PTE_INDEX_SHIFT(LEVEL) ((9 * (3 - LEVEL)) + 12)
 #define PTE_INDEX(LEVEL, ADDR) ((ADDR >> PTE_INDEX_SHIFT(LEVEL)) & (0x1FF))
