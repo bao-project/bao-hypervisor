@@ -207,9 +207,6 @@ bool vgicr_emul_handler(struct emul_access *acc)
         case GICR_REG_OFF(CTLR):
             handler_info = &vgicr_ctrl_info;
             break;
-        case GICR_REG_OFF(TYPER):
-            handler_info = &vgicr_typer_info;
-            break;
         case GICR_REG_OFF(ISENABLER0):
             handler_info = &isenabler_info;
             break;
@@ -235,7 +232,9 @@ bool vgicr_emul_handler(struct emul_access *acc)
         default: {
             size_t base_offset = acc->addr - cpu()->vcpu->vm->arch.vgicr_addr;
             size_t acc_offset = GICR_REG_MASK(base_offset);
-            if (GICR_IS_REG(IPRIORITYR, acc_offset)) {
+            if (GICR_IS_REG(TYPER, acc_offset)) {
+                handler_info = &vgicr_typer_info;
+            } else if (GICR_IS_REG(IPRIORITYR, acc_offset)) {
                 handler_info = &ipriorityr_info;
             } else if (GICR_IS_REG(ID, acc_offset)) {
                 handler_info = &vgicr_pidr_info;
