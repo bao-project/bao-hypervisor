@@ -7,5 +7,6 @@
 #define ARCH_VMM_H
 
 void vmm_arch_profile_init();
+void vmm_arch_init_tcr();
 
 #endif /* ARCH_VMM_H */

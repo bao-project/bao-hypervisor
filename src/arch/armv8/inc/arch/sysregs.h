@@ -16,6 +16,8 @@
 #define ID_AA64MMFR0_PAR_MSK \
     BIT64_MASK(ID_AA64MMFR0_PAR_OFF, ID_AA64MMFR0_PAR_LEN)
 
+#define PAR_32BIT   (0)
+
 #define SPSel_SP (1 << 0)
 
 /* PSTATE */

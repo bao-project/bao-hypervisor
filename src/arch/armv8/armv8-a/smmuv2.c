@@ -108,9 +108,6 @@ static void smmu_check_features()
                              SMMUV2_IDR2_OAS_LEN);
     size_t ipasize = bit32_extract(smmu.hw.glbl_rs0->IDR2, SMMUV2_IDR2_IAS_OFF,
                               SMMUV2_IDR2_IAS_LEN);
-    size_t parange = 0;
-    parange = sysreg_id_aa64mmfr0_el1_read();
-    parange &= ID_AA64MMFR0_PAR_MSK;
 
     if (pasize < parange) {
         ERROR("smmuv2 does not support the full available pa range");
