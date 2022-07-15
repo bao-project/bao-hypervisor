@@ -30,7 +30,7 @@
 
 #define HYP_ROOT_PT_SIZE PAGE_SIZE
 
-#define ADDR_MSK(MSB, LSB) (((1UL << (MSB + 1)) - 1) & ~((1UL << (LSB)) - 1))
+#define ADDR_MSK(MSB, LSB) (((1ULL << (MSB + 1)) - 1) & ~((1ULL << (LSB)) - 1))
 #define PTE_ADDR_MSK ADDR_MSK(47, 12)
 #define PTE_FLAGS_MSK (~PTE_ADDR_MSK)
 #define PTE_MASK(OFF, LEN) BIT64_MASK(OFF, LEN)
@@ -97,7 +97,7 @@
 #define PTE_RSW_OFF (55)
 #define PTE_RSW_WDT (4)
 #define PTE_RSW_MSK \
-    (((1UL << (PTE_RSW_OFF + PTE_RSW_WDT)) - 1) - ((1UL << (PTE_RSW_OFF)) - 1))
+    (((1ULL << (PTE_RSW_OFF + PTE_RSW_WDT)) - 1) - ((1ULL << (PTE_RSW_OFF)) - 1))
 
 /* ------------------------------------------------------------- */
 
