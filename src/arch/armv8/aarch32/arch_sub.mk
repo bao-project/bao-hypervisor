@@ -3,7 +3,7 @@
 
 CROSS_COMPILE ?= arm-none-eabi-
 
-arch-cppflags+= 
+arch-cppflags+=-DAARCH32
 arch-cflags+=
 arch-asflags+=
 arch-ldflags+=

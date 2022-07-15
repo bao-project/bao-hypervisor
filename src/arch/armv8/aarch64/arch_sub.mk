@@ -3,7 +3,7 @@
 
 CROSS_COMPILE ?= aarch64-none-elf-
 
-arch-cppflags+= 
+arch-cppflags+=-DAARCH64
 arch-cflags+= -mcmodel=large -mstrict-align
 arch-asflags+=
 arch-ldflags+=
