@@ -134,6 +134,30 @@ static inline void arm_dc_civac(vaddr_t cache_addr) {
     sysreg_dccivac_write(cache_addr);
 }
 
+static inline void arm_at_s1e2w(vaddr_t vaddr) {
+     asm volatile("mcr p15, 4, %0, c7, c8, 1" ::"r"(vaddr)); // ats1hw
+}
+
+static inline void arm_at_s12e1w(vaddr_t vaddr) {
+     asm volatile("mcr p15, 0, %0, c7, c8, 5" ::"r"(vaddr)); // ats12nsopw
+}
+
+static inline void arm_tlbi_alle2is() {
+    asm volatile("mcr p15, 4, r0, c8, c7, 0");
+}
+
+static inline void arm_tlbi_vmalls12e1is() {
+    asm volatile("mcr p15, 0, r0, c8, c7, 0");
+}
+
+static inline void arm_tlbi_vae2is(vaddr_t vaddr) {
+    asm volatile("mcr p15, 4, %0, c8, c7, 1" :: "r"(vaddr));
+}
+
+static inline void arm_tlbi_ipas2e1is(vaddr_t vaddr) {
+    asm volatile("mcr p15, 4, %0, c8, c0, 1" :: "r"(vaddr >> 12));
+}
+
 #endif /* |__ASSEMBLER__ */
 
 #endif /* ARCH_PROFILE_SYSREGS_H */

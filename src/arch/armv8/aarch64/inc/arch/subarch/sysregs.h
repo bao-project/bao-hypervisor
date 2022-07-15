@@ -96,6 +96,22 @@ static inline void arm_at_s12e1w(vaddr_t vaddr) {
      asm volatile("at s12e1w, %0" ::"r"(vaddr));
 }
 
+static inline void arm_tlbi_alle2is() {
+    asm volatile("tlbi alle2is");
+}
+
+static inline void arm_tlbi_vmalls12e1is() {
+    asm volatile("tlbi vmalls12e1is");
+}
+
+static inline void arm_tlbi_vae2is(vaddr_t vaddr) {
+    asm volatile("tlbi vae2is, %0" ::"r"(vaddr >> 12));
+}
+
+static inline void arm_tlbi_ipas2e1is(vaddr_t vaddr) {
+    asm volatile("tlbi ipas2e1is, %0" ::"r"(vaddr >> 12));
+}
+
 #endif /* |__ASSEMBLER__ */
 
 #endif /* __ARCH_SYSREGS_H__ */
