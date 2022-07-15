@@ -12,6 +12,8 @@
 #define HYP_ROOT_PT_SIZE (PAGE_SIZE)
 #define PAGE_SHIFT (12)
 
+#define PT_SHARED_LVL  (0)
+
 #if (RV64)
 #define PTE_MASK    BIT64_MASK
 #define PTE_ADDR_MSK PTE_MASK(12, 44)

@@ -22,6 +22,12 @@
 .endm
 #endif
 
+#ifdef AARCH32
+#define PT_SHARED_LVL  (1)
+#else
+#define PT_SHARED_LVL   (0)
+#endif
+
 #define HYP_ROOT_PT_SIZE PAGE_SIZE
 
 #define ADDR_MSK(MSB, LSB) (((1UL << (MSB + 1)) - 1) & ~((1UL << (LSB)) - 1))

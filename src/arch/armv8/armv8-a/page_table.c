@@ -8,6 +8,25 @@
 #include <arch/sysregs.h>
 #include <cpu.h>
 
+#ifdef AARCH32
+
+struct page_table_dscr armv8_pt_dscr = {
+    .lvls = 3,
+    .lvl_wdt = (size_t[]){32, 30, 21},
+    .lvl_off = (size_t[]){30, 21, 12},
+    .lvl_term = (bool[]){true, true, true},
+};
+
+
+struct page_table_dscr armv8_pt_s2_dscr = {
+    .lvls = 3,
+    .lvl_wdt = (size_t[]){39, 30, 21},
+    .lvl_off = (size_t[]){30, 21, 12},
+    .lvl_term = (bool[]){true, true, true},
+};
+
+#else
+
 struct page_table_dscr armv8_pt_dscr = {
     .lvls = 4,
     .lvl_wdt = (size_t[]){48, 39, 30, 21},
@@ -25,6 +44,8 @@ struct page_table_dscr armv8_pt_s2_dscr = {
     .lvl_off = (size_t[]){39, 30, 21, 12},
     .lvl_term = (bool[]){false, true, true, true},
 };
+
+#endif
 
 size_t parange_table[] = {32, 36, 40, 42, 44, 48};
 
