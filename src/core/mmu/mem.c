@@ -913,7 +913,6 @@ void as_init(struct addr_space *as, enum AS_TYPE type, asid_t id,
             true);
         memset((void*)root_pt, 0, n * PAGE_SIZE);
     }
-    as->pt.root_flags = 0;
     as->pt.root = root_pt;
 
     as_arch_init(as);

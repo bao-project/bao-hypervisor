@@ -27,6 +27,7 @@
 #define ADDR_MSK(MSB, LSB) (((1UL << (MSB + 1)) - 1) & ~((1UL << (LSB)) - 1))
 #define PTE_ADDR_MSK ADDR_MSK(47, 12)
 #define PTE_FLAGS_MSK (~PTE_ADDR_MSK)
+#define PTE_MASK(OFF, LEN) BIT64_MASK(OFF, LEN)
 
 #define PTE_TYPE_MSK (0x3)
 #define PTE_VALID (0x1)
@@ -127,6 +128,11 @@ extern size_t parange;
 extern size_t parange_table[];
 
 struct page_table;
+
+struct page_table_arch {
+    pte_t rec_mask;
+    size_t rec_ind;
+};
 
 void pt_set_recursive(struct page_table* pt, size_t index);
 

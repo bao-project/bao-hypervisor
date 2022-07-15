@@ -39,9 +39,13 @@ void pt_set_recursive(struct page_table* pt, size_t index)
     mem_translate(&cpu()->as, (vaddr_t)pt->root, &pa);
     pte_t* pte = cpu()->as.pt.root + index;
     pte_set(pte, pa, PTE_TABLE | PTE_HYP_FLAGS);
-    pt->root_flags &= ~PT_ROOT_FLAGS_REC_IND_MSK;
-    pt->root_flags |=
-        (index << PT_ROOT_FLAGS_REC_IND_OFF) & PT_ROOT_FLAGS_REC_IND_MSK;
+    pt->arch.rec_ind = index;
+    pt->arch.rec_mask = 0;
+    size_t cpu_rec_ind = cpu()->as.pt.arch.rec_ind;
+    for (size_t i = 0; i < pt->dscr->lvls; i++) {
+        size_t lvl_off = pt->dscr->lvl_off[i];
+        pt->arch.rec_mask |= cpu_rec_ind << lvl_off;
+    }
 }
 
 pte_t* pt_get_pte(struct page_table* pt, size_t lvl, vaddr_t va)
@@ -50,15 +54,10 @@ pte_t* pt_get_pte(struct page_table* pt, size_t lvl, vaddr_t va)
 
     size_t rec_ind_off = cpu_pt->dscr->lvl_off[cpu_pt->dscr->lvls - lvl - 1];
     size_t rec_ind_len = cpu_pt->dscr->lvl_wdt[cpu_pt->dscr->lvls - lvl - 1];
-    pte_t mask = (1UL << rec_ind_off) - 1;
-    pte_t rec_ind_mask = ((1UL << rec_ind_len) - 1) & ~mask;
-    size_t rec_ind = ((pt->root_flags & PT_ROOT_FLAGS_REC_IND_MSK) >>
-                        PT_ROOT_FLAGS_REC_IND_OFF);
-    pte_t addr = ~mask;
-    addr &= PTE_ADDR_MSK;
-    addr &= ~(rec_ind_mask);
-    addr |= ((rec_ind << rec_ind_off) & rec_ind_mask);
-    addr |= (((va >> pt->dscr->lvl_off[lvl]) * sizeof(pte_t)) & (mask));
+    uintptr_t rec_ind_mask = PTE_MASK(rec_ind_off, rec_ind_len - rec_ind_off);
+    uintptr_t addr = cpu_pt->arch.rec_mask & ~PTE_MASK(0, rec_ind_len);
+    addr |= (pt->arch.rec_ind << rec_ind_off) & rec_ind_mask;
+    addr |= (va >> pt->dscr->lvl_off[lvl]) * sizeof(pte_t) & PTE_MASK(0, rec_ind_off);
 
     return (pte_t*)addr;
 }

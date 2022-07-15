@@ -73,6 +73,10 @@ typedef uint64_t pte_t;
 
 struct page_table;
 
+struct page_table_arch {
+
+};
+
 static inline void pte_set(pte_t* pte, paddr_t addr, pte_t flags)
 {
     *pte = ((addr & PTE_ADDR_MSK) >> 2) | (flags & PTE_FLAGS_MSK);

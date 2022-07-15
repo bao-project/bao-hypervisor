@@ -20,8 +20,8 @@ struct page_table_dscr {
 
 struct page_table {
     pte_t* root;
-    pte_t root_flags;
     struct page_table_dscr* dscr;
+    struct page_table_arch arch;
 };
 
 extern struct page_table_dscr* hyp_pt_dscr;
