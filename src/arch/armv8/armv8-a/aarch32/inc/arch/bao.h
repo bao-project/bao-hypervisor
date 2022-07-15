@@ -13,6 +13,8 @@
 #define PAGE_SIZE       (0x1000)
 #define STACK_SIZE      (PAGE_SIZE)
 
+#define GPR(N)  "r"#N
+
 #ifndef __ASSEMBLER__
 
 
