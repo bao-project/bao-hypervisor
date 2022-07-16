@@ -77,7 +77,6 @@ static bool vmm_assign_vcpu(bool *master, vmid_t *vm_id) {
 }
 
 static struct vm* vmm_alloc_vm(vmid_t vm_id, bool master) {
-    vm_assign[vm_id].vm = NULL;
     if (master) {
         vm_assign[vm_id].vm = (struct vm*)
             mem_alloc_page(NUM_PAGES(sizeof(struct vm)), SEC_HYP_VM, false);
