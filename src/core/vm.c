@@ -120,6 +120,7 @@ void vm_map_mem_region(struct vm* vm, struct mem_region* reg)
 
     if (reg->place_phys) {
         struct ppages pa_reg = mem_ppages_get(reg->phys, n);
+        pa_reg.colors = reg->colors;
         mem_map(&vm->as, va, &pa_reg, n, PTE_VM_FLAGS);
     } else {
         mem_map(&vm->as, va, NULL, n, PTE_VM_FLAGS);
