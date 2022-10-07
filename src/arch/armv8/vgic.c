@@ -302,6 +302,7 @@ void vgic_add_spilled(struct vcpu *vcpu, struct vgic_int* interrupt) {
     }
     list_push(spilled_list, (node_t*)interrupt);
     spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
+    gich_set_hcr(gich_get_hcr() | GICH_HCR_NPIE_BIT);
 }
 
 void vgic_spill_lr(struct vcpu *vcpu, unsigned lr_ind) {
