@@ -91,9 +91,17 @@ struct vcpu {
     struct vm* vm;
 };
 
+struct vm_allocation {
+    vaddr_t base;
+    size_t size;
+    struct vm *vm;
+    struct vcpu *vcpus;
+};
+
 extern struct vm vm;
 
-void vm_init(struct vm* vm, const struct vm_config* config, bool master, vmid_t vm_id);
+struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* config,
+    bool master, vmid_t vm_id);
 void vm_start(struct vm* vm, vaddr_t entry);
 struct vcpu* vm_get_vcpu(struct vm* vm, vcpuid_t vcpuid);
 void vm_emul_add_mem(struct vm* vm, struct emul_mem* emu);

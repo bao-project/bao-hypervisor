@@ -244,8 +244,17 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* config)
       
 }
 
-void vm_init(struct vm* vm, const struct vm_config* config, bool master, vmid_t vm_id)
+static struct vm* vm_allocation_init(struct vm_allocation* vm_alloc) {
+    struct vm *vm = vm_alloc->vm;
+    return vm;
+}
+
+struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* config,
+    bool master, vmid_t vm_id)
 {
+
+    struct vm *vm = vm_allocation_init(vm_alloc);
+
     /**
      * Before anything else, initialize vm structure.
      */
@@ -285,6 +294,8 @@ void vm_init(struct vm* vm, const struct vm_config* config, bool master, vmid_t 
     }
 
     cpu_sync_barrier(&vm->sync);
+
+    return vm;
 }
 
 struct vcpu* vm_get_vcpu(struct vm* vm, vcpuid_t vcpuid)

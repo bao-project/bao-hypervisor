@@ -9,6 +9,7 @@
 #include <page_table.h>
 
 struct vm_install_info {
+    vaddr_t base;
     pte_t vm_section_pte;
 };
 

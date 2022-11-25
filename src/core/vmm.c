@@ -12,14 +12,14 @@
 #include <string.h>
 #include <ipc.h>
 
-volatile static struct vm_assignment {
+static struct vm_assignment {
     spinlock_t lock;
     bool master;
     size_t ncpus;
     cpumap_t cpus;
-    struct vm *vm;
+    struct vm_allocation vm_alloc;
     struct vm_install_info vm_install_info;
-    bool install_info_ready;
+    volatile bool install_info_ready;
 } vm_assign[CONFIG_VM_NUM];
 
 static bool vmm_assign_vcpu(bool *master, vmid_t *vm_id) {
@@ -76,22 +76,53 @@ static bool vmm_assign_vcpu(bool *master, vmid_t *vm_id) {
     return assigned;
 }
 
-static struct vm* vmm_alloc_vm(vmid_t vm_id, bool master) {
+static bool vmm_alloc_vm(struct vm_allocation* vm_alloc, struct vm_config *config) {
+
+    /**
+     * We know that we will allocate a block aligned to the PAGE_SIZE, which
+     * is guaranteed to fulfill the alignment of all types.
+     * However, to guarantee the alignment of all fields, when we calculate 
+     * the size of a field in the vm_allocation struct, we must align the
+     * previous total size calculated until that point, to the alignment of 
+     * the type of the next field.
+     */
+
+    size_t total_size = sizeof(struct vm);
+    size_t vcpus_offset = ALIGN(total_size, _Alignof(struct vcpu));
+    total_size = vcpus_offset + (config->platform.cpu_num * sizeof(struct vcpu));
+    total_size = ALIGN(total_size, PAGE_SIZE);
+
+    void* allocation = mem_alloc_page(NUM_PAGES(total_size), SEC_HYP_VM, false);
+    if (allocation == NULL) {
+        return false;
+    }
+    memset((void*)allocation, 0, total_size);
+
+    vm_alloc->base = (vaddr_t) allocation;
+    vm_alloc->size = total_size;
+    vm_alloc->vm = (struct vm*) vm_alloc->base;
+    vm_alloc->vcpus = (struct vcpu*) (vm_alloc->base + vcpus_offset);
+
+    return true;
+}
+
+static struct vm_allocation* vmm_alloc_install_vm(vmid_t vm_id, bool master) {
+    struct vm_allocation *vm_alloc = &vm_assign[vm_id].vm_alloc;
+    struct vm_config *vm_config = &config.vmlist[vm_id];
     if (master) {
-        vm_assign[vm_id].vm = (struct vm*)
-            mem_alloc_page(NUM_PAGES(sizeof(struct vm)), SEC_HYP_VM, false);
-        memset(vm_assign[vm_id].vm, 0, sizeof(struct vm));
-        vm_assign[vm_id].vm_install_info = 
-            vmm_get_vm_install_info(vm_assign[vm_id].vm);
+        if (!vmm_alloc_vm(vm_alloc, vm_config)) {
+            ERROR("Failed to allocate vm internal structures");
+        }
+        vm_assign[vm_id].vm_install_info = vmm_get_vm_install_info(vm_alloc);
         fence_ord_write();
         vm_assign[vm_id].install_info_ready = true;
     } else {
         while (!vm_assign[vm_id].install_info_ready);
-        vmm_vm_install(vm_assign[vm_id].vm, 
-            (struct vm_install_info*)&vm_assign[vm_id].vm_install_info);
+        vmm_vm_install(&vm_assign[vm_id].vm_install_info);
         fence_sync_write();
     }
-    return vm_assign[vm_id].vm;
+
+    return vm_alloc;
 }
 
 void vmm_init()
@@ -105,8 +136,10 @@ void vmm_init()
     bool master = false;
     vmid_t vm_id = -1;
     if (vmm_assign_vcpu(&master, &vm_id)) {
-        struct vm* vm = vmm_alloc_vm(vm_id, master);
-        vm_init(vm, &config.vmlist[vm_id], master, vm_id);
+        struct vm_allocation *vm_alloc = vmm_alloc_install_vm(vm_id, master);
+        struct vm_config *vm_config = &config.vmlist[vm_id];
+        struct vm *vm = vm_init(vm_alloc, vm_config, master, vm_id);
+        cpu_sync_barrier(&vm->sync);
         vcpu_run(cpu()->vcpu);
     } else {
         cpu_idle();
