@@ -15,3 +15,10 @@ void config_adjust_vm_image_addr(paddr_t load_addr)
         }
     }
 }
+
+__attribute__((weak)) void config_mem_prot_init(paddr_t load_addr) {}
+
+void config_init(paddr_t load_addr) {
+    config_adjust_vm_image_addr(load_addr);
+    config_mem_prot_init(load_addr);
+}

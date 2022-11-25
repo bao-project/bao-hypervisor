@@ -417,7 +417,7 @@ void mem_init(paddr_t load_addr)
         list_init(&page_pool_list);
         list_push(&page_pool_list, &(root_mem_region->page_pool.node));
 
-        config_adjust_vm_image_addr(load_addr);
+        config_init(load_addr);
 
         if (!mem_reserve_physical_memory(&root_mem_region->page_pool)) {
             ERROR("failed reserving memory in root pool");

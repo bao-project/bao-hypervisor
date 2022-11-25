@@ -120,6 +120,6 @@ extern struct config {
 
 } config;
 
-void config_adjust_vm_image_addr(paddr_t load_addr);
+void config_init(paddr_t load_addr);
 
 #endif /* __CONFIG_H__ */

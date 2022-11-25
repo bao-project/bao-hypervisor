@@ -53,7 +53,10 @@ struct shmem {
     size_t size;
     colormap_t colors;
     bool place_phys;
-    paddr_t phys;
+    union {
+        paddr_t base;
+        paddr_t phys;
+    };
     cpumap_t cpu_masters;
     spinlock_t lock;
 };
