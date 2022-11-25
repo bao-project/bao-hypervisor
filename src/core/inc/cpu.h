@@ -24,6 +24,8 @@ struct vcpu;
 
 struct cpu {
     cpuid_t id;
+
+    bool handling_msgs;
     
     struct addr_space as;
 
@@ -61,6 +63,23 @@ struct cpu_synctoken {
 
 extern struct cpu_synctoken cpu_glb_sync;
 
+void cpu_init(cpuid_t cpu_id, paddr_t load_addr);
+void cpu_send_msg(cpuid_t cpu, struct cpu_msg* msg);
+bool cpu_get_msg(struct cpu_msg* msg);
+void cpu_msg_handler();
+void cpu_msg_set_handler(cpuid_t id, cpu_msg_handler_t handler);
+void cpu_idle();
+void cpu_idle_wakeup();
+
+void cpu_arch_init(cpuid_t cpu_id, paddr_t load_addr);
+void cpu_arch_idle();
+
+extern struct cpuif cpu_interfaces[];
+static inline struct cpuif* cpu_if(cpuid_t cpu_id)
+{
+    return &cpu_interfaces[cpu_id];
+}
+
 static inline void cpu_sync_init(struct cpu_synctoken* token, size_t n)
 {
     token->lock = SPINLOCK_INITVAL;
@@ -85,22 +104,26 @@ static inline void cpu_sync_barrier(struct cpu_synctoken* token)
     while (token->count < next_count);
 }
 
-extern struct cpuif cpu_interfaces[];
-static inline struct cpuif* cpu_if(cpuid_t cpu_id)
+static inline void cpu_sync_and_clear_msgs(struct cpu_synctoken* token)
 {
-    return &cpu_interfaces[cpu_id];
+    size_t next_count = 0;
+
+    while (!token->ready);
+
+    spin_lock(&token->lock);
+    token->count++;
+    next_count = ALIGN(token->count, token->n);
+    spin_unlock(&token->lock);
+
+    while (token->count < next_count) {
+        if (!cpu()->handling_msgs) cpu_msg_handler();
+    }
+
+    if (!cpu()->handling_msgs) cpu_msg_handler();
+
+    cpu_sync_barrier(token);
 }
 
-void cpu_init(cpuid_t cpu_id, paddr_t load_addr);
-void cpu_send_msg(cpuid_t cpu, struct cpu_msg* msg);
-bool cpu_get_msg(struct cpu_msg* msg);
-void cpu_msg_handler();
-void cpu_msg_set_handler(cpuid_t id, cpu_msg_handler_t handler);
-void cpu_idle();
-void cpu_idle_wakeup();
-
-void cpu_arch_init(cpuid_t cpu_id, paddr_t load_addr);
-void cpu_arch_idle();
 
 #endif /* __ASSEMBLER__ */
 

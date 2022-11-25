@@ -287,7 +287,7 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* confi
         vm_init_ipc(vm, config);
     }
 
-    cpu_sync_barrier(&vm->sync);
+    cpu_sync_and_clear_msgs(&vm->sync);
 
     return vm;
 }

@@ -35,6 +35,7 @@ struct cpuif cpu_interfaces[PLAT_CPU_NUM];
 void cpu_init(cpuid_t cpu_id, paddr_t load_addr)
 {
     cpu()->id = cpu_id;
+    cpu()->handling_msgs = false;
     cpu()->interface = cpu_if(cpu()->id);
 
     cpu_arch_init(cpu_id, load_addr);
@@ -79,6 +80,7 @@ bool cpu_get_msg(struct cpu_msg *msg)
 
 void cpu_msg_handler()
 {
+    cpu()->handling_msgs = true;
     struct cpu_msg msg;
     while (cpu_get_msg(&msg)) {
         if (msg.handler < ipi_cpumsg_handler_num &&
@@ -86,6 +88,7 @@ void cpu_msg_handler()
             ipi_cpumsg_handlers[msg.handler](msg.event, msg.data);
         }
     }
+    cpu()->handling_msgs = false;
 }
 
 void cpu_idle()

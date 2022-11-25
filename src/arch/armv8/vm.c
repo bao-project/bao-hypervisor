@@ -14,6 +14,7 @@ void vm_arch_init(struct vm* vm, const struct vm_config* config)
     if (vm->master == cpu()->id) {
         vgic_init(vm, &config->platform.arch.gic);
     }
+    cpu_sync_and_clear_msgs(&vm->sync);
 }
 
 struct vcpu* vm_get_vcpu_by_mpidr(struct vm* vm, unsigned long mpidr)
