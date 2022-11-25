@@ -11,9 +11,7 @@
 #include <plat/platform.h>
 #include <mem.h>
 #include <cache.h>
-#ifndef GENERATING_DEFS
 #include <platform_defs.h>
-#endif
 
 struct platform {
     size_t cpu_num;

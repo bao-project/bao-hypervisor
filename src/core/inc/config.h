@@ -9,9 +9,7 @@
 #include <bao.h>
 #include <platform.h>
 #include <vm.h>
-#ifndef GENERATING_DEFS
 #include <config_defs.h>
-#endif
 
 #define VM_IMAGE(img_name, img_path)                                         \
     extern uint8_t _##img_name##_vm_size;                                    \

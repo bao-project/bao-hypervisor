@@ -120,13 +120,13 @@ directories+=$(config_build_dir) $(platform_build_dir) $(scripts_build_dir)
 
 config_def_generator_src:=$(scripts_dir)/config_defs_gen.c
 config_def_generator:=$(scripts_build_dir)/config_defs_gen
-config_defs:=$(config_build_dir)/config_defs.h
+config_defs:=$(config_build_dir)/config_defs_gen.h
 gens+=$(config_def_generator) $(config_defs)
 inc_dirs+=$(config_build_dir)
 
 platform_def_generator_src:=$(scripts_dir)/platform_defs_gen.c
 platform_def_generator:=$(scripts_build_dir)/platform_defs_gen
-platform_defs:=$(platform_build_dir)/platform_defs.h
+platform_defs:=$(platform_build_dir)/platform_defs_gen.h
 platform_description:=$(platform_dir)/$(platform_description)
 gens+=$(platform_defs) $(platform_def_generator)
 inc_dirs+=$(platform_build_dir)
@@ -238,7 +238,8 @@ $(config_dep): $(config_src)
 
 $(config_def_generator): $(config_def_generator_src) $(config_src)
 	@echo "Compiling generator	$(patsubst $(cur_dir)/%, %, $@)"
-	@$(HOST_CC) $^ -DGENERATING_DEFS $(addprefix -I, $(inc_dirs)) -o $@
+	@$(HOST_CC) $^ $(build_macros) -DGENERATING_DEFS \
+		$(addprefix -I, $(inc_dirs)) -o $@
 
 $(config_defs): $(config_def_generator)
 	@echo "Generating header	$(patsubst $(cur_dir)/%, %, $@)"
@@ -246,7 +247,7 @@ $(config_defs): $(config_def_generator)
 
 $(platform_def_generator): $(platform_def_generator_src) $(platform_description)
 	@echo "Compiling generator	$(patsubst $(cur_dir)/%, %, $@)"
-	@$(HOST_CC) $^ -DGENERATING_DEFS -D$(ARCH) \
+	@$(HOST_CC) $^ $(build_macros) -DGENERATING_DEFS -D$(ARCH) \
 		$(addprefix -I, $(inc_dirs)) -o $@
 
 $(platform_defs): $(platform_def_generator)
