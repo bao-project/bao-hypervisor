@@ -28,33 +28,26 @@ void vm_cpu_init(struct vm* vm)
     spin_unlock(&vm->lock);
 }
 
+static vcpuid_t vm_calc_vcpu_id(struct vm* vm) {
+    vcpuid_t vcpu_id = 0;
+    for(size_t i = 0; i < cpu()->id; i++) {
+        if (!!bit_get(vm->cpus, i)) vcpu_id++;
+    }
+    return vcpu_id;
+}
+
 void vm_vcpu_init(struct vm* vm, const struct vm_config* config)
 {
-    size_t n = NUM_PAGES(sizeof(struct vcpu));
-    struct vcpu* vcpu = (struct vcpu*)mem_alloc_page(n, SEC_HYP_VM, false);
-    if(vcpu == NULL){ ERROR("failed to allocate vcpu"); }
-    memset(vcpu, 0, n * PAGE_SIZE);
+    vcpuid_t vcpu_id = vm_calc_vcpu_id(vm);
+    struct vcpu* vcpu = vm_get_vcpu(vm, vcpu_id);
 
-    cpu()->vcpu = vcpu;
+    vcpu->id = vcpu_id;
     vcpu->phys_id = cpu()->id;
     vcpu->vm = vm;
-
-    size_t count = 0, offset = 0;
-    while (count < vm->cpu_num) {
-        if (offset == cpu()->id) {
-            vcpu->id = count;
-            break;
-        }
-        if ((1UL << offset) & vm->cpus) {
-            count++;
-        }
-        offset++;
-    }
+    cpu()->vcpu = vcpu;
 
     vcpu_arch_init(vcpu, vm);
     vcpu_arch_reset(vcpu, config->entry);
-
-    list_push(&vm->vcpu_list, &vcpu->node);
 }
 
 static void vm_copy_img_to_rgn(struct vm* vm, const struct vm_config* config,
@@ -246,6 +239,7 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* config)
 
 static struct vm* vm_allocation_init(struct vm_allocation* vm_alloc) {
     struct vm *vm = vm_alloc->vm;
+    vm->vcpus = vm_alloc->vcpus;
     return vm;
 }
 
@@ -296,16 +290,6 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* confi
     cpu_sync_barrier(&vm->sync);
 
     return vm;
-}
-
-struct vcpu* vm_get_vcpu(struct vm* vm, vcpuid_t vcpuid)
-{
-    list_foreach(vm->vcpu_list, struct vcpu, vcpu)
-    {
-        if (vcpu->id == vcpuid) return vcpu;
-    }
-
-    return NULL;
 }
 
 void vm_emul_add_mem(struct vm* vm, struct emul_mem* emu)

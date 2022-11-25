@@ -332,8 +332,9 @@ void vgic_init(struct vm *vm, const struct vgic_dscrp *vgic_dscrp)
     };
     vm_emul_add_mem(vm, &vm->arch.vgicd_emul);
 
-    list_foreach(vm->vcpu_list, struct vcpu, vcpu)
+    for (vcpuid_t vcpuid = 0; vcpuid < vm->cpu_num; vcpuid++)
     {
+        struct vcpu* vcpu = vm_get_vcpu(vm, vcpuid);
         uint64_t typer = (uint64_t)vcpu->id << GICR_TYPER_PRCNUM_OFF;
         typer |= ((uint64_t)vcpu->arch.vmpidr & MPIDR_AFF_MSK) << GICR_TYPER_AFFVAL_OFF;
         typer |= !!(vcpu->id == vcpu->vm->cpu_num - 1) << GICR_TYPER_LAST_OFF;

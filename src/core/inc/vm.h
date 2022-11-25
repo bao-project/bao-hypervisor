@@ -59,7 +59,7 @@ struct vm {
     struct cpu_synctoken sync;
     cpuid_t master;
 
-    struct list vcpu_list;
+    struct vcpu *vcpus;
     size_t cpu_num;
     cpumap_t cpus;
 
@@ -103,7 +103,6 @@ extern struct vm vm;
 struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* config,
     bool master, vmid_t vm_id);
 void vm_start(struct vm* vm, vaddr_t entry);
-struct vcpu* vm_get_vcpu(struct vm* vm, vcpuid_t vcpuid);
 void vm_emul_add_mem(struct vm* vm, struct emul_mem* emu);
 void vm_emul_add_reg(struct vm* vm, struct emul_reg* emu);
 emul_handler_t vm_emul_get_mem(struct vm* vm, vaddr_t addr);
@@ -112,6 +111,13 @@ void vcpu_init(struct vcpu* vcpu, struct vm* vm, vaddr_t entry);
 void vm_msg_broadcast(struct vm* vm, struct cpu_msg* msg);
 cpumap_t vm_translate_to_pcpu_mask(struct vm* vm, cpumap_t mask, size_t len);
 cpumap_t vm_translate_to_vcpu_mask(struct vm* vm, cpumap_t mask, size_t len);
+
+static inline struct vcpu* vm_get_vcpu(struct vm* vm, vcpuid_t vcpuid) {
+    if (vcpuid < vm->cpu_num) {
+        return &vm->vcpus[vcpuid];
+    }
+    return NULL;
+}
 
 static inline cpuid_t vm_translate_to_pcpuid(struct vm* vm, vcpuid_t vcpuid)
 {

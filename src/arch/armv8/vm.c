@@ -18,8 +18,9 @@ void vm_arch_init(struct vm* vm, const struct vm_config* config)
 
 struct vcpu* vm_get_vcpu_by_mpidr(struct vm* vm, unsigned long mpidr)
 {
-    list_foreach(vm->vcpu_list, struct vcpu, vcpu)
+    for (cpuid_t vcpuid = 0; vcpuid < vm->cpu_num; vcpuid++)
     {
+        struct vcpu *vcpu = vm_get_vcpu(vm, vcpuid);
         if ((vcpu->arch.vmpidr & MPIDR_AFF_MSK) == (mpidr & MPIDR_AFF_MSK))  {
             return vcpu;
         }

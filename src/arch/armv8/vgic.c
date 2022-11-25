@@ -1131,9 +1131,9 @@ void vgic_set_hw(struct vm *vm, irqid_t id)
     struct vgic_int *interrupt = NULL;
 
     if (id < GIC_CPU_PRIV) {
-        list_foreach(vm->vcpu_list, struct vcpu, vcpu)
+        for (vcpuid_t vcpuid = 0; vcpuid < vm->cpu_num; vcpuid++)
         {
-            interrupt = vgic_get_int(vcpu, id, vcpu->id);
+            interrupt = vgic_get_int(vm_get_vcpu(vm, vcpuid), id, vcpuid);
             if (interrupt != NULL) {
                 spin_lock(&interrupt->lock);
                 interrupt->hw = true;
@@ -1144,7 +1144,7 @@ void vgic_set_hw(struct vm *vm, irqid_t id)
         /**
          * This assumes this method is called only during VM initlization
          */
-        interrupt = vgic_get_int((struct vcpu *)list_peek(&vm->vcpu_list), id, 0);
+        interrupt = vgic_get_int(vm_get_vcpu(vm, 0), id, 0);
         if (interrupt != NULL) {
             spin_lock(&interrupt->lock);
             interrupt->hw = true;
