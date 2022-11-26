@@ -18,19 +18,23 @@ static spinlock_t print_lock = SPINLOCK_INITVAL;
 
 void console_init()
 {
-    if((platform.console.base & PAGE_OFFSET_MASK) != 0) {
-        WARNING("console base must be page aligned");
+    if (cpu()->id == CPU_MASTER) {
+        if((platform.console.base & PAGE_OFFSET_MASK) != 0) {
+            WARNING("console base must be page aligned");
+        }
+
+        uart = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA,
+            platform.console.base, NUM_PAGES(sizeof(*uart)));
+
+        fence_sync_write();
+
+        uart_init(uart);
+        uart_enable(uart);
+
+        ready = true;
     }
 
-    uart = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA,
-        platform.console.base, NUM_PAGES(sizeof(uart)));
-
-    fence_sync_write();
-
-    uart_init(uart);
-    uart_enable(uart);
-
-    ready = true;
+    cpu_sync_and_clear_msgs(&cpu_glb_sync);
 }
 
 void console_write(char const* const str)
