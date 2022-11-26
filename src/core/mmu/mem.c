@@ -493,10 +493,11 @@ bool mem_map(struct addr_space *as, vaddr_t va, struct ppages *ppages,
      * goes wrong.
      */
 
+    struct ppages temp_ppages;
     if (ppages == NULL && !all_clrs(as->colors)) {
-        struct ppages temp = mem_alloc_ppages(as->colors, n, false);
-        if (temp.size < n) ERROR("failed to alloc colored physical pages");
-        ppages = &temp;
+        temp_ppages = mem_alloc_ppages(as->colors, n, false);
+        if (temp_ppages.size < n) ERROR("failed to alloc colored physical pages");
+        ppages = &temp_ppages;
     }
 
     if (ppages && !all_clrs(ppages->colors)) {
