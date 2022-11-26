@@ -113,4 +113,39 @@ static inline bool list_rm(struct list* list, node_t* node)
     return true;
 }
 
+typedef int (*node_cmp_t)(node_t*, node_t*);
+
+static inline void list_insert_ordered(struct list* list, node_t* node, node_cmp_t cmp)
+{
+    if (list != NULL && node != NULL) {
+        *node = NULL;
+        spin_lock(&list->lock);
+
+        node_t *cur = list->head;
+        node_t *tail = NULL;
+
+        while (cur != NULL) {
+            if (cmp(cur, node) > 0) {
+                break;
+            }
+            tail = cur;
+            cur = *cur;
+        }
+
+        if (cur != NULL) {
+            *node = cur;
+        } else {
+            list->tail = node;
+        }
+
+        if (tail != NULL) {
+            *tail = node;
+        } else {
+            list->head = node;
+        }
+
+        spin_unlock(&list->lock);
+    }
+}
+
 #endif /* __LIST_H__ */
