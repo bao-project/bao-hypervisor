@@ -927,8 +927,10 @@ void mem_prot_init() {
 vaddr_t mem_alloc_map(struct addr_space* as, enum AS_SEC section, struct ppages *page, 
                         vaddr_t at, size_t size, mem_flags_t flags)
 {
-    vaddr_t address = mem_alloc_vpage (as, section, at, size);
-    // if (address != at) ERROR("Can't allocate address");
+    vaddr_t address = mem_alloc_vpage(as, section, at, size);
+    if (((at != NULL_VA) && (at != address)) || (address == NULL_VA)) {
+        ERROR("Can't allocate address");
+    }
     mem_map(as, address, page, size, flags);
 
     return address;
