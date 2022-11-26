@@ -38,7 +38,6 @@ struct section hyp_secs[] = {
     [SEC_HYP_GLOBAL] = {(vaddr_t)&_dmem_beg, (vaddr_t)&_cpu_private_beg - 1, true,
                         SPINLOCK_INITVAL},
     [SEC_HYP_IMAGE] = {(vaddr_t)&_image_start, (vaddr_t)&_image_end - 1, true, SPINLOCK_INITVAL},
-    [SEC_HYP_DEVICE] = {(vaddr_t)&_image_end, (vaddr_t)&_dmem_beg - 1, true, SPINLOCK_INITVAL},
     [SEC_HYP_PRIVATE] = {(vaddr_t)&_cpu_private_beg, (vaddr_t)&_cpu_private_end - 1, false,
                          SPINLOCK_INITVAL},
     [SEC_HYP_VM] = {(vaddr_t)&_vm_beg, (vaddr_t)&_vm_end - 1, true, SPINLOCK_INITVAL},
