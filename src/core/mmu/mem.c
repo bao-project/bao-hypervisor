@@ -934,6 +934,15 @@ vaddr_t mem_alloc_map(struct addr_space* as, enum AS_SEC section, struct ppages 
     return address;
 }
 
+bool mem_map_dev(struct addr_space *as, vaddr_t va, paddr_t base,
+                size_t n)
+{
+    if(va == NULL_VA) va = base;
+    struct ppages pages = mem_ppages_get(base, n);
+    return mem_map(as, va, &pages, n,
+                   as->type == AS_HYP ? PTE_HYP_DEV_FLAGS : PTE_VM_DEV_FLAGS);
+}
+
 vaddr_t mem_alloc_map_dev(struct addr_space* as, enum AS_SEC section, 
                              vaddr_t at, paddr_t pa, size_t size)
 {

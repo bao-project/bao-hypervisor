@@ -69,13 +69,10 @@ vaddr_t mem_alloc_map_dev(struct addr_space* as, enum AS_SEC section,
                             vaddr_t at, paddr_t pa, size_t size);
 void mem_unmap(struct addr_space* as, vaddr_t at, size_t n,
                     bool free_ppages);
-bool mem_map(struct addr_space* as, vaddr_t va, struct ppages* ppages,
-            size_t n, mem_flags_t flags);
 bool mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages,
                 size_t n, mem_flags_t flags);
 vaddr_t mem_map_cpy(struct addr_space *ass, struct addr_space *asd, vaddr_t vas,
                 vaddr_t vad, size_t n);
-bool mem_map_dev(struct addr_space* as, vaddr_t va, paddr_t base, size_t n);
 bool pp_alloc(struct page_pool *pool, size_t n, bool aligned,
                      struct ppages *ppages);
 

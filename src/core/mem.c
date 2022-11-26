@@ -162,14 +162,6 @@ bool mem_reserve_ppages(struct ppages *ppages)
     return mem_reserve_ppages_in_pool_list(&page_pool_list, ppages);
 }
 
-bool mem_map_dev(struct addr_space *as, vaddr_t va, paddr_t base,
-                size_t n)
-{
-    struct ppages pages = mem_ppages_get(base, n);
-    return mem_map(as, va, &pages, n,
-                   as->type == AS_HYP ? PTE_HYP_DEV_FLAGS : PTE_VM_DEV_FLAGS);
-}
-
 void *mem_alloc_page(size_t n, enum AS_SEC sec, bool phys_aligned)
 {
     vaddr_t vpage = NULL_VA;
