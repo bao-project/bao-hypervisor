@@ -9,8 +9,6 @@
 #include <bao.h>
 #include <arch/mem.h>
 
-enum AS_TYPE { AS_HYP = 0, AS_VM, AS_HYP_CPY };
-
 struct addr_space {
     enum AS_TYPE type;
     colormap_t colors;

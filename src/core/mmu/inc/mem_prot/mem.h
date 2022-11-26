@@ -11,8 +11,6 @@
 #include <page_table.h>
 #include <spinlock.h>
 
-enum AS_TYPE { AS_HYP = 0, AS_VM, AS_HYP_CPY };
-
 #define HYP_ASID  0
 struct addr_space {
     struct page_table pt;
