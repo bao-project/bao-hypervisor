@@ -9,11 +9,40 @@
 #include <bao.h>
 #include <arch/mem.h>
 
+struct mp_region {
+    vaddr_t base;
+    size_t size;
+    mem_flags_t mem_flags;
+    as_sec_t as_sec;
+};
+
 struct addr_space {
     enum AS_TYPE type;
     colormap_t colors;
 };
 
-typedef unsigned long long mem_flags_t;
+static inline bool mem_regions_overlap(struct mp_region *reg1, 
+    struct mp_region *reg2)
+{
+    
+    vaddr_t reg1_lim = reg1->base + reg1->size - 1;
+    vaddr_t reg2_lim = reg2->base + reg2->size - 1;
+
+    return (reg1->base >= reg2->base && reg1->base <= reg2_lim) ||
+        (reg1_lim >= reg2->base && reg1_lim <= reg2_lim) || 
+        (reg1->base <= reg2->base && reg1_lim >= reg2_lim);
+}
+
+/**
+ * This functions must be defined for the physical MPU. The abstraction provided
+ * by the physical MPU layer is minimal. Besides initialization:
+ *  i) It must provide the view of a separate physical MPU for each privilege;
+ *  ii) It must allow the mapping and unmapping of regions on these MPUs, 
+ * returning a binary return success value.
+ */
+void mpu_init();
+bool mpu_map(priv_t priv, struct mp_region* mem);
+bool mpu_unmap(priv_t priv, struct mp_region* mem);
+
 
 #endif /* __MEM_PROT_H__ */
