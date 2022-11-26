@@ -56,8 +56,8 @@ static void vm_copy_img_to_rgn(struct vm* vm, const struct vm_config* config,
     /* map original img address */
     size_t n_img = NUM_PAGES(config->image.size);
     struct ppages src_pa_img = mem_ppages_get(config->image.load_addr, n_img);
-    vaddr_t src_va = mem_alloc_map(&cpu()->as, SEC_HYP_GLOBAL, &src_pa_img,
-                                     NULL_VA, n_img, PTE_HYP_FLAGS);
+    vaddr_t src_va = mem_alloc_map(&cpu()->as, SEC_HYP_PRIVATE, &src_pa_img,
+                                    NULL_VA, n_img, PTE_HYP_FLAGS);
     if (src_va == NULL_VA) {
         ERROR("mem_alloc_map failed %s", __func__);
     }
@@ -66,7 +66,7 @@ static void vm_copy_img_to_rgn(struct vm* vm, const struct vm_config* config,
     size_t offset = config->image.base_addr - reg->base;
     size_t dst_phys = reg->phys + offset;
     struct ppages dst_pp = mem_ppages_get(dst_phys, n_img);
-    vaddr_t dst_va = mem_alloc_map(&cpu()->as, SEC_HYP_GLOBAL, &dst_pp,
+    vaddr_t dst_va = mem_alloc_map(&cpu()->as, SEC_HYP_PRIVATE, &dst_pp,
                                      NULL_VA, n_img, PTE_HYP_FLAGS);
     if (dst_va == NULL_VA) {
         ERROR("mem_alloc_map failed %s", __func__);
@@ -74,7 +74,8 @@ static void vm_copy_img_to_rgn(struct vm* vm, const struct vm_config* config,
 
     memcpy((void*)dst_va, (void*)src_va, n_img * PAGE_SIZE);
     cache_flush_range((vaddr_t)dst_va, n_img * PAGE_SIZE);
-    /*TODO: unmap */
+    mem_unmap(&cpu()->as, src_va, n_img, false);
+    mem_unmap(&cpu()->as, dst_va, n_img, false);
 }
 
 void vm_map_mem_region(struct vm* vm, struct vm_mem_region* reg)
