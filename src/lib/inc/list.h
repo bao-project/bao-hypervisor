@@ -20,8 +20,8 @@ struct list {
     for (type* nodeptr = ((type*)list.head); nodeptr != NULL; \
          nodeptr = *((type**)nodeptr))
 
-#define list_foreach_tail(list, type, nodeptr, tail)                \
-    for (type* nodeptr = ((type*)list.head), *tail = ((type*)list); \
+#define list_foreach_tail(list, type, nodeptr, tail)        \
+    for (type* nodeptr = ((type*)list.head), *tail = NULL;  \
          nodeptr != NULL; tail = nodeptr, nodeptr = *((type**)nodeptr))
 
 static inline void list_init(struct list* list)
