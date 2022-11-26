@@ -136,7 +136,11 @@ void aborts_sync_handler()
     unsigned long hpfar = sysreg_hpfar_el2_read();
     unsigned long ipa_fault_addr = 0;
 
-    ipa_fault_addr = (far & 0xFFF) | (hpfar << 8);
+    if (DEFINED(MEM_PROT_MMU)) {
+        ipa_fault_addr = (far & 0xFFF) | (hpfar << 8);
+    } else {
+        ipa_fault_addr = far;
+    }
 
     unsigned long ec = bit64_extract(esr, ESR_EC_OFF, ESR_EC_LEN);
     unsigned long il = bit64_extract(esr, ESR_IL_OFF, ESR_IL_LEN);
