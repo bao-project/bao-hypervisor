@@ -415,6 +415,14 @@
 
 #define CPUACTLR_EL1 S3_1_C15_C2_0
 
+/* VSCTLR, Virtualization System Control Register */
+
+#define REG_LENGTH (sizeof(long)*8)
+#define VSCTLR_EL2_VMID_LEN (REG_LENGTH/4)
+#define VSCTLR_EL2_VMID_OFF_ADJUST (16)
+#define VSCTLR_EL2_VMID_OFF (REG_LENGTH - VSCTLR_EL2_VMID_OFF_ADJUST)
+#define VSCTLR_EL2_VMID_MSK BIT_MASK (VSCTLR_EL2_VMID_OFF, VSCTLR_EL2_VMID_LEN)
+
 /* GICC System Register Interface Definitions */
 
 #define ICC_PMR_EL1         S3_0_C4_C6_0           
@@ -475,23 +483,32 @@
 #define MPUIR_REGION_MSK    (0xFFUL)
 #define MPUIR_REGION(MPUIR) ((MPUIR) & MPUIR_REGION_MSK)
 
-#define PRBAR_XN            (1UL << 0)
-#define PRBAR_AP_RW_EL2     (0 << 1)
-#define PRBAR_AP_RW_ALL     (1UL << 1)
-#define PRBAR_AP_RO_EL2     (2UL << 1)
-#define PRBAR_AP_RO_ALL     (3UL << 1)
-#define PRBAR_SH_NS         (0 << 3)
-#define PRBAR_SH_OS         (2UL << 3)
-#define PRBAR_SH_IS         (3UL << 3)
-#define PRBAR_BASE_MSK      (~0x3FUL)
-#define PRBAR_BASE(BASE)    ((BASE) & PRBAR_BASE_MSK)
+#define PRBAR_XN                (1UL << 0)
+#define PRBAR_NWR_BIT           (1UL << 2)
+#define PRBAR_EL1_BIT           (1UL << 1)
+#define PRBAR_AP_RW_EL2         (0 << 1)
+#define PRBAR_AP_RW_EL1_EL2     (1UL << 1)
+#define PRBAR_AP_RO_EL2         (2UL << 1)
+#define PRBAR_AP_RO_EL1_EL2     (3UL << 1)
+#define PRBAR_SH_NS             (0 << 3)
+#define PRBAR_SH_OS             (2UL << 3)
+#define PRBAR_SH_IS             (3UL << 3)
+#define PRBAR_FLAGS_MSK         (0x3FUL)
+#define PRBAR_FLAGS(PRBAR)      ((PRBAR) & PRBAR_FLAGS_MSK)
+#define PRBAR_BASE_MSK          (~PRBAR_FLAGS_MSK)
+#define PRBAR_BASE(BASE)        ((BASE) & PRBAR_BASE_MSK)
+#define PRBAR_MEM_ATTR_FLAGS_MSK   (0x18UL)
+#define PRBAR_PERMS_FLAGS_MSK   (0x07UL)
 
 #define PRLAR_EN            (0x1UL)
 #define PRLAR_ATTR_OFF      (1)
 #define PRLAR_ATTR_MSK      (0x3UL << PRLAR_ATTR_OFF)
 #define PRLAR_ATTR(N)       (((N) << PRLAR_ATTR_OFF) & PRLAR_ATTR_MSK)
-#define PRLAR_LIMIT_MSK     (~0x3FUL)
-#define PRLAR_LIMIT(BASE)   ((BASE) & PRLAR_LIMIT_MSK)
+#define PRLAR_FLAGS_MSK     (0x3FUL)
+#define PRLAR_FLAGS(PRLAR)  ((PRLAR) & PRLAR_FLAGS_MSK)
+#define PRLAR_LIMIT_MSK     (~PRBAR_FLAGS_MSK)
+#define PRLAR_LIMIT(LIMIT)  (((LIMIT) & PRLAR_LIMIT_MSK) | 0x3FUL)
+#define PRLAR_MEM_ATTR_FLAGS_MSK   (0x0EUL)
 
 #ifndef __ASSEMBLER__
 
