@@ -4,20 +4,10 @@
  */
 
 #include <cpu.h>
-#include <platform.h>
-#include <arch/generic_timer.h>
+#include <arch/gic.h>
 
 void cpu_arch_profile_init(cpuid_t cpuid, paddr_t load_addr) {
-    /** 
-     * Since there is no firmware in cortex-r platforms, we need to
-     * initialize the system counter.
-     */
-    volatile struct generic_timer_cntctrl *timer_ctl =
-        (void*) platform.arch.generic_timer.base_addr;
-    if (cpu()->id == CPU_MASTER) {
-        timer_ctl->CNTCR |= GENERIC_TIMER_CNTCTL_CNTCR_EN;
-    }
-    sysreg_cntfrq_el0_write(timer_ctl->CNTDIF0);
+
 }
 
 void cpu_arch_profile_idle() {
