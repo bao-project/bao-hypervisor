@@ -483,22 +483,29 @@
 #define MPUIR_REGION_MSK    (0xFFUL)
 #define MPUIR_REGION(MPUIR) ((MPUIR) & MPUIR_REGION_MSK)
 
-#define PRBAR_XN                (1UL << 0)
-#define PRBAR_NWR_BIT           (1UL << 2)
-#define PRBAR_EL1_BIT           (1UL << 1)
-#define PRBAR_AP_RW_EL2         (0 << 1)
-#define PRBAR_AP_RW_EL1_EL2     (1UL << 1)
-#define PRBAR_AP_RO_EL2         (2UL << 1)
-#define PRBAR_AP_RO_EL1_EL2     (3UL << 1)
-#define PRBAR_SH_NS             (0 << 3)
-#define PRBAR_SH_OS             (2UL << 3)
-#define PRBAR_SH_IS             (3UL << 3)
+#ifdef AARCH64
+#define PRBAR_ADJUST_SHIFT    1
+#else
+#define PRBAR_ADJUST_SHIFT    0
+#endif
+
+#define PRBAR_XN                ((1UL << 0) << PRBAR_ADJUST_SHIFT)
+#define PRBAR_NWR_BIT           ((1UL << 2) << PRBAR_ADJUST_SHIFT)
+#define PRBAR_EL1_BIT           ((1UL << 1) << PRBAR_ADJUST_SHIFT)
+#define PRBAR_AP_RW_EL2         ((0 << 1) << PRBAR_ADJUST_SHIFT)
+#define PRBAR_AP_RW_EL1_EL2     ((1UL << 1) << PRBAR_ADJUST_SHIFT)
+#define PRBAR_AP_RO_EL2         ((2UL << 1) << PRBAR_ADJUST_SHIFT)
+#define PRBAR_AP_RO_EL1_EL2     ((3UL << 1) << PRBAR_ADJUST_SHIFT)
+#define PRCBR_SH_OFF            (3 + PRBAR_ADJUST_SHIFT)
+#define PRBAR_SH_NS             (0 << PRCBR_SH_OFF)
+#define PRBAR_SH_OS             (2UL << PRCBR_SH_OFF)
+#define PRBAR_SH_IS             (3UL << PRCBR_SH_OFF)
 #define PRBAR_FLAGS_MSK         (0x3FUL)
 #define PRBAR_FLAGS(PRBAR)      ((PRBAR) & PRBAR_FLAGS_MSK)
 #define PRBAR_BASE_MSK          (~PRBAR_FLAGS_MSK)
 #define PRBAR_BASE(BASE)        ((BASE) & PRBAR_BASE_MSK)
-#define PRBAR_MEM_ATTR_FLAGS_MSK   (0x18UL)
-#define PRBAR_PERMS_FLAGS_MSK   (0x07UL)
+#define PRBAR_MEM_ATTR_FLAGS_MSK   ((0x18UL) << PRBAR_ADJUST_SHIFT)
+#define PRBAR_PERMS_FLAGS_MSK   ((1 << PRCBR_SH_OFF) - 1)
 
 #define PRLAR_EN            (0x1UL)
 #define PRLAR_ATTR_OFF      (1)
