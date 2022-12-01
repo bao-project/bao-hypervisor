@@ -125,6 +125,7 @@
 /* TCR - Translation Control Register */
 
 #define VTCR_RES1 (1UL << 31)
+#define VTCR_MSA  (1UL << 31)
 #define VTCR_T0SZ_MSK (0x1f << 0)
 #define VTCR_T0SZ_OFF (0)
 #define VTCR_T0SZ(SZ) (((SZ) << TCR_T0SZ_OFF) & TCR_T0SZ_MSK)

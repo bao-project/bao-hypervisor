@@ -47,6 +47,14 @@ struct vm_platform {
     size_t dev_num;
     struct vm_dev_region *devs;
 
+    // /**
+    //  * In MPU-based platforms which might also support virtual memory 
+    //  * (i.e. aarch64 cortex-r) the hypervisor sets up the VM using an MPU by
+    //  * default. If the user wants this VM to use the MMU they must set the
+    //  * config mmu parameter to true;
+    //  */
+    bool mmu;
+
     struct arch_vm_platform arch;
 };
 

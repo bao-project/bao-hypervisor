@@ -8,6 +8,7 @@
 #include <cpu.h>
 #include <vm.h>
 #include <emul.h>
+#include <config.h>
 #include <hypercall.h>
 
 typedef void (*abort_handler_t)(unsigned long, unsigned long, unsigned long, unsigned long);
@@ -136,7 +137,7 @@ void aborts_sync_handler()
     unsigned long hpfar = sysreg_hpfar_el2_read();
     unsigned long ipa_fault_addr = 0;
 
-    if (DEFINED(MEM_PROT_MMU)) {
+    if (DEFINED(MEM_PROT_MMU) || cpu()->vcpu->vm->config->platform.mmu) {
         ipa_fault_addr = (far & 0xFFF) | (hpfar << 8);
     } else {
         ipa_fault_addr = far;
