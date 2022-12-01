@@ -5,8 +5,6 @@
 ARCH:=armv8
 ARCH_PROFILE:=armv8-r
 ARCH_SUB:=aarch32
-# CPU definition
-CPU:=cortex-r52
 
 GIC_VERSION:=GICV3
 
@@ -15,6 +13,6 @@ drivers = pl011_uart
 platform_description:=fvpr_desc.c
 
 platform-cppflags =
-platform-cflags = -mtune=$(CPU)
+platform-cflags =
 platform-asflags =
 platform-ldflags =
