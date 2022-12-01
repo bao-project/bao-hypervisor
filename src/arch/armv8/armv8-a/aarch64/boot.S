@@ -184,6 +184,10 @@ setup_cpu:
 	ldr x3, =MAIR_EL2_DFLT
 	msr	MAIR_EL2, x3
 
+    /* set cpu thread pointer */
+    ldr x3, =BAO_CPU_BASE
+    msr tpidr_el2, x3
+
     adrp x3, _dmem_phys_beg
 	mov x8, #(CPU_SIZE + (PT_SIZE*PT_LVLS))
 	madd x3, x0, x8, x3

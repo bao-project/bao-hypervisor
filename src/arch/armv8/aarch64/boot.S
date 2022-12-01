@@ -5,8 +5,8 @@
 
 #include <arch/bao.h>
 #include <arch/sysregs.h>
-#include <arch/page_table.h>
 #include <asm_defs.h>
+#include <config_defs.h>
 #include <platform_defs.h>
 
 .data 
@@ -136,10 +136,11 @@ _set_master_cpu:
 	msr CPTR_EL2, x3
 
 	/* set up cpu stack */
-	mov x3, #(SPSel_SP)								
+	mov x3, SPSel_SP							
 	msr SPSEL, x3	
-	ldr x3, =BAO_CPU_BASE
-	add x3, x3, #(CPU_STACK_OFF + CPU_STACK_SIZE)
+	mrs x3, tpidr_el2
+        ldr x4, =(CPU_STACK_OFF + CPU_STACK_SIZE)
+        add x3, x3, x4
 	mov SP, x3
 
 
