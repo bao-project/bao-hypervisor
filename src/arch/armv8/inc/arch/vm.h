@@ -7,9 +7,9 @@
 #define __ARCH_VM_H__
 
 #include <bao.h>
-#include <arch/profile/vm.h>
 #include <arch/subarch/vm.h>
 #include <arch/vgic.h>
+#include <arch/psci.h>
 #include <list.h>
 
 struct arch_vm_platform {
@@ -43,9 +43,9 @@ struct vm_arch {
 
 struct vcpu_arch {
     unsigned long vmpidr;
-    struct vcpu_arch_profile profile;
     struct vgic_priv vgic_priv;
     struct list vgic_spilled;
+    struct psci_ctx psci_ctx;
 };
 
 struct vcpu* vm_get_vcpu_by_mpidr(struct vm* vm, unsigned long mpidr);

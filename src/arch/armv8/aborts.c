@@ -5,6 +5,7 @@
 
 #include <arch/aborts.h>
 #include <arch/sysregs.h>
+#include <arch/smcc.h>
 #include <cpu.h>
 #include <vm.h>
 #include <emul.h>
@@ -55,27 +56,61 @@ void aborts_data_lower(unsigned long iss, unsigned long far, unsigned long il, u
     }
 }
 
-__attribute__((weak))
-void smc_handler(unsigned long iss, unsigned long far, unsigned long il, unsigned long ec)
-{
-    WARNING("smc call but there is no handler");
-}
+long int standard_service_call(unsigned long _fn_num) {
 
-void hvc_handler(unsigned long iss, unsigned long far, unsigned long il, unsigned long ec)
-{
-    unsigned long hvc_fid = vcpu_readreg(cpu()->vcpu, 0);
+    int64_t ret = -1;
+
+    unsigned long smc_fid = vcpu_readreg(cpu()->vcpu, 0);
     unsigned long x1 = vcpu_readreg(cpu()->vcpu, 1);
     unsigned long x2 = vcpu_readreg(cpu()->vcpu, 2);
     unsigned long x3 = vcpu_readreg(cpu()->vcpu, 3);
 
-    int64_t ret = -HC_E_INVAL_ID;
-    switch(hvc_fid){
-        case HC_IPC:
-            ret = ipc_hypercall(x1, x2, x3);
-        break;
+    if (is_psci_fid(smc_fid)) {
+        ret = psci_smc_handler(smc_fid, x1, x2, x3);
+    } else {
+        INFO("unknown smc_fid 0x%lx", smc_fid);
+    }
+
+    return ret;
+}
+
+static inline void syscall_handler(unsigned long iss, unsigned long far,
+    unsigned long il, unsigned long ec)
+{
+    unsigned long fid = vcpu_readreg(cpu()->vcpu, 0);
+
+    int64_t ret = SMCC_E_NOT_SUPPORTED;
+    switch(fid & ~SMCC_FID_FN_NUM_MSK) {
+        case SMCC32_FID_STD_SRVC:
+        case SMCC64_FID_STD_SRVC:
+            ret = standard_service_call(fid);
+            break;
+        case SMCC32_FID_VND_HYP_SRVC:
+        case SMCC64_FID_VND_HYP_SRVC:
+            ret = hypercall(fid & SMCC_FID_FN_NUM_MSK);
+            break;
+        default:
+            WARNING("Unknown system call fid 0x%x", fid);
     }
 
     vcpu_writereg(cpu()->vcpu, 0, ret);
+}
+
+void hvc_handler(unsigned long iss, unsigned long far, unsigned long il, unsigned long ec)
+{
+    syscall_handler(iss, far, il, ec);
+}
+
+void smc_handler(unsigned long iss, unsigned long far, unsigned long il, unsigned long ec)
+{
+    syscall_handler(iss, far, il, ec);
+
+    /**
+     * Since SMCs are trapped due to setting hcr_el2.tsc, the "preferred
+     * exception return address" is the address of the actual smc instruction.
+     * Thus, we need to adjust it to the next instruction.
+     */
+    vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + 4);
 }
 
 static regaddr_t reg_addr_translate(unsigned long iss)

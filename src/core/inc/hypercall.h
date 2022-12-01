@@ -22,4 +22,6 @@ typedef unsigned long (*hypercall_handler)( unsigned long arg0,
                                             unsigned long arg1, 
                                             unsigned long arg2);
 
+long int hypercall(unsigned long id);
+
 #endif /* HYPERCALL_H */

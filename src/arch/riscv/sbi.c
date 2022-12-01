@@ -410,22 +410,11 @@ struct sbiret sbi_hsm_handler(unsigned long fid){
    return ret; 
 }
 
-
 struct sbiret sbi_bao_handler(unsigned long fid){
 
-    struct sbiret ret;
+   struct sbiret ret;
 
-    unsigned long arg0 = vcpu_readreg(cpu()->vcpu, REG_A0);
-    unsigned long arg1 = vcpu_readreg(cpu()->vcpu, REG_A1);
-    unsigned long arg2 = vcpu_readreg(cpu()->vcpu, REG_A2);
-
-    switch(fid) {
-        case HC_IPC:
-                ret.error = ipc_hypercall(arg0, arg1, arg2);
-            break;
-        default:
-            ret.error = -HC_E_INVAL_ID;
-   }
+   ret.error = hypercall(fid);
 
    return ret;
 }

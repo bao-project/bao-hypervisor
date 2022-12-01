@@ -15,7 +15,3 @@ void vcpu_arch_profile_init(struct vcpu* vcpu, struct vm* vm) {
         sysreg_vtcr_el2_write(vtcr);
     }
 }
-
-bool vcpu_arch_profile_on(struct vcpu* vcpu) {
-    return true;
-}

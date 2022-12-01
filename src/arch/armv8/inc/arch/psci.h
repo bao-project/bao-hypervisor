@@ -12,24 +12,24 @@
 #include <arch/gic.h>
 
 #define PSCI_VERSION (0x84000000)
-#define PSCI_CPU_SUSPEND_AARCH32 (0x84000001)
-#define PSCI_CPU_SUSPEND_AARCH64 (0xc4000001)
+#define PSCI_CPU_SUSPEND_SMC32 (0x84000001)
+#define PSCI_CPU_SUSPEND_SMC64 (0xc4000001)
 #define PSCI_CPU_OFF (0x84000002)
-#define PSCI_CPU_ON_AARCH32 (0x84000003)
-#define PSCI_CPU_ON_AARCH64 (0xc4000003)
-#define PSCI_AFFINITY_INFO_AARCH32 (0x84000004)
-#define PSCI_AFFINITY_INFO_AARCH64 (0xc4000004)
+#define PSCI_CPU_ON_SMC32 (0x84000003)
+#define PSCI_CPU_ON_SMC64 (0xc4000003)
+#define PSCI_AFFINITY_INFO_SMC32 (0x84000004)
+#define PSCI_AFFINITY_INFO_SMC64 (0xc4000004)
 #define PSCI_FEATURES (0x8400000A)
 #define PSCI_MIG_INFO_TYPE (0x84000006)
 
 #ifdef AARCH32
-#define PSCI_CPU_SUSPEND    PSCI_CPU_SUSPEND_AARCH32
-#define PSCI_CPU_ON         PSCI_CPU_ON_AARCH32
-#define PSCI_AFFINITY_INFO  PSCI_AFFINITY_INFO_AARCH32
+#define PSCI_CPU_SUSPEND    PSCI_CPU_SUSPEND_SMC32
+#define PSCI_CPU_ON         PSCI_CPU_ON_SMC32
+#define PSCI_AFFINITY_INFO  PSCI_AFFINITY_INFO_SMC32
 #else 
-#define PSCI_CPU_SUSPEND    PSCI_CPU_SUSPEND_AARCH64
-#define PSCI_CPU_ON         PSCI_CPU_ON_AARCH64
-#define PSCI_AFFINITY_INFO  PSCI_AFFINITY_INFO_AARCH64
+#define PSCI_CPU_SUSPEND    PSCI_CPU_SUSPEND_SMC64
+#define PSCI_CPU_ON         PSCI_CPU_ON_SMC64
+#define PSCI_AFFINITY_INFO  PSCI_AFFINITY_INFO_SMC64
 #endif
 
 #define PSCI_TOS_NOT_PRESENT_MP 2
@@ -39,6 +39,7 @@
 
 #define PSCI_INVALID_ADDRESS (-1L)
 
+#define PSCI_VERSION_0_2    (2U)
 #define PSCI_GET_VERSION_MAJOR(ver) (u16)((ver) >> 16)
 #define PSCI_GET_VERSION(major, minor) (((major) << 16) | (minor))
 
@@ -114,17 +115,10 @@ int32_t psci_power_down(enum wakeup_reason reason);
         SMC PSCI interface
 --------------------------------- */
 
-int32_t psci_version(void);
-
 int32_t psci_cpu_suspend(uint32_t power_state, unsigned long entrypoint,
                           unsigned long context_id);
 
-int32_t psci_cpu_off(void);
-
 int32_t psci_cpu_on(unsigned long target_cpu, unsigned long entrypoint,
                      unsigned long context_id);
-
-int32_t psci_affinity_info(unsigned long target_affinity,
-                            uint32_t lowest_affinity_level);
 
 #endif /* __PSCI_H__ */

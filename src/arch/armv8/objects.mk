@@ -10,6 +10,7 @@ cpu-objs-y+=platform.o
 cpu-objs-y+=gic.o
 cpu-objs-y+=vgic.o
 cpu-objs-y+=vmm.o
+cpu-objs-y+=psci.o
 
 ifeq ($(GIC_VERSION), GICV2)
 	cpu-objs-y+=vgicv2.o

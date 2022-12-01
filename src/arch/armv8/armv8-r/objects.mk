@@ -6,3 +6,4 @@ cpu-objs-y+=$(ARCH_PROFILE)/mem.o
 cpu-objs-y+=$(ARCH_PROFILE)/mpu.o
 cpu-objs-y+=$(ARCH_PROFILE)/vmm.o
 cpu-objs-y+=$(ARCH_PROFILE)/vm.o
+cpu-objs-y+=$(ARCH_PROFILE)/psci.o
