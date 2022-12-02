@@ -7,7 +7,7 @@
 #define __PLIC_H__
 
 #include <bao.h>
-#include <plat/plic.h>
+#include <platform.h>
 
 #define PLIC_MAX_INTERRUPTS (1024)
 #define PLIC_NUM_PRIO_REGS (PLIC_MAX_INTERRUPTS)
@@ -16,6 +16,12 @@
 
 #define PLIC_ENBL_OFF (0x002000)
 #define PLIC_CLAIMCMPLT_OFF (0x200000)
+
+#ifndef PLAT_PLIC_CNTXT_PER_HART
+#define PLAT_PLIC_CNTXT_PER_HART 2
+#endif
+
+#define PLIC_PLAT_CNTXT_NUM ((PLAT_PLIC_CNTXT_PER_HART) * (PLAT_CPU_NUM))
 
 struct plic_global_hw {
     uint32_t prio[PLIC_NUM_PRIO_REGS];

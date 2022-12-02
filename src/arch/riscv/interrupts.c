@@ -21,7 +21,7 @@ void interrupts_arch_init()
         plic_global = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, 
             platform.arch.plic_base, NUM_PAGES(sizeof(struct plic_global_hw)));
 
-        plic_global = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, 
+        plic_hart = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, 
             platform.arch.plic_base + PLIC_CLAIMCMPLT_OFF,
             NUM_PAGES(sizeof(struct plic_hart_hw)*PLIC_PLAT_CNTXT_NUM));
 
