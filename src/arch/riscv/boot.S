@@ -150,7 +150,7 @@ _boot_lock:
     add         t0, t0, s6
     la          t1, root_l2_pt
     add         t1, t1, s6
-    PTE_FILL    t1, t1, PTE_HYP_FLAGS | PTE_TABLE
+    PTE_FILL    t1, t1, PTE_TABLE
     li          t2, BAO_VAS_BASE
     PTE_PTR     t2, t0, 1, t2
     STORE       t1, 0(t2)
@@ -218,7 +218,7 @@ map_cpu:
     /* Add root l1 page table pointer to root page table */
     la          t2, root_l1_pt
     add         t2, t2, s6
-    PTE_FILL    t2, t2, PTE_HYP_FLAGS | PTE_TABLE
+    PTE_FILL    t2, t2, PTE_TABLE
     li          t3, BAO_VAS_BASE
     PTE_PTR     t3, t1, 0, t3
     STORE       t2, 0(t3)
@@ -226,14 +226,14 @@ map_cpu:
     li      t4, PAGE_SIZE
 
     add         t2, t1, t4
-    PTE_FILL    t2, t2, PTE_HYP_FLAGS | PTE_TABLE
+    PTE_FILL    t2, t2, PTE_TABLE
     li          t3, BAO_CPU_BASE
     PTE_PTR     t3, t1, 0, t3
     STORE       t2, 0(t3)
 
     add         t1, t1, t4
     add         t2, t1, t4
-    PTE_FILL    t2, t2, PTE_HYP_FLAGS | PTE_TABLE
+    PTE_FILL    t2, t2, PTE_TABLE
     li          t3, BAO_CPU_BASE
     PTE_PTR     t3, t1, 1, t3
     STORE       t2, 0(t3)

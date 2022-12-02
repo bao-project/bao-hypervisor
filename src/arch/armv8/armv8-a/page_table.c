@@ -59,7 +59,7 @@ void pt_set_recursive(struct page_table* pt, size_t index)
     paddr_t pa;
     mem_translate(&cpu()->as, (vaddr_t)pt->root, &pa);
     pte_t* pte = cpu()->as.pt.root + index;
-    pte_set(pte, pa, PTE_TABLE | PTE_HYP_FLAGS);
+    pte_set(pte, pa, PTE_TABLE, PTE_HYP_FLAGS);
     pt->arch.rec_ind = index;
     pt->arch.rec_mask = 0;
     size_t cpu_rec_ind = cpu()->as.pt.arch.rec_ind;
@@ -90,11 +90,6 @@ pte_t* pt_get(struct page_table* pt, size_t lvl, vaddr_t va)
     uintptr_t pte = (uintptr_t)pt_get_pte(pt, lvl, va);
     pte &= ~(pt_size(pt, lvl) - 1);
     return (pte_t*)pte;
-}
-
-pte_t pt_pte_type(struct page_table* pt, size_t lvl)
-{
-    return (lvl == pt->dscr->lvls - 1) ? PTE_PAGE : PTE_SUPERPAGE;
 }
 
 bool pte_page(struct page_table* pt, pte_t* pte, size_t lvl)

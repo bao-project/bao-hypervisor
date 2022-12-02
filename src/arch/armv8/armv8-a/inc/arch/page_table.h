@@ -129,6 +129,8 @@
 #ifndef __ASSEMBLER__
 
 typedef uint64_t pte_t;
+typedef pte_t pte_type_t;
+typedef pte_t pte_flags_t;
 
 extern size_t parange;
 extern size_t parange_table[];
@@ -142,9 +144,9 @@ struct page_table_arch {
 
 void pt_set_recursive(struct page_table* pt, size_t index);
 
-static inline void pte_set(pte_t* pte, paddr_t addr, pte_t flags)
+static inline void pte_set(pte_t* pte, paddr_t addr, pte_type_t type, pte_flags_t flags)
 {
-    *pte = (addr & PTE_ADDR_MSK) | (flags & PTE_FLAGS_MSK);
+    *pte = (addr & PTE_ADDR_MSK) | ((type | flags) & PTE_FLAGS_MSK);
 }
 
 static inline bool pte_valid(pte_t* pte)
@@ -152,12 +154,12 @@ static inline bool pte_valid(pte_t* pte)
     return (*pte & PTE_VALID);
 }
 
-static inline void pte_set_rsw(pte_t* pte, pte_t flag)
+static inline void pte_set_rsw(pte_t* pte, pte_flags_t flag)
 {
     *pte = (*pte & ~PTE_RSW_MSK) | (flag & PTE_RSW_MSK);
 }
 
-static inline bool pte_check_rsw(pte_t* pte, pte_t flag)
+static inline bool pte_check_rsw(pte_t* pte, pte_flags_t flag)
 {
     return (*pte & PTE_RSW_MSK) == (flag & PTE_RSW_MSK);
 }

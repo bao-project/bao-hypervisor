@@ -205,7 +205,7 @@ static inline pte_t *mem_alloc_pt(struct addr_space *as, pte_t *parent, size_t l
     size_t ptsize = NUM_PAGES(pt_size(&as->pt, lvl + 1));
     struct ppages ppage = mem_alloc_ppages(as->colors, ptsize, ptsize > 1 ? true : false);
     if (ppage.size == 0) return NULL;
-    pte_set(parent, ppage.base, PTE_TABLE | PTE_HYP_FLAGS);
+    pte_set(parent, ppage.base, PTE_TABLE, PTE_HYP_FLAGS);
     fence_sync_write();
     pte_t *temp_pt = pt_get(&as->pt, lvl + 1, addr);
     memset(temp_pt, 0, ptsize*PAGE_SIZE);
@@ -220,6 +220,11 @@ static inline bool pt_pte_mappable(struct addr_space *as, pte_t *pte, size_t lvl
            (pt_lvlsize(&as->pt, lvl) <= (left * PAGE_SIZE)) &&
            (((size_t)vaddr % pt_lvlsize(&as->pt, lvl)) == 0) &&
            ((paddr % pt_lvlsize(&as->pt, lvl)) == 0);
+}
+
+static inline pte_type_t pt_page_type(struct page_table* pt, size_t lvl)
+{
+    return (lvl == pt->dscr->lvls - 1) ? PTE_PAGE : PTE_SUPERPAGE;
 }
 
 static void mem_expand_pte(struct addr_space *as, vaddr_t va, size_t lvl)
@@ -269,12 +274,13 @@ static void mem_expand_pte(struct addr_space *as, vaddr_t va, size_t lvl)
             size_t entry = pt_getpteindex(&as->pt, pte, lvl);
             size_t nentries = pt_nentries(&as->pt, lvl);
             size_t lvlsz = pt_lvlsize(&as->pt, lvl);
-            pte_t flags = pt_pte_type(&as->pt, lvl) |
+            pte_type_t type = pt_page_type(&as->pt, lvl);
+            pte_flags_t flags =
                 (as->type == AS_HYP ? PTE_HYP_FLAGS : PTE_VM_FLAGS);
 
             while (entry < nentries) {
                 if (vld)
-                    pte_set(pte, paddr, flags);
+                    pte_set(pte, paddr, type, flags);
                 else if (rsv)
                     pte_set_rsw(pte, PTE_RSW_RSRV);
                 pte++;
@@ -507,7 +513,7 @@ bool mem_map(struct addr_space *as, vaddr_t va, struct ppages *ppages,
             pte = pt_get_pte(&as->pt, as->pt.dscr->lvls - 1, vaddr);
             index = pp_next_clr(ppages->base, index, ppages->colors);
             paddr_t paddr = ppages->base + (index * PAGE_SIZE);
-            pte_set(pte, paddr, PTE_PAGE | flags);
+            pte_set(pte, paddr, PTE_PAGE, flags);
             vaddr += PAGE_SIZE;
             index++;
         }
@@ -552,7 +558,7 @@ bool mem_map(struct addr_space *as, vaddr_t va, struct ppages *ppages,
                     }
                     paddr = temp.base;
                 }
-                pte_set(pte, paddr, pt_pte_type(&as->pt, lvl) | flags);
+                pte_set(pte, paddr, pt_page_type(&as->pt, lvl), flags);
                 vaddr += lvlsz;
                 paddr += lvlsz;
                 count += lvlsz / PAGE_SIZE;
@@ -636,13 +642,13 @@ bool mem_map_reclr(struct addr_space *as, vaddr_t va, struct ppages *ppages,
          */
         if (bitmap_get((bitmap_t*)&as->colors,
                        ((i + clr_offset) / COLOR_SIZE % COLOR_NUM))) {
-            pte_set(pte, paddr, PTE_PAGE | flags);
+            pte_set(pte, paddr, PTE_PAGE, flags);
 
         } else {
             memcpy((void*)clrd_vaddr, (void*)phys_va, PAGE_SIZE);
             index = pp_next_clr(reclrd_ppages.base, index, as->colors);
             paddr_t clrd_paddr = reclrd_ppages.base + (index * PAGE_SIZE);
-            pte_set(pte, clrd_paddr, PTE_PAGE | flags);
+            pte_set(pte, clrd_paddr, PTE_PAGE, flags);
 
             clrd_vaddr += PAGE_SIZE;
             index++;
@@ -799,7 +805,7 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region *root_regio
 
         /* Wait for CPU_MASTER to get image page table entry */
         while (shared_pte == 0);
-        pte_set(image_pte, (paddr_t)shared_pte, PTE_TABLE | PTE_HYP_FLAGS);
+        pte_set(image_pte, (paddr_t)shared_pte, PTE_TABLE, PTE_HYP_FLAGS);
     }
 
     cpu_sync_barrier(&cpu_glb_sync);
