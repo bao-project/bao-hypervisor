@@ -238,7 +238,7 @@ $(config_dep): $(config_src)
 
 $(config_def_generator): $(config_def_generator_src) $(config_src)
 	@echo "Compiling generator	$(patsubst $(cur_dir)/%, %, $@)"
-	@$(HOST_CC) $^ $(build_macros) -DGENERATING_DEFS \
+	@$(HOST_CC) $^ $(build_macros) $(CPPFLAGS) -DGENERATING_DEFS \
 		$(addprefix -I, $(inc_dirs)) -o $@
 
 $(config_defs): $(config_def_generator)
@@ -247,7 +247,7 @@ $(config_defs): $(config_def_generator)
 
 $(platform_def_generator): $(platform_def_generator_src) $(platform_description)
 	@echo "Compiling generator	$(patsubst $(cur_dir)/%, %, $@)"
-	@$(HOST_CC) $^ $(build_macros) -DGENERATING_DEFS -D$(ARCH) \
+	@$(HOST_CC) $^ $(build_macros) $(CPPFLAGS) -DGENERATING_DEFS -D$(ARCH) \
 		$(addprefix -I, $(inc_dirs)) -o $@
 
 $(platform_defs): $(platform_def_generator)
