@@ -331,8 +331,8 @@
 #define HCR_TERR_BIT (1UL << 36)
 #define HCR_TEA_BIT (1UL << 37)
 #define HCR_MIOCNCE_BIT (1UL << 38)
-#define HCR_APK_BIT (1UL << 40)
-#define HCR_API_BIT (1UL << 41)
+#define HCR_APK_BIT (1ULL << 40)
+#define HCR_API_BIT (1ULL << 41)
 
 /* ESR_ELx, Exception Syndrome Register (ELx) */
 
