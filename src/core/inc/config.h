@@ -11,6 +11,8 @@
 #include <vm.h>
 #include <config_defs.h>
 
+
+#ifndef GENERATING_DEFS
 #define VM_IMAGE(img_name, img_path)                                         \
     extern uint8_t _##img_name##_vm_size;                                    \
     extern uint8_t _##img_name##_vm_beg;                                     \
@@ -26,6 +28,11 @@
 
 #define VM_IMAGE_OFFSET(img_name) ((paddr_t)&_##img_name##_vm_beg)
 #define VM_IMAGE_SIZE(img_name) ((size_t)&_##img_name##_vm_size)
+#else
+#define VM_IMAGE(img_name, img_path)
+#define VM_IMAGE_OFFSET(img_name) ((paddr_t)0)
+#define VM_IMAGE_SIZE(img_name) ((size_t)0)
+#endif
 
 #define VM_IMAGE_BUILTIN(img_name, image_base_addr) \
     {\
