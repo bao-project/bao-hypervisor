@@ -6,6 +6,9 @@
 #ifndef HYPERCALL_H
 #define HYPERCALL_H
 
+#include <bao.h>
+#include <arch/hypercall.h>
+
 enum {
     HC_INVAL = 0,
     HC_IPC = 1
