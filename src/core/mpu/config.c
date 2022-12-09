@@ -30,5 +30,12 @@ void config_mem_prot_init(paddr_t load_addr) {
 
     }
 
-}
+    for (size_t i = 0; i < config.shmemlist_size; i++){
+        /**
+         * On MPU systems all shared memory regions must be physical
+         * regions with 1-to-1 mapping.
+         */
+        config.shmemlist[i].place_phys = true;
+    }
 
+}
