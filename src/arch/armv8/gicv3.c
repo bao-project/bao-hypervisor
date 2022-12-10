@@ -27,6 +27,11 @@ size_t gich_num_lrs()
 
 static inline void gicc_init()
 {
+    size_t cpu_has_gicv = sysreg_id_aa64pfr0_el1_read() & ID_AA64PFR0_GIC_MSK;
+    if (!cpu_has_gicv) {
+        ERROR("GICV3 driver requires system register support\n");
+    }
+    
     for (size_t i = 0; i < gich_num_lrs(); i++) {
         gich_write_lr(i, 0);
     }
