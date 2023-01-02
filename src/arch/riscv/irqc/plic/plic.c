@@ -3,7 +3,7 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
-#include <arch/plic.h>
+#include <plic.h>
 #include <interrupts.h>
 #include <cpu.h>
 

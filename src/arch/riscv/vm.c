@@ -6,23 +6,9 @@
 #include <vm.h>
 #include <page_table.h>
 #include <arch/csrs.h>
-#include <arch/vplic.h>
 #include <arch/instructions.h>
 #include <string.h>
 #include <config.h>
-
-void vm_arch_init(struct vm *vm, const struct vm_config *config)
-{
-    paddr_t root_pt_pa;
-    mem_translate(&cpu()->as, (vaddr_t)vm->as.pt.root, &root_pt_pa);
-
-    unsigned long hgatp = (root_pt_pa >> PAGE_SHIFT) | (HGATP_MODE_DFLT) |
-                          ((vm->id << HGATP_VMID_OFF) & HGATP_VMID_MSK);
-
-    CSRW(CSR_HGATP, hgatp);
-
-    vplic_init(vm, platform.arch.plic_base);
-}
 
 void vcpu_arch_init(struct vcpu *vcpu, struct vm *vm) {
     vcpu->arch.sbi_ctx.lock = SPINLOCK_INITVAL;

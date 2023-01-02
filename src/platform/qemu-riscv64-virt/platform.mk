@@ -14,3 +14,6 @@ platform-cppflags =
 platform-cflags = 
 platform-asflags =
 platform-ldflags =
+
+# Interrupt controller definition
+IRQC:=plic

@@ -6,7 +6,7 @@
 #include <bao.h>
 #include <interrupts.h>
 
-#include <arch/plic.h>
+#include <plic.h>
 #include <arch/sbi.h>
 #include <cpu.h>
 #include <mem.h>

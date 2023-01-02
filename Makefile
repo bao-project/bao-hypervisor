@@ -48,6 +48,7 @@ endif
 
 platform_dir=$(platforms_dir)/$(PLATFORM)
 drivers_dir=$(platforms_dir)/drivers
+irqc_arch_dir=
 
 ifeq ($(wildcard $(platform_dir)),)
  $(error Target platform $(PLATFORM) is not supported)
@@ -67,6 +68,11 @@ directories:=$(build_dir) $(bin_dir)
 
 src_dirs+=$(cpu_arch_dir) $(lib_dir) $(core_dir) $(core_mem_prot_dir) \
 	$(platform_dir) $(addprefix $(drivers_dir)/, $(drivers))
+# If the architecture is RISC-V, the irqc_arch_dir will not be empty. 
+# In this case, the board specific interrupt controller should be added.
+ifneq ($(irqc_arch_dir),)
+src_dirs+= $(irqc_arch_dir)
+endif
 inc_dirs:=$(addsuffix /inc, $(src_dirs))
 
 # Setup list of objects for compilation
@@ -74,6 +80,11 @@ inc_dirs:=$(addsuffix /inc, $(src_dirs))
 
 objs-y:=
 objs-y+=$(addprefix $(cpu_arch_dir)/, $(cpu-objs-y))
+# If the architecture is RISC-V, the irqc_arch_dir will not be empty. 
+# In this case, the board specific interrupt controller should be added.
+ifneq ($(irqc_arch_dir),)
+objs-y+=$(addprefix $(irqc_arch_dir)/, $(irqc-objs-y))
+endif
 objs-y+=$(addprefix $(lib_dir)/, $(lib-objs-y))
 objs-y+=$(addprefix $(core_dir)/, $(core-objs-y))
 objs-y+=$(addprefix $(platform_dir)/, $(boards-objs-y))
