@@ -74,7 +74,7 @@ size_t vsprintk(char *buf, const char *fmt, va_list args)
                     bool keep_zeros = false;
 
                     if (!is_unsigned) {
-                        unsigned long number_signed = is_long ? va_arg(args, unsigned long) : va_arg(args, unsigned);
+                        long number_signed = is_long ? va_arg(args, long) : va_arg(args, int);
                         if (number_signed < 0) {
                             *str++ = 0x2d;
                             number_signed = -(number_signed);
