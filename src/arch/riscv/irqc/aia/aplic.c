@@ -81,11 +81,9 @@ void aplic_init(void)
 
 void aplic_idc_init(void){
     uint32_t idc_index = cpu()->id;
-    printk("Init IDC %d\r\n", idc_index);
     idc[idc_index].ithreshold = APLIC_IDC_ITHRESHOLD_EN_ALL;  
     idc[idc_index].idelivery = APLIC_ENABLE_IDELIVERY;
     idc[idc_index].iforce = APLIC_DISABLE_IFORCE;
-    printk("Exiting Init IDC %d\r\n", idc_index);
 }
 
 /**==== Domain functions ====*/

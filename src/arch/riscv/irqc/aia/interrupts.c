@@ -17,22 +17,13 @@
 
 void interrupts_arch_init()
 {
-    if (cpu()->id  == CPU_MASTER) {
-        // mem_map_dev(&cpu.as, (vaddr_t)&aplic_domain, platform.arch.plic_base,
-        //             ALIGN(sizeof(aplic_domain), PAGE_SIZE) / PAGE_SIZE);
-
-        // mem_map_dev(&cpu.as, (vaddr_t)idc,
-        //             platform.arch.plic_base + APLIC_IDC_OFF,
-        //             ALIGN(sizeof(idc), PAGE_SIZE) / PAGE_SIZE);
-        
+    if (cpu()->id  == CPU_MASTER) {   
         aplic_domain = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, 
             platform.arch.plic_base, NUM_PAGES(sizeof(struct aplic_global)));
         
         idc = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, 
             platform.arch.plic_base + APLIC_IDC_OFF,
             NUM_PAGES(sizeof(struct aplic_idc)*APLIC_PLAT_IDC_NUM));
-
-        printk("Page num = %d\r\n", NUM_PAGES(sizeof(struct aplic_idc)*APLIC_PLAT_IDC_NUM));
 
         fence_sync();
         
