@@ -16,4 +16,4 @@ platform-asflags =
 platform-ldflags =
 
 # Interrupt controller definition
-IRQC:=plic
+IRQC:=aia
