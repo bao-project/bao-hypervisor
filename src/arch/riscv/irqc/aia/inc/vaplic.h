@@ -21,6 +21,7 @@
 #include <aplic.h>
 #include <arch/spinlock.h>
 #include <bitmap.h>
+#include <emul.h>
 
 /**
  * @brief   Data structure to the virtual interrupt controller when a APLIC 
@@ -41,6 +42,8 @@ struct virqc {
     BITMAP_ALLOC(iforce, APLIC_PLAT_IDC_NUM);
     uint32_t ithreshold[APLIC_PLAT_IDC_NUM];
     uint32_t topi_claimi[APLIC_PLAT_IDC_NUM];
+    struct emul_mem aplic_domain_emul;
+    struct emul_mem aplic_idc_emul;
 };
 
 struct vm;
