@@ -27,6 +27,7 @@
 #include <mem.h>
 #include <interrupts.h>
 #include <arch/csrs.h>
+
 #define APLIC_MAX_PRIO 0xFF
 
 /**
@@ -1052,16 +1053,21 @@ static bool vaplic_idc_emul_handler(struct emul_access *acc)
 void vaplic_init(struct vm *vm, vaddr_t vaplic_base)
 {
     if (cpu()->id == vm->master) {
-        struct emul_mem aplic_domain_emu = {.va_base = vaplic_base,
-                                         .size = sizeof(aplic_domain),
-                                         .handler = vaplic_domain_emul_handler};
-        vm_emul_add_mem(vm, &aplic_domain_emu);
+        vm->arch.vxplic.aplic_domain_emul = (struct emul_mem) {
+            .va_base = vaplic_base,
+            .size = sizeof(struct aplic_global),
+            .handler = vaplic_domain_emul_handler
+        };
 
-        struct emul_mem aplic_idc_emu = {
+        vm_emul_add_mem(vm, &vm->arch.vxplic.aplic_domain_emul);
+
+        vm->arch.vxplic.aplic_idc_emul = (struct emul_mem) {
             .va_base = vaplic_base + APLIC_IDC_OFF,
-            .size = sizeof(idc),
-            .handler = vaplic_idc_emul_handler};
-        vm_emul_add_mem(vm, &aplic_idc_emu);
+            .size = sizeof(struct aplic_idc)*APLIC_PLAT_IDC_NUM,
+            .handler = vaplic_idc_emul_handler
+        };
+
+        vm_emul_add_mem(vm, &vm->arch.vxplic.aplic_idc_emul);
 
         /* 1 IDC per hart */
         vm->arch.vxplic.idc_num = vm->cpu_num;
