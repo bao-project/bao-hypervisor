@@ -31,6 +31,7 @@ typedef unsigned irqid_t;
 #define APLIC_BASE                      (0xd000000)//platform.arch.plic_base)
 #define APLIC_IDC_OFF                   (0x4000)
 #define APLIC_IDC_BASE                  (APLIC_BASE + APLIC_IDC_OFF)
+#define APLIC_IDC_SIZE                  (32)
 
 #define APLIC_MAX_INTERRUPTS            (1024)
 #define APLIC_NUM_SRCCFG_REGS           (APLIC_MAX_INTERRUPTS - 1)
@@ -128,7 +129,7 @@ struct aplic_idc {
     uint8_t  reserved[0x18-0x0C];
     uint32_t topi;
     uint32_t claimi;
-}__attribute__((__packed__));; // IDC structure CANNOT be page aligned.
+}__attribute__((__packed__, aligned(APLIC_IDC_SIZE))); // IDC structure CANNOT be page aligned.
 
 extern uint32_t impl_src[APLIC_MAX_INTERRUPTS];
 
