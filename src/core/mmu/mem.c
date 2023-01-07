@@ -940,29 +940,22 @@ vaddr_t mem_alloc_map(struct addr_space* as, enum AS_SEC section, struct ppages 
                         vaddr_t at, size_t size, mem_flags_t flags)
 {
     vaddr_t address = mem_alloc_vpage(as, section, at, size);
-    if (((at != INVALID_VA) && (at != address)) || (address == INVALID_VA)) {
-        ERROR("Can't allocate address");
+    if (address != INVALID_VA) {
+        mem_map(as, address, page, size, flags);
     }
-    mem_map(as, address, page, size, flags);
-
     return address;
-}
-
-bool mem_map_dev(struct addr_space *as, vaddr_t va, paddr_t base,
-                size_t n)
-{
-    if(va == INVALID_VA) va = base;
-    struct ppages pages = mem_ppages_get(base, n);
-    return mem_map(as, va, &pages, n,
-                   as->type == AS_HYP ? PTE_HYP_DEV_FLAGS : PTE_VM_DEV_FLAGS);
 }
 
 vaddr_t mem_alloc_map_dev(struct addr_space* as, enum AS_SEC section, 
                              vaddr_t at, paddr_t pa, size_t size)
 {
     vaddr_t address = mem_alloc_vpage(as, section, at, size);
-    if (address == INVALID_VA) ERROR("Can't allocate dev address");
-    mem_map_dev(as, address, pa, size);
+    if (address != INVALID_VA) {
+        struct ppages pages = mem_ppages_get(pa, size);
+        mem_flags_t flags = 
+            as->type == AS_HYP ? PTE_HYP_DEV_FLAGS : PTE_VM_DEV_FLAGS;
+        mem_map(as, address, &pages, size, flags);
+    }
 
     return address;
 }
