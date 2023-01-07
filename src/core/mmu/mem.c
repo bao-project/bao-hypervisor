@@ -319,16 +319,16 @@ vaddr_t mem_alloc_vpage(struct addr_space *as, enum AS_SEC section,
     size_t nentries = 0;
     size_t lvlsze = 0;
     size_t count = 0;
-    vaddr_t addr = NULL_VA;
-    vaddr_t vpage = NULL_VA;
+    vaddr_t addr = INVALID_VA;
+    vaddr_t vpage = INVALID_VA;
     vaddr_t top = MAX_VA;
     pte_t *pte = NULL;
     bool failed = false;
 
     // TODO: maybe some bound checking here would be nice
     struct section *sec = &sections[as->type].sec[section];
-    if (at != NULL_VA) {
-        if (sec != mem_find_sec(as, at)) return NULL_VA;
+    if (at != INVALID_VA) {
+        if (sec != mem_find_sec(as, at)) return INVALID_VA;
         addr = at;
     } else {
         addr = sec->beg;
@@ -342,7 +342,7 @@ vaddr_t mem_alloc_vpage(struct addr_space *as, enum AS_SEC section,
     while (count < n && !failed) {
         // check if there is still enough space in as
         if ((top + 1 - addr) / PAGE_SIZE < n) {
-            vpage = NULL_VA;
+            vpage = INVALID_VA;
             failed = true;
             break;
         }
@@ -356,8 +356,8 @@ vaddr_t mem_alloc_vpage(struct addr_space *as, enum AS_SEC section,
             if(pte_check_rsw(pte, PTE_RSW_RSRV) || 
               (pte_valid(pte) && !pte_table(&as->pt, pte, lvl))) {
                 count = 0;
-                vpage = NULL_VA;
-                if (at != NULL_VA) {
+                vpage = INVALID_VA;
+                if (at != INVALID_VA) {
                     failed = true;
                     break;
                 }
@@ -387,7 +387,7 @@ vaddr_t mem_alloc_vpage(struct addr_space *as, enum AS_SEC section,
     }
 
     // mark page trable entries as reserved
-    if (vpage != NULL_VA && !failed) {
+    if (vpage != INVALID_VA && !failed) {
         count = 0;
         addr = vpage;
         size_t lvl = 0;
@@ -610,14 +610,14 @@ bool mem_map_reclr(struct addr_space *as, vaddr_t va, struct ppages *ppages,
     }
 
     vaddr_t reclrd_va_base =
-        mem_alloc_vpage(&cpu()->as, SEC_HYP_VM, NULL_VA, reclrd_num);
+        mem_alloc_vpage(&cpu()->as, SEC_HYP_VM, INVALID_VA, reclrd_num);
     struct ppages reclrd_ppages = mem_alloc_ppages(as->colors, reclrd_num, false);
     mem_map(&cpu()->as, reclrd_va_base, &reclrd_ppages, reclrd_num, PTE_HYP_FLAGS);
 
     /**
      * Map original image onto hypervisor address space.
      */
-    vaddr_t phys_va_base = mem_alloc_vpage(&cpu()->as, SEC_HYP_VM, NULL_VA, n);
+    vaddr_t phys_va_base = mem_alloc_vpage(&cpu()->as, SEC_HYP_VM, INVALID_VA, n);
     mem_map(&cpu()->as, phys_va_base, ppages, n, PTE_HYP_FLAGS);
 
     pte_t *pte = NULL;
@@ -716,7 +716,7 @@ vaddr_t mem_map_cpy(struct addr_space *ass, struct addr_space *asd, vaddr_t vas,
 void *copy_space(void *base, const size_t size, struct ppages *pages)
 {
     *pages = mem_alloc_ppages(cpu()->as.colors, NUM_PAGES(size), false);
-    vaddr_t va = mem_alloc_vpage(&cpu()->as, SEC_HYP_PRIVATE, NULL_VA, NUM_PAGES(size));
+    vaddr_t va = mem_alloc_vpage(&cpu()->as, SEC_HYP_PRIVATE, INVALID_VA, NUM_PAGES(size));
     mem_map(&cpu()->as, va, pages, NUM_PAGES(size), PTE_HYP_FLAGS);
     memcpy((void*)va, base, size);
 
@@ -738,7 +738,7 @@ void *copy_space(void *base, const size_t size, struct ppages *pages)
 void mem_color_hypervisor(const paddr_t load_addr, struct mem_region *root_region)
 {
     volatile static pte_t shared_pte;
-    vaddr_t va = NULL_VA;
+    vaddr_t va = INVALID_VA;
     struct cpu *cpu_new;
     struct ppages p_cpu;
     struct ppages p_image;
@@ -871,14 +871,14 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region *root_regio
      */
     if (cpu()->id == CPU_MASTER) {
         p_image = mem_ppages_get(load_addr, NUM_PAGES(image_load_size));
-        va = mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, p_image.size);
+        va = mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA, p_image.size);
         mem_map(&cpu()->as, va, &p_image, p_image.size, PTE_HYP_FLAGS);
         memset((void*)va, 0, p_image.size * PAGE_SIZE);
         mem_unmap(&cpu()->as, va, p_image.size, true);
 
         p_image = mem_ppages_get(load_addr + image_load_size + vm_image_size,
             NUM_PAGES(image_noload_size));
-        va = mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, p_image.size);
+        va = mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA, p_image.size);
         mem_map(&cpu()->as, va, &p_image, p_image.size, PTE_HYP_FLAGS);
         memset((void*)va, 0, p_image.size * PAGE_SIZE);
         mem_unmap(&cpu()->as, va, p_image.size, true);
@@ -887,7 +887,7 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region *root_regio
                                       (cpu_boot_size * platform.cpu_num),
                                   NUM_PAGES(bitmap_size));
 
-        va = mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, p_bitmap.size);
+        va = mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA, p_bitmap.size);
         mem_map(&cpu()->as, va, &p_bitmap, p_bitmap.size, PTE_HYP_FLAGS);
         memset((void*)va, 0, p_bitmap.size * PAGE_SIZE);
         mem_unmap(&cpu()->as, va, p_bitmap.size, true);
@@ -896,7 +896,7 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region *root_regio
     p_cpu = mem_ppages_get(
         load_addr + image_size + vm_image_size +(cpu_boot_size * cpu()->id),
         cpu_boot_size / PAGE_SIZE);
-    va = mem_alloc_vpage(&cpu()->as, SEC_HYP_PRIVATE, NULL_VA, p_cpu.size);
+    va = mem_alloc_vpage(&cpu()->as, SEC_HYP_PRIVATE, INVALID_VA, p_cpu.size);
     mem_map(&cpu()->as, va, &p_cpu,p_cpu.size, PTE_HYP_FLAGS);
     memset((void*)va, 0,p_cpu.size * PAGE_SIZE);
     mem_unmap(&cpu()->as, va,p_cpu.size, false);
@@ -934,7 +934,7 @@ vaddr_t mem_alloc_map(struct addr_space* as, enum AS_SEC section, struct ppages 
                         vaddr_t at, size_t size, mem_flags_t flags)
 {
     vaddr_t address = mem_alloc_vpage(as, section, at, size);
-    if (((at != NULL_VA) && (at != address)) || (address == NULL_VA)) {
+    if (((at != INVALID_VA) && (at != address)) || (address == INVALID_VA)) {
         ERROR("Can't allocate address");
     }
     mem_map(as, address, page, size, flags);
@@ -945,7 +945,7 @@ vaddr_t mem_alloc_map(struct addr_space* as, enum AS_SEC section, struct ppages 
 bool mem_map_dev(struct addr_space *as, vaddr_t va, paddr_t base,
                 size_t n)
 {
-    if(va == NULL_VA) va = base;
+    if(va == INVALID_VA) va = base;
     struct ppages pages = mem_ppages_get(base, n);
     return mem_map(as, va, &pages, n,
                    as->type == AS_HYP ? PTE_HYP_DEV_FLAGS : PTE_VM_DEV_FLAGS);
@@ -955,7 +955,7 @@ vaddr_t mem_alloc_map_dev(struct addr_space* as, enum AS_SEC section,
                              vaddr_t at, paddr_t pa, size_t size)
 {
     vaddr_t address = mem_alloc_vpage(as, section, at, size);
-    if (address == NULL_VA) ERROR("Can't allocate dev address");
+    if (address == INVALID_VA) ERROR("Can't allocate dev address");
     mem_map_dev(as, address, pa, size);
 
     return address;

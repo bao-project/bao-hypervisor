@@ -509,18 +509,18 @@ vaddr_t mem_alloc_map(struct addr_space* as, as_sec_t section,
 
     struct ppages temp_ppages;
 
-    if (at == NULL_VA && ppages == NULL) {
+    if (at == INVALID_VA && ppages == NULL) {
         ERROR ("Can't map an MPU region because neither the virtual"
             "or phsyical address was specified.");
     } 
     
-    if (at != NULL_VA && ppages != NULL && at != ppages->base) {
+    if (at != INVALID_VA && ppages != NULL && at != ppages->base) {
         ERROR ("Trying to map non identity");
     }
 
     size_t size = num_pages * PAGE_SIZE;
     
-    if (at == NULL_VA) {
+    if (at == INVALID_VA) {
         at = ppages->base;
     } else if (ppages == NULL) {
         temp_ppages = mem_ppages_get(at, size);

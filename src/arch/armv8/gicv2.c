@@ -117,11 +117,11 @@ void gic_cpu_init()
 
 void gic_map_mmio()
 {
-    gicc = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA,
+    gicc = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
         platform.arch.gic.gicc_addr, NUM_PAGES(sizeof(gicc)));
-    gich = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA,
+    gich = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
         platform.arch.gic.gich_addr, NUM_PAGES(sizeof(gich)));
-    gicd = (void*) mem_alloc_map_dev(&cpu()->as,SEC_HYP_GLOBAL, NULL_VA,
+    gicd = (void*) mem_alloc_map_dev(&cpu()->as,SEC_HYP_GLOBAL, INVALID_VA,
         platform.arch.gic.gicd_addr,  NUM_PAGES(sizeof(gicd)));
 }
 

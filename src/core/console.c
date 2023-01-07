@@ -23,7 +23,7 @@ void console_init()
             WARNING("console base must be page aligned");
         }
 
-        uart = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA,
+        uart = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
             platform.console.base, NUM_PAGES(sizeof(*uart)));
 
         fence_sync_write();

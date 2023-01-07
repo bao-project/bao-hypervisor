@@ -164,11 +164,11 @@ bool mem_reserve_ppages(struct ppages *ppages)
 
 void *mem_alloc_page(size_t n, enum AS_SEC sec, bool phys_aligned)
 {
-    vaddr_t vpage = NULL_VA;
+    vaddr_t vpage = INVALID_VA;
     struct ppages ppages = mem_alloc_ppages(cpu()->as.colors, n, phys_aligned);
 
     if (ppages.size == n) {
-        vpage = mem_alloc_map(&cpu()->as, sec, &ppages, NULL_VA, n, PTE_HYP_FLAGS);
+        vpage = mem_alloc_map(&cpu()->as, sec, &ppages, INVALID_VA, n, PTE_HYP_FLAGS);
     }
 
     return (void*)vpage;
@@ -187,7 +187,7 @@ bool root_pool_set_up_bitmap(paddr_t load_addr, struct page_pool *root_pool)
 
     struct ppages bitmap_pp = mem_ppages_get(bitmap_base, bitmap_size);    
     bitmap_t* root_bitmap = (bitmap_t*) 
-        mem_alloc_map(&cpu()->as, SEC_HYP_GLOBAL, &bitmap_pp, NULL_VA, bitmap_size, PTE_HYP_FLAGS);
+        mem_alloc_map(&cpu()->as, SEC_HYP_GLOBAL, &bitmap_pp, INVALID_VA, bitmap_size, PTE_HYP_FLAGS);
     root_pool->bitmap = root_bitmap;
     memset((void*)root_pool->bitmap, 0, bitmap_size * PAGE_SIZE);
 
@@ -256,7 +256,7 @@ static void pp_init(struct page_pool *pool, paddr_t base, size_t size)
     if (pages.size != bitmap_size) return;
 
     if ((pool->bitmap = (bitmap_t*)mem_alloc_map(&cpu()->as, SEC_HYP_GLOBAL, &pages, 
-                                    NULL_VA, bitmap_size, PTE_HYP_FLAGS)) == NULL)
+                                    INVALID_VA, bitmap_size, PTE_HYP_FLAGS)) == NULL)
         return;
 
     memset((void*)pool->bitmap, 0, bitmap_size * PAGE_SIZE);

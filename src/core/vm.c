@@ -57,8 +57,8 @@ static void vm_copy_img_to_rgn(struct vm* vm, const struct vm_config* config,
     size_t n_img = NUM_PAGES(config->image.size);
     struct ppages src_pa_img = mem_ppages_get(config->image.load_addr, n_img);
     vaddr_t src_va = mem_alloc_map(&cpu()->as, SEC_HYP_PRIVATE, &src_pa_img,
-                                    NULL_VA, n_img, PTE_HYP_FLAGS);
-    if (src_va == NULL_VA) {
+                                    INVALID_VA, n_img, PTE_HYP_FLAGS);
+    if (src_va == INVALID_VA) {
         ERROR("mem_alloc_map failed %s", __func__);
     }
 
@@ -67,8 +67,8 @@ static void vm_copy_img_to_rgn(struct vm* vm, const struct vm_config* config,
     size_t dst_phys = reg->phys + offset;
     struct ppages dst_pp = mem_ppages_get(dst_phys, n_img);
     vaddr_t dst_va = mem_alloc_map(&cpu()->as, SEC_HYP_PRIVATE, &dst_pp,
-                                     NULL_VA, n_img, PTE_HYP_FLAGS);
-    if (dst_va == NULL_VA) {
+                                     INVALID_VA, n_img, PTE_HYP_FLAGS);
+    if (dst_va == INVALID_VA) {
         ERROR("mem_alloc_map failed %s", __func__);
     }
 
@@ -139,9 +139,9 @@ static void vm_install_image(struct vm* vm) {
     struct ppages img_ppages =
         mem_ppages_get(vm->config->image.load_addr, img_num_pages);
     vaddr_t src_va = mem_alloc_map(&cpu()->as, SEC_HYP_GLOBAL, &img_ppages,
-        NULL_VA, img_num_pages, PTE_HYP_FLAGS);
+        INVALID_VA, img_num_pages, PTE_HYP_FLAGS);
     vaddr_t dst_va = mem_map_cpy(&vm->as, &cpu()->as, vm->config->image.base_addr,
-                                NULL_VA, img_num_pages);
+                                INVALID_VA, img_num_pages);
     memcpy((void*)dst_va, (void*)src_va, vm->config->image.size);
     cache_flush_range((vaddr_t)dst_va, vm->config->image.size);
     mem_unmap(&cpu()->as, src_va, img_num_pages, false);
@@ -216,7 +216,7 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* config)
 
         size_t n = ALIGN(dev->size, PAGE_SIZE) / PAGE_SIZE;
 
-        if (dev->va != NULL_VA) {
+        if (dev->va != INVALID_VA) {
             mem_alloc_map_dev(&vm->as, SEC_VM_ANY, (vaddr_t)dev->va, dev->pa, n);
         }
 

@@ -124,7 +124,7 @@ void smmu_init()
      * Map the first 4k so we can read all the info we need to further
      * allocate smmu registers.
      */
-    vaddr_t smmu_glbl_rs0 = mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA,
+    vaddr_t smmu_glbl_rs0 = mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
         platform.arch.smmu.base,  NUM_PAGES(sizeof(struct smmu_glbl_rs0_hw)));
 
     smmu.hw.glbl_rs0 = (struct smmu_glbl_rs0_hw*)smmu_glbl_rs0;
@@ -138,10 +138,10 @@ void smmu_init()
     size_t ctx_bank_num = bit32_extract(
         smmu.hw.glbl_rs0->IDR1, SMMUV2_IDR1_NUMCB_OFF, SMMUV2_IDR1_NUMCB_LEN);
 
-    vaddr_t smmu_glbl_rs1 = mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA,
+    vaddr_t smmu_glbl_rs1 = mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
         platform.arch.smmu.base + pg_size, NUM_PAGES(sizeof(struct smmu_glbl_rs1_hw)));
 
-    vaddr_t smmu_cntxt = mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA,
+    vaddr_t smmu_cntxt = mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
         platform.arch.smmu.base + (num_page * pg_size),
         NUM_PAGES(pg_size * ctx_bank_num));
 

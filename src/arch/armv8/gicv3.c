@@ -96,9 +96,9 @@ void gic_cpu_init()
 
 void gic_map_mmio()
 {
-    gicd = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, 
+    gicd = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA, 
         platform.arch.gic.gicd_addr, NUM_PAGES(sizeof(struct gicd_hw)));
-    gicr = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, NULL_VA, 
+    gicr = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA, 
        platform.arch.gic.gicr_addr, 
        NUM_PAGES(sizeof(struct gicr_hw) * PLAT_CPU_NUM));
 }
