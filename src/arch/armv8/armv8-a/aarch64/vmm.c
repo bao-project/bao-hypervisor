@@ -34,7 +34,6 @@ void vmm_arch_init_tcr()
 
     if (cpu()->id == CPU_MASTER) {
         parange = min_parange;
-        INFO("parange_table[parange] = %d", parange_table[parange]);
         if (parange_table[parange] < 44) {
             for (size_t i = 0; i < vm_pt_dscr->lvls - 1; i++) {
                 vm_pt_dscr->lvl_wdt[i] = vm_pt_dscr->lvl_wdt[i + 1];
