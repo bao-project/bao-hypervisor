@@ -83,12 +83,12 @@ static void mem_free_ppages(struct ppages *ppages)
             size_t index = (ppages->base - pool->base) / PAGE_SIZE;
             if (!all_clrs(ppages->colors)) {
                 size_t index = 0;
-                for (size_t i = 0; i < ppages->size; i++) {
+                for (size_t i = 0; i < ppages->num_pages; i++) {
                     index = pp_next_clr(pool->base, index, ppages->colors);
                     bitmap_clear(pool->bitmap, index++);
                 }
             } else {
-                bitmap_clear_consecutive(pool->bitmap, index, ppages->size);
+                bitmap_clear_consecutive(pool->bitmap, index, ppages->num_pages);
             }
         }
         spin_unlock(&pool->lock);
@@ -104,7 +104,7 @@ bool pp_alloc_clr(struct page_pool *pool, size_t n, colormap_t colors,
     bool ok = false;
 
     ppages->colors = colors;
-    ppages->size = 0;
+    ppages->num_pages = 0;
 
     spin_lock(&pool->lock);
 
@@ -150,7 +150,7 @@ bool pp_alloc_clr(struct page_pool *pool, size_t n, colormap_t colors,
              * Fill the output ppage arg, mark the pages as allocated and
              * update page pool internal state.
              */
-            ppages->size = n;
+            ppages->num_pages = n;
             ppages->base = pool->base + (first_index * PAGE_SIZE);
             for (size_t i = 0; i < n; i++) {
                 first_index = pp_next_clr(pool->base, first_index, colors);
@@ -204,7 +204,7 @@ static inline pte_t *mem_alloc_pt(struct addr_space *as, pte_t *parent, size_t l
     /* Must have lock on as and va section to call */
     size_t ptsize = NUM_PAGES(pt_size(&as->pt, lvl + 1));
     struct ppages ppage = mem_alloc_ppages(as->colors, ptsize, ptsize > 1 ? true : false);
-    if (ppage.size == 0) return NULL;
+    if (ppage.num_pages == 0) return NULL;
     pte_set(parent, ppage.base, PTE_TABLE, PTE_HYP_FLAGS);
     fence_sync_write();
     pte_t *temp_pt = pt_get(&as->pt, lvl + 1, addr);
@@ -415,11 +415,11 @@ vaddr_t mem_alloc_vpage(struct addr_space *as, enum AS_SEC section,
     return vpage;
 }
 
-void mem_unmap(struct addr_space *as, vaddr_t at, size_t n,
+void mem_unmap(struct addr_space *as, vaddr_t at, size_t num_pages,
                     bool free_ppages)
 {
     vaddr_t vaddr = at;
-    vaddr_t top = at + (n * PAGE_SIZE);
+    vaddr_t top = at + (num_pages * PAGE_SIZE);
     size_t lvl = 0;
 
     spin_lock(&as->lock);
@@ -486,7 +486,7 @@ void mem_unmap(struct addr_space *as, vaddr_t at, size_t n,
 }
 
 bool mem_map(struct addr_space *as, vaddr_t va, struct ppages *ppages,
-            size_t n, mem_flags_t flags)
+            size_t num_pages, mem_flags_t flags)
 {
     size_t count = 0;
     pte_t *pte = NULL;
@@ -494,7 +494,7 @@ bool mem_map(struct addr_space *as, vaddr_t va, struct ppages *ppages,
 
     struct section *sec = mem_find_sec(as, vaddr);
 
-    if ((sec == NULL) || (sec != mem_find_sec(as, vaddr + n * PAGE_SIZE - 1)))
+    if ((sec == NULL) || (sec != mem_find_sec(as, vaddr + num_pages * PAGE_SIZE - 1)))
         return false;
 
     spin_lock(&as->lock);
@@ -507,15 +507,17 @@ bool mem_map(struct addr_space *as, vaddr_t va, struct ppages *ppages,
 
     struct ppages temp_ppages;
     if (ppages == NULL && !all_clrs(as->colors)) {
-        temp_ppages = mem_alloc_ppages(as->colors, n, false);
-        if (temp_ppages.size < n) ERROR("failed to alloc colored physical pages");
+        temp_ppages = mem_alloc_ppages(as->colors, num_pages, false);
+        if (temp_ppages.num_pages < num_pages) {
+            ERROR("failed to alloc colored physical pages");
+        }
         ppages = &temp_ppages;
     }
 
     if (ppages && !all_clrs(ppages->colors)) {
         size_t index = 0;
-        mem_inflate_pt(as, vaddr, n * PAGE_SIZE);
-        for (size_t i = 0; i < ppages->size; i++) {
+        mem_inflate_pt(as, vaddr, num_pages * PAGE_SIZE);
+        for (size_t i = 0; i < ppages->num_pages; i++) {
             pte = pt_get_pte(&as->pt, as->pt.dscr->lvls - 1, vaddr);
             index = pp_next_clr(ppages->base, index, ppages->colors);
             paddr_t paddr = ppages->base + (index * PAGE_SIZE);
@@ -525,12 +527,12 @@ bool mem_map(struct addr_space *as, vaddr_t va, struct ppages *ppages,
         }
     } else {
         paddr_t paddr = ppages ? ppages->base : 0;
-        while (count < n) {
+        while (count < num_pages) {
             size_t lvl = 0;
             for (lvl = 0; lvl < as->pt.dscr->lvls; lvl++) {
                 pte = pt_get_pte(&as->pt, lvl, vaddr);
                 if (pt_lvl_terminal(&as->pt, lvl)) {
-                    if (pt_pte_mappable(as, pte, lvl, n - count,
+                    if (pt_pte_mappable(as, pte, lvl, num_pages - count,
                                         vaddr, ppages ? paddr : 0)) {
                         break;
                     } else if (!pte_valid(pte)) {
@@ -545,12 +547,12 @@ bool mem_map(struct addr_space *as, vaddr_t va, struct ppages *ppages,
             size_t nentries = pt_nentries(&as->pt, lvl);
             size_t lvlsz = pt_lvlsize(&as->pt, lvl);
 
-            while ((entry < nentries) && (count < n) &&
-                   (n - count >= lvlsz / PAGE_SIZE)) {
+            while ((entry < nentries) && (count < num_pages) &&
+                   (num_pages - count >= lvlsz / PAGE_SIZE)) {
                 if (ppages == NULL) {
                     struct ppages temp =
                         mem_alloc_ppages(as->colors, lvlsz / PAGE_SIZE, true);
-                    if (temp.size < lvlsz / PAGE_SIZE) {
+                    if (temp.num_pages < lvlsz / PAGE_SIZE) {
                         if (lvl == (as->pt.dscr->lvls - 1)) {
                             // TODO: free previously allocated pages
                             ERROR("failed to alloc physical pages");
@@ -586,7 +588,7 @@ bool mem_map(struct addr_space *as, vaddr_t va, struct ppages *ppages,
 }
 
 bool mem_map_reclr(struct addr_space *as, vaddr_t va, struct ppages *ppages,
-                    size_t n, mem_flags_t flags)
+                    size_t num_pages, mem_flags_t flags)
 {
     if (ppages == NULL) {
         ERROR("no indication on what to recolor");
@@ -598,10 +600,10 @@ bool mem_map_reclr(struct addr_space *as, vaddr_t va, struct ppages *ppages,
      * Mapped onto hypervisor address space.
      */
     size_t reclrd_num =
-        n / (COLOR_NUM * COLOR_SIZE) * COLOR_SIZE *
+        num_pages / (COLOR_NUM * COLOR_SIZE) * COLOR_SIZE *
         bitmap_count((bitmap_t*)&as->colors, 0, COLOR_NUM, false);
     size_t clr_offset = (ppages->base / PAGE_SIZE) % (COLOR_NUM * COLOR_SIZE);
-    for (size_t i = 0; i < (n % (COLOR_NUM * COLOR_SIZE)); i++) {
+    for (size_t i = 0; i < (num_pages % (COLOR_NUM * COLOR_SIZE)); i++) {
         if (!bitmap_get((bitmap_t*)&as->colors,
                         (i + clr_offset) / COLOR_SIZE % COLOR_NUM))
             reclrd_num++;
@@ -612,7 +614,7 @@ bool mem_map_reclr(struct addr_space *as, vaddr_t va, struct ppages *ppages,
      * or there are no pages to recolor defer to vanilla mapping.
      */
     if (all_clrs(as->colors) || (reclrd_num == 0)) {
-        return mem_map(as, va, ppages, n, flags);
+        return mem_map(as, va, ppages, num_pages, flags);
     }
 
     vaddr_t reclrd_va_base =
@@ -623,8 +625,8 @@ bool mem_map_reclr(struct addr_space *as, vaddr_t va, struct ppages *ppages,
     /**
      * Map original image onto hypervisor address space.
      */
-    vaddr_t phys_va_base = mem_alloc_vpage(&cpu()->as, SEC_HYP_VM, INVALID_VA, n);
-    mem_map(&cpu()->as, phys_va_base, ppages, n, PTE_HYP_FLAGS);
+    vaddr_t phys_va_base = mem_alloc_vpage(&cpu()->as, SEC_HYP_VM, INVALID_VA, num_pages);
+    mem_map(&cpu()->as, phys_va_base, ppages, num_pages, PTE_HYP_FLAGS);
 
     pte_t *pte = NULL;
     vaddr_t vaddr = va & ~(PAGE_SIZE - 1);
@@ -637,9 +639,9 @@ bool mem_map_reclr(struct addr_space *as, vaddr_t va, struct ppages *ppages,
      * Inflate reserved page tables to the last level. This assumes
      * coloring always needs the finest grained mapping possible.
      */
-    mem_inflate_pt(as, vaddr, n * PAGE_SIZE);
+    mem_inflate_pt(as, vaddr, num_pages * PAGE_SIZE);
 
-    for (size_t i = 0; i < n; i++) {
+    for (size_t i = 0; i < num_pages; i++) {
         pte = pt_get_pte(&as->pt, as->pt.dscr->lvls - 1, vaddr);
 
         /**
@@ -675,26 +677,26 @@ bool mem_map_reclr(struct addr_space *as, vaddr_t va, struct ppages *ppages,
      */
     struct ppages unused_pages = {
         .base = ppages->base,
-        .size = reclrd_num,
+        .num_pages = reclrd_num,
         .colors = ~as->colors
     };
     mem_free_ppages(&unused_pages);
 
     mem_unmap(&cpu()->as, reclrd_va_base, reclrd_num, false);
-    mem_unmap(&cpu()->as, phys_va_base, n, false);
+    mem_unmap(&cpu()->as, phys_va_base, num_pages, false);
 
     return true;
 }
 
 vaddr_t mem_map_cpy(struct addr_space *ass, struct addr_space *asd, vaddr_t vas,
-                vaddr_t vad, size_t n) {
+                vaddr_t vad, size_t num_pages) {
 
-    vaddr_t _vad = mem_alloc_vpage(asd, SEC_HYP_GLOBAL, vad, n);
+    vaddr_t _vad = mem_alloc_vpage(asd, SEC_HYP_GLOBAL, vad, num_pages);
     size_t base_vad = _vad;
     size_t count = 0;
-    size_t to_map = n * PAGE_SIZE;
+    size_t to_map = num_pages * PAGE_SIZE;
 
-    while (count < n) {
+    while (count < num_pages) {
         size_t lvl = 0;
         pte_t *pte = pt_get_pte(&ass->pt, lvl, vas);
         while(!pte_page(&ass->pt, pte, lvl)) {
@@ -877,35 +879,35 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region *root_regio
      */
     if (cpu()->id == CPU_MASTER) {
         p_image = mem_ppages_get(load_addr, NUM_PAGES(image_load_size));
-        va = mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA, p_image.size);
-        mem_map(&cpu()->as, va, &p_image, p_image.size, PTE_HYP_FLAGS);
-        memset((void*)va, 0, p_image.size * PAGE_SIZE);
-        mem_unmap(&cpu()->as, va, p_image.size, true);
+        va = mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA, p_image.num_pages);
+        mem_map(&cpu()->as, va, &p_image, p_image.num_pages, PTE_HYP_FLAGS);
+        memset((void*)va, 0, p_image.num_pages * PAGE_SIZE);
+        mem_unmap(&cpu()->as, va, p_image.num_pages, true);
 
         p_image = mem_ppages_get(load_addr + image_load_size + vm_image_size,
             NUM_PAGES(image_noload_size));
-        va = mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA, p_image.size);
-        mem_map(&cpu()->as, va, &p_image, p_image.size, PTE_HYP_FLAGS);
-        memset((void*)va, 0, p_image.size * PAGE_SIZE);
-        mem_unmap(&cpu()->as, va, p_image.size, true);
+        va = mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA, p_image.num_pages);
+        mem_map(&cpu()->as, va, &p_image, p_image.num_pages, PTE_HYP_FLAGS);
+        memset((void*)va, 0, p_image.num_pages * PAGE_SIZE);
+        mem_unmap(&cpu()->as, va, p_image.num_pages, true);
 
         p_bitmap = mem_ppages_get(load_addr + image_size + vm_image_size +
                                       (cpu_boot_size * platform.cpu_num),
                                   NUM_PAGES(bitmap_size));
 
-        va = mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA, p_bitmap.size);
-        mem_map(&cpu()->as, va, &p_bitmap, p_bitmap.size, PTE_HYP_FLAGS);
-        memset((void*)va, 0, p_bitmap.size * PAGE_SIZE);
-        mem_unmap(&cpu()->as, va, p_bitmap.size, true);
+        va = mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA, p_bitmap.num_pages);
+        mem_map(&cpu()->as, va, &p_bitmap, p_bitmap.num_pages, PTE_HYP_FLAGS);
+        memset((void*)va, 0, p_bitmap.num_pages * PAGE_SIZE);
+        mem_unmap(&cpu()->as, va, p_bitmap.num_pages, true);
     }
 
     p_cpu = mem_ppages_get(
         load_addr + image_size + vm_image_size +(cpu_boot_size * cpu()->id),
         cpu_boot_size / PAGE_SIZE);
-    va = mem_alloc_vpage(&cpu()->as, SEC_HYP_PRIVATE, INVALID_VA, p_cpu.size);
-    mem_map(&cpu()->as, va, &p_cpu,p_cpu.size, PTE_HYP_FLAGS);
-    memset((void*)va, 0,p_cpu.size * PAGE_SIZE);
-    mem_unmap(&cpu()->as, va,p_cpu.size, false);
+    va = mem_alloc_vpage(&cpu()->as, SEC_HYP_PRIVATE, INVALID_VA, p_cpu.num_pages);
+    mem_map(&cpu()->as, va, &p_cpu,p_cpu.num_pages, PTE_HYP_FLAGS);
+    memset((void*)va, 0,p_cpu.num_pages * PAGE_SIZE);
+    mem_unmap(&cpu()->as, va,p_cpu.num_pages, false);
 }
 
 void as_init(struct addr_space *as, enum AS_TYPE type, asid_t id, 
@@ -937,24 +939,24 @@ void mem_prot_init() {
 }
 
 vaddr_t mem_alloc_map(struct addr_space* as, enum AS_SEC section, struct ppages *page, 
-                        vaddr_t at, size_t size, mem_flags_t flags)
+                        vaddr_t at, size_t num_pages, mem_flags_t flags)
 {
-    vaddr_t address = mem_alloc_vpage(as, section, at, size);
+    vaddr_t address = mem_alloc_vpage(as, section, at, num_pages);
     if (address != INVALID_VA) {
-        mem_map(as, address, page, size, flags);
+        mem_map(as, address, page, num_pages, flags);
     }
     return address;
 }
 
 vaddr_t mem_alloc_map_dev(struct addr_space* as, enum AS_SEC section, 
-                             vaddr_t at, paddr_t pa, size_t size)
+                             vaddr_t at, paddr_t pa, size_t num_pages)
 {
-    vaddr_t address = mem_alloc_vpage(as, section, at, size);
+    vaddr_t address = mem_alloc_vpage(as, section, at, num_pages);
     if (address != INVALID_VA) {
-        struct ppages pages = mem_ppages_get(pa, size);
+        struct ppages pages = mem_ppages_get(pa, num_pages);
         mem_flags_t flags = 
             as->type == AS_HYP ? PTE_HYP_DEV_FLAGS : PTE_VM_DEV_FLAGS;
-        mem_map(as, address, &pages, size, flags);
+        mem_map(as, address, &pages, num_pages, flags);
     }
 
     return address;

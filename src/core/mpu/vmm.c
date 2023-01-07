@@ -16,9 +16,9 @@ struct vm_install_info vmm_get_vm_install_info(struct vm_allocation* vm_alloc) {
 }
 
 void vmm_vm_install(struct vm_install_info *install_info) {
-    struct ppages ppages = 
-        mem_ppages_get(install_info->base_addr, install_info->size);
     size_t num_pages = NUM_PAGES(install_info->size);
+    struct ppages ppages = 
+        mem_ppages_get(install_info->base_addr, num_pages);
     mem_alloc_map(&cpu()->as, SEC_HYP_VM, &ppages, install_info->base_addr, 
         num_pages, PTE_HYP_FLAGS);
 }

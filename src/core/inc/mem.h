@@ -17,7 +17,7 @@
 
 struct ppages {
     paddr_t base;
-    size_t size;
+    size_t num_pages;
     colormap_t colors;
 };
 
@@ -49,9 +49,9 @@ struct shmem {
     spinlock_t lock;
 };
 
-static inline struct ppages mem_ppages_get(paddr_t base, size_t size)
+static inline struct ppages mem_ppages_get(paddr_t base, size_t num_pages)
 {
-    return (struct ppages){.colors = 0, .base = base, .size = size};
+    return (struct ppages){.colors = 0, .base = base, .num_pages = num_pages};
 }
 
 static inline bool all_clrs(colormap_t clrs)
@@ -61,19 +61,19 @@ static inline bool all_clrs(colormap_t clrs)
 }
 
 void mem_init(paddr_t load_addr);
-void* mem_alloc_page(size_t n, enum AS_SEC sec, bool phys_aligned);
-struct ppages mem_alloc_ppages(colormap_t colors, size_t n, bool aligned);
+void* mem_alloc_page(size_t num_pages, enum AS_SEC sec, bool phys_aligned);
+struct ppages mem_alloc_ppages(colormap_t colors, size_t num_pages, bool aligned);
 vaddr_t mem_alloc_map(struct addr_space* as, enum AS_SEC section, struct ppages *page, 
-                        vaddr_t at, size_t size, mem_flags_t flags);
-vaddr_t mem_alloc_map_dev(struct addr_space* as, enum AS_SEC section, 
+                        vaddr_t at, size_t num_pages, mem_flags_t flags);
+vaddr_t mem_alloc_map_dev(struct addr_space* as, enum AS_SEC section,
                             vaddr_t at, paddr_t pa, size_t size);
-void mem_unmap(struct addr_space* as, vaddr_t at, size_t n,
+void mem_unmap(struct addr_space* as, vaddr_t at, size_t num_pages,
                     bool free_ppages);
 bool mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages,
-                size_t n, mem_flags_t flags);
+                size_t num_pages, mem_flags_t flags);
 vaddr_t mem_map_cpy(struct addr_space *ass, struct addr_space *asd, vaddr_t vas,
-                vaddr_t vad, size_t n);
-bool pp_alloc(struct page_pool *pool, size_t n, bool aligned,
+                vaddr_t vad, size_t num_pages);
+bool pp_alloc(struct page_pool *pool, size_t num_pages, bool aligned,
                      struct ppages *ppages);
 
 void mem_prot_init();

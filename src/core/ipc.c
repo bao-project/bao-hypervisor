@@ -104,7 +104,7 @@ static void ipc_alloc_shmem() {
         if(!shmem->place_phys) {
             size_t n_pg = NUM_PAGES(shmem->size);
             struct ppages ppages = mem_alloc_ppages(shmem->colors, n_pg, false);
-            if(ppages.size < n_pg) {
+            if(ppages.num_pages < n_pg) {
                 ERROR("failed to allocate shared memory");
             }
             shmem->phys = ppages.base;

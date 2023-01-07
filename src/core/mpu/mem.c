@@ -209,7 +209,7 @@ static void mem_free_ppages(struct ppages *ppages)
         spin_lock(&pool->lock);
         if (in_range(ppages->base, pool->base, pool->size * PAGE_SIZE)) {
             size_t index = (ppages->base - pool->base) / PAGE_SIZE;
-            bitmap_clear_consecutive(pool->bitmap, index, ppages->size);
+            bitmap_clear_consecutive(pool->bitmap, index, ppages->num_pages);
         }
         spin_unlock(&pool->lock);
     }
@@ -517,19 +517,17 @@ vaddr_t mem_alloc_map(struct addr_space* as, as_sec_t section,
     if (at != INVALID_VA && ppages != NULL && at != ppages->base) {
         ERROR ("Trying to map non identity");
     }
-
-    size_t size = num_pages * PAGE_SIZE;
     
     if (at == INVALID_VA) {
         at = ppages->base;
     } else if (ppages == NULL) {
-        temp_ppages = mem_ppages_get(at, size);
+        temp_ppages = mem_ppages_get(at, num_pages);
         ppages = &temp_ppages;
     }
 
     struct mp_region mpr = (struct mp_region) {
         .base = ppages->base,
-        .size = size,
+        .size = (num_pages * PAGE_SIZE),
         .as_sec = section,
         .mem_flags = flags,
     };
@@ -540,10 +538,10 @@ vaddr_t mem_alloc_map(struct addr_space* as, as_sec_t section,
 }
 
 vaddr_t mem_alloc_map_dev(struct addr_space* as, as_sec_t section,
-                             vaddr_t at, paddr_t pa, size_t size)
+                             vaddr_t at, paddr_t pa, size_t num_pages)
 {
-    struct ppages temp_page = mem_ppages_get(pa, size);
-    return mem_alloc_map(as, section, &temp_page, at, size,
+    struct ppages temp_page = mem_ppages_get(pa, num_pages);
+    return mem_alloc_map(as, section, &temp_page, at, num_pages,
                    as->type == AS_HYP ? PTE_HYP_DEV_FLAGS : PTE_VM_DEV_FLAGS);
 }
 

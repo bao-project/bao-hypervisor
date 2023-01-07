@@ -19,15 +19,15 @@ extern uint8_t _image_start, _image_load_end, _image_end, _vm_image_start,
 
 struct list page_pool_list;
 
-bool pp_alloc(struct page_pool *pool, size_t n, bool aligned,
+bool pp_alloc(struct page_pool *pool, size_t num_pages, bool aligned,
                      struct ppages *ppages)
 {
     ppages->colors = 0;
-    ppages->size = 0;
+    ppages->num_pages = 0;
 
     bool ok = false;
 
-    if (n == 0) return true;
+    if (num_pages == 0) return true;
 
     spin_lock(&pool->lock);
 
@@ -35,8 +35,8 @@ bool pp_alloc(struct page_pool *pool, size_t n, bool aligned,
      *  If we need a contigous segment aligned to its size, lets start
      * at an already aligned index.
      */
-    size_t start = aligned ? pool->base / PAGE_SIZE % n : 0;
-    size_t curr = pool->last + ((pool->last + start) % n);
+    size_t start = aligned ? pool->base / PAGE_SIZE % num_pages : 0;
+    size_t curr = pool->last + ((pool->last + start) % num_pages);
 
     /**
      * Lets make two searches:
@@ -46,32 +46,34 @@ bool pp_alloc(struct page_pool *pool, size_t n, bool aligned,
     for (size_t i = 0; i < 2 && !ok; i++) {
         while (pool->free != 0) {
             ssize_t bit =
-                bitmap_find_consec(pool->bitmap, pool->size, curr, n, false);
+                bitmap_find_consec(pool->bitmap, pool->size, curr, num_pages, false);
 
             if (bit < 0) {
                 /**
-                 * No n page sement was found. If this is the first iteration
-                 * set position to 0 to start next search from index 0.
+                 * No num_page page sement was found. If this is the first 
+                 * iteration set position to 0 to start next search from index 0.
                  */
-                curr = aligned ? (n - ((pool->base / PAGE_SIZE) % n)) % n : 0;
+                size_t next_aligned = 
+                    (num_pages - ((pool->base / PAGE_SIZE) % num_pages)) % num_pages;
+                curr = aligned ? next_aligned : 0;
                 break;
-            } else if (aligned && (((bit + start) % n) != 0)) {
+            } else if (aligned && (((bit + start) % num_pages) != 0)) {
                 /**
                  *  If we're looking for an aligned segment and the found
                  * contigous segment is not aligned, start the search again
                  * from the last aligned index
                  */
-                curr = bit + ((bit + start) % n);
+                curr = bit + ((bit + start) % num_pages);
             } else {
                 /**
                  * We've found our pages. Fill output argument info, mark
                  * them as allocated, and update page pool bookkeeping.
                  */
                 ppages->base = pool->base + (bit * PAGE_SIZE);
-                ppages->size = n;
-                bitmap_set_consecutive(pool->bitmap, bit, n);
-                pool->free -= n;
-                pool->last = bit + n;
+                ppages->num_pages = num_pages;
+                bitmap_set_consecutive(pool->bitmap, bit, num_pages);
+                pool->free -= num_pages;
+                pool->last = bit + num_pages;
                 ok = true;
                 break;
             }
@@ -85,18 +87,17 @@ bool pp_alloc(struct page_pool *pool, size_t n, bool aligned,
 bool mem_are_ppages_reserved_in_pool(struct page_pool *ppool, struct ppages *ppages)
 {
     bool reserved = false;
-    bool rgn_found = range_in_range(ppages->base, ppages->size * PAGE_SIZE,
-                                    ppool->base, ppool->size * PAGE_SIZE);
+    bool rgn_found = range_in_range(ppages->base, ppages->num_pages * PAGE_SIZE,
+                                    ppool->base, ppages->num_pages * PAGE_SIZE);
     if (rgn_found) {
-        size_t numpages = ppages->size;
         size_t pageoff = NUM_PAGES(ppages->base - ppool->base);
 
         // verify these pages arent allocated yet
         bool is_alloced = bitmap_get(ppool->bitmap, pageoff);
         size_t avlbl_contig_pp = bitmap_count_consecutive(
-            ppool->bitmap, ppool->size, pageoff, numpages);
+            ppool->bitmap, ppool->size, pageoff, ppages->num_pages);
 
-        if (is_alloced || avlbl_contig_pp < numpages) {
+        if (is_alloced || avlbl_contig_pp < ppages->num_pages) {
             reserved = true;
         }
     }
@@ -109,8 +110,8 @@ bool mem_are_ppages_reserved(struct ppages *ppages)
     bool reserved = false;
     list_foreach(page_pool_list, struct page_pool, pool)
     {
-        bool is_in_rgn = range_in_range(ppages->base, ppages->size * PAGE_SIZE,
-                                        pool->base, pool->size * PAGE_SIZE);
+        bool is_in_rgn = range_in_range(ppages->base, ppages->num_pages * PAGE_SIZE,
+                                        pool->base, ppages->num_pages * PAGE_SIZE);
 
         if (is_in_rgn) {
             reserved = mem_are_ppages_reserved_in_pool(pool, ppages);
@@ -123,11 +124,10 @@ bool mem_are_ppages_reserved(struct ppages *ppages)
 
 bool mem_reserve_ppool_ppages(struct page_pool *pool, struct ppages *ppages)
 {
-    bool is_in_rgn = range_in_range(ppages->base, ppages->size * PAGE_SIZE,
+    bool is_in_rgn = range_in_range(ppages->base, ppages->num_pages * PAGE_SIZE,
                                     pool->base, pool->size * PAGE_SIZE);
     if (!is_in_rgn) return true;
 
-    size_t numpages = ppages->size;
     size_t pageoff = NUM_PAGES(ppages->base - pool->base);
 
     bool was_free = true;
@@ -135,8 +135,8 @@ bool mem_reserve_ppool_ppages(struct page_pool *pool, struct ppages *ppages)
         was_free = false;
     }
 
-    bitmap_set_consecutive(pool->bitmap, pageoff, numpages);
-    pool->free -= numpages;
+    bitmap_set_consecutive(pool->bitmap, pageoff, ppages->num_pages);
+    pool->free -= ppages->num_pages;
 
     return is_in_rgn && was_free;
 }
@@ -146,8 +146,8 @@ bool mem_reserve_ppages_in_pool_list(struct list *page_pool_list, struct ppages 
     bool reserved = false;
     list_foreach((*page_pool_list), struct page_pool, pool)
     {
-        bool is_in_rgn = range_in_range(ppages->base, ppages->size * PAGE_SIZE,
-                                        pool->base, pool->size * PAGE_SIZE);
+        bool is_in_rgn = range_in_range(ppages->base, ppages->num_pages * PAGE_SIZE,
+                                        pool->base, ppages->num_pages * PAGE_SIZE);
         if (is_in_rgn) {
             reserved = mem_reserve_ppool_ppages(pool, ppages);
             break;
@@ -162,13 +162,13 @@ bool mem_reserve_ppages(struct ppages *ppages)
     return mem_reserve_ppages_in_pool_list(&page_pool_list, ppages);
 }
 
-void *mem_alloc_page(size_t n, enum AS_SEC sec, bool phys_aligned)
+void *mem_alloc_page(size_t num_pages, enum AS_SEC sec, bool phys_aligned)
 {
     vaddr_t vpage = INVALID_VA;
-    struct ppages ppages = mem_alloc_ppages(cpu()->as.colors, n, phys_aligned);
+    struct ppages ppages = mem_alloc_ppages(cpu()->as.colors, num_pages, phys_aligned);
 
-    if (ppages.size == n) {
-        vpage = mem_alloc_map(&cpu()->as, sec, &ppages, INVALID_VA, n, PTE_HYP_FLAGS);
+    if (ppages.num_pages == num_pages) {
+        vpage = mem_alloc_map(&cpu()->as, sec, &ppages, INVALID_VA, num_pages, PTE_HYP_FLAGS);
     }
 
     return (void*)vpage;
@@ -185,7 +185,7 @@ bool root_pool_set_up_bitmap(paddr_t load_addr, struct page_pool *root_pool)
     if (root_pool->size <= bitmap_size) return false;
     size_t bitmap_base = load_addr + image_size + vm_image_size + cpu_size;
 
-    struct ppages bitmap_pp = mem_ppages_get(bitmap_base, bitmap_size);    
+    struct ppages bitmap_pp = mem_ppages_get(bitmap_base, NUM_PAGES(bitmap_size));    
     bitmap_t* root_bitmap = (bitmap_t*) 
         mem_alloc_map(&cpu()->as, SEC_HYP_GLOBAL, &bitmap_pp, INVALID_VA, bitmap_size, PTE_HYP_FLAGS);
     root_pool->bitmap = root_bitmap;
@@ -253,7 +253,7 @@ static void pp_init(struct page_pool *pool, paddr_t base, size_t size)
     if (size <= bitmap_size) return;
 
     pages = mem_alloc_ppages(cpu()->as.colors, bitmap_size, false);
-    if (pages.size != bitmap_size) return;
+    if (pages.num_pages != bitmap_size) return;
 
     if ((pool->bitmap = (bitmap_t*)mem_alloc_map(&cpu()->as, SEC_HYP_GLOBAL, &pages, 
                                     INVALID_VA, bitmap_size, PTE_HYP_FLAGS)) == NULL)
@@ -366,26 +366,26 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region *root_regio
 
 __attribute__((weak))
 bool mem_map_reclr(struct addr_space *as, vaddr_t va, struct ppages *ppages,
-                    size_t n, mem_flags_t flags) {
+                    size_t num_pages, mem_flags_t flags) {
     ERROR("Trying to recolor section but there is no coloring implementation");
 }
 
 __attribute__((weak))
-bool pp_alloc_clr(struct page_pool *pool, size_t n, colormap_t colors,
+bool pp_alloc_clr(struct page_pool *pool, size_t num_pages, colormap_t colors,
                          struct ppages *ppages)
 {
     ERROR("Trying to allocate colored pages but there is no coloring implementation");
 }
 
-struct ppages mem_alloc_ppages(colormap_t colors, size_t n, bool aligned)
+struct ppages mem_alloc_ppages(colormap_t colors, size_t num_pages, bool aligned)
 {
-    struct ppages pages = {.size = 0};
+    struct ppages pages = {.num_pages = 0};
 
     list_foreach(page_pool_list, struct page_pool, pool)
     {
         bool ok = (!all_clrs(colors) && !aligned)
-                      ? pp_alloc_clr(pool, n, colors, &pages)
-                      : pp_alloc(pool, n, aligned, &pages);
+                      ? pp_alloc_clr(pool, num_pages, colors, &pages)
+                      : pp_alloc(pool, num_pages, aligned, &pages);
         if (ok) break;
     }
 
