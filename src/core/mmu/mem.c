@@ -334,14 +334,20 @@ vaddr_t mem_alloc_vpage(struct addr_space *as, enum AS_SEC section,
         addr = sec->beg;
     }
     top = sec->end;
-    addr = addr & ~(PAGE_SIZE - 1);
 
+    if (addr > top || !IS_ALIGNED(addr, PAGE_SIZE)) {
+        return INVALID_VA;
+    }
+    
     spin_lock(&as->lock);
     if (sec->shared) spin_lock(&sec->lock);
 
     while (count < n && !failed) {
-        // check if there is still enough space in as
-        if ((top + 1 - addr) / PAGE_SIZE < n) {
+        // Check if there is still enough space in the address space.
+        // The corner case of top being the highest address in the address
+        // space and the target address being 0 is handled separate
+        size_t full_as = (addr == 0) && (top == MAX_VA); 
+        if (!full_as && (((top+1-addr)/PAGE_SIZE) < n)) {
             vpage = INVALID_VA;
             failed = true;
             break;
