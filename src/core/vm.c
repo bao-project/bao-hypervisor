@@ -82,21 +82,20 @@ void vm_map_mem_region(struct vm* vm, struct vm_mem_region* reg)
 {
     size_t n = NUM_PAGES(reg->size);
 
+    struct ppages pa_reg;
+    struct ppages *pa_ptr = NULL;
     if (reg->place_phys) {
-        struct ppages pa_reg = mem_ppages_get(reg->phys, n);
+        pa_reg = mem_ppages_get(reg->phys, n);
         pa_reg.colors = reg->colors;        
-        vaddr_t va = mem_alloc_map(&vm->as, SEC_VM_ANY, &pa_reg,
-                    (vaddr_t)reg->base, n, PTE_VM_FLAGS);
-        
-        if (va != (vaddr_t)reg->base) {
-            ERROR("failed to allocate vm's dev address");
-        }   
+        pa_ptr = &pa_reg;
     } else {
-        vaddr_t va = mem_alloc_map(&vm->as, SEC_VM_ANY, NULL,
-                    (vaddr_t)reg->base, n, PTE_VM_FLAGS);
-        if (va != (vaddr_t)reg->base) {
-            ERROR("failed to allocate vm's dev address");
-        }
+        pa_ptr = NULL;
+    }
+
+    vaddr_t va = mem_alloc_map(&vm->as, SEC_VM_ANY, pa_ptr,
+                (vaddr_t)reg->base, n, PTE_VM_FLAGS);
+    if (va != (vaddr_t)reg->base) {
+        ERROR("failed to allocate vm's region at 0x%lx", reg->base);
     }
 }
 
