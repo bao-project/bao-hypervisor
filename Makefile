@@ -5,6 +5,12 @@ SHELL:=bash
 
 PROJECT_NAME:=bao
 
+# Helper functions
+
+define current_directory
+$(realpath $(dir $(lastword $(MAKEFILE_LIST))))
+endef
+
 # Setup toolchain macros
 cpp=		$(CROSS_COMPILE)cpp
 sstrip= 	$(CROSS_COMPILE)strip
@@ -28,7 +34,7 @@ PLATFORM=
 submakes:=config
 
 # Directories
-cur_dir:=$(abspath .)
+cur_dir:=$(current_directory)
 src_dir:=$(cur_dir)/src
 cpu_arch_dir=$(src_dir)/arch
 lib_dir=$(src_dir)/lib
