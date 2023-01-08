@@ -79,7 +79,7 @@ static inline void syscall_handler(unsigned long iss, unsigned long far,
 {
     unsigned long fid = vcpu_readreg(cpu()->vcpu, 0);
 
-    int64_t ret = SMCC_E_NOT_SUPPORTED;
+    long ret = SMCC_E_NOT_SUPPORTED;
     switch(fid & ~SMCC_FID_FN_NUM_MSK) {
         case SMCC32_FID_STD_SRVC:
         case SMCC64_FID_STD_SRVC:
