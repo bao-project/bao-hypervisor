@@ -205,10 +205,13 @@ static inline pte_t *mem_alloc_pt(struct addr_space *as, pte_t *parent, size_t l
     size_t ptsize = NUM_PAGES(pt_size(&as->pt, lvl + 1));
     struct ppages ppage = mem_alloc_ppages(as->colors, ptsize, ptsize > 1 ? true : false);
     if (ppage.num_pages == 0) return NULL;
+    pte_t pte_dflt_val = PTE_INVALID | (*parent & PTE_RSW_MSK);
     pte_set(parent, ppage.base, PTE_TABLE, PTE_HYP_FLAGS);
     fence_sync_write();
     pte_t *temp_pt = pt_get(&as->pt, lvl + 1, addr);
-    memset(temp_pt, 0, ptsize*PAGE_SIZE);
+    for (size_t i = 0; i < pt_nentries(&as->pt, lvl + 1); i++) {
+        temp_pt[i] = pte_dflt_val;
+    }
     return temp_pt;
 }
 
