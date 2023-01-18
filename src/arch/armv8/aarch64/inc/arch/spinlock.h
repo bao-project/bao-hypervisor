@@ -29,12 +29,12 @@ static inline void spin_lock(spinlock_t* lock)
         "stxr %w0, %w2, %1 \n\t"
         "cbnz %w0, 1b \n\t"
         : "=&r"(tmp), "+Q"(*lock)
-        : "r"(ONE));
+        : "r"(ONE) : "memory");
 }
 
 static inline void spin_unlock(spinlock_t* lock)
 {
-    asm volatile("stlr wzr, %0\n\t" ::"Q"(*lock));
+    asm volatile("stlr wzr, %0\n\t" ::"Q"(*lock) : "memory");
 }
 
 #endif /* __ARCH_SPINLOCK__ */

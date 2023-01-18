@@ -25,13 +25,13 @@ static inline void spin_lock(spinlock_t* lock)
         "cmpeq %r0, #0 \n\t"
         "bne 1b \n\t"
         : "=&r"(tmp), "+Q"(*lock)
-        : "r"(ONE));
+        : "r"(ONE) : "memory");
 }
 
 static inline void spin_unlock(spinlock_t* lock)
 {
     spinlock_t const ZERO = 0;
-    asm volatile("stl %r0, %1\n\t" ::"r"(ZERO), "Q"(*lock));
+    asm volatile("stl %r0, %1\n\t" ::"r"(ZERO), "Q"(*lock) : "memory");
 }
 
 #endif /* __ARCH_SPINLOCK__ */
