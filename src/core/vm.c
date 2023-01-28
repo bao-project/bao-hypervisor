@@ -102,35 +102,32 @@ void vm_map_mem_region(struct vm* vm, struct vm_mem_region* reg)
 static void vm_map_img_rgn_inplace(struct vm* vm, const struct vm_config* config,
                                    struct vm_mem_region* reg)
 {
+    vaddr_t img_base = config->image.base_addr;
+    size_t img_size = config->image.size;
     /* mem region pages before the img */
-    size_t n_before = (config->image.base_addr - reg->base) / PAGE_SIZE;
+    size_t n_before = NUM_PAGES(img_base - reg->base);
     /* pages after the img */
-    size_t n_aft = ((reg->base + reg->size) -
-                    (config->image.base_addr + config->image.size)) /
-                   PAGE_SIZE;
+    size_t n_aft = NUM_PAGES((reg->base + reg->size) - (img_base + img_size));
     /* mem region pages for img */
-    size_t n_img = NUM_PAGES(config->image.size);
-
+    size_t n_img = NUM_PAGES(img_size);
 
     /* map img in place */
     struct ppages pa_img = mem_ppages_get(config->image.load_addr, n_img);
 
-    vaddr_t va = mem_alloc_map(&vm->as, SEC_VM_ANY,
-                            NULL, (vaddr_t)reg->base, n_before, PTE_VM_FLAGS);
-
+    mem_alloc_map(&vm->as, SEC_VM_ANY, NULL, (vaddr_t)reg->base, n_before,
+        PTE_VM_FLAGS);
     if (all_clrs(vm->as.colors)) {
         /* map img in place */
-        mem_alloc_map(&vm->as, SEC_VM_ANY, &pa_img, va + n_before * PAGE_SIZE, n_img,
-                PTE_VM_FLAGS);
+        mem_alloc_map(&vm->as, SEC_VM_ANY, &pa_img, img_base, n_img,
+            PTE_VM_FLAGS);
         /* we are mapping in place, config is already reserved */
     } else {
         /* recolour img */
-        mem_map_reclr(&vm->as, va + n_before * PAGE_SIZE, &pa_img, n_img,
-                      PTE_VM_FLAGS);
+        mem_map_reclr(&vm->as, img_base, &pa_img, n_img, PTE_VM_FLAGS);
     }
     /* map pages after img */
-    mem_alloc_map(&vm->as, SEC_VM_ANY, NULL, va + (n_before + n_img) * PAGE_SIZE, n_aft,
-            PTE_VM_FLAGS);
+    mem_alloc_map(&vm->as, SEC_VM_ANY, NULL, img_base + NUM_PAGES(img_size)*PAGE_SIZE, n_aft,
+        PTE_VM_FLAGS);
 }
 
 static void vm_install_image(struct vm* vm) {
