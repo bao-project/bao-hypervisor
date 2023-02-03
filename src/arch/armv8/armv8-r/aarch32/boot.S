@@ -112,10 +112,8 @@ skip_non_loadable:
     isb
 
     /* Enable caches and MPU */
-    mrc p15, 4, r3, c1, c0, 0 // HSCTLR
-    ldr r4, =(SCTLR_C | SCTLR_I | SCTLR_M)
-    orr r3, r3, r4
-    mcr p15, 4, r3, c1, c0, 0 // HSCTLR
+    ldr r4, =(SCTLR_RES1_AARCH32 | SCTLR_C | SCTLR_I | SCTLR_M)
+    mcr p15, 4, r4, c1, c0, 0 // HSCTLR
 
     dsb
     isb

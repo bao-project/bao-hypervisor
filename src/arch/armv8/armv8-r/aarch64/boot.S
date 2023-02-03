@@ -129,10 +129,8 @@ skip_non_loadable:
     isb
 
     /* Enable caches and MPU */
-    mrs x3, sctlr_el2
-    ldr x4, =(SCTLR_C | SCTLR_I | SCTLR_M)
-    orr x3, x3, x4
-    msr sctlr_el2, x3
+    ldr x4, =(SCTLR_RES1 | SCTLR_C | SCTLR_I | SCTLR_M)
+    msr sctlr_el2, x4
 
     dsb nsh
     isb

@@ -224,6 +224,7 @@
 /* SCTLR - System Control Register */
 
 #define SCTLR_RES1 (0x30C50830)
+#define SCTLR_RES1_AARCH32 (0x30C50818)
 #define SCTLR_M (1 << 0)
 #define SCTLR_A (1 << 1)
 #define SCTLR_C (1 << 2)
