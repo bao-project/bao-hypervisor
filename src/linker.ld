@@ -35,7 +35,7 @@ SECTIONS
 	}
 
 	.ipi_cpumsg_handlers : {
-		_ipi_cpumsg_handlers_start = .;
+		ipi_cpumsg_handlers = .;
 		*(.ipi_cpumsg_handlers)
 	}
 
