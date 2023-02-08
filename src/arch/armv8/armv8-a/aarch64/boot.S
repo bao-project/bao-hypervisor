@@ -252,6 +252,10 @@ warm_boot:
 	mov x0, #0
 	bl	boot_cache_invalidate
 
+    /* set cpu thread pointer */
+    ldr x3, =BAO_CPU_BASE
+    msr tpidr_el2, x3
+
 	/* restore all needed register state */
 	ldp x5, x6, [x19, #0]
 	msr TCR_EL2, x5
