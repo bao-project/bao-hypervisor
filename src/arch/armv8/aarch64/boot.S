@@ -98,7 +98,7 @@ _master_set:
 _set_master_cpu:
 	ldaxr w9, [x3]
 	cbnz w9, 1f
-	stlxr w9, x5, [x3]
+	stlxr w9, w5, [x3]
 	cbnz w9, _set_master_cpu
 	adr x3, CPU_MASTER
 	str x0, [x3]
