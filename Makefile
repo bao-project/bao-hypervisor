@@ -175,7 +175,9 @@ override CFLAGS+=-O$(OPTIMIZATIONS) -Wall -Werror -ffreestanding -std=gnu11 \
 	-fno-pic $(arch-cflags) $(platform-cflags) $(CPPFLAGS) $(debug_flags)
 
 override ASFLAGS+=$(CFLAGS) $(arch-asflags) $(platform-asflags)
-override LDFLAGS+=-build-id=none -nostdlib $(arch-ldflags) $(plattform-ldflags)
+override LDFLAGS+=-build-id=none -nostdlib \
+	-z common-page-size=$(PAGE_SIZE) -z max-page-size=$(PAGE_SIZE) \
+	$(arch-ldflags) $(plattform-ldflags)
 
 .PHONY: all
 all: $(targets-y)

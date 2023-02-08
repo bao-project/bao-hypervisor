@@ -7,3 +7,4 @@ arch-asflags+=
 arch-ldflags+=
 
 arch_mem_prot:=mpu
+PAGE_SIZE:=64

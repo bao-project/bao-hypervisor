@@ -24,9 +24,13 @@ SECTIONS
 		*(.text)
 	}
 
+    . = ALIGN(PAGE_SIZE); /* start RO sections in separate page */
+
 	.rodata :  {
 		*(.rdata .rodata .rodata.*)
 	}
+
+    . = ALIGN(PAGE_SIZE); /* start RW sections in separate page */
 	
 	.data : {
 		*(.data .data.*)
