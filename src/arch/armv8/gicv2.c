@@ -118,11 +118,11 @@ void gic_cpu_init()
 void gic_map_mmio()
 {
     gicc = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
-        platform.arch.gic.gicc_addr, NUM_PAGES(sizeof(gicc)));
+        platform.arch.gic.gicc_addr, NUM_PAGES(sizeof(struct gicc_hw)));
     gich = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
-        platform.arch.gic.gich_addr, NUM_PAGES(sizeof(gich)));
+        platform.arch.gic.gich_addr, NUM_PAGES(sizeof(struct gich_hw)));
     gicd = (void*) mem_alloc_map_dev(&cpu()->as,SEC_HYP_GLOBAL, INVALID_VA,
-        platform.arch.gic.gicd_addr,  NUM_PAGES(sizeof(gicd)));
+        platform.arch.gic.gicd_addr,  NUM_PAGES(sizeof(struct gicd_hw)));
 }
 
 void gic_send_sgi(cpuid_t cpu_target, irqid_t sgi_num)
