@@ -32,6 +32,9 @@
 #define CSR_HTINST 0x64A
 #define CSR_HGATP 0x680
 #define CSR_HGEIP 0xE07
+/* Hypervisor Configuration */
+#define CSR_HENVCFG 0x60A
+#define CSR_HENVCFGH 0x61A
 
 #define STVEC_MODE_OFF (0)
 #define STVEC_MODE_LEN (2)
