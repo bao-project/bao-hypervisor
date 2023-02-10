@@ -27,10 +27,7 @@ typedef unsigned idcid_t;
 typedef unsigned irqid_t;
 
 /**==== APLIC Addresses defines ====*/
-// TODO: addr is given by configuration file
-#define APLIC_BASE                      (0xd000000)//platform.arch.plic_base)
 #define APLIC_IDC_OFF                   (0x4000)
-#define APLIC_IDC_BASE                  (APLIC_BASE + APLIC_IDC_OFF)
 #define APLIC_IDC_SIZE                  (32)
 
 #define APLIC_MAX_INTERRUPTS            (1024)
