@@ -1,25 +1,8 @@
 /**
- * @file vaplic.c
- * @author Jose Martins <jose.martins@bao-project.org>
- * @author Francisco Marques (fmarques_00@protonmail.com)
- * @brief This module gives a set of function to virtualize the RISC-V APLIC.
- * @version 0.1
- * @date 2022-10-24
- * 
- * @copyright Copyright (c) Bao Project (www.bao-project.org), 2019-
- * 
- * Bao is free software; you can redistribute it and/or modify it under the
- * terms of the GNU General Public License version 2 as published by the Free
- * Software Foundation, with a special exception exempting guest code from such
- * license. See the COPYING file in the top-level directory for details.
- * 
- * TODO:    criar um array de funções. Sendo que o index segue a ordem
- *          pela qual os elementos aparecem na struct. A esse index
- *          soma acc->write, para escolher se é uma escrita ou leitura.
- *          Desta forma, deixo de precisar das func. vaplic_emul_x_access.
- *          Como paramentro da função, vai o index do intp_id/reg/idc_id
- * 
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
+
 #include <vaplic.h>
 #include <vm.h>
 #include <cpu.h>
@@ -28,7 +11,7 @@
 #include <interrupts.h>
 #include <arch/csrs.h>
 
-#define APLIC_MAX_PRIO 0xFF
+#define APLIC_MIN_PRIO 0xFF
 
 /**
  * @brief Get the bit from reg object
@@ -130,7 +113,7 @@ static irqid_t vaplic_emul_notifier(struct vcpu* vcpu){
     struct virqc * vxplic = &vcpu->vm->arch.vxplic;
 
     /** Find highest pending and enabled interrupt */
-    uint32_t max_prio = APLIC_MAX_PRIO;
+    uint32_t max_prio = APLIC_MIN_PRIO;
     irqid_t int_id = 0;
     uint32_t hart_index = 0;
     uint32_t prio = 0;
@@ -206,6 +189,8 @@ static void vaplic_ipi_handler(uint32_t event, uint64_t data)
 }
 
 // ============================================================================
+/** APLIC Functions emulation */
+
 /**
  * @brief Write to domaincfg register a new value.
  * 

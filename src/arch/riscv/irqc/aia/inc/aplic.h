@@ -1,17 +1,6 @@
 /**
- * @file aplic.h
- * @author Jose Martins <jose.martins@bao-project.org>
- * @author Francisco Marques (fmarques_00@protonmail.com)
- * @brief This module gives a set of function to controls the RISC-V APLIC.
- * @version 0.1
- * @date 2022-09-23
- * 
- * @copyright Copyright (c) Bao Project (www.bao-project.org), 2019-
- * 
- * Bao is free software; you can redistribute it and/or modify it under the
- * terms of the GNU General Public License version 2 as published by the Free
- * Software Foundation, with a special exception exempting guest code from such
- * license. See the COPYING file in the top-level directory for details.
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
 #ifndef _APLIC_H_
@@ -232,13 +221,14 @@ void aplic_set_clrienum(irqid_t int_id);
  * 
  * If domaincfg.DM = 1, target have the format:
  * 
- * +-----------+-------------+----------------------------------------------------------------+
- * | Bit-Field |    Name     |                          Description                           |
- * +-----------+-------------+----------------------------------------------------------------+
- * | 31:28     | Hart Index  | Hart to which interrupts will delivery                         |
- * | 17:12     | Guest Index | Only if hypervisor extension were implemented.                 |
- * | 10:0      | EIID        | External Interrupt Identity. Specifies the data value for MSIs |
- * +-----------+-------------+----------------------------------------------------------------+
+ * +-----------+-------------+------------------------------------------------+
+ * | Bit-Field |    Name     |                  Description                   |
+ * +-----------+-------------+------------------------------------------------+
+ * | 31:28     | Hart Index  | Hart to which interrupts will delivery         |
+ * | 17:12     | Guest Index | Only if hypervisor extension were implemented. |
+ * | 10:0      | EIID        | External Interrupt Identity. Specifies the data|
+ * |           |             | value for MSIs                                 |
+ * +-----------+-------------+------------------------------------------------+
  */
 void aplic_set_target(irqid_t int_id, uint32_t val);
 

@@ -1,17 +1,6 @@
 /**
- * @file vaplic.h
- * @author Jose Martins <jose.martins@bao-project.org>
- * @author Francisco Marques (fmarques_00@protonmail.com)
- * @brief This module gives a set of function to virtualize the RISC-V APLIC.
- * @version 0.1
- * @date 2022-10-24
- * 
- * @copyright Copyright (c) Bao Project (www.bao-project.org), 2019-
- * 
- * Bao is free software; you can redistribute it and/or modify it under the
- * terms of the GNU General Public License version 2 as published by the Free
- * Software Foundation, with a special exception exempting guest code from such
- * license. See the COPYING file in the top-level directory for details.
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
 #ifndef __VAPLIC_H__
