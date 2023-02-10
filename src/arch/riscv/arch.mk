@@ -1,7 +1,7 @@
 ## SPDX-License-Identifier: Apache-2.0
 ## Copyright (c) Bao Project and Contributors. All rights reserved.
 
-CROSS_COMPILE := riscv64-unknown-elf-
+CROSS_COMPILE ?= riscv64-unknown-elf-
 
 arch-cppflags = 
 arch-cflags = -mcmodel=medany -march=rv64g -mstrict-align
