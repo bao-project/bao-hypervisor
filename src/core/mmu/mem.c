@@ -779,16 +779,33 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region *root_regio
      * the new CPU region is created, cleaned, prepared and finally mapped.
      */
     cpu_new = copy_space((void *)BAO_CPU_BASE, sizeof(struct cpu), &p_cpu);
-    memset((void*)cpu_new->as.pt.root, 0, sizeof(cpu_new->as.pt.root));
-    as_init(&cpu_new->as, AS_HYP_CPY, HYP_ASID, cpu_new->as.pt.root, colors);
+    as_init(&cpu_new->as, AS_HYP_CPY, HYP_ASID, NULL, colors);
     va = mem_alloc_vpage(&cpu_new->as, SEC_HYP_PRIVATE,
                         (vaddr_t)BAO_CPU_BASE,
                         NUM_PAGES(sizeof(struct cpu)));
-
     if (va != (vaddr_t)BAO_CPU_BASE)
         ERROR("Can't allocate virtual address for cpuspace");
-
     mem_map(&cpu_new->as, va, &p_cpu, NUM_PAGES(sizeof(struct cpu)), PTE_HYP_FLAGS);
+
+    /*
+     * Also, map the root page table in the new address space and keep both the
+     * virtual address and physical address in local variables as they will be
+     * needed later to perform the address space switch and new address space
+     * initialization.
+     */
+    paddr_t p_root_pt_addr;
+    vaddr_t v_root_pt_addr;
+    size_t root_pt_num_pages = NUM_PAGES(pt_size(&cpu_new->as.pt, 0));
+    mem_translate(&cpu()->as, (vaddr_t)cpu_new->as.pt.root, &p_root_pt_addr);
+    v_root_pt_addr = mem_alloc_vpage(&cpu_new->as, SEC_HYP_PRIVATE, INVALID_VA,
+                     root_pt_num_pages);
+    if (va == INVALID_VA) {
+        ERROR("Can't allocate virtuall address space for root page table");
+    }
+    struct ppages p_root_pt_pages =
+        mem_ppages_get(p_root_pt_addr, root_pt_num_pages);
+    mem_map(&cpu_new->as, v_root_pt_addr, &p_root_pt_pages, root_pt_num_pages,
+        PTE_HYP_FLAGS);
 
     /*
      * Copy the Hypervisor image and root page pool bitmap into a colored
@@ -844,8 +861,6 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region *root_regio
     }
     cpu_sync_barrier(&cpu_glb_sync);
 
-    paddr_t p_root_pt_addr;
-    mem_translate(&cpu()->as, (vaddr_t)cpu_new->as.pt.root, &p_root_pt_addr);
     switch_space(cpu_new, p_root_pt_addr);
 
     /**
@@ -872,7 +887,7 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region *root_regio
         while (shared_pte != 0);
     }
 
-    as_init(&cpu()->as, AS_HYP, HYP_ASID, cpu()->as.pt.root, colors);
+    as_init(&cpu()->as, AS_HYP, HYP_ASID, (void*)v_root_pt_addr, colors);
 
     /*
      * Clear the old region that have been copied.
