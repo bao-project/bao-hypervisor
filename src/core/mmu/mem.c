@@ -951,7 +951,7 @@ void as_init(struct addr_space *as, enum AS_TYPE type, asid_t id,
 void mem_prot_init() {
     pte_t* root_pt = (pte_t*)
         ALIGN(((vaddr_t)cpu()) + sizeof(struct cpu), PAGE_SIZE);
-    as_init(&cpu()->as, AS_HYP, HYP_ASID, root_pt, 0);
+    as_init(&cpu()->as, AS_HYP, HYP_ASID, root_pt, config.hyp.colors);
 }
 
 vaddr_t mem_alloc_map(struct addr_space* as, enum AS_SEC section, struct ppages *page, 
