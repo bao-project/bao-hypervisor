@@ -167,7 +167,6 @@ bool pp_alloc_clr(struct page_pool *pool, size_t n, colormap_t colors,
              * point
              */
             index = 0;
-            top = pool->last;
         }
     }
 
