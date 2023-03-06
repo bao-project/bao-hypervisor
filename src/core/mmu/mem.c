@@ -82,7 +82,6 @@ static void mem_free_ppages(struct ppages *ppages)
         if (in_range(ppages->base, pool->base, pool->size * PAGE_SIZE)) {
             size_t index = (ppages->base - pool->base) / PAGE_SIZE;
             if (!all_clrs(ppages->colors)) {
-                size_t index = 0;
                 for (size_t i = 0; i < ppages->num_pages; i++) {
                     index = pp_next_clr(pool->base, index, ppages->colors);
                     bitmap_clear(pool->bitmap, index++);
