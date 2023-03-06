@@ -56,8 +56,9 @@ static inline struct ppages mem_ppages_get(paddr_t base, size_t num_pages)
 
 static inline bool all_clrs(colormap_t clrs)
 {
-    return (clrs == 0) ||
-           ((clrs & ((1ULL << COLOR_NUM) - 1)) == ((1ULL << COLOR_NUM) - 1));
+    colormap_t mask = (((colormap_t)1) << COLOR_NUM) - 1;
+    colormap_t masked_colors = clrs & mask;
+    return (masked_colors == 0) || (masked_colors == mask);
 }
 
 void mem_init(paddr_t load_addr);
