@@ -180,16 +180,16 @@ bool root_pool_set_up_bitmap(paddr_t load_addr, struct page_pool *root_pool)
     size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);
     size_t cpu_size = platform.cpu_num * mem_cpu_boot_alloc_size();
 
-    size_t bitmap_size = root_pool->size / (8 * PAGE_SIZE) +
+    size_t bitmap_num_pages = root_pool->size / (8 * PAGE_SIZE) +
                            ((root_pool->size % (8 * PAGE_SIZE) != 0) ? 1 : 0);
-    if (root_pool->size <= bitmap_size) return false;
+    if (root_pool->size <= bitmap_num_pages) return false;
     size_t bitmap_base = load_addr + image_size + vm_image_size + cpu_size;
 
-    struct ppages bitmap_pp = mem_ppages_get(bitmap_base, NUM_PAGES(bitmap_size));    
+    struct ppages bitmap_pp = mem_ppages_get(bitmap_base, bitmap_num_pages);
     bitmap_t* root_bitmap = (bitmap_t*) 
-        mem_alloc_map(&cpu()->as, SEC_HYP_GLOBAL, &bitmap_pp, INVALID_VA, bitmap_size, PTE_HYP_FLAGS);
+        mem_alloc_map(&cpu()->as, SEC_HYP_GLOBAL, &bitmap_pp, INVALID_VA, bitmap_num_pages, PTE_HYP_FLAGS);
     root_pool->bitmap = root_bitmap;
-    memset((void*)root_pool->bitmap, 0, bitmap_size * PAGE_SIZE);
+    memset((void*)root_pool->bitmap, 0, bitmap_num_pages * PAGE_SIZE);
 
     return mem_reserve_ppool_ppages(root_pool, &bitmap_pp);
 }
