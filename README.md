@@ -55,7 +55,7 @@ platforms is presented below:
 
 **Armv8-R AArch32**
 - [x] Arm Fixed Virtual Platforms
-- [ ] NXP S32S24
+- [ ] NXP S32Z/E
 - [ ] Renesas RZT2M
 
 **RISC-V RV64**
