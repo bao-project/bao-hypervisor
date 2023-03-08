@@ -23,7 +23,7 @@ static inline void as_map_physical_identity(struct addr_space *as) {
     for (size_t i = 0; i < platform.region_num; i++) {
         struct mem_region *reg = &platform.regions[i];
         paddr_t base = reg->base & lvl_mask;
-        paddr_t top = (reg->base + reg->size) & lvl_mask;
+        paddr_t top = ALIGN((reg->base + reg->size), lvl_size) & lvl_mask;
         size_t num_entries = ((top - base - 1) / lvl_size) + 1;
 
         paddr_t addr = base;
