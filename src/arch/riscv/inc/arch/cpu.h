@@ -8,6 +8,8 @@
 
 #include <bao.h>
 
+#define CPU_HAS_EXTENSION(EXT) (DEFINED(EXT))
+
 extern cpuid_t CPU_MASTER;
 
 struct cpu_arch {

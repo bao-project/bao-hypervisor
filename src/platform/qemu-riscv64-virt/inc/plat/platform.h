@@ -8,4 +8,6 @@
 
 #include <drivers/sbi_uart.h>
 
+#define CPU_EXT_SSTC    1
+
 #endif
