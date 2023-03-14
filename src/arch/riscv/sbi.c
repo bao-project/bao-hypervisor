@@ -230,10 +230,13 @@ struct sbiret sbi_time_handler(unsigned long fid)
     if (fid != SBI_SET_TIMER_FID) return (struct sbiret){SBI_ERR_NOT_SUPPORTED};
 
     uint64_t stime_value = vcpu_readreg(cpu()->vcpu, REG_A0);
-
-    sbi_set_timer(stime_value);  // assumes always success
-    CSRC(CSR_HVIP, HIP_VSTIP);
-    CSRS(sie, SIE_STIE);
+    if(CPU_HAS_EXTENSION(CPU_EXT_SSTC)) {
+        CSRW(CSR_VSTIMECMP, stime_value);
+    } else {
+        sbi_set_timer(stime_value);  // assumes always success
+        CSRC(CSR_HVIP, HIP_VSTIP);
+        CSRS(sie, SIE_STIE);
+    }
 
     return (struct sbiret){SBI_SUCCESS};
 }

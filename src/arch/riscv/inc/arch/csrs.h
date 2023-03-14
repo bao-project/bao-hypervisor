@@ -17,6 +17,9 @@
 #define CSR_VSTVAL 0x243
 #define CSR_VSIP 0x244
 #define CSR_VSATP 0x280
+/* Sstc Extension */
+#define CSR_VSTIMECMP 0x24D
+#define CSR_VSTIMECMPH 0x25D
 
 #define CSR_HSTATUS 0x600
 #define CSR_HEDELEG 0x602
@@ -35,6 +38,10 @@
 /* Hypervisor Configuration */
 #define CSR_HENVCFG 0x60A
 #define CSR_HENVCFGH 0x61A
+
+/* Sstc Extension */
+#define CSR_STIMECMP 0x14D
+#define CSR_STIMECMPH 0x15D
 
 #define STVEC_MODE_OFF (0)
 #define STVEC_MODE_LEN (2)
@@ -189,6 +196,15 @@
 #define HSTATUS_VSXL_MSK (BIT_MASK(HSTATUS_VSXL_OFF, HSTATUS_VSXL_LEN))
 #define HSTATUS_VSXL_32 (1ULL << HSTATUS_VSXL_OFF)
 #define HSTATUS_VSXL_64 (2ULL << HSTATUS_VSXL_OFF)
+
+#define HENVCFG_FIOM (1ULL << 0)
+#define HENVCFG_CBIE_OFF (4)
+#define HSTATUS_CBIE_LEN (2)
+#define HSTATUS_CBIE_MSK (BIT_MASK(HSTATUS_CBIE_OFF, HSTATUS_CBIE_LEN))
+#define HENVCFG_CBCFE (1ULL << 6)
+#define HENVCFG_CBZE  (1ULL << 7)
+#define HENVCFG_PBMTE (1ULL << 62)
+#define HENVCFG_STCE  (1ULL << 63)
 
 #define HCOUNTEREN_CY (1ULL << 0)
 #define HCOUNTEREN_TM (1ULL << 1)
