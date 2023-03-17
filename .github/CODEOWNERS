@@ -1,0 +1,12 @@
+* @josecm @sandro2pinto @DavidMCerdeira @danielRep
+
+src/ @josecm @DavidMCerdeira
+scripts/ @josecm
+
+src/core/mpu @josecm @AfonsoSantos96
+
+src/arch/armv8 @josecm @DavidMCerdeira
+src/arch/armv8/armv8-r @josecm @AfonsoSantos96
+src/arch/armv8/aarch32 @josecm @AfonsoSantos96
+
+src/arch/riscv @josecm @ninolomata
