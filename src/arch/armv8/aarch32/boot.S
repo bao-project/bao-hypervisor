@@ -65,16 +65,23 @@ _reset_handler:
     get_phys_addr r3, r4, _hyp_vector_table
     mcr p15, 4, r3, c12, c0, 0 // write HVBAR
 
-.pushsection .data
-_master_set:
-    .4byte 0
-.popsection
+/* Setting r9 should if set !is_cpu_master */
+#if defined(CPU_MASTER_FIXED)
+   mov r3, #CPU_MASTER_FIXED
+   cmp r0, r3
+   movne r9, #1
+   cmp r9, #0
+   bne 1f
+#else
 /**
  * If the cpu master is not fixed, for setting it, we assume only one cpu is
  * initially activated which later will turn on all the others. Therefore, there
  * is no concurrency when setting CPU_MASTER and no atomic operations are needed.
- * x9 should if set !is_cpu_master.
  */
+ .pushsection .data
+_master_set:
+    .4byte 0
+.popsection
     mov	r5, #1
     get_phys_addr r3, r4, _master_set
 _set_master_cpu:
@@ -82,6 +89,7 @@ _set_master_cpu:
     cmp r9, #0
     bne 1f
     str r5, [r3]
+#endif
     get_phys_addr r3, r4, CPU_MASTER
     str r0, [r3]
 1:

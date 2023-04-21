@@ -115,10 +115,18 @@ _reset_handler:
     csrw   sip, zero
     csrw   satp, zero 
 
-    /**
-     * The first hart to grab the lock is CPU_MASTER
-     */
 
+#if defined(CPU_MASTER_FIXED)
+/**
+ * All cpus set the CPU_MASTER with the same value to avoid synchronization.    
+ */
+    la      t0, CPU_MASTER
+    li      t1, CPU_MASTER_FIXED
+    sd      t1, 0(t0)
+#else
+/**
+ * The first hart to grab the lock is CPU_MASTER.
+ */
 .pushsection .data
 _boot_lock:
     .4byte 0
@@ -133,6 +141,7 @@ _boot_lock:
     la      t0, CPU_MASTER
     sd      a0, 0(t0)
 2:
+#endif
 
     /* Setup bootstrap page tables. Assuming sv39 support. */ 
 
