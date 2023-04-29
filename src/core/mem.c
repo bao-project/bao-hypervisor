@@ -141,27 +141,6 @@ bool mem_reserve_ppool_ppages(struct page_pool *pool, struct ppages *ppages)
     return is_in_rgn && was_free;
 }
 
-bool mem_reserve_ppages_in_pool_list(struct list *page_pool_list, struct ppages *ppages)
-{
-    bool reserved = false;
-    list_foreach((*page_pool_list), struct page_pool, pool)
-    {
-        bool is_in_rgn = range_in_range(ppages->base, ppages->num_pages * PAGE_SIZE,
-                                        pool->base, ppages->num_pages * PAGE_SIZE);
-        if (is_in_rgn) {
-            reserved = mem_reserve_ppool_ppages(pool, ppages);
-            break;
-        }
-    }
-
-    return reserved;
-}
-
-bool mem_reserve_ppages(struct ppages *ppages)
-{
-    return mem_reserve_ppages_in_pool_list(&page_pool_list, ppages);
-}
-
 void *mem_alloc_page(size_t num_pages, enum AS_SEC sec, bool phys_aligned)
 {
     vaddr_t vpage = INVALID_VA;
