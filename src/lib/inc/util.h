@@ -42,6 +42,17 @@
 #define max(n1, n2) (((n1) > (n2)) ? (n1) : (n2))
 #define min(n1, n2) (((n1) < (n2)) ? (n1) : (n2))
 
+static inline bool range_overlap_range(unsigned long base1, unsigned long size1,
+    unsigned long base2, unsigned long size2) {
+
+    vaddr_t reg1_lim = base1 + size1 - 1;
+    vaddr_t reg2_lim = base2 + size2 - 1;
+
+    return (base1 >= base2 && base1 <= reg2_lim) ||
+        (reg1_lim >= base2 && reg1_lim <= reg2_lim) || 
+        (base1 <= base2 && reg1_lim >= reg2_lim);
+}
+
 static inline bool range_in_range(unsigned long base1, unsigned long size1,
     unsigned long base2, unsigned long size2) {
 

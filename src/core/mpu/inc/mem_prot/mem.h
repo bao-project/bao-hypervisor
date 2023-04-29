@@ -37,13 +37,7 @@ void as_init(struct addr_space *as, enum AS_TYPE type, asid_t id, colormap_t col
 static inline bool mem_regions_overlap(struct mp_region *reg1, 
     struct mp_region *reg2)
 {
-    
-    vaddr_t reg1_lim = reg1->base + reg1->size - 1;
-    vaddr_t reg2_lim = reg2->base + reg2->size - 1;
-
-    return (reg1->base >= reg2->base && reg1->base <= reg2_lim) ||
-        (reg1_lim >= reg2->base && reg1_lim <= reg2_lim) || 
-        (reg1->base <= reg2->base && reg1_lim >= reg2_lim);
+    return range_in_range(reg1->base, reg1->size, reg2->base, reg2->size);
 }
 
 /**
