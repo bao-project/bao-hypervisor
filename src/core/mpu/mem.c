@@ -342,8 +342,6 @@ void mem_handle_broadcast_region(uint32_t event, uint64_t data)
             as = vm_as;
         }
 
-        objpool_free(&shared_region_pool, sh_reg);
-
         switch(event){
             case MEM_INSERT_REGION:
                 mem_handle_broadcast_insert(as, &sh_reg->region);
@@ -354,6 +352,8 @@ void mem_handle_broadcast_region(uint32_t event, uint64_t data)
             default:
                 ERROR("unknown mem broadcast msg");
         }
+
+        objpool_free(&shared_region_pool, sh_reg);
     }
 }
 
