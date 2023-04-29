@@ -244,6 +244,26 @@ static void pp_init(struct page_pool *pool, paddr_t base, size_t size)
     pool->free = pool->size;
 }
 
+bool mem_vm_img_in_phys_rgn(struct vm_config* vm_config) {
+
+    bool img_in_rgn = false;
+
+    for (size_t i = 0; i < vm_config->platform.region_num; i++) {
+        if (vm_config->platform.regions[i].place_phys) {
+            vaddr_t rgn_base = vm_config->platform.regions[i].phys;
+            size_t rgn_size = vm_config->platform.regions[i].size;
+            paddr_t img_base = vm_config->image.load_addr;
+            size_t img_size = vm_config->image.size;
+            if (range_in_range(img_base, img_size, rgn_base, rgn_size)) {
+                img_in_rgn = true;
+                break;
+            }
+        }
+    }
+
+    return img_in_rgn;
+}
+
 bool mem_reserve_physical_memory(struct page_pool *pool)
 {
     if (pool == NULL) return false;
@@ -252,6 +272,17 @@ bool mem_reserve_physical_memory(struct page_pool *pool)
         struct vm_config *vm_cfg = &config.vmlist[i];
         size_t n_pg = NUM_PAGES(vm_cfg->image.size);
         struct ppages ppages = mem_ppages_get(vm_cfg->image.load_addr, n_pg);
+
+        // If the vm image is part of a statically allocated region of the same
+        // vm, we defer the reservation of this memory to when we reserve the
+        // physical region below. Note that this not allow partial overlaps. If the
+        // image must be entirely inside a statically allocated region, or
+        // completely outside of it. This avoid overcamplicating the reservation
+        // logic while still covering all the useful use cases.
+        if (mem_vm_img_in_phys_rgn(vm_cfg)) {
+            continue;
+        }
+
         if (!mem_reserve_ppool_ppages(pool, &ppages)) {
             return false;
         }
