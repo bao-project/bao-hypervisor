@@ -25,19 +25,31 @@ ssize_t bitmap_find_nth(bitmap_t* map, size_t size, size_t nth, size_t start,
 size_t bitmap_count_consecutive(bitmap_t* map, size_t size, size_t start,
                                 size_t n)
 {
+    size_t pos = start;
+    size_t count = 0;
+    size_t start_offset = start % BITMAP_GRANULE_LEN;
+    size_t first_word_bits = min(BITMAP_GRANULE_LEN - start_offset, n);
+    bool set = !!bitmap_get(map, start);
+    bitmap_granule_t init_mask = BITMAP_GRANULE_MASK(start_offset, first_word_bits);
+    bitmap_granule_t mask;
+
     if (n <= 1) return n;
 
-    unsigned b = bitmap_get(map, start);
-    size_t count = 1;
-    start += 1;
+    mask = set ? init_mask : ~init_mask;
+    if (!((map[pos/BITMAP_GRANULE_LEN] ^ mask) & init_mask)) {
+        count += first_word_bits;
+        pos += first_word_bits;
+    }
 
-    while (start < size) {
-        if (bitmap_get(map, start) == b)
-            count++;
-        else
-            break;
-        if (count == n) break;
-        start++;
+    mask = set ? ~0 : 0;
+    while (!(map[pos/BITMAP_GRANULE_LEN] ^ mask) && (count < n)) {
+        count += BITMAP_GRANULE_LEN;
+        pos += BITMAP_GRANULE_LEN;
+    }
+
+    while ((!!bitmap_get(map, pos) == set) && (count < n)) {
+        count++;
+        pos += 1;
     }
 
     return count;
@@ -67,4 +79,26 @@ ssize_t bitmap_find_consec(bitmap_t* map, size_t size, size_t start, size_t n,
     if (i >= size) i = -1;
 
     return i;
+}
+
+void bitmap_set_consecutive(bitmap_t* map, size_t start, size_t n)
+{
+    size_t pos = start;
+    size_t count = n;
+    size_t start_offset = start % BITMAP_GRANULE_LEN;
+    size_t first_word_bits = min(BITMAP_GRANULE_LEN - start_offset, count); 
+
+    map[pos/BITMAP_GRANULE_LEN] |= BITMAP_GRANULE_MASK(start_offset, first_word_bits);
+    pos += first_word_bits;
+    count -= first_word_bits;
+
+    while (count >= BITMAP_GRANULE_LEN) {
+        map[pos/BITMAP_GRANULE_LEN] |= ~0;
+        pos += BITMAP_GRANULE_LEN;
+        count -= BITMAP_GRANULE_LEN;
+    }
+
+    if (count > 0) {
+        map[pos/BITMAP_GRANULE_LEN] |= BITMAP_GRANULE_MASK(0, count);
+    }
 }
