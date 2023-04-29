@@ -88,7 +88,7 @@ bool mem_are_ppages_reserved_in_pool(struct page_pool *ppool, struct ppages *ppa
 {
     bool reserved = false;
     bool rgn_found = range_in_range(ppages->base, ppages->num_pages * PAGE_SIZE,
-                                    ppool->base, ppages->num_pages * PAGE_SIZE);
+                                    ppool->base, ppool->size * PAGE_SIZE);
     if (rgn_found) {
         size_t pageoff = NUM_PAGES(ppages->base - ppool->base);
 
@@ -111,7 +111,7 @@ bool mem_are_ppages_reserved(struct ppages *ppages)
     list_foreach(page_pool_list, struct page_pool, pool)
     {
         bool is_in_rgn = range_in_range(ppages->base, ppages->num_pages * PAGE_SIZE,
-                                        pool->base, ppages->num_pages * PAGE_SIZE);
+                                        pool->base, pool->size * PAGE_SIZE);
 
         if (is_in_rgn) {
             reserved = mem_are_ppages_reserved_in_pool(pool, ppages);
