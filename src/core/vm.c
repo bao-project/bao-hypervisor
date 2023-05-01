@@ -50,34 +50,6 @@ void vm_vcpu_init(struct vm* vm, const struct vm_config* config)
     vcpu_arch_reset(vcpu, config->entry);
 }
 
-static void vm_copy_img_to_rgn(struct vm* vm, const struct vm_config* config,
-                               struct vm_mem_region* reg)
-{
-    /* map original img address */
-    size_t n_img = NUM_PAGES(config->image.size);
-    struct ppages src_pa_img = mem_ppages_get(config->image.load_addr, n_img);
-    vaddr_t src_va = mem_alloc_map(&cpu()->as, SEC_HYP_PRIVATE, &src_pa_img,
-                                    INVALID_VA, n_img, PTE_HYP_FLAGS);
-    if (src_va == INVALID_VA) {
-        ERROR("mem_alloc_map failed %s", __func__);
-    }
-
-    /* map new address */
-    size_t offset = config->image.base_addr - reg->base;
-    size_t dst_phys = reg->phys + offset;
-    struct ppages dst_pp = mem_ppages_get(dst_phys, n_img);
-    vaddr_t dst_va = mem_alloc_map(&cpu()->as, SEC_HYP_PRIVATE, &dst_pp,
-                                     INVALID_VA, n_img, PTE_HYP_FLAGS);
-    if (dst_va == INVALID_VA) {
-        ERROR("mem_alloc_map failed %s", __func__);
-    }
-
-    memcpy((void*)dst_va, (void*)src_va, n_img * PAGE_SIZE);
-    cache_flush_range((vaddr_t)dst_va, n_img * PAGE_SIZE);
-    mem_unmap(&cpu()->as, src_va, n_img, false);
-    mem_unmap(&cpu()->as, dst_va, n_img, false);
-}
-
 void vm_map_mem_region(struct vm* vm, struct vm_mem_region* reg)
 {
     size_t n = NUM_PAGES(reg->size);
@@ -130,7 +102,28 @@ static void vm_map_img_rgn_inplace(struct vm* vm, const struct vm_config* config
         PTE_VM_FLAGS);
 }
 
-static void vm_install_image(struct vm* vm) {
+static void vm_install_image(struct vm* vm, struct vm_mem_region* reg) {
+
+    if (reg->place_phys) {
+        paddr_t img_base = (paddr_t)vm->config->image.base_addr;
+        paddr_t img_load_pa = vm->config->image.load_addr;
+        size_t img_sz = vm->config->image.size;
+
+        if (img_base == img_load_pa) {
+            // The image is already correctly installed. Our work is done. 
+            return;
+        }
+
+        if (range_overlap_range(img_base, img_sz, img_load_pa, img_sz)) {
+            // We impose an image load region cannot overlap its runtime region.
+            // This both simplifies the copying procedure as well as avoids
+            // limitations of mpu-based memory management which does not allow
+            // overlapping mappings on the same address space.
+            ERROR("failed installing vm image. Image load region overlaps with"
+                " image runtime region");
+        }
+    } 
+    
     size_t img_num_pages = NUM_PAGES(vm->config->image.size);
     struct ppages img_ppages =
         mem_ppages_get(vm->config->image.load_addr, img_num_pages);
@@ -147,14 +140,11 @@ static void vm_install_image(struct vm* vm) {
 static void vm_map_img_rgn(struct vm* vm, const struct vm_config* config,
                            struct vm_mem_region* reg)
 {
-    if (reg->place_phys) {
-        vm_copy_img_to_rgn(vm, config, reg);
-        vm_map_mem_region(vm, reg);
-    } else if(config->image.inplace) {
+    if(!reg->place_phys && config->image.inplace) {
         vm_map_img_rgn_inplace(vm, config, reg);
     } else {
         vm_map_mem_region(vm, reg);
-        vm_install_image(vm);
+        vm_install_image(vm, reg);
     }
 }
 

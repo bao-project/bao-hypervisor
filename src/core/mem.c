@@ -88,7 +88,7 @@ bool mem_are_ppages_reserved_in_pool(struct page_pool *ppool, struct ppages *ppa
 {
     bool reserved = false;
     bool rgn_found = range_in_range(ppages->base, ppages->num_pages * PAGE_SIZE,
-                                    ppool->base, ppages->num_pages * PAGE_SIZE);
+                                    ppool->base, ppool->size * PAGE_SIZE);
     if (rgn_found) {
         size_t pageoff = NUM_PAGES(ppages->base - ppool->base);
 
@@ -111,7 +111,7 @@ bool mem_are_ppages_reserved(struct ppages *ppages)
     list_foreach(page_pool_list, struct page_pool, pool)
     {
         bool is_in_rgn = range_in_range(ppages->base, ppages->num_pages * PAGE_SIZE,
-                                        pool->base, ppages->num_pages * PAGE_SIZE);
+                                        pool->base, pool->size * PAGE_SIZE);
 
         if (is_in_rgn) {
             reserved = mem_are_ppages_reserved_in_pool(pool, ppages);
@@ -139,27 +139,6 @@ bool mem_reserve_ppool_ppages(struct page_pool *pool, struct ppages *ppages)
     pool->free -= ppages->num_pages;
 
     return is_in_rgn && was_free;
-}
-
-bool mem_reserve_ppages_in_pool_list(struct list *page_pool_list, struct ppages *ppages)
-{
-    bool reserved = false;
-    list_foreach((*page_pool_list), struct page_pool, pool)
-    {
-        bool is_in_rgn = range_in_range(ppages->base, ppages->num_pages * PAGE_SIZE,
-                                        pool->base, ppages->num_pages * PAGE_SIZE);
-        if (is_in_rgn) {
-            reserved = mem_reserve_ppool_ppages(pool, ppages);
-            break;
-        }
-    }
-
-    return reserved;
-}
-
-bool mem_reserve_ppages(struct ppages *ppages)
-{
-    return mem_reserve_ppages_in_pool_list(&page_pool_list, ppages);
 }
 
 void *mem_alloc_page(size_t num_pages, enum AS_SEC sec, bool phys_aligned)
@@ -265,6 +244,26 @@ static void pp_init(struct page_pool *pool, paddr_t base, size_t size)
     pool->free = pool->size;
 }
 
+bool mem_vm_img_in_phys_rgn(struct vm_config* vm_config) {
+
+    bool img_in_rgn = false;
+
+    for (size_t i = 0; i < vm_config->platform.region_num; i++) {
+        if (vm_config->platform.regions[i].place_phys) {
+            vaddr_t rgn_base = vm_config->platform.regions[i].phys;
+            size_t rgn_size = vm_config->platform.regions[i].size;
+            paddr_t img_base = vm_config->image.load_addr;
+            size_t img_size = vm_config->image.size;
+            if (range_in_range(img_base, img_size, rgn_base, rgn_size)) {
+                img_in_rgn = true;
+                break;
+            }
+        }
+    }
+
+    return img_in_rgn;
+}
+
 bool mem_reserve_physical_memory(struct page_pool *pool)
 {
     if (pool == NULL) return false;
@@ -273,6 +272,17 @@ bool mem_reserve_physical_memory(struct page_pool *pool)
         struct vm_config *vm_cfg = &config.vmlist[i];
         size_t n_pg = NUM_PAGES(vm_cfg->image.size);
         struct ppages ppages = mem_ppages_get(vm_cfg->image.load_addr, n_pg);
+
+        // If the vm image is part of a statically allocated region of the same
+        // vm, we defer the reservation of this memory to when we reserve the
+        // physical region below. Note that this not allow partial overlaps. If the
+        // image must be entirely inside a statically allocated region, or
+        // completely outside of it. This avoid overcamplicating the reservation
+        // logic while still covering all the useful use cases.
+        if (mem_vm_img_in_phys_rgn(vm_cfg)) {
+            continue;
+        }
+
         if (!mem_reserve_ppool_ppages(pool, &ppages)) {
             return false;
         }

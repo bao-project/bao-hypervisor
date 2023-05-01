@@ -342,8 +342,6 @@ void mem_handle_broadcast_region(uint32_t event, uint64_t data)
             as = vm_as;
         }
 
-        objpool_free(&shared_region_pool, sh_reg);
-
         switch(event){
             case MEM_INSERT_REGION:
                 mem_handle_broadcast_insert(as, &sh_reg->region);
@@ -354,6 +352,8 @@ void mem_handle_broadcast_region(uint32_t event, uint64_t data)
             default:
                 ERROR("unknown mem broadcast msg");
         }
+
+        objpool_free(&shared_region_pool, sh_reg);
     }
 }
 
@@ -383,6 +383,10 @@ mpid_t mem_vmpu_find_overlapping_region(struct addr_space *as,
 bool mem_map(struct addr_space *as, struct mp_region *mpr, bool broadcast)
 {
     bool mapped = false;
+
+    if (mpr->size == 0) {
+        return true;
+    }
 
     if ((mpr->size % mpu_granularity()) != 0) {
         ERROR("trying to set mpu region which is not a multiple of granularity");
@@ -477,19 +481,31 @@ vaddr_t mem_map_cpy(struct addr_space *ass, struct addr_space *asd, vaddr_t vas,
 {
     struct mpe *mpe;
     struct mp_region mpr;
+    vaddr_t va_res = INVALID_VA;
 
-    spin_lock(&ass->lock);
-    mpid_t reg_num_src = mem_vmpu_get_entry_by_addr(ass, vas);
-    mpe = mem_vmpu_get_entry(ass, reg_num_src);
-    mpr = mpe->region;
-    spin_unlock(&ass->lock);
+    if ((ass != asd) && (vad == INVALID_VA || vad == vas)) {
+        // In mpu-based systems, we can only copy mappings between address
+        // spaces, as copying a mapping in a single address space would overlap
+        // the orignal mapping. Also because only identify mappings are
+        // supported, the source va must equal the destination va, or be an
+        // invalid va. This still covers the most useful uses cases.
 
-    spin_lock(&asd->lock);
-    mpid_t reg_num_dst = mem_vmpu_allocate_entry(asd);
-    mem_vmpu_set_entry(asd, reg_num_dst, &mpr);
-    spin_unlock(&asd->lock);
+        spin_lock(&ass->lock);
+        mpid_t reg_num_src = mem_vmpu_get_entry_by_addr(ass, vas);
+        mpe = mem_vmpu_get_entry(ass, reg_num_src);
+        mpr = mpe->region;
+        spin_unlock(&ass->lock);
 
-    return vas;
+        if (mem_map(asd, &mpr, true)) {
+            va_res = vas;
+        } else {
+            INFO("failed mem map on mem map cpy");
+        }
+    } else {
+        INFO("failed mem map cpy");
+    }
+
+    return va_res;
 }
 
 bool mem_translate(struct addr_space* as, vaddr_t va, paddr_t* pa)

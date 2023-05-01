@@ -112,20 +112,6 @@ skip_non_loadable:
     orr x3, x3, (PRLAR_ATTR(1) | PRLAR_EN)
     msr prlar_el2, x3
 
-    add x4, x4, 1
-    msr prselr_el2, x4
-    isb
-    ldr x3, =0x9C090000
-    and x3, x3, PRBAR_BASE_MSK
-    orr x3, x3, (PRBAR_SH_IS | PRBAR_AP_RW_EL2)
-    msr prbar_el2, x3
-    ldr x3, =0x9C090000
-    add x3, x3, 0x1000
-    sub x3, x3, 1
-    and x3, x3, PRLAR_LIMIT_MSK
-    add x3, x3, (PRLAR_ATTR(2) | PRLAR_EN)
-    msr prlar_el2, x3
-
     isb
 
     /* Enable caches and MPU */

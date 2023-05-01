@@ -9,7 +9,7 @@ GIC_VERSION:=GICV3
 drivers = pl011_uart
 
 platform-cppflags =
-platform-cflags =
+platform-cflags = -gdwarf-4
 platform-asflags =
 platform-ldflags =
 

@@ -17,6 +17,7 @@ typedef bitmap_granule_t bitmap_t;
 static const bitmap_granule_t ONE = 1;
 
 #define BITMAP_GRANULE_LEN (sizeof(bitmap_granule_t) * 8)
+#define BITMAP_GRANULE_MASK(O, L)   BIT32_MASK((O), (L))
 
 #define BITMAP_SIZE(SIZE) (((SIZE) / BITMAP_GRANULE_LEN) + \
                           ((SIZE) % BITMAP_GRANULE_LEN ? 1 : 0))
@@ -44,10 +45,7 @@ static inline unsigned bitmap_get(bitmap_t* map, size_t bit)
                : 0U;
 }
 
-static inline void bitmap_set_consecutive(bitmap_t* map, size_t start, size_t n)
-{
-    for (size_t i = 0; i < n; i++) bitmap_set(map, start + i);
-}
+void bitmap_set_consecutive(bitmap_t* map, size_t start, size_t n);
 
 static inline void bitmap_clear_consecutive(bitmap_t* map, size_t start,
                                             size_t n)
