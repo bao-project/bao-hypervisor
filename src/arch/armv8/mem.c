@@ -49,6 +49,7 @@ bool mem_translate(addr_space_t* as, void* va, uint64_t* pa)
     else
         asm volatile("AT S12E1W, %0" ::"r"(va));
 
+    asm volatile("isb" ::: "memory");
     par = MRS(PAR_EL1);
     MSR(PAR_EL1, par_saved);
     if (par & PAR_F) {
