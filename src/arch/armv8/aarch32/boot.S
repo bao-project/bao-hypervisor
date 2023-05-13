@@ -130,14 +130,15 @@ _set_master_cpu:
 
     ldr r5, =_barrier
     mov r7, #2
-    str r7, [r5]
+    stl r7, [r5]
 
 1:
     /* wait for bsp to finish clearing bss */
     ldr r7, =_barrier
-    ldr r8, [r7]
+2:
+    lda r8, [r7]
     cmp r8, #2
-    blt 1b
+    blt 2b
 
     isb
 
