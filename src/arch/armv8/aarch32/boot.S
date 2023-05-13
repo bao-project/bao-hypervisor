@@ -16,13 +16,13 @@
     add \rd, \rd, r1
 .endm
 
-.data 
+.data
 .balign 4
 /**
  * barrier is used to minimal synchronization in boot - other cores wait for
  * bsp to set it.
  */
-_barrier: .4byte 0			
+_barrier: .4byte 0
 
 /**
  * 	The following code MUST be at the base of the image, as this is bao's entry
@@ -41,7 +41,7 @@ _reset_handler:
      * as arguments:
      *     r0 -> contains cpu id
      *     r1 -> contains image base load address
-     *     r2 -> contains config binary load address (passed in r0) 
+     *     r2 -> contains config binary load address (passed in r0)
      * Register r9 is reserved to indicate if the current CPU is master (negated)
 	 */
 
@@ -52,13 +52,13 @@ _reset_handler:
     and r0, r0, r1
 
     /**
-     * TODO: Linearize cpu id according to the number of clusters and 
+     * TODO: Linearize cpu id according to the number of clusters and
      * processors per cluster.
      */
 
     adr r1, _el2_entry
 
-    /* 
+    /*
      * Install vector table physical address early, in case exception occurs
      * during this initialization.
      */
@@ -94,9 +94,9 @@ _set_master_cpu:
     str r0, [r3]
 1:
 
-    /** 
-     * TODO: bring the system to a well known state. This includes disabling 
-     * the MPU, all caches, BP and others, and invalidating them.	
+    /**
+     * TODO: bring the system to a well known state. This includes disabling
+     * the MPU, all caches, BP and others, and invalidating them.
      */
 
     /* Clear stack pointer to avoid unaligned SP exceptions during boot */
@@ -124,9 +124,9 @@ _set_master_cpu:
     /* If this is the cpu master, clear bss */
     cmp r9, #0
     bne 1f
-    ldr r11, =_bss_start	
-    ldr r12, =_bss_end	
-    bl boot_clear	
+    ldr r11, =_bss_start
+    ldr r12, =_bss_end
+    bl boot_clear
 
     ldr r5, =_barrier
     mov r7, #2
@@ -159,11 +159,11 @@ _set_master_cpu:
 boot_clear:
 2:
     mov r8, #0
-	cmp r11, r12			
-	bge 1f				
+	cmp r11, r12
+	bge 1f
 	str r8, [r11]
 	add r11, r11, #4
-	b 2b				
+	b 2b
 1:
 	bx lr
 .endfunc
@@ -177,7 +177,7 @@ boot_clear:
 .global boot_cache_invalidate
 .func boot_cache_invalidate
 boot_cache_invalidate:
-    mcr p15, 2, r0, c0, c0, 0 // write CSSELR (cache size selection) 	
+    mcr p15, 2, r0, c0, c0, 0 // write CSSELR (cache size selection)
     mrc p15, 1, r4, c0, c0, 0 // read CCSIDR (cache size id)
     and r1, r4, #0x7
     add r1, r1, #0x4 // r1 = cache line size
