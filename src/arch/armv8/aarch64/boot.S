@@ -9,14 +9,14 @@
 #include <config_defs.h>
 #include <platform_defs.h>
 
-.data 
+.data
 .align 3
 /**
  * barrier is used to minimal synchronization in boot - other cores wait for
  * bsp to set it.
  */
  .global _boot_barrier
-_boot_barrier: .8byte 0			
+_boot_barrier: .8byte 0
 
 /**
  * 	The following code MUST be at the base of the image, as this is bao's entry
@@ -29,11 +29,11 @@ _boot_barrier: .8byte 0
 _el2_entry:
 _reset_handler:
 
-	/** 
+	/**
 	 * TODO: before anything...
 	 * perform sanity checks on ID registers to ensure support for
-	 * VE and TZ, 4K granule and possibly other needed features. 
-	 * Also, check current exception level. Act accordingly. 
+	 * VE and TZ, 4K granule and possibly other needed features.
+	 * Also, check current exception level. Act accordingly.
 	 * However, we expect to be running at EL2 at this point.
 	 */
 
@@ -44,13 +44,13 @@ _reset_handler:
 	 * 		x0 -> contains cpu id
 	 *		x1 -> contains image base load address
 	 * Register x9 is reserved to indicate if the current cpu is master (negated).
-     * Register x1 is reserved to contain the cpu root page table address.
+	 * Register x1 is reserved to contain the cpu root page table address.
 	 */
 
 	mrs  x0, MPIDR_EL1
 	adrp x1, _image_start
 
-	/* 
+	/*
 	 * Install vector table physical address early, in case exception occurs
 	 * during this initialization.
 	 */
@@ -60,11 +60,11 @@ _reset_handler:
 	/**
 	 * 	Linearize cpu id according to the number of clusters and processors per
 	 * cluster. We are only considering two levels of affinity.
-	 *  TODO: this should be done some other way. We shouln'd depend on the platform
+	 *  TODO: this should be done some other way. We shouldn't depend on the platform
 	 * description this early in the initialization.
 	 */
 
-	mov x3, x0, lsr #8 
+	mov x3, x0, lsr #8
 	and x3, x3, 0xff
 	adr x4, platform
 	ldr x4, [x4, PLAT_ARCH_OFF+PLAT_ARCH_CLUSTERS_OFF+PLAT_CLUSTERS_CORES_NUM_OFF]
@@ -101,8 +101,8 @@ _reset_handler:
 _master_set:
 	.8byte 	0
 .popsection
-    mov x5, #1
-    adr	x3, _master_set
+	mov x5, #1
+	adr	x3, _master_set
 _set_master_cpu:
 	ldr w9, [x3]
 	cbnz w9, 1f
@@ -112,14 +112,14 @@ _set_master_cpu:
 	str x0, [x3]
 1:
 
-	/** 
-	 * TODO: bring the system to a well known state. This includes disabling 
+	/**
+	 * TODO: bring the system to a well known state. This includes disabling
 	 * the MMU (done), all caches (missing i$), BP and others...
-	 * and invalidating them.	
+	 * and invalidating them.
 	 */
- 
+
 	/* boot_clear stack pointer to avoid unaligned SP exceptions during boot */
-    mov x3, xzr
+	mov x3, xzr
 	mov sp, x3
 
 	/* Invalidate caches */
@@ -138,29 +138,29 @@ _set_master_cpu:
 
 	ic iallu
 
-    bl boot_arch_profile_init
+	bl boot_arch_profile_init
 
 	mov x3, xzr
 	msr CPTR_EL2, x3
 
 	/* set up cpu stack */
-	mov x3, SPSel_SP							
-	msr SPSEL, x3	
+	mov x3, SPSel_SP
+	msr SPSEL, x3
 	mrs x3, tpidr_el2
-        ldr x4, =(CPU_STACK_OFF + CPU_STACK_SIZE)
-        add x3, x3, x4
+	ldr x4, =(CPU_STACK_OFF + CPU_STACK_SIZE)
+	add x3, x3, x4
 	mov SP, x3
 
 
 	/* If this is bsp (cpu 0) boot_clear bss */
 	cbnz x9, 1f
-	ldr	x16, =_bss_start	
-	ldr	x17, =_bss_end	
-	bl	boot_clear	
+	ldr	x16, =_bss_start
+	ldr	x17, =_bss_end
+	bl	boot_clear
 
 	adr x5, _boot_barrier
 	mov x4, #2
-	str x4, [x5]	
+	str x4, [x5]
 
 1:
 	/* wait for bsp to finish boot_clearing bss */
@@ -173,7 +173,7 @@ _set_master_cpu:
 	b init
 
 	/* This point should never be reached */
-	b	.				
+	b	.
 
 /***** 	Helper functions for boot code. ******/
 
@@ -181,10 +181,10 @@ _set_master_cpu:
 .func boot_clear
 boot_clear:
 2:
-	cmp	x16, x17			
-	b.ge 1f				
-	str	xzr, [x16], #8	
-	b	2b				
+	cmp	x16, x17
+	b.ge 1f
+	str	xzr, [x16], #8
+	b	2b
 1:
 	ret
 .endfunc
@@ -198,7 +198,7 @@ boot_clear:
 .global boot_cache_invalidate
 .func boot_cache_invalidate
 boot_cache_invalidate:
-	msr csselr_el1, x0 
+	msr csselr_el1, x0
 	mrs x4, ccsidr_el1 // read cache size id.
 	and x1, x4, #0x7
 	add x1, x1, #0x4 // x1 = cache line size.
