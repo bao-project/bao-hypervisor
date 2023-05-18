@@ -160,13 +160,15 @@ _set_master_cpu:
 
 	adr x5, _boot_barrier
 	mov x4, #2
-	str x4, [x5]
+	stlr x4, [x5]
 
 1:
 	/* wait for bsp to finish boot_clearing bss */
-	ldr x4, _boot_barrier
-	cmp x4, #2
-	b.lt 1b
+	ldr x4, =_boot_barrier
+2:
+	ldar x5, [x4]
+	cmp x5, #2
+	b.lt 2b
 
 	isb
 
