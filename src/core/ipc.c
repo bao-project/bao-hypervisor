@@ -56,19 +56,19 @@ static void ipc_notify(size_t shmem_id, size_t event_id) {
 static void ipc_handler(uint32_t event, uint64_t data){
     union ipc_msg_data ipc_data = { .raw = data };
     switch(event){
-        case IPC_NOTIFY: 
+        case IPC_NOTIFY:
             ipc_notify(ipc_data.shmem_id, ipc_data.event_id);
         break;
     }
 }
-CPU_MSG_HANDLER(ipc_handler, IPC_CPUSMG_ID);
+CPU_MSG_HANDLER(ipc_handler, IPC_CPUMSG_ID);
 
-unsigned long ipc_hypercall(unsigned long ipc_id, unsigned long ipc_event, 
+unsigned long ipc_hypercall(unsigned long ipc_id, unsigned long ipc_event,
                                                 unsigned long arg2)
 {
     unsigned long ret = -HC_E_SUCCESS;
 
-    struct shmem *shmem = NULL; 
+    struct shmem *shmem = NULL;
     bool valid_ipc_obj = ipc_id < cpu()->vcpu->vm->ipc_num;
     if(valid_ipc_obj) {
         shmem = ipc_get_shmem(cpu()->vcpu->vm->ipcs[ipc_id].shmem_id);
@@ -83,7 +83,7 @@ unsigned long ipc_hypercall(unsigned long ipc_id, unsigned long ipc_event,
             .shmem_id = cpu()->vcpu->vm->ipcs[ipc_id].shmem_id,
             .event_id = ipc_event,
         };
-        struct cpu_msg msg = {IPC_CPUSMG_ID, IPC_NOTIFY, data.raw};
+        struct cpu_msg msg = {IPC_CPUMSG_ID, IPC_NOTIFY, data.raw};
 
         for (size_t i = 0; i < platform.cpu_num; i++) {
             if (ipc_cpu_masters & (1ULL << i)) {
