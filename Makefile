@@ -46,7 +46,7 @@ scripts_dir:=$(cur_dir)/scripts
 src_dirs:=
 
 #Plataform must be defined excpet for clean target
-ifeq ($(PLATFORM),) 
+ifeq ($(PLATFORM),)
 ifneq ($(MAKECMDGOALS), clean)
  $(error Target platform argument (PLATFORM) not specified)
 endif
@@ -177,11 +177,11 @@ override CFLAGS+=-O$(OPTIMIZATIONS) -Wall -Werror -ffreestanding -std=gnu11 \
 override ASFLAGS+=$(CFLAGS) $(arch-asflags) $(platform-asflags)
 override LDFLAGS+=-build-id=none -nostdlib --fatal-warnings \
 	-z common-page-size=$(PAGE_SIZE) -z max-page-size=$(PAGE_SIZE) \
-	$(arch-ldflags) $(plattform-ldflags)
+	$(arch-ldflags) $(platform-ldflags)
 
 .PHONY: all
 all: $(targets-y)
-	
+
 $(bin_dir)/$(PROJECT_NAME).elf: $(gens) $(objs-y) $(ld_script_temp)
 	@echo "Linking			$(patsubst $(cur_dir)/%, %, $@)"
 	@$(ld) $(LDFLAGS) -T$(ld_script_temp) $(objs-y) -o $@
@@ -202,14 +202,14 @@ ifeq (, $(findstring $(MAKECMDGOALS), clean $(submakes)))
 -include $(deps)
 endif
 
-$(ld_script_temp).d: $(ld_script) 
+$(ld_script_temp).d: $(ld_script)
 	@echo "Creating dependency	$(patsubst $(cur_dir)/%, %, $<)"
 	@$(cc) -x assembler-with-cpp  -MM -MT "$(ld_script_temp) $@" \
 		$(addprefix -I, $(inc_dirs))  $< > $@
 
 $(build_dir)/%.d : $(src_dir)/%.[c,S]
 	@echo "Creating dependency	$(patsubst $(cur_dir)/%, %, $<)"
-	@$(cc) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $< > $@	
+	@$(cc) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $< > $@
 
 $(objs-y):
 	@echo "Compiling source	$(patsubst $(cur_dir)/%, %, $<)"
@@ -234,7 +234,7 @@ $(asm_defs_hdr): $(asm_defs_src)
 $(asm_defs_hdr).d: $(asm_defs_src)
 	@echo "Creating dependency	$(patsubst $(cur_dir)/%, %,\
 		 $(patsubst %.d,%, $@))"
-	@$(cc) -MM -MT "$(patsubst %.d,%, $@)" $(addprefix -I, $(inc_dirs)) $< > $@	
+	@$(cc) -MM -MT "$(patsubst %.d,%, $@)" $(addprefix -I, $(inc_dirs)) $< > $@
 endif
 
 $(config_dep): $(config_src)
