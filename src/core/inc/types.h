@@ -38,7 +38,7 @@ typedef unsigned irqid_t;
 typedef unsigned streamid_t;
 
 typedef enum AS_SEC {
-    /*--- VM AS SECTIONS -----*/
+    /*--- HYP AS SECTIONS -----*/
     SEC_HYP_GLOBAL = 0,
     SEC_HYP_IMAGE,
     SEC_HYP_PRIVATE,
