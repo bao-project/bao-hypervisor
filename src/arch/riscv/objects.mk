@@ -16,4 +16,5 @@ cpu-objs-y+=vplic.o
 cpu-objs-y+=cpu.o
 cpu-objs-y+=cache.o
 cpu-objs-y+=iommu.o
+cpu-objs-y+=riscv_iommu.o
 cpu-objs-y+=relocate.o

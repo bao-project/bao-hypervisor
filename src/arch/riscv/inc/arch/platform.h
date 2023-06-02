@@ -8,8 +8,15 @@
 
 #include <bao.h>
 
+// Arch-specific platform data
 struct arch_platform {
     paddr_t plic_base;
+
+    struct {
+        paddr_t base;
+        unsigned mode;
+        irqid_t fq_irq_id;
+    } iommu;
 };
 
 #endif /* __ARCH_PLATFORM_H__ */

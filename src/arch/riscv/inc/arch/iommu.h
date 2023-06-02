@@ -6,13 +6,13 @@
 #ifndef __IOMMU_ARCH_H__
 #define __IOMMU_ARCH_H__
 
-/**
- * No IOMMU is availble in the riscv architecture
- */
+#include <bao.h>
 
+
+// VM-specific IOMMU data
 struct iommu_vm_arch {
 
 };
 
 
-#endif
+#endif  /* __IOMMU_ARCH_H__ */

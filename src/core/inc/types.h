@@ -36,6 +36,7 @@ typedef unsigned long cpumap_t;
 typedef unsigned irqid_t;
 
 typedef unsigned streamid_t;
+typedef unsigned deviceid_t;
 
 typedef enum AS_SEC {
     /*--- VM AS SECTIONS -----*/
