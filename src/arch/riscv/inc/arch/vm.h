@@ -44,6 +44,9 @@
 
 struct arch_vm_platform {
     paddr_t plic_base;
+    struct {
+        unsigned long long s2_mode; // second-stage translation scheme fof VM devices
+    } iommu;
 };
 
 struct vm_arch {
