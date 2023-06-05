@@ -6,7 +6,7 @@
 #include <platform.h>
 #include <arch/sysregs.h>
 
-unsigned long platform_arch_cpuid_to_mpdir(const struct platform* plat,
+unsigned long platform_arch_cpuid_to_mpidr(const struct platform* plat,
                                       cpuid_t cpuid)
 {
     if (cpuid > plat->cpu_num) {
@@ -27,7 +27,7 @@ unsigned long platform_arch_cpuid_to_mpdir(const struct platform* plat,
         }
 
         if (!found) {
-            ERROR("failed cpuid to mpdir translation");
+            ERROR("failed cpuid to mpidr translation");
         }
     } else {
         /**
