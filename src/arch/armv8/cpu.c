@@ -19,7 +19,7 @@ void cpu_arch_init(cpuid_t cpuid, paddr_t load_addr)
 
 unsigned long cpu_id_to_mpidr(cpuid_t id)
 {
-    return platform_arch_cpuid_to_mpdir(&platform, id);
+    return platform_arch_cpuid_to_mpidr(&platform, id);
 }
 
 void cpu_arch_idle()
