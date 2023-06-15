@@ -27,7 +27,7 @@ static inline void spin_lock(spinlock_t* lock)
     uint32_t ticket;
     uint32_t serving;
 
-    asm volatile("1:\n\t"
+    asm volatile(
                 /* Increment next ticket */
                  "amoadd.w.aqrl  %0, %3, %2 \n\t"
                  "1:\n\t"
