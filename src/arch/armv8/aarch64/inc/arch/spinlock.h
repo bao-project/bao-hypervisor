@@ -61,6 +61,8 @@ static inline void spin_unlock(spinlock_t* lock)
         "ldr    %w0, %1\n\t"
         "add    %w0, %w0, 1\n\t"
         "stlr   %w0, %1\n\t"
+        "dsb ish\n\t"
+        "sev\n\t"
         : "=&r"(temp)
         : "Q"(lock->next));
 }
