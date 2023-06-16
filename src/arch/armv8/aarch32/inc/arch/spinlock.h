@@ -46,6 +46,7 @@ static inline void spin_lock(spinlock_t* lock)
         "ldaex  %r1, %4\n\t"
         "cmp    %r0, %r1\n\t"
         "beq   3f\n\t"
+        "wfe \n\t"
         "b 2b\n\t"
         "3:\n\t"
         : "=&r"(ticket), "=&r"(next), "=&r"(temp)
@@ -61,6 +62,8 @@ static inline void spin_unlock(spinlock_t* lock)
         "ldr    %r0, %1\n\t"
         "add    %r0, %r0, #1\n\t"
         "stl    %r0, %1\n\t"
+        "dsb ish\n\t"
+        "sev\n\t"
         : "=&r"(temp)
         : "Q"(lock->next));
 }
