@@ -42,7 +42,7 @@ static inline void spin_lock(spinlock_t* lock)
         "cbnz   %w2, 1b\n\t"
         /* Wait for your turn */
         "2:\n\t"
-        "ldaxr  %w1, %4\n\t"
+        "ldar   %w1, %4\n\t"
         "cmp    %w0, %w1\n\t"
         "b.eq   3f\n\t"
         "wfe\n\t"
