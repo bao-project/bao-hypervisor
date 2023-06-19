@@ -32,7 +32,7 @@ struct vm_dev_region {
     size_t size;
     size_t interrupt_num;
     irqid_t *interrupts;
-    streamid_t id; /* bus master id for iommu effects */
+    deviceid_t id; /* bus master id for iommu effects */
 };
     
 struct vm_platform {

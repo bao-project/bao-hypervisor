@@ -7,7 +7,7 @@
 #include <vm.h>
 
 struct iommu_device {
-    streamid_t id;
+    deviceid_t id;
 };
 
 /* Mainly for HW initialization. */
@@ -23,7 +23,7 @@ bool io_vm_init(struct vm *vm, const struct vm_config *config)
 }
 
 /* Allows vms to add devices to their address space. */
-bool io_vm_add_device(struct vm *vm, streamid_t dev_id)
+bool io_vm_add_device(struct vm *vm, deviceid_t dev_id)
 {
     bool res = false;
 

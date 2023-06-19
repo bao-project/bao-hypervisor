@@ -21,11 +21,11 @@ struct arch_vm_platform {
     } gic;
 
     struct {
-        streamid_t global_mask;
+        deviceid_t global_mask;
         size_t group_num;
         struct smmu_group {
-            streamid_t mask;
-            streamid_t id;
+            deviceid_t mask;
+            deviceid_t id;
         } *groups;
     } smmu;
 };
