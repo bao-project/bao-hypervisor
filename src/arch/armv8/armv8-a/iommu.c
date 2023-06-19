@@ -38,12 +38,12 @@ static ssize_t iommu_vm_arch_init_ctx(struct vm *vm)
     return ctx_id;
 }
 
-static bool iommu_vm_arch_add(struct vm *vm, streamid_t mask, streamid_t id)
+static bool iommu_vm_arch_add(struct vm *vm, deviceid_t mask, deviceid_t id)
 {
     ssize_t vm_ctx = iommu_vm_arch_init_ctx(vm);
-    streamid_t glbl_mask = vm->io.prot.mmu.global_mask;
-    streamid_t prep_mask = (mask & SMMU_ID_MSK) | glbl_mask;
-    streamid_t prep_id = (id & SMMU_ID_MSK);
+    deviceid_t glbl_mask = vm->io.prot.mmu.global_mask;
+    deviceid_t prep_mask = (mask & SMMU_ID_MSK) | glbl_mask;
+    deviceid_t prep_id = (id & SMMU_ID_MSK);
     bool group = (bool) mask;
     
     if(vm_ctx < 0){
@@ -63,7 +63,7 @@ static bool iommu_vm_arch_add(struct vm *vm, streamid_t mask, streamid_t id)
     return true;
 }
 
-inline bool iommu_arch_vm_add_device(struct vm *vm, streamid_t id)
+inline bool iommu_arch_vm_add_device(struct vm *vm, deviceid_t id)
 {
     return iommu_vm_arch_add(vm, 0, id);
 }

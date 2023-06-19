@@ -22,7 +22,7 @@ struct arch_platform {
     struct {
         paddr_t base;
         irqid_t interrupt_id;
-        streamid_t global_mask;
+        deviceid_t global_mask;
     } smmu;
 
     struct {
