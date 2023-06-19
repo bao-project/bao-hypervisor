@@ -368,21 +368,22 @@ void rv_iommu_init(void)
  */
 bool rv_iommu_alloc_did(deviceid_t dev_id)
 {
+    bool allocated;
     spin_lock(&rv_iommu.ddt_lock);
 
     // Check if DC already exists
     if (!bitmap_get(rv_iommu.ddt_bitmap, dev_id))
     {
         bitmap_set(rv_iommu.ddt_bitmap, dev_id);
+        allocated = true;
     }
     else
     {
-        spin_unlock(&rv_iommu.ddt_lock);
-        return false;   // device_id already exists
+        allocated = false;   // device_id already exists
     }
-    spin_unlock(&rv_iommu.ddt_lock);
 
-    return true;
+    spin_unlock(&rv_iommu.ddt_lock);
+    return allocated;
 }
 
 /**
