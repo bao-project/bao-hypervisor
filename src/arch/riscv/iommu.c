@@ -79,13 +79,6 @@
 #define RV_IOMMU_ICVEC_FIV           (RV_IOMMU_ICVEC_FIV_NUM << RV_IOMMU_ICVEC_FIV_OFF)
 #define RV_IOMMU_ICVEC_DEFAULT       (RV_IOMMU_ICVEC_CIV | RV_IOMMU_ICVEC_FIV)
 
-// MSI Configuration Table entry
-struct msi_cfg_tbl_entry {
-    uint64_t addr;
-    uint32_t data;
-    uint32_t vctl;
-} __attribute__((__packed__));
-
 //# RISC-V IOMMU Memory-Mapped Register Interface
 struct riscv_iommu_regmap {
     uint64_t caps;
@@ -116,7 +109,11 @@ struct riscv_iommu_regmap {
     uint8_t  __rsv1[64];
     uint8_t  __custom2[72];
     uint64_t icvec;
-    struct msi_cfg_tbl_entry msi_tbl[16];
+    struct {
+        uint64_t addr;
+        uint32_t data;
+        uint32_t vctl;
+    } __attribute__((__packed__)) msi_cfg_tbl[16];
     uint8_t  __rsv2[3072];
 
 } __attribute__((__packed__, __aligned__(PAGE_SIZE)));
