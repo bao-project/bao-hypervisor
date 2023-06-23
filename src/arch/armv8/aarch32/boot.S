@@ -52,11 +52,40 @@ _reset_handler:
     and r0, r0, r1
 
     /**
-     * TODO: Linearize cpu id according to the number of clusters and
-     * processors per cluster.
+     * Get base image load address.
      */
-
     adr r1, _el2_entry
+
+    /**
+     * Linearize cpu id according to the number of clusters and processors
+     * per cluster. We are only considering two levels of affinity.
+     * TODO: this should be done some other way. We shouldn't depend on the platform
+     * description this early in the initialization.
+     */
+    mov r3, r0, lsr #8
+    and r3, r3, #0xff
+    get_phys_addr r4, r5, platform
+    mov r5, #(PLAT_ARCH_OFF+PLAT_ARCH_CLUSTERS_OFF+PLAT_CLUSTERS_CORES_NUM_OFF)
+    ldr r4, [r4, r5]
+    ldr r5, =BAO_VAS_BASE
+    sub r4, r4, r5
+    add r4, r4, r1
+    mov r5, #0
+    mov r7, #0
+1:
+    cmp r5, r3
+    bge	2f
+#if PLAT_CLUSTERS_CORES_NUM_SIZE != 4
+#error "struct platform cluster core_num field type size is not 4"
+#endif
+    ldr r6, [r4]
+    add r4, r4, #PLAT_CLUSTERS_CORES_NUM_SIZE
+    add r5, r5, #1
+    add r7, r7, r6
+    b 	1b
+2:
+    and r0, r0, #0xff
+    add r0, r0, r7
 
     /*
      * Install vector table physical address early, in case exception occurs
