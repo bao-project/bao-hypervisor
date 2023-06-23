@@ -14,6 +14,9 @@ src_dirs+=$(arch_profile_dir)
 arch_profile_sub_dir:=$(arch_profile_dir)/$(ARCH_SUB)
 src_dirs+=$(arch_profile_sub_dir)
 
+implementation_dir:=$(cpu_arch_dir)/implementation
+src_dirs+=$(implementation_dir)
+
 arch-cppflags+=-DGIC_VERSION=$(GIC_VERSION)
 ifeq ($(CC_IS_GCC),y)
 arch-cflags+=-mgeneral-regs-only
