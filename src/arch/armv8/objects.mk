@@ -12,6 +12,12 @@ cpu-objs-y+=vgic.o
 cpu-objs-y+=vmm.o
 cpu-objs-y+=psci.o
 
+ifeq ($(CPU),)
+	cpu-objs-y+=implementation/generic.o
+else 
+	cpu-objs-y+=implementation/$(CPU).o
+endif
+
 ifeq ($(GIC_VERSION), GICV2)
 	cpu-objs-y+=vgicv2.o
 	cpu-objs-y+=gicv2.o
