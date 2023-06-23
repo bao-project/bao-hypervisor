@@ -58,8 +58,32 @@ _reset_handler:
      * Get base image load address.
      */
     adr r1, _el2_entry
+/*
     ldr r3, =img_addr
     str r1, [r3] // store image load address in img_addr
+*/
+// Afonso
+    mov r3, r0, lsr #8 
+	and r3, r3, #0xff
+    ldr r4, =platform
+    mov r5, #(PLAT_ARCH_OFF+PLAT_ARCH_CLUSTERS_OFF+PLAT_CLUSTERS_CORES_NUM_OFF)
+	ldr r4, [r4, r5]
+	ldr r5, =BAO_VAS_BASE
+	sub r4, r4, r5
+	add r4, r4, r1
+	mov r5, #0
+	mov r7, #0
+1:
+	cmp r5, r3
+	bge	2f
+	ldrb r6, [r4]
+	add r4, r4, #1
+	add r5, r5, #1
+	add r7, r7, r6
+	b 	1b
+2:
+	and r0, r0, #0xff
+	add r0, r0, r7
 
     /**
      * Linearize cpu id according to the number of clusters and processors per cluster. We are only
@@ -233,3 +257,4 @@ set_loop:
     cmp r5, r3 // last way reached yet?
     ble way_loop // if not, iterate way_loop
     bx lr
+
