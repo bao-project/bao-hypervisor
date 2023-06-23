@@ -42,12 +42,12 @@ size_t bitmap_count_consecutive(bitmap_t* map, size_t size, size_t start,
     }
 
     mask = set ? ~0 : 0;
-    while (!(map[pos/BITMAP_GRANULE_LEN] ^ mask) && (count < n)) {
+    while ((pos < size) && !(map[pos/BITMAP_GRANULE_LEN] ^ mask) && (count < n)) {
         count += BITMAP_GRANULE_LEN;
         pos += BITMAP_GRANULE_LEN;
     }
 
-    while ((!!bitmap_get(map, pos) == set) && (count < n)) {
+    while ((pos < size) && (!!bitmap_get(map, pos) == set) && (count < n)) {
         count++;
         pos += 1;
     }
