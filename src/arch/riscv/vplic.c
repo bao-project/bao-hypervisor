@@ -80,7 +80,7 @@ static bool vplic_get_hw(struct vcpu* vcpu, irqid_t id)
     return ret;
 }
 
-static uint32_t vplic_get_theshold(struct vcpu* vcpu, int vcntxt) 
+static uint32_t vplic_get_threshold(struct vcpu* vcpu, int vcntxt)
 {
     struct vplic * vplic = &vcpu->vm->arch.vplic;
     return vplic->threshold[vcntxt];
@@ -103,7 +103,7 @@ static irqid_t vplic_next_pending(struct vcpu *vcpu, int vcntxt)
         }
     }
 
-    if (max_prio > vplic_get_theshold(vcpu, vcntxt))
+    if (max_prio > vplic_get_threshold(vcpu, vcntxt))
         return int_id;
     else
         return 0;
@@ -232,8 +232,8 @@ void vplic_inject(struct vcpu *vcpu, irqid_t id)
         } else {
             for(size_t i = 0; i < vplic->cntxt_num; i++) {
                 if(plic_plat_id_to_cntxt(i).mode != PRIV_S) continue;
-                if(vplic_get_enbl(vcpu, i, id) && 
-                vplic_get_prio(vcpu, id) > vplic_get_theshold(vcpu, i)) {
+                if(vplic_get_enbl(vcpu, i, id) &&
+                vplic_get_prio(vcpu, id) > vplic_get_threshold(vcpu, i)) {
                     vplic_update_hart_line(vcpu, i);
                 }
             }
@@ -330,7 +330,7 @@ static bool vplic_hart_emul_handler(struct emul_access *acc)
             if (acc->write) {
                 vplic_set_threshold(cpu()->vcpu, vcntxt, vcpu_readreg(cpu()->vcpu, acc->reg));
             } else {
-                vcpu_writereg(cpu()->vcpu, acc->reg, vplic_get_theshold(cpu()->vcpu, vcntxt));
+                vcpu_writereg(cpu()->vcpu, acc->reg, vplic_get_threshold(cpu()->vcpu, vcntxt));
             }
             break;
         case offsetof(struct plic_hart_hw, claim):

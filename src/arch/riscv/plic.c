@@ -112,7 +112,7 @@ void plic_set_threshold(unsigned cntxt, uint32_t threshold)
     }
 }
 
-uint32_t plic_get_thrshold(unsigned cntxt)
+uint32_t plic_get_threshold(unsigned cntxt)
 {
     uint32_t threshold = 0;
     if(plic_cntxt_valid(cntxt)) {
