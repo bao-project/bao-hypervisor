@@ -22,7 +22,7 @@ struct vplic {
     BITMAP_ALLOC_ARRAY(enbl, PLIC_MAX_INTERRUPTS, PLIC_PLAT_CNTXT_NUM);
     uint32_t threshold[PLIC_PLAT_CNTXT_NUM];
     struct emul_mem plic_global_emul;
-    struct emul_mem plic_claimcomplte_emul;
+    struct emul_mem plic_threshold_emul;
 };
 
 struct vm;

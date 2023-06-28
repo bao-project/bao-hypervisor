@@ -317,7 +317,7 @@ static bool vplic_hart_emul_handler(struct emul_access *acc)
     // only allow aligned word accesses
     if (acc->width > 4 || acc->addr & 0x3) return false;
 
-    int vcntxt = ((acc->addr - PLIC_CLAIMCMPLT_OFF) >> 12) & 0x3ff;
+    int vcntxt = ((acc->addr - PLIC_THRESHOLD_OFF) >> 12) & 0x3ff;
     if(!vplic_vcntxt_valid(cpu()->vcpu, vcntxt)) {
         if(!acc->write) {
             vcpu_writereg(cpu()->vcpu, acc->reg, 0);
@@ -356,13 +356,13 @@ void vplic_init(struct vm *vm, vaddr_t vplic_base)
 
         vm_emul_add_mem(vm, &vm->arch.vplic.plic_global_emul);
 
-        vm->arch.vplic.plic_claimcomplte_emul = (struct emul_mem) {
-            .va_base = vplic_base + PLIC_CLAIMCMPLT_OFF,
+        vm->arch.vplic.plic_threshold_emul = (struct emul_mem) {
+            .va_base = vplic_base + PLIC_THRESHOLD_OFF,
             .size = sizeof(struct plic_hart_hw) * vm->cpu_num * PLAT_PLIC_CNTXT_PER_HART,
             .handler = vplic_hart_emul_handler
         };
 
-        vm_emul_add_mem(vm, &vm->arch.vplic.plic_claimcomplte_emul);
+        vm_emul_add_mem(vm, &vm->arch.vplic.plic_threshold_emul);
 
         /* assumes 2 contexts per hart */
         vm->arch.vplic.cntxt_num = vm->cpu_num * 2; 
