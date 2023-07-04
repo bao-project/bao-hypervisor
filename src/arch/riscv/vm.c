@@ -21,7 +21,7 @@ void vm_arch_init(struct vm *vm, const struct vm_config *config)
 
     CSRW(CSR_HGATP, hgatp);
 
-    vplic_init(vm, platform.arch.plic_base);
+    vplic_init(vm, config->platform.arch.plic_base);
 }
 
 void vcpu_arch_init(struct vcpu *vcpu, struct vm *vm) {
