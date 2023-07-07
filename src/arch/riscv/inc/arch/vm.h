@@ -111,12 +111,12 @@ struct arch_regs {
 
 void vcpu_arch_entry();
 
-static inline void vcpu_arch_inject_hw_irq(struct vcpu *vcpu, uint64_t id)
+static inline void vcpu_arch_inject_hw_irq(struct vcpu *vcpu, irqid_t id)
 {
     vplic_inject(vcpu, id);
 }
 
-static inline void vcpu_arch_inject_irq(struct vcpu *vcpu, uint64_t id)
+static inline void vcpu_arch_inject_irq(struct vcpu *vcpu, irqid_t id)
 {
     vplic_inject(vcpu, id);
 }
