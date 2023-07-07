@@ -76,8 +76,11 @@ _reset_handler:
 1:
 	cmp x5, x3
 	b.ge	2f
-	ldrb w6, [x4]
-	add x4, x4, #1
+#if PLAT_CLUSTERS_CORES_NUM_SIZE != 8
+#error "struct platform cluster core_num field type size is not 8"
+#endif
+	ldr w6, [x4]
+	add x4, x4, #PLAT_CLUSTERS_CORES_NUM_SIZE
 	add x5, x5, #1
 	add x7, x7, x6
 	b 	1b
