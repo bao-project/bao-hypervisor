@@ -43,7 +43,7 @@ void psci_cpumsg_handler(uint32_t event, uint64_t data){
     }
 }
 
-CPU_MSG_HANDLER(psci_cpumsg_handler, PSCI_CPUSMG_ID);
+CPU_MSG_HANDLER(psci_cpumsg_handler, PSCI_CPUMSG_ID);
 
 int32_t psci_cpu_suspend_handler(uint32_t power_state, unsigned long entrypoint, 
                                                     unsigned long context_id)
@@ -130,7 +130,7 @@ int32_t psci_cpu_on_handler(unsigned long target_cpu, unsigned long entrypoint,
         if (pcpuid == INVALID_CPUID) {
             ret = PSCI_E_INVALID_PARAMS;
         } else {
-            struct cpu_msg msg = {PSCI_CPUSMG_ID, PSCI_MSG_ON};
+            struct cpu_msg msg = {PSCI_CPUMSG_ID, PSCI_MSG_ON};
             cpu_send_msg(pcpuid, &msg);
             ret = PSCI_E_SUCCESS;
         }

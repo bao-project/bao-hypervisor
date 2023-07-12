@@ -1110,7 +1110,7 @@ size_t vgic_get_itln(const struct vgic_dscrp *vgic_dscrp) {
      * By default the guest sees the real platforms interrupt line number
      * in the virtual gic. However a user can control this using the 
      * interrupt_num in the platform description configuration which be at
-     * least the number os ppis and a multiple of 32.
+     * least the number of ppis and a multiple of 32.
      */
 
     size_t vtyper_itln =
