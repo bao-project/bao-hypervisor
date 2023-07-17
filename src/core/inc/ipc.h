@@ -15,6 +15,7 @@ struct ipc {
     size_t shmem_id;
     size_t interrupt_num;
     irqid_t *interrupts;
+    size_t interrupt_offset;
 };
 
 struct vm_config;
