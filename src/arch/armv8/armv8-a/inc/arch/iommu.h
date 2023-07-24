@@ -22,9 +22,10 @@
 #define __IOMMU_ARCH_H__
 
 #include <bao.h>
+#include <arch/smmuv2.h>
 
 struct iommu_vm_arch {
-    deviceid_t global_mask;
+    streamid_t global_mask;
     size_t ctx_id;
 };
 
