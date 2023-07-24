@@ -7,6 +7,7 @@
 #define __ARCH_PLATFORM_H__
 
 #include <bao.h>
+#include <arch/smmuv2.h>
 
 struct arch_platform {
     struct gic_dscrp {
@@ -22,7 +23,7 @@ struct arch_platform {
     struct {
         paddr_t base;
         irqid_t interrupt_id;
-        deviceid_t global_mask;
+        streamid_t global_mask;
     } smmu;
 
     struct {

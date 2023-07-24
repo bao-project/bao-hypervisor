@@ -10,6 +10,7 @@
 #include <arch/subarch/vm.h>
 #include <arch/vgic.h>
 #include <arch/psci.h>
+#include <arch/smmuv2.h>
 #include <list.h>
 
 struct arch_vm_platform {
@@ -21,11 +22,11 @@ struct arch_vm_platform {
     } gic;
 
     struct {
-        deviceid_t global_mask;
+        streamid_t global_mask;
         size_t group_num;
         struct smmu_group {
-            deviceid_t mask;
-            deviceid_t id;
+            streamid_t mask;
+            streamid_t id;
         } *groups;
     } smmu;
 };

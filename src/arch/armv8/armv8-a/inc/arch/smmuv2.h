@@ -7,9 +7,6 @@
 #define __ARCH_SMMUV2_H__
 
 #include <bao.h>
-#include <arch/platform.h>
-#include <vm.h>
-#include <mem.h>
 
 #define SMMUV2_CR0_GFRE     (0x1 << 1)
 #define SMMUV2_CR0_GFIE     (0x1 << 2)
@@ -374,18 +371,20 @@ struct smmu_cntxt_hw {
     uint8_t res13[];
 } __attribute__((__packed__, __aligned__(PAGE_SIZE)));
 
+typedef deviceid_t streamid_t;
+
 void smmu_init();
 
 ssize_t smmu_alloc_ctxbnk();
 ssize_t smmu_alloc_sme();
 void smmu_write_ctxbnk(size_t ctx_id, paddr_t root_pt, asid_t vm_id);
-void smmu_write_sme(size_t sme, deviceid_t mask, deviceid_t id, bool group);
+void smmu_write_sme(size_t sme, streamid_t mask, streamid_t id, bool group);
 void smmu_write_s2c(size_t sme, size_t ctx_id);
 size_t smmu_sme_get_ctx(size_t sme);
-deviceid_t smmu_sme_get_id(size_t sme);
-deviceid_t smmu_sme_get_mask(size_t sme);
+streamid_t smmu_sme_get_id(size_t sme);
+streamid_t smmu_sme_get_mask(size_t sme);
 bool smmu_sme_is_group(size_t sme);
-bool smmu_compatible_sme_exists(deviceid_t mask, deviceid_t id, size_t ctx,
+bool smmu_compatible_sme_exists(streamid_t mask, streamid_t id, size_t ctx,
                                 bool group);
 
 #endif
