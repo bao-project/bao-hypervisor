@@ -602,11 +602,10 @@ bool mem_map_reclr(struct addr_space *as, vaddr_t va, struct ppages *ppages,
      */
     size_t reclrd_num =
         num_pages / (COLOR_NUM * COLOR_SIZE) * COLOR_SIZE *
-        bitmap_count((bitmap_t*)&as->colors, 0, COLOR_NUM, false);
+        bit_count(~(as->colors & BIT_MASK(0, COLOR_NUM)));
     size_t clr_offset = (ppages->base / PAGE_SIZE) % (COLOR_NUM * COLOR_SIZE);
     for (size_t i = 0; i < (num_pages % (COLOR_NUM * COLOR_SIZE)); i++) {
-        if (!bitmap_get((bitmap_t*)&as->colors,
-                        (i + clr_offset) / COLOR_SIZE % COLOR_NUM))
+        if (!bit_get(as->colors, (i + clr_offset) / COLOR_SIZE % COLOR_NUM))
             reclrd_num++;
     }
 
@@ -649,10 +648,8 @@ bool mem_map_reclr(struct addr_space *as, vaddr_t va, struct ppages *ppages,
          * If image page is already color, just map it.
          * Otherwise first copy it to the previously allocated pages.
          */
-        if (bitmap_get((bitmap_t*)&as->colors,
-                       ((i + clr_offset) / COLOR_SIZE % COLOR_NUM))) {
+        if (bit_get(as->colors, ((i + clr_offset) / COLOR_SIZE % COLOR_NUM))) {
             pte_set(pte, paddr, PTE_PAGE, flags);
-
         } else {
             memcpy((void*)clrd_vaddr, (void*)phys_va, PAGE_SIZE);
             index = pp_next_clr(reclrd_ppages.base, index, as->colors);

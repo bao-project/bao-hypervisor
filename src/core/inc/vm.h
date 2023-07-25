@@ -129,19 +129,19 @@ static inline struct vcpu* vm_get_vcpu(struct vm* vm, vcpuid_t vcpuid) {
 
 static inline cpuid_t vm_translate_to_pcpuid(struct vm* vm, vcpuid_t vcpuid)
 {
-    ssize_t i = bitmap_find_nth((bitmap_t*)&vm->cpus, sizeof(vm->cpus) * 8,
-                           vcpuid + 1, 0, true);
-    if(i < 0) {
+    struct vcpu *vcpu = vm_get_vcpu(vm, vcpuid);
+
+    if(vcpu == NULL) {
         return INVALID_CPUID;
     } else {
-        return (cpuid_t)i;
+        return vcpu->phys_id;
     }
 }
 
 static inline vcpuid_t vm_translate_to_vcpuid(struct vm* vm, cpuid_t pcpuid)
 {
     if (vm->cpus & (1UL << pcpuid)) {
-        return (cpuid_t)bitmap_count((bitmap_t*)&vm->cpus, 0, pcpuid, true);
+        return (cpuid_t)bit_count(vm->cpus & BIT_MASK(0, pcpuid));
     } else {
         return INVALID_CPUID;
     }

@@ -1006,7 +1006,7 @@ struct vgic_int* vgic_highest_prio_spilled(struct vcpu *vcpu,
 
 static void vgic_refill_lrs(struct vcpu *vcpu, bool npie) {
     uint64_t elrsr = gich_get_elrsr();
-    ssize_t  lr_ind = bitmap_find_nth((bitmap_t*)&elrsr, NUM_LRS, 1, 0, true);
+    ssize_t  lr_ind = bit64_ffs(elrsr & BIT64_MASK(0, NUM_LRS));
     unsigned flags = npie ? PEND : ACT | PEND;
     spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
     while(lr_ind >= 0) {
@@ -1028,7 +1028,7 @@ static void vgic_refill_lrs(struct vcpu *vcpu, bool npie) {
         }
         flags = ACT | PEND;
         elrsr = gich_get_elrsr();
-        lr_ind = bitmap_find_nth((bitmap_t*)&elrsr, NUM_LRS, 1, 0, true);
+        lr_ind = bit64_ffs(elrsr & BIT64_MASK(0, NUM_LRS));
     }
     spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
 }
@@ -1059,7 +1059,7 @@ static void vgic_eoir_highest_spilled_active(struct vcpu *vcpu)
 void vgic_handle_trapped_eoir(struct vcpu *vcpu)
 {
     uint64_t eisr = gich_get_eisr();
-    int64_t lr_ind = bitmap_find_nth((bitmap_t*)&eisr, NUM_LRS, 1, 0, true);
+    int64_t lr_ind = bit64_ffs(eisr & BIT64_MASK(0, NUM_LRS));
     while (lr_ind >= 0) {
         unsigned long lr_val = gich_read_lr(lr_ind);
         gich_write_lr(lr_ind, 0);
@@ -1077,7 +1077,7 @@ void vgic_handle_trapped_eoir(struct vcpu *vcpu)
         }
         spin_unlock(&interrupt->lock);
         eisr = gich_get_eisr();
-        lr_ind = bitmap_find_nth((bitmap_t*)&eisr, NUM_LRS, 1, 0, true);
+        lr_ind = bit64_ffs(eisr & BIT64_MASK(0, NUM_LRS));
     }
 }
 
