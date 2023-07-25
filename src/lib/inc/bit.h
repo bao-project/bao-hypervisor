@@ -42,6 +42,31 @@
     {\
         return (~MASK(off, len) & word) | ((MASK(0, len) & val) << off);\
     }\
+    static inline ssize_t PRE ## _ffs(TYPE word)\
+    {\
+        ssize_t pos = (ssize_t)0;\
+        TYPE mask = (LIT);\
+        while (mask != 0U) {\
+            if ((mask & word) != 0U) {\
+                break;\
+            }\
+            mask <<= 1U;\
+            pos++;\
+        }\
+        return (mask != 0U) ? pos : (ssize_t)-1;\
+    }\
+    static inline ssize_t PRE ## _count(TYPE word)\
+    {\
+        size_t count = 0;\
+        TYPE mask = (LIT);\
+        while (mask != 0U) {\
+            if ((mask & word) != 0U) {\
+                count += 1;\
+            }\
+            mask <<= 1U;\
+        }\
+        return count;\
+    }
 
 BIT_OPS_GEN(bit32, uint32_t, UINT32_C(1), BIT32_MASK);
 BIT_OPS_GEN(bit64, uint64_t, UINT64_C(1), BIT64_MASK);
