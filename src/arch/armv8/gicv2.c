@@ -40,8 +40,7 @@ static inline void gicc_init()
     gich->HCR |= GICH_HCR_LRENPIE_BIT;
     
     uint32_t sgi_targets = gicd->ITARGETSR[0] & BIT32_MASK(0, GIC_TARGET_BITS);
-    ssize_t gic_cpu_id = 
-        bitmap_find_nth((bitmap_t*)&sgi_targets, GIC_TARGET_BITS, 1, 0, true);
+    ssize_t gic_cpu_id = bit32_ffs(sgi_targets);
     if(gic_cpu_id < 0) {
         ERROR("cant find gic cpu id");
     }
