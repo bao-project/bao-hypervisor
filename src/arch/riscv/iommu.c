@@ -18,6 +18,8 @@
 #define FQ_LOG2SZ_1   (5ULL)
 #define FQ_INDEX_MASK BIT32_MASK(0, FQ_LOG2SZ_1 + 1)
 
+#define RV_IOMMU_SUPPORTED_VERSION   (0x10)
+
 //# Memory-mapped Register Interface
 // Capabilities register fields
 #define RV_IOMMU_CAPS_VERSION_OFF    (0)
@@ -213,7 +215,7 @@ static void rv_iommu_check_features(void)
     unsigned version = bit64_extract(caps,
                             RV_IOMMU_CAPS_VERSION_OFF, RV_IOMMU_CAPS_VERSION_LEN);
 
-    if (version != 0x10) {
+    if (version != RV_IOMMU_SUPPORTED_VERSION) {
         ERROR("RISC-V IOMMU unsupported version: %d", version);
     }
 
@@ -332,13 +334,12 @@ void rv_iommu_init(void)
     rv_iommu.hw.reg_ptr->fqh = 0;
 
     // Allocate IRQ for FQ
-    //! Ask Martins about the number of PLIC IP registers
     interrupts_reserve(platform.arch.iommu.fq_irq_id, rv_iommu_fq_irq_handler);
     interrupts_cpu_enable(platform.arch.iommu.fq_irq_id, true);
 
     // Enable FQ (fqcsr)
     rv_iommu.hw.reg_ptr->fqcsr = RV_IOMMU_FQCSR_DEFAULT;
-    //! We ignore fqcsr.busy by now...
+    // TODO: poll fqcsr.busy 
 
     // Init DDT bitmap
     rv_iommu.ddt_lock = SPINLOCK_INITVAL;
@@ -356,7 +357,7 @@ void rv_iommu_init(void)
     mem_translate(&cpu()->as, ddt_vaddr, &ddt_paddr);
     rv_iommu.hw.reg_ptr->ddtp = (unsigned long long)platform.arch.iommu.mode | 
                                 ((ddt_paddr >> 2) & RV_IOMMU_DDTP_PPN_MASK);
-    //! We ignore ddtp.busy by now...
+    // TODO: poll ddtp.busy
 }
 
 /**
