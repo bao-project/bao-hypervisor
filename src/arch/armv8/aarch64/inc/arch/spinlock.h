@@ -49,7 +49,7 @@ static inline void spin_lock(spinlock_t* lock)
         "b 2b\n\t"
         "3:\n\t"
         : "=&r"(ticket), "=&r"(next), "=&r"(temp)
-        : "Q"(lock->ticket), "Q"(lock->next));
+        : "Q"(lock->ticket), "Q"(lock->next) : "memory");
 }
 
 static inline void spin_unlock(spinlock_t* lock)
@@ -64,7 +64,7 @@ static inline void spin_unlock(spinlock_t* lock)
         "dsb ish\n\t"
         "sev\n\t"
         : "=&r"(temp)
-        : "Q"(lock->next));
+        : "Q"(lock->next) : "memory");
 }
 
 
