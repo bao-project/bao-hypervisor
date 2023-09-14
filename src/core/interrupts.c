@@ -46,9 +46,22 @@ inline void interrupts_init()
     interrupts_cpu_enable(IPI_CPU_MSG, true);
 }
 
-static inline bool interrupt_is_reserved(irqid_t int_id)
+static inline bool interrupt_assigned_to_hyp(irqid_t int_id)
 {
     return bitmap_get(hyp_interrupt_bitmap, int_id);
+}
+
+/**
+ * @brief For a given interrupt intp_id, return if this interrupt
+ *        is already reserved by VMM or any VM
+ * 
+ * @param int_id interrupt ID
+ * @return true if interrupt is reserved
+ * @return false if interrupt is NOT reserved
+ */
+static inline bool interrupt_assigned(irqid_t int_id)
+{
+    return bitmap_get(global_interrupt_bitmap, int_id);
 }
 
 enum irq_res interrupts_handle(irqid_t int_id)
@@ -58,7 +71,7 @@ enum irq_res interrupts_handle(irqid_t int_id)
 
         return FORWARD_TO_VM;
 
-    } else if (interrupt_is_reserved(int_id)) {
+    } else if (interrupt_assigned_to_hyp(int_id)) {
         interrupt_handlers[int_id](int_id);
 
         return HANDLED_BY_HYP;
@@ -82,7 +95,7 @@ void interrupts_vm_assign(struct vm *vm, irqid_t id)
 
 void interrupts_reserve(irqid_t int_id, irq_handler_t handler)
 {
-    if (int_id < MAX_INTERRUPTS) {
+    if ((int_id < MAX_INTERRUPTS) && !interrupt_assigned(int_id)) {
         interrupt_handlers[int_id] = handler;
         bitmap_set(hyp_interrupt_bitmap, int_id);
         bitmap_set(global_interrupt_bitmap, int_id);
