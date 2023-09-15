@@ -10,7 +10,9 @@
 #include <arch/subarch/vm.h>
 #include <arch/vgic.h>
 #include <arch/psci.h>
+#ifdef MEM_PROT_MMU	
 #include <arch/smmuv2.h>
+#endif
 #include <list.h>
 
 struct arch_vm_platform {
@@ -21,6 +23,7 @@ struct arch_vm_platform {
         size_t interrupt_num;
     } gic;
 
+#ifdef MEM_PROT_MMU	
     struct {
         streamid_t global_mask;
         size_t group_num;
@@ -29,6 +32,7 @@ struct arch_vm_platform {
             streamid_t id;
         } *groups;
     } smmu;
+#endif
 };
 
 struct vm_arch {

@@ -7,7 +7,9 @@
 #define __ARCH_PLATFORM_H__
 
 #include <bao.h>
+#ifdef MEM_PROT_MMU	
 #include <arch/smmuv2.h>
+#endif
 
 struct arch_platform {
     struct gic_dscrp {
@@ -20,11 +22,13 @@ struct arch_platform {
         irqid_t maintenance_id;
     } gic;
 
+#ifdef MEM_PROT_MMU	
     struct {
         paddr_t base;
         irqid_t interrupt_id;
         streamid_t global_mask;
     } smmu;
+#endif
 
     struct {
         paddr_t base_addr;
