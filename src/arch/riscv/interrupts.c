@@ -79,8 +79,8 @@ void interrupts_arch_handle()
 
     switch (_scause) {
         case SCAUSE_CODE_SSI:
-            interrupts_handle(SOFT_INT_ID);
             CSRC(sip, SIP_SSIP);
+            interrupts_handle(SOFT_INT_ID);
             break;
         case SCAUSE_CODE_STI:
             interrupts_handle(TIMR_INT_ID);
