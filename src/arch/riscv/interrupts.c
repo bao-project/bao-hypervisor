@@ -75,12 +75,14 @@ void interrupts_arch_handle()
         case SCAUSE_CODE_STI:
             interrupts_handle(TIMR_INT_ID);
             /**
-             * Clearing the timer pending bit actually has no
-             * effect. We should call sbi_set_timer(-1), but at
-             * the moment this is having no effect on opensbi/qemu.
+             * Clearing the timer pending bit actually has no effect. We could
+             * re-program the timer to "infinity" but we don't know if the
+             * handler itself re-programed the timer with a new event.
+             * Therefore, at this point, we must trust the handler either
+             * correctly re-programms the timer or disables the interrupt so the
+             * cpu is not starved by continously triggering the timer interrupt
+             * (spoiler alert, it does!)
              */
-            // CSRC(sip, SIP_STIP);
-            // sbi_set_timer(-1);
             break;
         case SCAUSE_CODE_SEI:
             irqc_handle();
