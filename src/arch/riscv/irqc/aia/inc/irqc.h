@@ -56,4 +56,9 @@ static inline void irqc_clr_pend(irqid_t int_id)
     aplic_clr_pend(int_id);
 }
 
+static inline void virqc_set_hw(struct vm *vm, irqid_t id)
+{
+    vaplic_set_hw(vm, id);
+}
+
 #endif //IRQC_H
