@@ -6,7 +6,7 @@
 #include <vm.h>
 #include <page_table.h>
 #include <arch/csrs.h>
-#include <arch/vplic.h>
+#include <irqc.h>
 #include <arch/instructions.h>
 #include <string.h>
 #include <config.h>
@@ -21,7 +21,7 @@ void vm_arch_init(struct vm *vm, const struct vm_config *config)
 
     CSRW(CSR_HGATP, hgatp);
 
-    vplic_init(vm, config->platform.arch.plic_base);
+    virqc_init(vm, &config->platform.arch.irqc);
 }
 
 void vcpu_arch_init(struct vcpu *vcpu, struct vm *vm) {

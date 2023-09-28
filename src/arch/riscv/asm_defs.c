@@ -7,7 +7,6 @@
 #include <cpu.h>
 #include <vm.h>
 #include <platform.h>
-#include <arch/plic.h>
 
 void cpu_defines() __attribute__((used));
 void cpu_defines()

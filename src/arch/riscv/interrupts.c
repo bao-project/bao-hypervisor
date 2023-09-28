@@ -6,7 +6,7 @@
 #include <bao.h>
 #include <interrupts.h>
 
-#include <arch/plic.h>
+#include <irqc.h>
 #include <arch/sbi.h>
 #include <cpu.h>
 #include <mem.h>
@@ -17,23 +17,14 @@
 
 void interrupts_arch_init()
 {
-    if (cpu()->id == CPU_MASTER) {
-        plic_global = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA, 
-            platform.arch.plic_base, NUM_PAGES(sizeof(struct plic_global_hw)));
-
-        plic_hart = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
-            platform.arch.plic_base + PLIC_THRESHOLD_OFF,
-            NUM_PAGES(sizeof(struct plic_hart_hw)*PLIC_PLAT_CNTXT_NUM));
-
-        fence_sync();
-
-        plic_init();
+    if (cpu()->id  == CPU_MASTER) {  
+        irqc_init();
     }
 
-    /* Wait for master hart to finish plic initialization */
+    /* Wait for master hart to finish irqc initialization */
     cpu_sync_barrier(&cpu_glb_sync);
 
-    plic_cpu_init();
+    irqc_cpu_init();
 
     /**
      * Enable external interrupts.
@@ -68,8 +59,7 @@ void interrupts_arch_enable(irqid_t int_id, bool en)
         else
             CSRC(sie, SIE_STIE);
     } else {
-        plic_set_enbl(cpu()->arch.plic_cntxt, int_id, en);
-        plic_set_prio(int_id, 0xFE);
+        irqc_config_irq(int_id, en);
     }
 }
 
@@ -93,7 +83,7 @@ void interrupts_arch_handle()
             // sbi_set_timer(-1);
             break;
         case SCAUSE_CODE_SEI:
-            plic_handle();
+            irqc_handle();
             break;
         default:
             // WARNING("unkown interrupt");
@@ -108,7 +98,7 @@ bool interrupts_arch_check(irqid_t int_id)
     } else if (int_id == TIMR_INT_ID) {
         return CSRR(sip) & SIP_STIP;
     } else {
-        return plic_get_pend(int_id);
+        return irqc_get_pend(int_id);
     }
 }
 
@@ -116,12 +106,13 @@ void interrupts_arch_clear(irqid_t int_id)
 {
     if (int_id == SOFT_INT_ID) {
         CSRC(sip, SIP_SSIP);
-    } else {
+    } else if (int_id == TIMR_INT_ID) {
         /**
-         * It is not actually possible to clear timer
-         * or external interrupt pending bits by software.
+         * It is not actually possible to clear timer by software.
          */
-        WARNING("trying to clear timer or external interrupt");
+        WARNING("trying to clear timer interrupt");
+    } else {
+        irqc_clr_pend(int_id);
     }
 }
 
@@ -132,5 +123,5 @@ inline bool interrupts_arch_conflict(bitmap_t* interrupt_bitmap, irqid_t int_id)
 
 void interrupts_arch_vm_assign(struct vm *vm, irqid_t id)
 {
-    vplic_set_hw(vm, id);
+    virqc_set_hw(vm, id);
 }

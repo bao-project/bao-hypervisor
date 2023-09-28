@@ -7,7 +7,7 @@
 #define __VPLIC_H__
 
 #include <bao.h>
-#include <arch/plic.h>
+#include <plic.h>
 #include <arch/spinlock.h>
 #include <bitmap.h>
 #include <emul.h>
@@ -27,8 +27,20 @@ struct vplic {
 
 struct vm;
 struct vcpu;
-void vplic_init(struct vm *vm, vaddr_t vplic_base);
+union vm_irqc_dscrp;
+void vplic_init(struct vm *vm, const union vm_irqc_dscrp *vm_irqc_dscrp);
 void vplic_inject(struct vcpu *vcpu, irqid_t id);
 void vplic_set_hw(struct vm *vm, irqid_t id);
 
-#endif /* __VPLIC_H__ */
+static inline void virqc_init(struct vm *vm, const union vm_irqc_dscrp *vm_irqc_dscrp)
+{
+    vplic_init(vm, vm_irqc_dscrp);
+}
+
+typedef struct vcpu vcpu_t;
+static inline void virqc_inject(vcpu_t *vcpu, irqid_t id)
+{
+    vplic_inject(vcpu, id);
+}
+
+#endif //__VPLIC_H__
