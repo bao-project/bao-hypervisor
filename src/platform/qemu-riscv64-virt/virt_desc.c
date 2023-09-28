@@ -4,6 +4,7 @@
  */
 
 #include <platform.h>
+#include <interrupts.h>
 
 struct platform platform = {
 
@@ -18,7 +19,13 @@ struct platform platform = {
     },
 
     .arch = {
-        .plic_base = 0xc000000,
+        #if (IRQC == PLIC)
+        .irqc.plic.base = 0xc000000,        
+        #elif (IRQC == APLIC)
+        .irqc.aia.aplic.base = 0xd000000,
+        #else 
+        #error "unknown IRQC type " IRQC
+        #endif
     }
 
 };
