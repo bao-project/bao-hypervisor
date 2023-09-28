@@ -14,6 +14,11 @@ struct arch_platform {
         struct {
             paddr_t base;
         } plic;
+        struct {
+            struct {
+                paddr_t base;
+            } aplic;
+        } aia;
     } irqc;
 
     struct {
