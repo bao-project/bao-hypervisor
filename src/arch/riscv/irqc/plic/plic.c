@@ -3,9 +3,10 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
-#include <arch/plic.h>
+#include <plic.h>
 #include <interrupts.h>
 #include <cpu.h>
+#include <fences.h>
 
 size_t PLIC_IMPL_INTERRUPTS;
 
@@ -29,6 +30,17 @@ static size_t plic_scan_max_int()
 
 void plic_init()
 {
+    /** Maps PLIC device */
+    plic_global = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA, 
+            platform.arch.irqc.plic.base, NUM_PAGES(sizeof(struct plic_global_hw)));
+    
+    plic_hart = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA, 
+                platform.arch.irqc.plic.base + HART_REG_OFF,
+                NUM_PAGES(sizeof(struct plic_hart_hw)*IRQC_HART_INST));
+    
+    /** Ensure that instructions after fence have the PLIC fully mapped */
+    fence_sync();
+
     PLIC_IMPL_INTERRUPTS = plic_scan_max_int();
 
     for (size_t i = 0; i <= PLIC_IMPL_INTERRUPTS; i++) {

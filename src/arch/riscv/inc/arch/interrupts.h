@@ -7,7 +7,10 @@
 #define __ARCH_INTERRUPTS_H__
 
 #include <bao.h>
-#include <arch/plic.h>
+#include <irqc.h>
+
+#define PLIC  (1)
+#define APLIC (2)
 
 /**
  * In riscv, the ipi (software interrupt) and timer interrupts dont actually
@@ -15,8 +18,8 @@
  * routed by the external interrupt controller, the PLIC.
  * Will define their ids as the ids after the maximum possible in the PLIC.
  */
-#define SOFT_INT_ID (PLIC_MAX_INTERRUPTS + 1)
-#define TIMR_INT_ID (PLIC_MAX_INTERRUPTS + 2)
+#define SOFT_INT_ID (IRQC_MAX_INTERRUPTS + 1)
+#define TIMR_INT_ID (IRQC_MAX_INTERRUPTS + 2)
 #define MAX_INTERRUPTS (TIMR_INT_ID + 1)
 
 #define IPI_CPU_MSG SOFT_INT_ID

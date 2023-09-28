@@ -3,7 +3,7 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
-#include <arch/vplic.h>
+#include <vplic.h>
 #include <cpu.h>
 #include <emul.h>
 #include <mem.h>
@@ -345,11 +345,12 @@ static bool vplic_hart_emul_handler(struct emul_access *acc)
     return true;
 }
 
-void vplic_init(struct vm *vm, vaddr_t vplic_base)
+void vplic_init(struct vm *vm, const union vm_irqc_dscrp *vm_irqc_dscrp)
 {
     if (cpu()->id == vm->master) {
+        
         vm->arch.vplic.plic_global_emul = (struct emul_mem) {
-            .va_base = vplic_base,
+            .va_base = vm_irqc_dscrp->plic.base,
             .size = sizeof(struct plic_global_hw),
             .handler = vplic_global_emul_handler
         };
@@ -357,7 +358,7 @@ void vplic_init(struct vm *vm, vaddr_t vplic_base)
         vm_emul_add_mem(vm, &vm->arch.vplic.plic_global_emul);
 
         vm->arch.vplic.plic_threshold_emul = (struct emul_mem) {
-            .va_base = vplic_base + PLIC_THRESHOLD_OFF,
+            .va_base = vm_irqc_dscrp->plic.base + PLIC_THRESHOLD_OFF,
             .size = sizeof(struct plic_hart_hw) * vm->cpu_num * PLAT_PLIC_CNTXT_PER_HART,
             .handler = vplic_hart_emul_handler
         };

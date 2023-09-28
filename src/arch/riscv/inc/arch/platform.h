@@ -10,7 +10,11 @@
 
 // Arch-specific platform data
 struct arch_platform {
-    paddr_t plic_base;
+    union irqc_dscrp {
+        struct {
+            paddr_t base;
+        } plic;
+    } irqc;
 
     struct {
         paddr_t base;       // Base address of the IOMMU mmapped IF
