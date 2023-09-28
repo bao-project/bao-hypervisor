@@ -115,3 +115,8 @@ In IEEE Transactions on Computers, doi: 10.1109/TC.2021.3124320.
 5. Samuel Pereira, João Sousa, Sandro Pinto, José Martins, David Cerdeira "**Bao-Enclave: Virtualization-based Enclaves for Arm**.
 In https://arxiv.org/abs/2209.05572
 
+6. José Martins and Sandro Pinto. "**Shedding Light on Static Partitioning Hypervisors for Arm-based Mixed-Criticality Systems**".
+In RTAS 2023, San Antonio, Texas, 2023. https://arxiv.org/abs/2303.11186
+
+7. José Martins and Sandro Pinto. "**Porting of a Static Partitioning Hypervisor to Arm’s Cortex-R52**"
+In Embedded Open Source Summit 2023, Prague, Czech Republic, 2023. https://www.youtube.com/watch?v=GmeOikZJRas
