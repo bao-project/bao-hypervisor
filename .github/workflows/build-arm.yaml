@@ -1,0 +1,30 @@
+name: Arm Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+
+  build-arm:
+    runs-on: ubuntu-latest
+    container: baoproject/bao:latest
+    strategy:
+      matrix:
+        platform: [
+          "fvp-a",
+          "fvp-a-aarch32",
+          "fvp-r",
+          "fvp-r-aarch32"
+        ]
+        gic: [
+          "GICV2",
+          "GICV3",
+        ]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - run: make PLATFORM=${{ matrix.platform }} GIC_VERSION=${{ matrix.gic }} CONFIG=null
