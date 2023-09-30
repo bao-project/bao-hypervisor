@@ -1,5 +1,7 @@
 # Bao - a lightweight static partitioning hypervisor
 
+![arm build workflow](https://github.com/bao-project/bao-hypervisor/actions/workflows/build-arm.yaml/badge.svg)
+![riscv build workflow](https://github.com/bao-project/bao-hypervisor/actions/workflows/build-riscv.yaml/badge.svg)
 
 Introduction
 ------------
