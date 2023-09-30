@@ -469,7 +469,7 @@ void vgic_int_enable_hw(struct vcpu *vcpu, struct vgic_int *interrupt)
 #endif
 }
 
-bool vgic_int_clear_enable(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t data)
+bool vgic_int_clear_enable(struct vcpu *vcpu, struct vgic_int *interrupt, unsigned long data)
 {
     if (!data)
         return false;
@@ -477,7 +477,7 @@ bool vgic_int_clear_enable(struct vcpu *vcpu, struct vgic_int *interrupt, uint64
         return vgic_int_update_enable(vcpu, interrupt, false);
 }
 
-bool vgic_int_set_enable(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t data)
+bool vgic_int_set_enable(struct vcpu *vcpu, struct vgic_int *interrupt, unsigned long data)
 {
     if (!data)
         return false;
@@ -485,9 +485,9 @@ bool vgic_int_set_enable(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t
         return vgic_int_update_enable(vcpu, interrupt, true);
 }
 
-uint64_t vgic_int_get_enable(struct vcpu *vcpu, struct vgic_int *interrupt)
+unsigned long vgic_int_get_enable(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
-    return (uint64_t)interrupt->enabled;
+    return (unsigned long)interrupt->enabled;
 }
 
 bool vgic_int_update_pend(struct vcpu *vcpu, struct vgic_int *interrupt, bool pend)
@@ -526,7 +526,7 @@ void vgic_int_state_hw(struct vcpu *vcpu, struct vgic_int *interrupt)
 #endif
 }
 
-bool vgic_int_clear_pend(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t data)
+bool vgic_int_clear_pend(struct vcpu *vcpu, struct vgic_int *interrupt, unsigned long data)
 {
     if (!data)
         return false;
@@ -534,7 +534,7 @@ bool vgic_int_clear_pend(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t
         return vgic_int_update_pend(vcpu, interrupt, false);
 }
 
-bool vgic_int_set_pend(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t data)
+bool vgic_int_set_pend(struct vcpu *vcpu, struct vgic_int *interrupt, unsigned long data)
 {
     if (!data)
         return false;
@@ -542,7 +542,7 @@ bool vgic_int_set_pend(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t d
         return vgic_int_update_pend(vcpu, interrupt, true);
 }
 
-uint64_t vgic_int_get_pend(struct vcpu *vcpu, struct vgic_int *interrupt)
+unsigned long vgic_int_get_pend(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     return (interrupt->state & PEND) ? 1 : 0;
 }
@@ -560,7 +560,7 @@ bool vgic_int_update_act(struct vcpu *vcpu, struct vgic_int *interrupt, bool act
     }
 }
 
-bool vgic_int_clear_act(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t data)
+bool vgic_int_clear_act(struct vcpu *vcpu, struct vgic_int *interrupt, unsigned long data)
 {
     if (!data)
         return false;
@@ -568,7 +568,7 @@ bool vgic_int_clear_act(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t 
         return vgic_int_update_act(vcpu, interrupt, false);
 }
 
-bool vgic_int_set_act(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t data)
+bool vgic_int_set_act(struct vcpu *vcpu, struct vgic_int *interrupt, unsigned long data)
 {
     if (!data)
         return false;
@@ -576,21 +576,21 @@ bool vgic_int_set_act(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t da
         return vgic_int_update_act(vcpu, interrupt, true);
 }
 
-uint64_t vgic_int_get_act(struct vcpu *vcpu, struct vgic_int *interrupt)
+unsigned long vgic_int_get_act(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     return (interrupt->state & ACT) ? 1 : 0;
 }
 
-bool vgic_int_set_cfg(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t cfg)
+bool vgic_int_set_cfg(struct vcpu *vcpu, struct vgic_int *interrupt, unsigned long cfg)
 {
     uint8_t prev_cfg = interrupt->cfg;
     interrupt->cfg = (uint8_t)cfg;
     return prev_cfg != cfg;
 }
 
-uint64_t vgic_int_get_cfg(struct vcpu *vcpu, struct vgic_int *interrupt)
+unsigned long vgic_int_get_cfg(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
-    return (uint64_t)interrupt->cfg;
+    return (unsigned long)interrupt->cfg;
 }
 
 void vgic_int_set_cfg_hw(struct vcpu *vcpu, struct vgic_int *interrupt)
@@ -606,7 +606,7 @@ void vgic_int_set_cfg_hw(struct vcpu *vcpu, struct vgic_int *interrupt)
 #endif
 }
 
-bool vgic_int_set_prio(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t prio)
+bool vgic_int_set_prio(struct vcpu *vcpu, struct vgic_int *interrupt, unsigned long prio)
 {
     uint8_t prev_prio = interrupt->prio;
     interrupt->prio = (uint8_t)prio &
@@ -614,9 +614,9 @@ bool vgic_int_set_prio(struct vcpu *vcpu, struct vgic_int *interrupt, uint64_t p
     return prev_prio != prio;
 }
 
-uint64_t vgic_int_get_prio(struct vcpu *vcpu, struct vgic_int *interrupt)
+unsigned long vgic_int_get_prio(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
-    return (uint64_t)interrupt->prio;
+    return (unsigned long)interrupt->prio;
 }
 
 void vgic_int_set_prio_hw(struct vcpu *vcpu, struct vgic_int *interrupt)
@@ -639,7 +639,7 @@ void vgic_emul_razwi(struct emul_access *acc, struct vgic_reg_handler_info *hand
 }
 
 void vgic_int_set_field(struct vgic_reg_handler_info *handlers, struct vcpu *vcpu,
-                        struct vgic_int *interrupt, uint64_t data)
+                        struct vgic_int *interrupt, unsigned long data)
 {
     spin_lock(&interrupt->lock);
     if (vgic_get_ownership(vcpu, interrupt)) {
@@ -666,8 +666,8 @@ void vgic_emul_generic_access(struct emul_access *acc,
     size_t field_width = handlers->field_width;
     size_t first_int =
         (GICD_REG_MASK(acc->addr) - handlers->regroup_base) * 8 / field_width;
-    uint64_t val = acc->write ? vcpu_readreg(cpu()->vcpu, acc->reg) : 0;
-    uint64_t mask = (1ull << field_width) - 1;
+    unsigned long val = acc->write ? vcpu_readreg(cpu()->vcpu, acc->reg) : 0;
+    unsigned long mask = (1ull << field_width) - 1;
     bool valid_access =
         (GIC_VERSION == GICV2) || !(gicr_access ^ gic_is_priv(first_int));
 
@@ -677,7 +677,7 @@ void vgic_emul_generic_access(struct emul_access *acc,
                 vgic_get_int(cpu()->vcpu, first_int + i, vgicr_id);
             if (interrupt == NULL) break;
             if (acc->write) {
-                uint64_t data = bit64_extract(val, i * field_width, field_width);
+                unsigned long data = bit_extract(val, i * field_width, field_width);
                 vgic_int_set_field(handlers, cpu()->vcpu, interrupt, data);
             } else {
                 val |= (handlers->read_field(cpu()->vcpu, interrupt) & mask)

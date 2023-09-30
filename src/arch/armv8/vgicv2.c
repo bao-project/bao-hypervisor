@@ -25,7 +25,7 @@ uint8_t vgic_int_ptarget_mask(struct vcpu *vcpu, struct vgic_int *interrupt)
     return interrupt->targets;
 }
 
-bool vgicd_set_trgt(struct vcpu *vcpu, struct vgic_int *interrupt, cpumap_t targets)
+bool vgicd_set_trgt(struct vcpu *vcpu, struct vgic_int *interrupt, unsigned long targets)
 {
     if (gic_is_priv(interrupt->id)) {
         return false;
@@ -42,10 +42,10 @@ void vgicd_set_trgt_hw(struct vcpu *vcpu, struct vgic_int *interrupt)
     gicd_set_trgt(interrupt->id, interrupt->targets);
 }
 
-cpumap_t vgicd_get_trgt(struct vcpu *vcpu, struct vgic_int *interrupt)
+unsigned long vgicd_get_trgt(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     if (gic_is_priv(interrupt->id)) {
-        return (((cpumap_t)1) << vcpu->id);
+        return (((unsigned long)1) << vcpu->id);
     } else {
         return vm_translate_to_vcpu_mask(vcpu->vm, interrupt->targets,
                                                   GIC_TARGET_BITS);
