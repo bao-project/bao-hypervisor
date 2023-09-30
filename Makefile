@@ -298,3 +298,17 @@ clean:
 	@echo "Erasing directories..."
 	-rm -rf $(build_dir)
 	-rm -rf $(bin_dir)
+
+# Instantiate CI rules
+
+all_files= $(realpath \
+	$(cur_dir)/Makefile \
+	$(call list_dir_files_recursive, $(src_dir), *) \
+	$(call list_dir_files_recursive, $(scripts_dir), *) \
+	$(call list_dir_files_recursive, $(config_dir)/example, *) \
+)
+
+$(call ci, license, "Apache-2.0", $(all_files))
+
+.PHONY: ci
+ci: license-check
