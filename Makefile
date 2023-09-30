@@ -30,6 +30,10 @@ OPTIMIZATIONS:=2
 CONFIG=
 PLATFORM=
 
+# Setup version
+
+version:= baoversion_$(subst -,_,$(shell  git describe --always --dirty --tag --match "v*\.*\.*"))
+
 # List existing submakes
 submakes:=config
 
@@ -175,7 +179,9 @@ override CFLAGS+=-O$(OPTIMIZATIONS) -Wall -Werror -ffreestanding -std=gnu11 \
 	-fno-pic $(arch-cflags) $(platform-cflags) $(CPPFLAGS) $(debug_flags)
 
 override ASFLAGS+=$(CFLAGS) $(arch-asflags) $(platform-asflags)
+
 override LDFLAGS+=-build-id=none -nostdlib --fatal-warnings \
+	--defsym=$(version)=0 \
 	-z common-page-size=$(PAGE_SIZE) -z max-page-size=$(PAGE_SIZE) \
 	$(arch-ldflags) $(platform-ldflags)
 
