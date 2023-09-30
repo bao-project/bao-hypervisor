@@ -1,0 +1,36 @@
+name: Bao component base workflow
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+
+  gitlint:
+    runs-on: ubuntu-latest
+    container: baoproject/bao:latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - run: git config --global --add safe.directory $(realpath .)
+      - if: ${{ github.event_name == 'pull_request' }}
+        run: make gitlint GITLINT_BASE=${{ github.event.pull_request.base.sha }}
+      - if: ${{ github.event_name == 'push' }}
+        run: make gitlint GITLINT_BASE=${{ github.event.before }}
+      - if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: make gitlint GITLINT_BASE=HEAD
+
+  license:
+    runs-on: ubuntu-latest
+    container: baoproject/bao:latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - run: >
+          make license-check
