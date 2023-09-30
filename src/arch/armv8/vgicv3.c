@@ -40,7 +40,7 @@ uint8_t vgic_int_ptarget_mask(struct vcpu *vcpu, struct vgic_int *interrupt)
 }
 
 bool vgic_int_set_route(struct vcpu *vcpu, struct vgic_int *interrupt, 
-                        uint64_t route)
+                        unsigned long route)
 {
     unsigned long phys_route;
     unsigned long prev_route = interrupt->route;
@@ -64,7 +64,7 @@ bool vgic_int_set_route(struct vcpu *vcpu, struct vgic_int *interrupt,
     return prev_route != interrupt->route;
 }
 
-uint64_t vgic_int_get_route(struct vcpu *vcpu, struct vgic_int *interrupt)
+unsigned long vgic_int_get_route(struct vcpu *vcpu, struct vgic_int *interrupt)
 {
     if (gic_is_priv(interrupt->id)) return 0;
     return interrupt->route;

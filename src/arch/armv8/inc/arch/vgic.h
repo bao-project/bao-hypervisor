@@ -100,8 +100,8 @@ struct vgic_reg_handler_info {
     size_t regid;
     vaddr_t regroup_base;
     size_t field_width;
-    uint64_t (*read_field)(struct vcpu *, struct vgic_int *);
-    bool (*update_field)(struct vcpu *, struct vgic_int *, uint64_t data);
+    unsigned long (*read_field)(struct vcpu *, struct vgic_int *);
+    bool (*update_field)(struct vcpu *, struct vgic_int *, unsigned long data);
     void (*update_hw)(struct vcpu *, struct vgic_int *);
 };
 
@@ -120,7 +120,7 @@ size_t vgic_get_itln(const struct vgic_dscrp *vgic_dscrp);
 struct vgic_int *vgic_get_int(struct vcpu *vcpu, irqid_t int_id,
                                        vcpuid_t vgicr_id);
 void vgic_int_set_field(struct vgic_reg_handler_info *handlers, struct vcpu *vcpu,
-                        struct vgic_int *interrupt, uint64_t data);
+                        struct vgic_int *interrupt, unsigned long data);
 void vgic_emul_razwi(struct emul_access *acc, struct vgic_reg_handler_info *handlers,
                      bool gicr_access, cpuid_t vgicr_id);
 
