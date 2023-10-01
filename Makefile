@@ -307,8 +307,12 @@ all_files= $(realpath \
 	$(call list_dir_files_recursive, $(scripts_dir), *) \
 	$(call list_dir_files_recursive, $(config_dir)/example, *) \
 )
+c_src_files=$(realpath $(call list_dir_files_recursive, src, *.c))
+c_hdr_files=$(realpath $(call list_dir_files_recursive, src, *.h))
+c_files=$(c_src_files) $(c_hdr_files)
 
 $(call ci, license, "Apache-2.0", $(all_files))
+$(call ci, format, $(c_files))
 
 .PHONY: ci
-ci: license-check
+ci: license-check format-check
