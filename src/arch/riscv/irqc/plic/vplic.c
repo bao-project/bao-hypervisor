@@ -35,7 +35,7 @@ static bool vplic_get_pend(struct vcpu* vcpu, irqid_t id)
 {
     bool ret = false;
     struct vplic * vplic = &vcpu->vm->arch.vplic;
-    if (id <= PLIC_MAX_INTERRUPTS) ret = bitmap_get(vplic->pend, id);
+    if (id < PLIC_MAX_INTERRUPTS) ret = bitmap_get(vplic->pend, id);
     return ret;
 }
 
@@ -43,7 +43,7 @@ static bool vplic_get_act(struct vcpu* vcpu, irqid_t id)
 {
     bool ret = false;
     struct vplic * vplic = &vcpu->vm->arch.vplic;
-    if (id <= PLIC_MAX_INTERRUPTS) ret = bitmap_get(vplic->act, id);
+    if (id < PLIC_MAX_INTERRUPTS) ret = bitmap_get(vplic->act, id);
     return ret;
 }
 
@@ -51,7 +51,7 @@ static bool vplic_get_enbl(struct vcpu* vcpu, int vcntxt, irqid_t id)
 {
     bool ret = false;
     struct vplic * vplic = &vcpu->vm->arch.vplic;
-    if (id <= PLIC_MAX_INTERRUPTS) ret = !!bitmap_get(vplic->enbl[vcntxt], id);
+    if (id < PLIC_MAX_INTERRUPTS) ret = !!bitmap_get(vplic->enbl[vcntxt], id);
     return ret;
 }
 
@@ -60,14 +60,14 @@ static uint32_t vplic_get_prio(struct vcpu *vcpu, irqid_t id)
 {
     uint32_t ret = 0;
     struct vplic * vplic = &vcpu->vm->arch.vplic;
-    if (id <= PLIC_MAX_INTERRUPTS) ret = vplic->prio[id];
+    if (id < PLIC_MAX_INTERRUPTS) ret = vplic->prio[id];
     return ret;
 }
 
 
 void vplic_set_hw(struct vm *vm, irqid_t id)
 {
-    if (id <= PLIC_MAX_INTERRUPTS) {
+    if (id < PLIC_MAX_INTERRUPTS) {
         bitmap_set(vm->arch.vplic.hw,id);
     }
 }
@@ -76,7 +76,7 @@ static bool vplic_get_hw(struct vcpu* vcpu, irqid_t id)
 {
     bool ret = false;
     struct vplic * vplic = &vcpu->vm->arch.vplic;
-    if (id <= PLIC_MAX_INTERRUPTS) ret = bitmap_get(vplic->hw, id);
+    if (id < PLIC_MAX_INTERRUPTS) ret = bitmap_get(vplic->hw, id);
     return ret;
 }
 
@@ -91,7 +91,7 @@ static irqid_t vplic_next_pending(struct vcpu *vcpu, int vcntxt)
     uint32_t max_prio = 0;
     irqid_t int_id = 0;
 
-    for (size_t i = 0; i <= PLIC_MAX_INTERRUPTS; i++) {
+    for (size_t i = 0; i < PLIC_MAX_INTERRUPTS; i++) {
         if (vplic_get_pend(vcpu, i) && !vplic_get_act(vcpu, i) && 
             vplic_get_enbl(vcpu, vcntxt, i)) {
 
@@ -155,7 +155,7 @@ static void vplic_set_enbl(struct vcpu* vcpu, int vcntxt, irqid_t id, bool set)
 {
     struct vplic * vplic = &vcpu->vm->arch.vplic;
     spin_lock(&vplic->lock);
-    if (id <= PLIC_MAX_INTERRUPTS && vplic_get_enbl(vcpu, vcntxt, id) != set) {
+    if (id < PLIC_MAX_INTERRUPTS && vplic_get_enbl(vcpu, vcntxt, id) != set) {
         if(set){
             bitmap_set(vplic->enbl[vcntxt],id);
         } else {
@@ -176,7 +176,7 @@ static void vplic_set_prio(struct vcpu *vcpu, irqid_t id, uint32_t prio)
 {
     struct vplic *vplic = &vcpu->vm->arch.vplic;
     spin_lock(&vplic->lock);
-    if (id <= PLIC_MAX_INTERRUPTS && vplic_get_prio(vcpu, id) != prio) {
+    if (id < PLIC_MAX_INTERRUPTS && vplic_get_prio(vcpu, id) != prio) {
         vplic->prio[id] = prio;
         if(vplic_get_hw(vcpu,id)){
             plic_set_prio(id, prio);
@@ -221,7 +221,7 @@ void vplic_inject(struct vcpu *vcpu, irqid_t id)
 {
     struct vplic * vplic = &vcpu->vm->arch.vplic;
     spin_lock(&vplic->lock);
-    if (id > 0 && id <= PLIC_MAX_INTERRUPTS && !vplic_get_pend(vcpu, id)) {
+    if (id > 0 && id < PLIC_MAX_INTERRUPTS && !vplic_get_pend(vcpu, id)) {
         
         bitmap_set(vplic->pend, id);
 
