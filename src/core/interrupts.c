@@ -82,27 +82,35 @@ enum irq_res interrupts_handle(irqid_t int_id)
     }
 }
 
-void interrupts_vm_assign(struct vm *vm, irqid_t id)
+bool interrupts_vm_assign(struct vm *vm, irqid_t id)
 {
+    bool ret = false;
+
     spin_lock(&irq_reserve_lock);
-    if (interrupts_arch_conflict(global_interrupt_bitmap, id)) {
-        ERROR("Interrupts conflict, id = %d\n", id);
+    if (!interrupts_arch_conflict(global_interrupt_bitmap, id)) {
+        ret = true;
+        interrupts_arch_vm_assign(vm, id);
+
+        bitmap_set(vm->interrupt_bitmap, id);
+        bitmap_set(global_interrupt_bitmap, id);
     }
-
-    interrupts_arch_vm_assign(vm, id);
-
-    bitmap_set(vm->interrupt_bitmap, id);
-    bitmap_set(global_interrupt_bitmap, id);
     spin_unlock(&irq_reserve_lock);
+
+    return ret;
 }
 
-void interrupts_reserve(irqid_t int_id, irq_handler_t handler)
+bool interrupts_reserve(irqid_t int_id, irq_handler_t handler)
 {
+    bool ret = false;
+
     spin_lock(&irq_reserve_lock);
     if ((int_id < MAX_INTERRUPTS) && !interrupt_assigned(int_id)) {
+        ret = true;
         interrupt_handlers[int_id] = handler;
         bitmap_set(hyp_interrupt_bitmap, int_id);
         bitmap_set(global_interrupt_bitmap, int_id);
     }
     spin_unlock(&irq_reserve_lock);
+
+    return ret;
 }
