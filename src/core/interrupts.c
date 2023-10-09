@@ -12,6 +12,7 @@
 
 BITMAP_ALLOC(hyp_interrupt_bitmap, MAX_INTERRUPTS);
 BITMAP_ALLOC(global_interrupt_bitmap, MAX_INTERRUPTS);
+spinlock_t irq_reserve_lock = SPINLOCK_INITVAL;
 
 irq_handler_t interrupt_handlers[MAX_INTERRUPTS];
 
@@ -83,6 +84,7 @@ enum irq_res interrupts_handle(irqid_t int_id)
 
 void interrupts_vm_assign(struct vm *vm, irqid_t id)
 {
+    spin_lock(&irq_reserve_lock);
     if (interrupts_arch_conflict(global_interrupt_bitmap, id)) {
         ERROR("Interrupts conflict, id = %d\n", id);
     }
@@ -91,13 +93,16 @@ void interrupts_vm_assign(struct vm *vm, irqid_t id)
 
     bitmap_set(vm->interrupt_bitmap, id);
     bitmap_set(global_interrupt_bitmap, id);
+    spin_unlock(&irq_reserve_lock);
 }
 
 void interrupts_reserve(irqid_t int_id, irq_handler_t handler)
 {
+    spin_lock(&irq_reserve_lock);
     if ((int_id < MAX_INTERRUPTS) && !interrupt_assigned(int_id)) {
         interrupt_handlers[int_id] = handler;
         bitmap_set(hyp_interrupt_bitmap, int_id);
         bitmap_set(global_interrupt_bitmap, int_id);
     }
+    spin_unlock(&irq_reserve_lock);
 }
