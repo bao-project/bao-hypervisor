@@ -207,7 +207,9 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* config)
         }
 
         for (size_t j = 0; j < dev->interrupt_num; j++) {
-            interrupts_vm_assign(vm, dev->interrupts[j]);
+            if(!interrupts_vm_assign(vm, dev->interrupts[j])) {
+                ERROR("Failed to assign interrupt id %d", dev->interrupts[j]);
+            }
         }
     }
 
