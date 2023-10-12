@@ -1,0 +1,19 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  
+  coding-style:
+    runs-on: ubuntu-latest
+    container: baoproject/bao:latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - run: make format-check
