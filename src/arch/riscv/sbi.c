@@ -476,5 +476,7 @@ void sbi_init()
         }
     }
 
-    interrupts_reserve(TIMR_INT_ID, sbi_timer_irq_handler);
+    if(!interrupts_reserve(TIMR_INT_ID, sbi_timer_irq_handler)) {
+        ERROR("Failed to reserve SBI TIMR_INT_ID interrupt");
+    }
 }

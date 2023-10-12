@@ -334,7 +334,10 @@ void rv_iommu_init(void)
     rv_iommu.hw.reg_ptr->fqh = 0;
 
     // Allocate IRQ for FQ
-    interrupts_reserve(platform.arch.iommu.fq_irq_id, rv_iommu_fq_irq_handler);
+    if(!interrupts_reserve(platform.arch.iommu.fq_irq_id, rv_iommu_fq_irq_handler)) {
+        ERROR("Failed to reserve IOMMU FQ interrupt");
+    }
+    
     interrupts_cpu_enable(platform.arch.iommu.fq_irq_id, true);
 
     // Enable FQ (fqcsr)

@@ -41,7 +41,9 @@ inline void interrupts_init()
     interrupts_arch_init();
 
     if (cpu()->id == CPU_MASTER) {
-        interrupts_reserve(IPI_CPU_MSG, cpu_msg_handler);
+        if(!interrupts_reserve(IPI_CPU_MSG, cpu_msg_handler)) {
+            ERROR("Failed to reserve IPI_CPU_MSG interrupt");
+        }
     }
 
     interrupts_cpu_enable(IPI_CPU_MSG, true);

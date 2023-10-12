@@ -68,8 +68,10 @@ void gicd_init()
 
     /* No need to setup gicd->NSACR as all interrupts are  setup to group 1 */
 
-    interrupts_reserve(platform.arch.gic.maintenance_id,
-                       gic_maintenance_handler);
+    if(!interrupts_reserve(platform.arch.gic.maintenance_id,
+                       gic_maintenance_handler)) {
+        ERROR("Failed to reserve GIC maintenance interrupt");
+    }
 }
 
 void gic_map_mmio();
