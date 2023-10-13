@@ -27,7 +27,7 @@ void init(cpuid_t cpu_id, paddr_t load_addr)
     console_init();
     
     if (cpu()->id == CPU_MASTER) {
-        printk("Bao Hypervisor\n\r");
+        console_printk("Bao Hypervisor\n\r");
     }
 
     interrupts_init();

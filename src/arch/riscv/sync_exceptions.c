@@ -13,11 +13,11 @@
 void internal_exception_handler(unsigned long gprs[]) {
 
     for(int i = 0; i < 31; i++) {
-        printk("x%d:\t\t0x%0lx\n", i, gprs[i]);
+        console_printk("x%d:\t\t0x%0lx\n", i, gprs[i]);
     }
-    printk("sstatus:\t0x%0lx\n", CSRR(sstatus));
-    printk("stval:\t\t0x%0lx\n", CSRR(stval));
-    printk("sepc:\t\t0x%0lx\n", CSRR(sepc));
+    console_printk("sstatus:\t0x%0lx\n", CSRR(sstatus));
+    console_printk("stval:\t\t0x%0lx\n", CSRR(stval));
+    console_printk("sepc:\t\t0x%0lx\n", CSRR(sepc));
     ERROR("cpu%d internal hypervisor abort - PANIC\n", cpu()->id);
 }
 

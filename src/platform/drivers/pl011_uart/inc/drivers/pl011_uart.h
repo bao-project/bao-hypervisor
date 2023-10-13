@@ -206,6 +206,5 @@ void uart_set_baud_rate(volatile struct Pl011_Uart_hw * ptr_uart, uint32_t baud_
 void uart_init(volatile struct Pl011_Uart_hw * ptr_uart);
 uint32_t uart_getc(volatile struct Pl011_Uart_hw * ptr_uart);
 void uart_putc(volatile struct Pl011_Uart_hw * ptr_uart,int8_t c);
-void uart_puts(volatile struct Pl011_Uart_hw * ptr_uart,const char *s);
 
 #endif /* __PL011_UART_H_ */

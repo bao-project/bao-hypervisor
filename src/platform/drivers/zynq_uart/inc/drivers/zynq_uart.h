@@ -280,6 +280,5 @@ void uart_disable(volatile struct Uart_Zynq_hw* uart);
 bool uart_set_baud_rate(volatile struct Uart_Zynq_hw* uart, uint32_t baud_rate);
 uint32_t uart_getc(volatile struct Uart_Zynq_hw* uart);
 void uart_putc(volatile struct Uart_Zynq_hw* uart,int8_t c);
-void uart_puts(volatile struct Uart_Zynq_hw* uart,const char *s);
 
 #endif /* __UART_ZYNQ_H */

@@ -108,10 +108,3 @@ void uart_putc(volatile struct Uart_Zynq_hw* uart, int8_t c)
 
     uart->tx_rx_fifo = c;
 }
-
-void uart_puts(volatile struct Uart_Zynq_hw* uart, const char* s)
-{
-    while (*s) {
-        uart_putc(uart, *s++);
-    }
-}

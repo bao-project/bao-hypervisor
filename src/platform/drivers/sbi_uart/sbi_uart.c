@@ -12,8 +12,6 @@ bool uart_init(bao_uart_t* uart)
 }
 void uart_enable(bao_uart_t* uart) {}
 
-void uart_puts(bao_uart_t* uart, char const* const str)
-{
-    char const* ptr = str;
-    while (*ptr) sbi_console_putchar(*ptr++);
+void uart_putc(bao_uart_t* uart, const char c) {
+    sbi_console_putchar(c);
 }

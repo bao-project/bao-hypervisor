@@ -20,10 +20,3 @@ void uart_putc(volatile struct lpuart *uart, char c){
     while(!(uart->stat & LPUART_STAT_TDRE_BIT));
     uart->data = c;
 }
-
-void uart_puts(volatile struct lpuart *uart, char const* str){
-    while (*str) {
-        uart_putc(uart, *str++);
-    }
-}
-
