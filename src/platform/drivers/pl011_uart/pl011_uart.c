@@ -112,12 +112,3 @@ void uart_putc(volatile struct Pl011_Uart_hw * ptr_uart,int8_t c){
 
 }
 
-
-void uart_puts(volatile struct Pl011_Uart_hw * ptr_uart,const char *s){
-
-	while (*s)
-	{
-		uart_putc(ptr_uart,*s++);
-	}
-
-}

@@ -5,166 +5,178 @@
 
 #include <printk.h>
 
-#include <string.h>
-#include <stdarg.h>
-#include <console.h>
+#define F_LONG     (1U << 0U)
+#define F_UNSIGNED (1U << 1U)
+#define F_BASE16   (1U << 2U)
 
-#define PRINT_TEXT_LEN 0x100
-
-size_t vsprintk(char *buf, const char *fmt, va_list args)
+static inline char digit_to_char(unsigned long i, unsigned int base)
 {
-    char *str;
-    str = buf;
-    size_t len = strnlen(fmt, PRINT_TEXT_LEN);
-    for (; *fmt; ++fmt) {
-        if ((*fmt != '%') && (*fmt != '\n') && (*fmt != '\t')) {
-            *str++ = *fmt;
-            continue;
-        }
-
-        if (*fmt == '%') {
-            ++fmt;
-            bool is_unsigned = false;
-            bool zero_padding = false;
-            bool is_long = false;
-
-            if (*fmt == '0') {
-                ++fmt;
-                zero_padding = true;
-            }
-
-           if (*fmt == 'l') {
-                ++fmt;
-                is_long = true;
-           }
-
-            switch (*fmt) {
-                case 'x': {
-                    unsigned long number = is_long ? va_arg(args, unsigned long) : va_arg(args, unsigned);
-                    size_t length = is_long ? 16 : 8;
-                    size_t length_in_bits = is_long ? 64 : 32;
-                    uint8_t byte = 0;
-                    size_t i = 0;
-                    bool keep_zeros = false;
-
-                    for (i = 0; i < length; i++) {
-                        byte = number >> (length_in_bits - ((i + 1) * 4));
-                        byte = byte & 0xF;
-                        if (byte != 0 || i == length-1) {
-                            keep_zeros = true;
-                        }
-                        if (keep_zeros || zero_padding) {
-                            if ((byte >= 0) && (byte <= 9)) {
-                                byte += 0x30;
-                            } else {
-                                byte += (0x61-0xa);
-                            }
-                            *str++ = byte;
-                        }
-                    }
-                    break;
-                }
-                case 'u':
-                    is_unsigned = true;
-                case 'i':
-                case 'd': {
-                    size_t i, j, max_num_zeros, num_of_digits_uint64_t,
-                        number, divisor_value_uint64_t,
-                        new_div_val = 1, sw_quotient_value = 0;
-                    bool keep_zeros = false;
-
-                    if (!is_unsigned) {
-                        long number_signed = is_long ? va_arg(args, long) : va_arg(args, int);
-                        if (number_signed < 0) {
-                            *str++ = 0x2d;
-                            number_signed = -(number_signed);
-                        }
-                        number = number_signed;
-                    } else {
-                        number = is_long ? va_arg(args, unsigned long) : va_arg(args, unsigned);
-                    }
-
-                    divisor_value_uint64_t = 1000000000;
-                    num_of_digits_uint64_t = 10;
-                    max_num_zeros = num_of_digits_uint64_t - 1;
-
-                    for (i = 0; i < max_num_zeros; i++) {
-                        while (number >= divisor_value_uint64_t) {
-                            number -= divisor_value_uint64_t;
-                            ++sw_quotient_value;
-                        }
-                        if (sw_quotient_value != 0) keep_zeros = true;
-                        if (keep_zeros || zero_padding) {
-                            sw_quotient_value += 0x30;
-                            *str++ = sw_quotient_value;
-                        }
-                        j = i;
-                        while (j < (max_num_zeros - 1)) {
-                            new_div_val *= 10;
-                            j++;
-                        }
-                        sw_quotient_value = 0;
-                        divisor_value_uint64_t = new_div_val;
-                        new_div_val = 1;
-                    }
-                    *str++ = (number + 0x30);
-                    break;
-                }
-                case 's': {
-                    char *arg_string = va_arg(args, char *);
-                    while (((*str = *arg_string++) && (len < PRINT_TEXT_LEN))) {
-                        ++str;
-                        len++;
-                    }
-                    break;
-                }
-                case 'c': {
-                    char character = va_arg(args, int);
-                    *str++ = character;
-                    break;
-                }
-                case '%': {
-                    *str++ = *fmt;
-                    break;
-                }
-                case '\t': {
-                    *str++ = '%';
-                    *str++ = *fmt;
-                    break;
-                }
-                case '\n': {
-                    *str++ = '%';
-                    *str++ = '\r';
-                    *str++ = '\n';
-                    break;
-                }
-                default: {
-                }
-            }
-        }
-
-        if (*fmt == '\n') {
-            *str++ = '\r';
-            *str++ = '\n';
-        }
-        if (*fmt == '\t') *str++ = *fmt;
+    unsigned long c;
+    unsigned long digit = i % base;
+    if (i < 10U) {
+        c = ((unsigned long)'0') + digit;
+    } else {
+        c = ((unsigned long)'a') +
+            (digit - 10U);
     }
-    *str = '\0';
-    return strnlen(fmt, PRINT_TEXT_LEN);
+    return (char)c;
 }
 
-size_t printk(const char *fmt, ...)
+static inline void printc(char** buf, char c)
 {
-    va_list args;
-    size_t i;
+    if (buf != NULL) {
+        **buf = c;
+        (*buf)++;
+    }
+}
 
-    char print_buffer[PRINT_TEXT_LEN];
+static size_t prints(char** buf, const char* str)
+{
+    const char* str_it = str;
+    size_t char_count = 0;
+    while (*str_it != '\0') {
+        printc(buf, *str_it);
+        char_count++;
+        str_it++;
+    }
+    return char_count;
+}
 
-    va_start(args, fmt);
+static size_t vprintd(char** buf, unsigned int flags, va_list* args)
+{
+    unsigned long u;
+    size_t base = ((flags & F_BASE16) != 0U) ? (unsigned int)16U : 10U;
+    bool is_long = ((flags & F_LONG) != 0U);
+    bool is_unsigned = ((flags & F_UNSIGNED) != 0U) || (base != 10U);
+    size_t divisor;
+    unsigned long tmp;
+    size_t char_count = 0;
 
-    i = vsprintk(print_buffer, fmt, args);
-    va_end(args);
+    if (is_unsigned) {
+        u = is_long ? va_arg(*args, unsigned long) :
+                      va_arg(*args, unsigned int);
+    } else {
+        signed long s =
+            is_long ? va_arg(*args, signed long) : va_arg(*args, signed int);
+        if (s < 0) {
+            printc(buf, '-');
+            char_count++;
+            s = -s;
+        }
+        u = (unsigned long)s;
+    }
 
-    console_write(print_buffer);
-    return i;
+    divisor = 1;
+    tmp = u;
+    while (tmp >= base) {
+        divisor *= base;
+        tmp /= base;
+    }
+
+    while (divisor > 0U) {
+        unsigned long digit = u / divisor;
+        u -= digit * divisor;
+        divisor /= base;
+        printc(buf, digit_to_char(digit, base));
+        char_count++;
+    }
+
+    return char_count;
+}
+
+/**
+ * This is a limited printf implementation. The format string only supports
+ * integer, string and char arguments. That is, 'd', 'u' or 'x', 's' and 'c'
+ * specifiers, respectively. For integers, it only supports the none and 'l'
+ * lengths. It does not support any flags, width or precision fields. If
+ * present, this fields are ignored.
+ *
+ * Note this does not follow the C lib vsnprintf specification. It returns the
+ * numbers of characters written to the buffer, and changes fmt to point to the
+ * first character that was not printed.
+ */
+size_t vsnprintk(char* buf, size_t buf_size, const char** fmt,
+    va_list* args)
+{
+    char* buf_it = buf;
+    size_t buf_left = buf_size;
+    const char* fmt_it = *fmt;
+    va_list args_tmp;
+
+    while ((*fmt_it != '\0') && (buf_left > 0U)) {
+        if ((*fmt_it) != '%') {
+            printc(&buf_it, *fmt_it);
+            buf_left--;
+        } else {
+            unsigned int flags;
+            bool ignore_char;
+            size_t arg_char_count = 0;
+
+            fmt_it++;
+            flags = 0;
+            if (*fmt_it == 'l') {
+                fmt_it++;
+                flags = flags | F_LONG;
+                if (*fmt_it == 'l') {
+                    fmt_it++;
+                } // ignore long long
+            }
+
+            do {
+                ignore_char = false;
+                switch (*fmt_it) {
+                    case 'x':
+                    case 'X':
+                        flags = flags | F_BASE16;
+                    /* fallthrough */
+                    case 'u':
+                        flags = flags | F_UNSIGNED;
+                    /* fallthrough */
+                    case 'd':
+                    case 'i':
+                        va_copy(args_tmp, *args);
+                        arg_char_count = vprintd(NULL, flags, &args_tmp);
+                        if (arg_char_count <= buf_left) {
+                            (void)vprintd(&buf_it, flags, args);
+                        }
+                        break;
+                    case 's':
+                        va_copy(args_tmp, *args);
+                        arg_char_count = prints(NULL, va_arg(args_tmp, char*));
+                        if (arg_char_count <= buf_left) {
+                            (void)prints(&buf_it, va_arg(*args, char*));
+                        }
+                        break;
+                    case 'c':
+                        arg_char_count = 1;
+                        if (arg_char_count <= buf_left) {
+                            printc(&buf_it, (char)va_arg(args_tmp, int));
+                        }
+                        break;
+                    case '%':
+                        arg_char_count = 1;
+                        if (arg_char_count <= buf_left) {
+                            printc(&buf_it, *fmt_it);
+                        }
+                        break;
+                    default:
+                        ignore_char = true;
+                        break;
+                }
+            } while (ignore_char);
+
+            if (arg_char_count <= buf_left) {
+                buf_left -= arg_char_count;
+            } else {
+                while (*fmt_it != '%') {
+                    fmt_it--;
+                }
+                break;
+            }
+        }
+        fmt_it++;
+    }
+
+    *fmt = fmt_it;
+    return buf_size - buf_left;
 }
