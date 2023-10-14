@@ -708,7 +708,7 @@ static void vaplic_set_idelivery(struct vcpu *vcpu, idcid_t idc_id, uint32_t new
 static uint32_t vaplic_get_idelivery(struct vcpu *vcpu, idcid_t idc_id){
     uint32_t ret = 0;
     struct vaplic * vaplic = &vcpu->vm->arch.vaplic;
-    if (idc_id < vaplic->idc_num) ret = bitmap_get( vaplic->idelivery, idc_id);
+    if (idc_id < vaplic->idc_num) ret = bitmap_get(vaplic->idelivery, idc_id);
     return ret;
 }
 
