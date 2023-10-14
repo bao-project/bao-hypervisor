@@ -11,8 +11,11 @@
 #include <vm.h>
 #include <config_defs.h>
 
-
 #ifndef GENERATING_DEFS
+// clang-format wont correctly recognize the syntax of assembly strings
+// interleaved with stringified tokens via XSTR and will format it in an
+// unreadable way
+// clang-format off
 #define VM_IMAGE(img_name, img_path)                                         \
     extern uint8_t _##img_name##_vm_size;                                    \
     extern uint8_t _##img_name##_vm_beg;                                     \
@@ -25,29 +28,26 @@
         ".set _" XSTR(img_name) "_vm_size,  (_" XSTR(img_name) "_vm_end - _" \
         #img_name "_vm_beg)\n\t"                                             \
         ".popsection");
+// clang-format on
 
-#define VM_IMAGE_OFFSET(img_name) ((paddr_t)&_##img_name##_vm_beg)
-#define VM_IMAGE_SIZE(img_name) ((size_t)&_##img_name##_vm_size)
+#define VM_IMAGE_OFFSET(img_name) ((paddr_t) & _##img_name##_vm_beg)
+#define VM_IMAGE_SIZE(img_name)   ((size_t) & _##img_name##_vm_size)
 #else
 #define VM_IMAGE(img_name, img_path)
 #define VM_IMAGE_OFFSET(img_name) ((paddr_t)0)
-#define VM_IMAGE_SIZE(img_name) ((size_t)0)
+#define VM_IMAGE_SIZE(img_name)   ((size_t)0)
 #endif
 
-#define VM_IMAGE_BUILTIN(img_name, image_base_addr) \
-    {\
-        .base_addr = image_base_addr,\
-        .load_addr = VM_IMAGE_OFFSET(img_name),\
-        .size = VM_IMAGE_SIZE(img_name),\
-        .separately_loaded = false,\
+#define VM_IMAGE_BUILTIN(img_name, image_base_addr)                           \
+    {                                                                         \
+        .base_addr = image_base_addr, .load_addr = VM_IMAGE_OFFSET(img_name), \
+        .size = VM_IMAGE_SIZE(img_name), .separately_loaded = false,          \
     }
 
 #define VM_IMAGE_LOADED(image_base_addr, image_load_addr, image_size) \
-    {\
-        .base_addr = image_base_addr,\
-        .load_addr = image_load_addr,\
-        .size = image_size,\
-        .separately_loaded = true,\
+    {                                                                 \
+        .base_addr = image_base_addr, .load_addr = image_load_addr,   \
+        .size = image_size, .separately_loaded = true,                \
     }
 
 /* CONFIG_HEADER is just defined for compatibility with older configs */
@@ -95,17 +95,15 @@ struct vm_config {
      */
 
     struct vm_platform platform;
-
 };
 
 extern struct config {
-
     struct {
         /**
          * Only meaningful for MPU-based platforms. The hypervisor base address
          * will default to the platform's base address, i.e., the base address
-         * of the first region defined in the target platform's description. 
-         * If the user wishes to relocate it to another address, they must set 
+         * of the first region defined in the target platform's description.
+         * If the user wishes to relocate it to another address, they must set
          * relocate to true and provide the new base address.
          */
         bool relocate;
@@ -117,7 +115,7 @@ extern struct config {
 
     /* Definition of shared memory regions to be used by VMs */
     size_t shmemlist_size;
-    struct shmem *shmemlist;
+    struct shmem* shmemlist;
 
     /* The number of VMs specified by this configuration */
     size_t vmlist_size;
