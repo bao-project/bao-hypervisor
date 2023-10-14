@@ -188,7 +188,7 @@ static void vm_init_ipc(struct vm* vm, const struct vm_config* config)
             .size = size,
             .place_phys = true,
             .phys = shmem->phys,
-            .colors = shmem->colors
+            .colors = shmem->colors,
         };
 
         vm_map_mem_region(vm, &reg);

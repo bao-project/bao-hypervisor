@@ -133,7 +133,7 @@ void vgic_send_sgi_msg(struct vcpu *vcpu, cpumap_t pcpu_mask, irqid_t int_id)
 {
     struct cpu_msg msg = {
         VGIC_IPI_ID, VGIC_INJECT,
-        VGIC_MSG_DATA(cpu()->vcpu->vm->id, 0, int_id, 0, cpu()->vcpu->id)};
+        VGIC_MSG_DATA(cpu()->vcpu->vm->id, 0, int_id, 0, cpu()->vcpu->id),};
 
     for (size_t i = 0; i < platform.cpu_num; i++) {
         if (pcpu_mask & (1ull << i)) {
@@ -155,7 +155,7 @@ void vgic_route(struct vcpu *vcpu, struct vgic_int *interrupt)
     if (!interrupt->in_lr && vgic_int_has_other_target(vcpu, interrupt)) {
         struct cpu_msg msg = {
             VGIC_IPI_ID, VGIC_ROUTE,
-            VGIC_MSG_DATA(vcpu->vm->id, vcpu->id, interrupt->id, 0, 0)};
+            VGIC_MSG_DATA(vcpu->vm->id, vcpu->id, interrupt->id, 0, 0),};
         vgic_yield_ownership(vcpu, interrupt);
         cpumap_t trgtlist =
             vgic_int_ptarget_mask(vcpu, interrupt) & ~(1ull << vcpu->phys_id);
@@ -410,7 +410,7 @@ void vgicd_emul_misc_access(struct emul_access *acc,
                     vgic_update_enable(cpu()->vcpu);
                     struct cpu_msg msg = {
                         VGIC_IPI_ID, VGIC_UPDATE_ENABLE,
-                        VGIC_MSG_DATA(cpu()->vcpu->vm->id, 0, 0, 0, 0)};
+                        VGIC_MSG_DATA(cpu()->vcpu->vm->id, 0, 0, 0, 0),};
                     vm_msg_broadcast(cpu()->vcpu->vm, &msg);
                 }
             } else {
@@ -653,7 +653,7 @@ void vgic_int_set_field(struct vgic_reg_handler_info *handlers, struct vcpu *vcp
     } else {
         struct cpu_msg msg = {VGIC_IPI_ID, VGIC_SET_REG,
                          VGIC_MSG_DATA(vcpu->vm->id, 0, interrupt->id,
-                                       handlers->regid, data)};
+                                       handlers->regid, data),};
         cpu_send_msg(interrupt->owner->phys_id, &msg);
     }
     spin_unlock(&interrupt->lock);
@@ -819,7 +819,7 @@ struct vgic_reg_handler_info *reg_handler_info_table[VGIC_REG_HANDLER_ID_NUM] =
      [VGIC_ICFGR_ID] = &icfgr_info,
      [VGIC_IROUTER_ID] = &irouter_info,
      [VGIC_IPRIORITYR_ID] = &ipriorityr_info,
-     [VGIC_ITARGETSR_ID] = &itargetr_info};
+     [VGIC_ITARGETSR_ID] = &itargetr_info,};
 
 struct vgic_reg_handler_info 
     *vgic_get_reg_handler_info(enum vgic_reg_handler_info_id id)

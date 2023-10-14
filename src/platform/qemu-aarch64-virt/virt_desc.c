@@ -12,8 +12,8 @@ struct platform platform = {
     .regions =  (struct mem_region[]) {
         {
             .base = 0x40000000,
-            .size = 0x100000000 
-        }
+            .size = 0x100000000,
+        },
     },
 
     .console = {
@@ -27,8 +27,8 @@ struct platform platform = {
             .gich_addr = 0x08030000,
             .gicv_addr = 0x08040000,
             .gicr_addr = 0x080A0000,
-            .maintenance_id = 25
+            .maintenance_id = 25,
         },
-    }
+    },
 
 };

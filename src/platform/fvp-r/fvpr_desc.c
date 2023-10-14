@@ -16,12 +16,12 @@ struct platform platform = {
         {
             // DRAM, 0GB-2GB
             .base = 0x00000000,
-            .size = 0x80000000
+            .size = 0x80000000,
         }
     },
 
     .console = {
-        .base = 0x9C090000  // UART0 (PL011)
+        .base = 0x9C090000,  // UART0 (PL011)
     },
 
     .arch = {
@@ -31,12 +31,12 @@ struct platform platform = {
             .gich_addr = 0xAC010000,
             .gicv_addr = 0xAC02F000,
             .gicr_addr = 0xAF100000,
-            .maintenance_id = 25
+            .maintenance_id = 25,
         },
 
         .generic_timer = {
-            .base_addr = 0xAA430000
-        }
-    }
+            .base_addr = 0xAA430000,
+        },
+    },
 
 };
