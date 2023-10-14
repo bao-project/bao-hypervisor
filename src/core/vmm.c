@@ -117,7 +117,7 @@ static struct vm_allocation* vmm_alloc_install_vm(vmid_t vm_id, bool master) {
         fence_ord_write();
         vm_assign[vm_id].install_info_ready = true;
     } else {
-        while (!vm_assign[vm_id].install_info_ready);
+        while (!vm_assign[vm_id].install_info_ready) { }
         vmm_vm_install(&vm_assign[vm_id].vm_install_info);
         fence_sync_write();
     }

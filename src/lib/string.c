@@ -51,7 +51,7 @@ char *strcat(char *dest, char *src)
     char *save = dest;
 
     for (; *dest; ++dest);
-    while ((*dest++ = *src++) != 0);
+    while ((*dest++ = *src++) != 0) { }
 
     return (save);
 }

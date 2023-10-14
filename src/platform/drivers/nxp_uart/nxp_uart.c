@@ -17,6 +17,6 @@ void uart_enable(volatile struct lpuart *uart){
 }
 
 void uart_putc(volatile struct lpuart *uart, char c){
-    while(!(uart->stat & LPUART_STAT_TDRE_BIT));
+    while(!(uart->stat & LPUART_STAT_TDRE_BIT)) { }
     uart->data = c;
 }
