@@ -36,6 +36,6 @@ void uart_enable(volatile struct uart8250_hw *uart){
 }
 
 void uart_putc(volatile struct uart8250_hw *uart, int8_t c){
-    while(!(uart->lsr & UART8250_LSR_THRE));
+    while(!(uart->lsr & UART8250_LSR_THRE)) { }
     uart->thr = c;
 }

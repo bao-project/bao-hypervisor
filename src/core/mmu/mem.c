@@ -827,7 +827,7 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region *root_regio
                                     (vaddr_t)&_image_start);
 
         /* Wait for CPU_MASTER to get image page table entry */
-        while (shared_pte == 0);
+        while (shared_pte == 0) { }
         pte_set(image_pte, (paddr_t)shared_pte, PTE_TABLE, PTE_HYP_FLAGS);
     }
 
@@ -879,7 +879,7 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region *root_regio
         cpu_sync_init(&cpu_glb_sync, platform.cpu_num);
         shared_pte = 0;
     } else {
-        while (shared_pte != 0);
+        while (shared_pte != 0) { }
     }
 
     as_init(&cpu()->as, AS_HYP, HYP_ASID, (void*)v_root_pt_addr, colors);

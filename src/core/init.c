@@ -35,5 +35,5 @@ void init(cpuid_t cpu_id, paddr_t load_addr)
     vmm_init();
 
     /* Should never reach here */
-    while (1);
+    while (1) { }
 }

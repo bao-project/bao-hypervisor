@@ -76,7 +76,7 @@ void uart_init(volatile struct Pl011_Uart_hw * ptr_uart/*, uint32_t baud_rate*/)
 	ptr_uart->isr_fifo_level_sel = UART_IFLS_RXIFLSEL_1_2;
 
 	ptr_uart->data = 0x0;
-	while(ptr_uart->flag & UART_FR_BUSY);
+	while(ptr_uart->flag & UART_FR_BUSY) { }
 
 	/* Enable RX */
 	ptr_uart->control = (UART_CR_UARTEN | UART_CR_RXE | UART_CR_TXE);
@@ -95,7 +95,7 @@ uint32_t uart_getc(volatile struct Pl011_Uart_hw * ptr_uart){
 	uint32_t data = 0;
 
 	//wait until there is data in FIFO
-	while(!(ptr_uart->flag & UART_FR_RXFE));
+	while(!(ptr_uart->flag & UART_FR_RXFE)) { }
 
 	data = ptr_uart->data;
 	return data;
@@ -106,7 +106,7 @@ uint32_t uart_getc(volatile struct Pl011_Uart_hw * ptr_uart){
 void uart_putc(volatile struct Pl011_Uart_hw * ptr_uart,int8_t c){
 
 	//wait until txFIFO is not full
-	while(ptr_uart->flag & UART_FR_TXFF);
+	while(ptr_uart->flag & UART_FR_TXFF) { }
 
 	ptr_uart->data = c;
 

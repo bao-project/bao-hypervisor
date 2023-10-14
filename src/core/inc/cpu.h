@@ -94,21 +94,21 @@ static inline void cpu_sync_barrier(struct cpu_synctoken* token)
 
     size_t next_count = 0;
 
-    while (!token->ready);
+    while (!token->ready) { }
 
     spin_lock(&token->lock);
     token->count++;
     next_count = ALIGN(token->count, token->n);
     spin_unlock(&token->lock);
 
-    while (token->count < next_count);
+    while (token->count < next_count) { }
 }
 
 static inline void cpu_sync_and_clear_msgs(struct cpu_synctoken* token)
 {
     size_t next_count = 0;
 
-    while (!token->ready);
+    while (!token->ready) { }
 
     spin_lock(&token->lock);
     token->count++;
