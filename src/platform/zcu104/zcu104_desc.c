@@ -25,12 +25,12 @@ struct platform platform = {
             * changed to 0x80000, and the size shrunk accorindgly.
             */
             .base = 0x00080000,
-            .size = 0x7FF00000 - 0x16000
+            .size = 0x7FF00000 - 0x16000,
         }
     },
 
     .console = {
-        .base = 0xFF000000
+        .base = 0xFF000000,
     },
 
     .arch = {
@@ -39,16 +39,16 @@ struct platform platform = {
             .gicc_addr = 0xF902f000,
             .gich_addr = 0xF9040000,
             .gicv_addr = 0xF906f000,
-            .maintenance_id = 25
+            .maintenance_id = 25,
         },
 
         .smmu = {
             .base = 0xFD800000,
-            .interrupt_id = 187
-        },
+            .interrupt_id = 187,
+        },,
 
         .generic_timer = {
-            .base_addr = 0xFF260000
-        }
-    }
+            .base_addr = 0xFF260000,
+        },
+    },
 };

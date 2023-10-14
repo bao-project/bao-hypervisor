@@ -14,8 +14,8 @@ struct platform platform = {
     .regions =  (struct mem_region[]) {
         {
             .base = 0x80200000,
-            .size = 0x100000000 - 0x200000
-        }
+            .size = 0x100000000 - 0x200000,
+        },
     },
 
     .arch = {
@@ -26,6 +26,6 @@ struct platform platform = {
         #else 
         #error "unknown IRQC type " IRQC
         #endif
-    }
+    },
 
 };

@@ -366,7 +366,7 @@ struct sbiret sbi_hsm_start_handler() {
                 struct cpu_msg msg = {
                     .handler = SBI_MSG_ID,
                     .event = HART_START,
-                    .data = 0xdeadbeef
+                    .data = 0xdeadbeef,
                 };
                 cpu_send_msg(vcpu->phys_id, &msg);
                

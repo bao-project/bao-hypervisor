@@ -30,19 +30,19 @@ struct platform platform = {
             .gicc_addr = 0xE82B2000,
             .gich_addr = 0xE82B4000,
             .gicv_addr = 0xE82B6000,
-            .maintenance_id = 25
+            .maintenance_id = 25,
         },
 
         .generic_timer = {
-            .base_addr = 0xFFF08000 /* SYS_CNT */
+            .base_addr = 0xFFF08000, /* SYS_CNT */
         },
 
         .smmu = {
-            .base = 0xE8DC0000
-        }
+            .base = 0xE8DC0000,
+        },
     },
 
     .console = {
-        .base = 0xFFF32000 /* UART 6 */
+        .base = 0xFFF32000, /* UART 6 */
     },
 };
