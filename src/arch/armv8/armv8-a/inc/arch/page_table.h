@@ -15,11 +15,16 @@
 #define PTE_INDEX_SHIFT(LEVEL) ((9 * (3 - LEVEL)) + 12)
 #define PTE_INDEX(LEVEL, ADDR) ((ADDR >> PTE_INDEX_SHIFT(LEVEL)) & (0x1FF))
 
+// We turn clang-format off at this point since this is an assembly macro
+// and thus is incorrectly formatted. Despite this being assembly we keep 
+// this macro here so that is next to its C macro counter-part defined above.
+// clang-format off
 .macro PTE_INDEX_ASM	index, addr, level
 	lsr \index, \addr, #PTE_INDEX_SHIFT(\level) 
 	and \index, \index, #0x1ff
 	lsl \index, \index, #3
 .endm
+// clang-format on
 #endif
 
 #ifdef AARCH32
