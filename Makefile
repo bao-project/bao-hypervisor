@@ -11,7 +11,28 @@ define current_directory
 $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
 endef
 
+# Check cross compiler
+ifneq ($(findstring clang,$(CROSS_COMPILE)),)
+CC_IS_CLANG =	y
+else
+CC_IS_GCC =	y
+endif
+
 # Setup toolchain macros
+
+ifdef CC_IS_CLANG
+clang_version:=$(strip $(patsubst clang%, %, $(notdir $(CROSS_COMPILE))))
+clang_path:=$(dir $(wildcard $(abspath $(CROSS_COMPILE))))
+cpp=		$(clang_path)clang-cpp$(clang_version)
+sstrip= 	$(clang_path)llvm-strip$(clang_version)
+cc=			$(clang_path)clang$(clang_version)
+ld = 		$(clang_path)ld.lld$(clang_version)
+as=			$(clang_path)llvm-as$(clang_version)
+objcopy=	$(clang_path)llvm-objcopy$(clang_version)
+objdump=	$(clang_path)llvm-objdump$(clang_version)
+readelf=	$(clang_path)llvm-readelf$(clang_version)
+size=		$(clang_path)llvm-size$(clang_version)
+else
 cpp=		$(CROSS_COMPILE)cpp
 sstrip= 	$(CROSS_COMPILE)strip
 cc=			$(CROSS_COMPILE)gcc
@@ -21,6 +42,7 @@ objcopy=	$(CROSS_COMPILE)objcopy
 objdump=	$(CROSS_COMPILE)objdump
 readelf=	$(CROSS_COMPILE)readelf
 size=		$(CROSS_COMPILE)size
+endif
 
 HOST_CC:=gcc
 
@@ -174,36 +196,56 @@ objs-y+=$(config_obj)
 
 build_macros:=
 ifeq ($(arch_mem_prot),mmu)
-build_macros+=-DMEM_PROT_MMU
+	build_macros+=-DMEM_PROT_MMU
 endif
 ifeq ($(arch_mem_prot),mpu)
-build_macros+=-DMEM_PROT_MPU
+	build_macros+=-DMEM_PROT_MPU
+endif
+
+ifeq ($(CC_IS_GCC),y)
+	build_macros+=-DCC_IS_GCC
+else ifeq ($(CC_IS_CLANG),y)
+	build_macros+=-DCC_IS_CLANG
 endif
 
 override CPPFLAGS+=$(addprefix -I, $(inc_dirs)) $(arch-cppflags) \
 	$(platform-cppflags) $(build_macros)
 vpath:.=CPPFLAGS
 
+HOST_CPPFLAGS+=$(addprefix -I, $(inc_dirs)) $(arch-cppflags) \
+	$(platform-cppflags) $(build_macros)
+
 ifeq ($(DEBUG), y)
 	debug_flags:=-g
 	OPTIMIZATIONS:=g
 endif
 
-cflags_warns:= \
-	-Warith-conversion -Wbuiltin-declaration-mismatch \
-	-Wcomments  -Wdiscarded-qualifiers \
-	-Wimplicit-fallthrough \
-	-Wswitch-unreachable -Wreturn-local-addr  \
-	-Wshift-count-negative  -Wuninitialized \
-	-Wunused -Wunused-local-typedefs  -Wunused-parameter \
-	-Wunused-result -Wvla \
-	-Wconversion -Wsign-conversion \
-	-Wmissing-prototypes -Wmissing-declarations  \
-	-Wswitch-default -Wshadow -Wshadow=global \
-	-Wcast-qual -Wunused-macros
+
+ifeq ($(CC_IS_GCC),y)
+	cflags_warns:= \
+		-Warith-conversion -Wbuiltin-declaration-mismatch \
+		-Wcomments  -Wdiscarded-qualifiers \
+		-Wimplicit-fallthrough \
+		-Wswitch-unreachable -Wreturn-local-addr  \
+		-Wshift-count-negative  -Wuninitialized \
+		-Wunused -Wunused-local-typedefs  -Wunused-parameter \
+		-Wunused-result -Wvla \
+		-Wconversion -Wsign-conversion \
+		-Wmissing-prototypes -Wmissing-declarations  \
+		-Wswitch-default -Wshadow -Wshadow=global \
+		-Wcast-qual -Wunused-macros
+
+	override CFLAGS+=-Wno-unused-command-line-argument \
+		-pedantic -pedantic-errors
+	override LDFLAGS+=--no-check-sections
+else ifeq ($(CC_IS_CLANG), y)
+	override CFLAGS+=-Wno-unused-command-line-argument --target=$(clang_arch_target)
+	override CPPFLAGS+=--target=$(clang_arch_target) -ffreestanding
+	override LDFLAGS+=--no-check-sections
+endif
 
 override CFLAGS+=-O$(OPTIMIZATIONS) -Wall -Werror -Wextra $(cflags_warns) \
-	-ffreestanding -std=c11 -pedantic -pedantic-errors -fno-pic \
+	-ffreestanding -std=c11 -fno-pic \
 	$(arch-cflags) $(platform-cflags) $(CPPFLAGS) $(debug_flags)
 
 override ASFLAGS+=$(CFLAGS) $(arch-asflags) $(platform-asflags)
@@ -231,7 +273,7 @@ endif
 
 $(ld_script_temp):
 	@echo "Pre-processing		$(patsubst $(cur_dir)/%, %, $(ld_script))"
-	@$(cc) -E $(addprefix -I, $(inc_dirs)) -x assembler-with-cpp  $(CPPFLAGS) \
+	@$(cc) $(CFLAGS) -E $(addprefix -I, $(inc_dirs)) -x assembler-with-cpp  $(CPPFLAGS) \
 		$(ld_script) | grep -v '^\#' > $(ld_script_temp)
 
 ifneq ($(build_targets),)
@@ -245,7 +287,7 @@ $(ld_script_temp).d: $(ld_script)
 
 $(build_dir)/%.d : $(src_dir)/%.[c,S]
 	@echo "Creating dependency	$(patsubst $(cur_dir)/%, %, $<)"
-	@$(cc) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $< > $@
+	@$(cc) $(CFLAGS) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $< > $@
 
 $(objs-y):
 	@echo "Compiling source	$(patsubst $(cur_dir)/%, %, $<)"
@@ -264,7 +306,7 @@ ifneq ($(wildcard $(asm_defs_src)),)
 $(asm_defs_hdr): $(asm_defs_src)
 	@echo "Generating header	$(patsubst $(cur_dir)/%, %, $@)"
 	@$(cc) -S $(CFLAGS) -DGENERATING_DEFS $< -o - \
-		| awk '($$1 == "->") \
+		| awk '($$1 == "//#" || $$1 == "##" || $$1 == "@#")   \
 			{ gsub("#", "", $$3); print "#define " $$2 " " $$3 }' > $@
 
 $(asm_defs_hdr).d: $(asm_defs_src)
@@ -276,13 +318,13 @@ endif
 $(config_dep): $(config_src)
 	@echo "Creating dependency	$(patsubst $(cur_dir)/%, %,\
 		 $(patsubst %.d,%, $@))"
-	@$(cc) -MM -MG -MT "$(config_obj) $@" $(CPPFLAGS) $(filter %.c, $^) > $@
-	@$(cc) $(CPPFLAGS) -S $(config_src) -o - | grep ".incbin" | \
+	@$(cc) $(CFLAGS) -MM -MG -MT "$(config_obj) $@" $(CPPFLAGS) $(filter %.c, $^) > $@
+	@$(cc) $(CFLAGS) $(CPPFLAGS) -S $(config_src) -o - | grep ".incbin" | \
 		awk '{ gsub("\"", "", $$2); print "$(config_obj): " $$2 }' >> $@
 
 $(config_def_generator): $(config_def_generator_src) $(config_src)
 	@echo "Compiling generator	$(patsubst $(cur_dir)/%, %, $@)"
-	@$(HOST_CC) $^ $(build_macros) $(CPPFLAGS) -DGENERATING_DEFS \
+	@$(HOST_CC) $^ $(build_macros) $(HOST_CPPFLAGS) -DGENERATING_DEFS \
 		$(addprefix -I, $(inc_dirs)) -o $@
 
 $(config_defs): $(config_def_generator)
@@ -291,7 +333,7 @@ $(config_defs): $(config_def_generator)
 
 $(platform_def_generator): $(platform_def_generator_src) $(platform_description)
 	@echo "Compiling generator	$(patsubst $(cur_dir)/%, %, $@)"
-	@$(HOST_CC) $^ $(build_macros) $(CPPFLAGS) -DGENERATING_DEFS -D$(ARCH) \
+	@$(HOST_CC) $^ $(build_macros) $(HOST_CPPFLAGS) -DGENERATING_DEFS -D$(ARCH) \
 		$(addprefix -I, $(inc_dirs)) -o $@
 
 $(platform_defs): $(platform_def_generator)
