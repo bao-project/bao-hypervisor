@@ -11,7 +11,26 @@ define current_directory
 $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
 endef
 
+#Makefile arguments and default values
+DEBUG:=y
+OPTIMIZATIONS:=2
+CONFIG=
+PLATFORM=
+LLVM?=
+
 # Setup toolchain macros
+
+ifneq ($(LLVM),)
+cpp=		$(LLVM)/clang-cpp
+sstrip= 	$(LLVM)/llvm-strip
+cc=			$(LLVM)/clang
+ld = 		$(LLVM)/ld.lld
+as=			$(LLVM)/llvm-as
+objcopy=	$(LLVM)/llvm-objcopy
+objdump=	$(LLVM)/llvm-objdump
+readelf=	$(LLVM)/llvm-readelf
+size=		$(LLVM)/llvm-size
+else
 cpp=		$(CROSS_COMPILE)cpp
 sstrip= 	$(CROSS_COMPILE)strip
 cc=			$(CROSS_COMPILE)gcc
@@ -21,14 +40,21 @@ objcopy=	$(CROSS_COMPILE)objcopy
 objdump=	$(CROSS_COMPILE)objdump
 readelf=	$(CROSS_COMPILE)readelf
 size=		$(CROSS_COMPILE)size
+endif
 
 HOST_CC:=gcc
 
-#Makefile arguments and default values
-DEBUG:=y
-OPTIMIZATIONS:=2
-CONFIG=
-PLATFORM=
+# Check if CC is clang
+ifneq ($(LLVM),)
+COMPILER_IS_CLANG =	y
+else
+COMPILER_IS_CLANG =	n
+endif
+
+# Parse CLANG target
+ifeq ($(COMPILER_IS_CLANG),y)
+CLANG_ARCH_TARGET := $(patsubst %-,%,$(lastword $(subst /, ,$(CROSS_COMPILE))))
+endif
 
 # Setup version
 
@@ -170,14 +196,19 @@ objs-y+=$(config_obj)
 build_macros:=
 ifeq ($(arch_mem_prot),mmu)
 build_macros+=-DMEM_PROT_MMU
+build_macros+=-DCOMPILER_IS_CLANG
 endif
 ifeq ($(arch_mem_prot),mpu)
 build_macros+=-DMEM_PROT_MPU
+build_macros+=-DCOMPILER_IS_CLANG
 endif
 
 override CPPFLAGS+=$(addprefix -I, $(inc_dirs)) $(arch-cppflags) \
 	$(platform-cppflags) $(build_macros)
 vpath:.=CPPFLAGS
+
+override HOST_CPPFLAGS+=$(addprefix -I, $(inc_dirs)) $(arch-cppflags) \
+	$(platform-cppflags) $(build_macros)
 
 ifeq ($(DEBUG), y)
 	debug_flags:=-g
@@ -185,6 +216,12 @@ endif
 
 override CFLAGS+=-O$(OPTIMIZATIONS) -Wall -Werror -ffreestanding -std=gnu11 \
 	-fno-pic $(arch-cflags) $(platform-cflags) $(CPPFLAGS) $(debug_flags)
+
+ ifeq ($(COMPILER_IS_CLANG), y)
+ override CFLAGS+=-Wno-unused-command-line-argument --target=$(CLANG_ARCH_TARGET)
+ override CPPFLAGS+=--target=$(CLANG_ARCH_TARGET)
+ override LDFLAGS+=--no-check-sections
+ endif
 
 override ASFLAGS+=$(CFLAGS) $(arch-asflags) $(platform-asflags)
 
@@ -262,7 +299,7 @@ $(config_dep): $(config_src)
 
 $(config_def_generator): $(config_def_generator_src) $(config_src)
 	@echo "Compiling generator	$(patsubst $(cur_dir)/%, %, $@)"
-	@$(HOST_CC) $^ $(build_macros) $(CPPFLAGS) -DGENERATING_DEFS \
+	@$(HOST_CC) $^ $(build_macros) $(HOST_CPPFLAGS) -DGENERATING_DEFS \
 		$(addprefix -I, $(inc_dirs)) -o $@
 
 $(config_defs): $(config_def_generator)
@@ -271,7 +308,7 @@ $(config_defs): $(config_def_generator)
 
 $(platform_def_generator): $(platform_def_generator_src) $(platform_description)
 	@echo "Compiling generator	$(patsubst $(cur_dir)/%, %, $@)"
-	@$(HOST_CC) $^ $(build_macros) $(CPPFLAGS) -DGENERATING_DEFS -D$(ARCH) \
+	@$(HOST_CC) $^ $(build_macros) $(HOST_CPPFLAGS) -DGENERATING_DEFS -D$(ARCH) \
 		$(addprefix -I, $(inc_dirs)) -o $@
 
 $(platform_defs): $(platform_def_generator)
