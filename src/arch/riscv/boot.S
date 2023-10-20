@@ -57,6 +57,7 @@ _dmem_beg_sym: .8byte _dmem_beg
 _enter_vas_sym: .8byte _enter_vas
 _bss_start_sym: .8byte _bss_start
 _bss_end_sym: .8byte _bss_end
+_extra_allocated_phys_mem_sym: .8byte extra_allocated_phys_mem
 
 .data 
 .align 3
@@ -94,6 +95,7 @@ _reset_handler:
 
     mv      a2, a1
     la      a1, _image_start
+    LD_SYM  s6, _extra_allocated_phys_mem_sym
     la      s6, extra_allocated_phys_mem
 
     /**
