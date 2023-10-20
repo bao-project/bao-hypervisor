@@ -24,3 +24,5 @@ arch-ldflags =
 
 arch_mem_prot:=mmu
 PAGE_SIZE:=0x1000
+
+clang_arch_target:=riscv64

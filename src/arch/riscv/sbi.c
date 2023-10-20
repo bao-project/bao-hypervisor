@@ -213,7 +213,7 @@ static struct sbiret sbi_time_handler(unsigned long fid)
         csrs_sie_set(SIE_STIE);
     }
 
-    return (struct sbiret){ SBI_SUCCESS };
+    return (struct sbiret){ SBI_SUCCESS, 0 };
 }
 
 static void sbi_timer_irq_handler()
@@ -246,7 +246,7 @@ static struct sbiret sbi_ipi_handler(unsigned long fid)
         }
     }
 
-    return (struct sbiret){ SBI_SUCCESS };
+    return (struct sbiret){ SBI_SUCCESS, 0 };
 }
 
 static struct sbiret sbi_base_handler(unsigned long fid)
