@@ -64,7 +64,7 @@ _reset_handler:
 	 * description this early in the initialization.
 	 */
 
-	mov x3, x0, lsr #8
+	lsr x3, x0, #8
 	and x3, x3, 0xff
 	adr x4, platform
 	ldr x4, [x4, PLAT_ARCH_OFF+PLAT_ARCH_CLUSTERS_OFF+PLAT_CLUSTERS_CORES_NUM_OFF]
@@ -183,7 +183,9 @@ _set_master_cpu:
 /***** 	Helper functions for boot code. ******/
 
 .global boot_clear
+#ifndef COMPILER_IS_CLANG
 .func boot_clear
+#endif
 boot_clear:
 2:
 	cmp	x16, x17
@@ -192,7 +194,9 @@ boot_clear:
 	b	2b
 1:
 	ret
+#ifndef COMPILER_IS_CLANG
 .endfunc
+#endif
 
 /*
  * Code taken from "Application Note Bare-metal Boot Code for ARMv8-A
@@ -201,7 +205,9 @@ boot_clear:
  * x0 - cache level to be invalidated (0 - dl1$, 1 - il1$, 2 - l2$)
  */
 .global boot_cache_invalidate
+#ifndef COMPILER_IS_CLANG
 .func boot_cache_invalidate
+#endif
 boot_cache_invalidate:
 	msr csselr_el1, x0
 	mrs x4, ccsidr_el1 // read cache size id.
@@ -228,6 +234,8 @@ set_loop:
 	cmp x5, x3 // last way reached yet?
 	ble way_loop // if not, iterate way_loop
 	ret
+#ifndef COMPILER_IS_CLANG
 .endfunc
+#endif
 
 

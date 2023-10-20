@@ -239,7 +239,9 @@ _enter_vas:
     ret
 
 .global psci_boot_entry
+#ifndef COMPILER_IS_CLANG
 .func psci_boot_entry
+#endif
 psci_boot_entry:
 warm_boot:
 
@@ -316,4 +318,6 @@ _enter_vas_warm:
 	bl	psci_wake
 	b 	.
 
+#ifndef COMPILER_IS_CLANG
 .endfunc
+#endif
