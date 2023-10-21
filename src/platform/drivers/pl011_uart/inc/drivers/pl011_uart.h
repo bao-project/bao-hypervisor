@@ -34,7 +34,7 @@
 /* UART Data Register */
 
 #define UART_DATA_DATA           0xFFFFFF00
-#define UART_DATA_FE             (1 << 8
+#define UART_DATA_FE             (1 << 8)
 #define UART_DATA_PE             (1 << 9)
 #define UART_DATA_BE             (1 << 10)
 #define UART_DATA_OE             (1 << 11)
