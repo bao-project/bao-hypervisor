@@ -5,18 +5,19 @@
 
 #include <string.h>
 
-void *memcpy(void *dst, const void *src, size_t count)
+void* memcpy(void* dst, const void* src, size_t count)
 {
     size_t i;
-    uint8_t *dst_tmp = dst;
-    const uint8_t *src_tmp = src;
+    uint8_t* dst_tmp = dst;
+    const uint8_t* src_tmp = src;
     static const size_t WORD_SIZE = sizeof(unsigned long);
 
-    if (!((uintptr_t)src & (WORD_SIZE - 1)) &&
-        !((uintptr_t)dst & (WORD_SIZE - 1))) {
+    if (!((uintptr_t)src & (WORD_SIZE - 1)) && !((uintptr_t)dst & (WORD_SIZE - 1))) {
         for (i = 0; i < count; i += WORD_SIZE) {
-            if (i + (WORD_SIZE - 1) > count - 1) break;
-            *(unsigned long *)dst_tmp = *(unsigned long *)src_tmp;
+            if (i + (WORD_SIZE - 1) > count - 1) {
+                break;
+            }
+            *(unsigned long*)dst_tmp = *(unsigned long*)src_tmp;
             dst_tmp += WORD_SIZE;
             src_tmp += WORD_SIZE;
         }
@@ -28,15 +29,17 @@ void *memcpy(void *dst, const void *src, size_t count)
             }
         }
     } else {
-        for (i = 0; i < count; i++) dst_tmp[i] = src_tmp[i];
+        for (i = 0; i < count; i++) {
+            dst_tmp[i] = src_tmp[i];
+        }
     }
     return dst;
 }
 
-void *memset(void *dest, int c, size_t count)
+void* memset(void* dest, int c, size_t count)
 {
-    uint8_t *d;
-    d = (uint8_t *)dest;
+    uint8_t* d;
+    d = (uint8_t*)dest;
 
     while (count--) {
         *d = c;
@@ -46,28 +49,29 @@ void *memset(void *dest, int c, size_t count)
     return dest;
 }
 
-char *strcat(char *dest, char *src)
+char* strcat(char* dest, char* src)
 {
-    char *save = dest;
+    char* save = dest;
 
-    for (; *dest; ++dest);
+    for (; *dest; ++dest)
+        ;
     while ((*dest++ = *src++) != 0) { }
 
     return (save);
 }
 
-size_t strlen(const char *s)
+size_t strlen(const char* s)
 {
-    const char *sc;
+    const char* sc;
     for (sc = s; *sc != '\0'; ++sc) {
         /* Just iterate */
     }
     return sc - s;
 }
 
-size_t strnlen(const char *s, size_t n)
+size_t strnlen(const char* s, size_t n)
 {
-    const char *str;
+    const char* str;
 
     for (str = s; *str != '\0' && n--; ++str) {
         /* Just iterate */
@@ -75,9 +79,9 @@ size_t strnlen(const char *s, size_t n)
     return str - s;
 }
 
-char *strcpy(char *dest, char *src)
+char* strcpy(char* dest, char* src)
 {
-    char *tmp = dest;
+    char* tmp = dest;
 
     while ((*dest++ = *src++) != '\0') {
         /* Just iterate */
@@ -85,7 +89,7 @@ char *strcpy(char *dest, char *src)
     return tmp;
 }
 
-int strcmp(char *str0, char *str1)
+int strcmp(char* str0, char* str1)
 {
     char *tmp0 = str0, *tmp1 = str1;
 

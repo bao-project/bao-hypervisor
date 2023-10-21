@@ -47,8 +47,7 @@ static inline size_t pt_getpteindex(struct page_table* pt, pte_t* pte, size_t lv
     return (size_t)(((size_t)pte) & (pt_size(pt, lvl) - 1)) / sizeof(pte_t);
 }
 
-static inline size_t pt_getpteindex_by_va(struct page_table* pt, vaddr_t va, 
-    size_t lvl)
+static inline size_t pt_getpteindex_by_va(struct page_table* pt, vaddr_t va, size_t lvl)
 {
     return (va >> pt->dscr->lvl_off[lvl]) & (pt_nentries(pt, lvl) - 1);
 }

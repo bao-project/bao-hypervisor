@@ -36,29 +36,25 @@ typedef union {
     };
 } mem_flags_t;
 
-#define PTE_FLAGS(_prbar, _prlar) ((mem_flags_t) { \
-    .prbar = (_prbar), \
-    .prlar = (_prlar), \
-})
+#define PTE_FLAGS(_prbar, _prlar) \
+    ((mem_flags_t){               \
+        .prbar = (_prbar),        \
+        .prlar = (_prlar),        \
+    })
 
-#define PTE_INVALID PTE_FLAGS(0, 0)
-#define PTE_HYP_FLAGS \
-    PTE_FLAGS(PRBAR_AP_RW_EL2 | PRBAR_SH_IS, PRLAR_ATTR(1) | PRLAR_EN)
+#define PTE_INVALID   PTE_FLAGS(0, 0)
+#define PTE_HYP_FLAGS PTE_FLAGS(PRBAR_AP_RW_EL2 | PRBAR_SH_IS, PRLAR_ATTR(1) | PRLAR_EN)
 #define PTE_HYP_DEV_FLAGS \
-    PTE_FLAGS(PRBAR_XN | PRBAR_AP_RW_EL2 | PRBAR_SH_IS, \
-        PRLAR_ATTR(2) | PRLAR_EN)
-#define PTE_VM_FLAGS \
-    PTE_FLAGS(PRBAR_AP_RW_EL1_EL2 | PRBAR_SH_IS, PRLAR_ATTR(1) | PRLAR_EN)
+    PTE_FLAGS(PRBAR_XN | PRBAR_AP_RW_EL2 | PRBAR_SH_IS, PRLAR_ATTR(2) | PRLAR_EN)
+#define PTE_VM_FLAGS PTE_FLAGS(PRBAR_AP_RW_EL1_EL2 | PRBAR_SH_IS, PRLAR_ATTR(1) | PRLAR_EN)
 #define PTE_VM_DEV_FLAGS \
-    PTE_FLAGS(PRBAR_XN |PRBAR_AP_RW_EL1_EL2 | PRBAR_SH_IS,\
-        PRLAR_ATTR(2) | PRLAR_EN)
+    PTE_FLAGS(PRBAR_XN | PRBAR_AP_RW_EL1_EL2 | PRBAR_SH_IS, PRLAR_ATTR(2) | PRLAR_EN)
 
-#define MPU_ARCH_MAX_NUM_ENTRIES    (64)
+#define MPU_ARCH_MAX_NUM_ENTRIES (64)
 
 static inline const size_t mpu_granularity()
 {
-    return (size_t) PAGE_SIZE;
+    return (size_t)PAGE_SIZE;
 }
-
 
 #endif /* __ARCH_MEM_H__ */

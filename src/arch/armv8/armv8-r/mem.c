@@ -5,7 +5,4 @@
 
 #include <mem.h>
 
-void as_arch_init(struct addr_space* as)
-{
-
-}
+void as_arch_init(struct addr_space* as) { }

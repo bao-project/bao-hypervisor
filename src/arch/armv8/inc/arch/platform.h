@@ -7,7 +7,7 @@
 #define __ARCH_PLATFORM_H__
 
 #include <bao.h>
-#ifdef MEM_PROT_MMU	
+#ifdef MEM_PROT_MMU
 #include <arch/smmuv2.h>
 #endif
 
@@ -22,7 +22,7 @@ struct arch_platform {
         irqid_t maintenance_id;
     } gic;
 
-#ifdef MEM_PROT_MMU	
+#ifdef MEM_PROT_MMU
     struct {
         paddr_t base;
         irqid_t interrupt_id;
@@ -41,6 +41,5 @@ struct arch_platform {
 };
 
 struct platform;
-unsigned long platform_arch_cpuid_to_mpidr(const struct platform* plat,
-                                      cpuid_t cpuid);
+unsigned long platform_arch_cpuid_to_mpidr(const struct platform* plat, cpuid_t cpuid);
 #endif /* __ARCH_PLATFORM_H__ */

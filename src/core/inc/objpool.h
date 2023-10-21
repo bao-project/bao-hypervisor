@@ -19,19 +19,19 @@ struct objpool {
     spinlock_t lock;
 };
 
-#define OBJPOOL_ALLOC(NAME, TYPE, N) \
-    TYPE _##NAME##_array[N];\
-    BITMAP_ALLOC(_##NAME##_array_bitmap, N);\
-    struct objpool NAME = {\
-        .pool = _##NAME##_array,\
-        .bitmap = _##NAME##_array_bitmap,\
-        .objsize = sizeof(TYPE),\
-        .num = N,\
-        .lock = SPINLOCK_INITVAL,\
+#define OBJPOOL_ALLOC(NAME, TYPE, N)         \
+    TYPE _##NAME##_array[N];                 \
+    BITMAP_ALLOC(_##NAME##_array_bitmap, N); \
+    struct objpool NAME = {                  \
+        .pool = _##NAME##_array,             \
+        .bitmap = _##NAME##_array_bitmap,    \
+        .objsize = sizeof(TYPE),             \
+        .num = N,                            \
+        .lock = SPINLOCK_INITVAL,            \
     }
 
-void objpool_init(struct objpool *objpool);
-void* objpool_alloc(struct objpool *objpool);
-void objpool_free(struct objpool *objpool, void* obj);
+void objpool_init(struct objpool* objpool);
+void* objpool_alloc(struct objpool* objpool);
+void objpool_free(struct objpool* objpool, void* obj);
 
 #endif /* OBJPOOL_H */

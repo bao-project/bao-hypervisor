@@ -34,5 +34,5 @@ void platform_defines()
     DEFINE_OFFSET(PLAT_ARCH_OFF, struct platform, arch);
     DEFINE_OFFSET(PLAT_ARCH_CLUSTERS_OFF, struct arch_platform, clusters);
     DEFINE_OFFSET(PLAT_CLUSTERS_CORES_NUM_OFF, struct clusters, core_num);
-    DEFINE_SIZE(PLAT_CLUSTERS_CORES_NUM_SIZE, ((struct clusters*)NULL)->core_num[0]); 
+    DEFINE_SIZE(PLAT_CLUSTERS_CORES_NUM_SIZE, ((struct clusters*)NULL)->core_num[0]);
 }

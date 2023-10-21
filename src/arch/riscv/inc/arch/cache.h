@@ -8,6 +8,6 @@
 
 #include <bao.h>
 
-#define CACHE_MAX_LVL 8  // Does this make sense in all architectures?
+#define CACHE_MAX_LVL 8 // Does this make sense in all architectures?
 
-#endif /* __ARCH_CACHE_H__ */
+#endif                  /* __ARCH_CACHE_H__ */

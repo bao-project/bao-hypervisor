@@ -10,14 +10,14 @@
 
 static inline const size_t mpu_num_entries()
 {
-    return (size_t) MPUIR_REGION(sysreg_mpuir_el2_read());
+    return (size_t)MPUIR_REGION(sysreg_mpuir_el2_read());
 }
 
-static void mpu_entry_get_region(mpid_t mpid, struct mp_region *mpe)
+static void mpu_entry_get_region(mpid_t mpid, struct mp_region* mpe)
 {
     sysreg_prselr_el2_write(mpid);
     ISB();
-    unsigned long prbar = sysreg_prbar_el2_read ();
+    unsigned long prbar = sysreg_prbar_el2_read();
     unsigned long prlar = sysreg_prlar_el2_read();
     mpe->mem_flags.prbar = PRBAR_FLAGS(prbar);
     mpe->mem_flags.prlar = PRLAR_FLAGS(prlar);
@@ -26,9 +26,10 @@ static void mpu_entry_get_region(mpid_t mpid, struct mp_region *mpe)
     mpe->as_sec = SEC_UNKNOWN;
 }
 
-static int mpu_node_cmp(node_t* _n1, node_t* _n2) {
-    struct mpu_node *n1 = (struct mpu_node*) _n1;
-    struct mpu_node *n2 = (struct mpu_node*) _n2;
+static int mpu_node_cmp(node_t* _n1, node_t* _n2)
+{
+    struct mpu_node* n1 = (struct mpu_node*)_n1;
+    struct mpu_node* n2 = (struct mpu_node*)_n2;
     struct mp_region r1;
     struct mp_region r2;
     mpu_entry_get_region(n1->mpid, &r1);
@@ -42,32 +43,29 @@ static int mpu_node_cmp(node_t* _n1, node_t* _n2) {
     }
 }
 
-static void mpu_entry_set(mpid_t mpid, struct mp_region* mpr) {
+static void mpu_entry_set(mpid_t mpid, struct mp_region* mpr)
+{
     unsigned long lim = mpr->base + mpr->size - 1;
-    
+
     sysreg_prselr_el2_write(mpid);
     ISB();
-    sysreg_prbar_el2_write((mpr->base & PRBAR_BASE_MSK) | 
-                            mpr->mem_flags.prbar);
+    sysreg_prbar_el2_write((mpr->base & PRBAR_BASE_MSK) | mpr->mem_flags.prbar);
     sysreg_prlar_el2_write((lim & PRLAR_LIMIT_MSK) | mpr->mem_flags.prlar);
 
-    list_insert_ordered(&cpu()->arch.profile.mpu.order.list, 
-        (node_t*)&cpu()->arch.profile.mpu.order.node[mpid],
-        mpu_node_cmp);
+    list_insert_ordered(&cpu()->arch.profile.mpu.order.list,
+        (node_t*)&cpu()->arch.profile.mpu.order.node[mpid], mpu_node_cmp);
 }
 
-static void mpu_entry_modify(mpid_t mpid, struct mp_region* mpr) {
-
-    list_rm(&cpu()->arch.profile.mpu.order.list, 
-        (node_t*)&cpu()->arch.profile.mpu.order.node[mpid]);
+static void mpu_entry_modify(mpid_t mpid, struct mp_region* mpr)
+{
+    list_rm(&cpu()->arch.profile.mpu.order.list, (node_t*)&cpu()->arch.profile.mpu.order.node[mpid]);
 
     mpu_entry_set(mpid, mpr);
 }
 
 static bool mpu_entry_clear(mpid_t mpid)
 {
-    list_rm(&cpu()->arch.profile.mpu.order.list, 
-        (node_t*)&cpu()->arch.profile.mpu.order.node[mpid]);
+    list_rm(&cpu()->arch.profile.mpu.order.list, (node_t*)&cpu()->arch.profile.mpu.order.node[mpid]);
 
     sysreg_prselr_el2_write(mpid);
     ISB();
@@ -82,17 +80,20 @@ static inline void mpu_entry_free(mpid_t mpid)
     bitmap_clear(cpu()->arch.profile.mpu.bitmap, mpid);
 }
 
-static inline bool mpu_entry_valid(mpid_t mpid) {
+static inline bool mpu_entry_valid(mpid_t mpid)
+{
     sysreg_prselr_el2_write(mpid);
     ISB();
     return !!(sysreg_prlar_el2_read() & PRLAR_EN);
 }
 
-static inline bool mpu_entry_locked(mpid_t mpid) {
+static inline bool mpu_entry_locked(mpid_t mpid)
+{
     return !!bitmap_get(cpu()->arch.profile.mpu.locked, mpid);
 }
 
-static bool mpu_entry_has_priv(mpid_t mpid, priv_t priv) {
+static bool mpu_entry_has_priv(mpid_t mpid, priv_t priv)
+{
     if (priv == PRIV_VM) {
         return cpu()->arch.profile.mpu.perms[mpid].el1 != PERM_NONE;
     } else {
@@ -100,15 +101,15 @@ static bool mpu_entry_has_priv(mpid_t mpid, priv_t priv) {
     }
 }
 
-static inline perms_t mem_vmpu_entry_perms(struct mp_region *mpr) {
+static inline perms_t mem_vmpu_entry_perms(struct mp_region* mpr)
+{
     perms_t perms = PERM_R;
     perms |= !(mpr->mem_flags.prbar & PRBAR_XN) ? PERM_X : 0;
     perms |= !(mpr->mem_flags.prbar & PRBAR_NWR_BIT) ? PERM_W : 0;
     return perms;
 }
 
-static inline void mpu_entry_set_perms(struct mp_region *mpr,
-    struct mpu_perms mpu_perms)
+static inline void mpu_entry_set_perms(struct mp_region* mpr, struct mpu_perms mpu_perms)
 {
     // TODO: should we check this is following the allowed permission
     // combinations?
@@ -132,7 +133,7 @@ static inline void mpu_entry_set_perms(struct mp_region *mpr,
     }
 }
 
-static void mpu_entry_update_priv_perms(priv_t priv, mpid_t mpid, perms_t perms) 
+static void mpu_entry_update_priv_perms(priv_t priv, mpid_t mpid, perms_t perms)
 {
     if (priv == PRIV_VM) {
         cpu()->arch.profile.mpu.perms[mpid].el1 = perms;
@@ -141,16 +142,17 @@ static void mpu_entry_update_priv_perms(priv_t priv, mpid_t mpid, perms_t perms)
     }
 }
 
-static inline bool mpu_perms_equivalent(struct mpu_perms *p1, struct mpu_perms *p2)
+static inline bool mpu_perms_equivalent(struct mpu_perms* p1, struct mpu_perms* p2)
 {
     return (p1->el1 == p2->el1) && (p1->el2 == p2->el2);
 }
 
-static inline mem_attrs_t mpu_entry_attrs(struct mp_region *mpr) {
+static inline mem_attrs_t mpu_entry_attrs(struct mp_region* mpr)
+{
     mem_flags_t flags = mpr->mem_flags;
     flags.prbar &= PRBAR_MEM_ATTR_FLAGS_MSK;
     flags.prbar &= PRLAR_MEM_ATTR_FLAGS_MSK;
-    return (mem_attrs_t) flags.raw;
+    return (mem_attrs_t)flags.raw;
 }
 
 static mpid_t mpu_entry_allocate()
@@ -166,8 +168,8 @@ static mpid_t mpu_entry_allocate()
     return reg_num;
 }
 
-bool mem_region_get_overlap(struct mp_region *reg1,  struct mp_region *reg2,
-    struct mp_region *overlap)
+bool mem_region_get_overlap(struct mp_region* reg1, struct mp_region* reg2,
+    struct mp_region* overlap)
 {
     bool regions_overlap = mem_regions_overlap(reg1, reg2);
 
@@ -184,7 +186,6 @@ bool mem_region_get_overlap(struct mp_region *reg1,  struct mp_region *reg2,
     return regions_overlap;
 }
 
-
 bool mpu_map(priv_t priv, struct mp_region* mpr)
 {
     size_t size_left = mpr->size;
@@ -199,7 +200,6 @@ bool mpu_map(priv_t priv, struct mp_region* mpr)
     mpid_t top_mpid = INVALID_MPID;
 
     while (size_left > 0 && !failed) {
-
         /**
          * Since we'll be checking for overlapping regions in order, there
          * will be at most two regions to map in a given iteration. This
@@ -207,7 +207,7 @@ bool mpu_map(priv_t priv, struct mp_region* mpr)
          * that is fully contained by the new region.
          */
 
-        struct mp_region *new_reg;
+        struct mp_region* new_reg;
         if (reg1_valid) {
             new_reg = &reg1;
         } else if (reg2_valid) {
@@ -236,9 +236,8 @@ bool mpu_map(priv_t priv, struct mp_region* mpr)
         bottom_mpid = INVALID_MPID;
         top_mpid = INVALID_MPID;
 
-        struct list *mpu_order_list = &cpu()->arch.profile.mpu.order.list;
-        list_foreach((*mpu_order_list), struct mpu_node, entry) {
-
+        struct list* mpu_order_list = &cpu()->arch.profile.mpu.order.list;
+        list_foreach ((*mpu_order_list), struct mpu_node, entry) {
             mpid_t mpid = entry->mpid;
             struct mp_region overlapped_reg;
 
@@ -246,7 +245,7 @@ bool mpu_map(priv_t priv, struct mp_region* mpr)
 
             if ((new_reg->base + new_reg->size) <= overlapped_reg.base) {
                 next = mpid;
-                break; 
+                break;
             }
 
             if (!mem_regions_overlap(new_reg, &overlapped_reg)) {
@@ -285,21 +284,20 @@ bool mpu_map(priv_t priv, struct mp_region* mpr)
             }
 
             if (((overlap_perms.el1 & PERM_RW) == PERM_R) &&
-                ((overlap_perms.el2 & PERM_W) != PERM_NONE))
-            {
-                // We allow promoting read/write privielges of the hypervisor 
-                // region to match the guest's. However, this combination 
+                ((overlap_perms.el2 & PERM_W) != PERM_NONE)) {
+                // We allow promoting read/write privielges of the hypervisor
+                // region to match the guest's. However, this combination
                 // promotes the guest privielges, which we don't allow.
                 failed = true;
                 break;
             }
 
-            if ((overlap_perms.el1 & PERM_X) != (overlap_perms.el2 & PERM_X))
-            {
-                // Unless explicitly mapped, we don't promote execution privileges.
+            if ((overlap_perms.el1 & PERM_X) != (overlap_perms.el2 & PERM_X)) {
+                // Unless explicitly mapped, we don't promote execution
+                // privileges.
                 failed = true;
                 break;
-            }  
+            }
 
             // The Armv8-R MPU does not allow us to have different permissions
             // for hypervisor and guest. So we must fail if asked to add an
@@ -310,18 +308,17 @@ bool mpu_map(priv_t priv, struct mp_region* mpr)
             }
 
             vaddr_t new_reg_limit = new_reg->base + new_reg->size;
-            vaddr_t overlapped_reg_limit = 
-                overlapped_reg.base + overlapped_reg.size;
-            size_t top_size = new_reg_limit >= overlapped_reg_limit ? 0 : 
-                overlapped_reg_limit - new_reg_limit;
-            size_t bottom_size = new_reg->base <= overlapped_reg.base ? 
-                0 : new_reg->base - overlapped_reg.base;
-            size_t top_left = new_reg_limit <= overlapped_reg_limit ? 0 : 
-                new_reg_limit - overlapped_reg_limit;
-            size_t bottom_left = new_reg->base >= overlapped_reg.base ?
-                0 : overlapped_reg.base - new_reg->base;
-            bool subset = (new_reg->base >= overlapped_reg.base) && 
-                (new_reg_limit <= overlapped_reg_limit);
+            vaddr_t overlapped_reg_limit = overlapped_reg.base + overlapped_reg.size;
+            size_t top_size =
+                new_reg_limit >= overlapped_reg_limit ? 0 : overlapped_reg_limit - new_reg_limit;
+            size_t bottom_size =
+                new_reg->base <= overlapped_reg.base ? 0 : new_reg->base - overlapped_reg.base;
+            size_t top_left =
+                new_reg_limit <= overlapped_reg_limit ? 0 : new_reg_limit - overlapped_reg_limit;
+            size_t bottom_left =
+                new_reg->base >= overlapped_reg.base ? 0 : overlapped_reg.base - new_reg->base;
+            bool subset =
+                (new_reg->base >= overlapped_reg.base) && (new_reg_limit <= overlapped_reg_limit);
             bool superset = (bottom_left > 0) || (top_left > 0);
 
             struct mp_region middle;
@@ -332,15 +329,15 @@ bool mpu_map(priv_t priv, struct mp_region* mpr)
 
             if (bottom_size > 0) {
                 bottom_mpid = mpu_entry_allocate();
-                if(bottom_mpid == INVALID_MPID) {
+                if (bottom_mpid == INVALID_MPID) {
                     failed = true;
                     break;
                 }
             }
-            
+
             if (top_size > 0) {
                 top_mpid = mpu_entry_allocate();
-                if(top_mpid == INVALID_MPID) {
+                if (top_mpid == INVALID_MPID) {
                     failed = true;
                     break;
                 }
@@ -348,7 +345,7 @@ bool mpu_map(priv_t priv, struct mp_region* mpr)
 
             mpu_entry_update_priv_perms(priv, mpid, new_perms);
             mpu_entry_modify(mpid, &middle);
-            
+
             if (bottom_size > 0) {
                 struct mp_region bottom;
                 bottom.base = overlapped_reg.base;
@@ -389,7 +386,7 @@ bool mpu_map(priv_t priv, struct mp_region* mpr)
                 size_left = (top_left + bottom_left);
             } else if (subset) {
                 size_left = 0;
-            } else  {
+            } else {
                 size_left -= middle.size;
             }
 
@@ -397,11 +394,10 @@ bool mpu_map(priv_t priv, struct mp_region* mpr)
         }
 
         if (!overlaped && !failed) {
-
             mpid_t merge_mpid = INVALID_MPID;
             size_t mem_size = new_reg->size;
-            struct mpu_perms *prev_perms = &cpu()->arch.profile.mpu.perms[prev];
-            struct mpu_perms *next_perms = &cpu()->arch.profile.mpu.perms[next];
+            struct mpu_perms* prev_perms = &cpu()->arch.profile.mpu.perms[prev];
+            struct mpu_perms* next_perms = &cpu()->arch.profile.mpu.perms[next];
             struct mpu_perms new_reg_perms;
             if (priv == PRIV_VM) {
                 new_reg_perms.el1 = new_perms;
@@ -414,7 +410,7 @@ bool mpu_map(priv_t priv, struct mp_region* mpr)
             /**
              * Check if we can merge the current region with the region
              * right before and/or right after. This can only be done if
-             * they are adjacent and have the same exect flags (i.e. 
+             * they are adjacent and have the same exect flags (i.e.
              * permissions and memory attribtues).
              */
 
@@ -423,8 +419,7 @@ bool mpu_map(priv_t priv, struct mp_region* mpr)
                 mpu_entry_get_region(prev, &r);
                 if (((r.base + r.size) == new_reg->base) &&
                     (mpu_entry_attrs(&r) == mpu_entry_attrs(new_reg)) &&
-                    (mpu_perms_equivalent(prev_perms, &new_reg_perms)))
-                {
+                    (mpu_perms_equivalent(prev_perms, &new_reg_perms))) {
                     merge_mpid = prev;
                     new_reg->base = r.base;
                     new_reg->size += r.size;
@@ -436,8 +431,7 @@ bool mpu_map(priv_t priv, struct mp_region* mpr)
                 mpu_entry_get_region(next, &r);
                 if ((new_reg->base + new_reg->size) == r.base &&
                     (mpu_entry_attrs(&r) == mpu_entry_attrs(new_reg)) &&
-                    (mpu_perms_equivalent(next_perms, &new_reg_perms)))
-                {
+                    (mpu_perms_equivalent(next_perms, &new_reg_perms))) {
                     if (merge_mpid == INVALID_MPID) {
                         merge_mpid = next;
                     } else {
@@ -480,16 +474,15 @@ bool mpu_map(priv_t priv, struct mp_region* mpr)
 }
 
 bool mpu_unmap(priv_t priv, struct mp_region* mpr)
-{   
+{
     size_t size_left = mpr->size;
 
-    while(size_left > 0) {
-
+    while (size_left > 0) {
         mpid_t mpid = INVALID_MPID;
         struct mp_region reg;
 
-        struct list *mpu_order_list = &cpu()->arch.profile.mpu.order.list;
-        list_foreach((*mpu_order_list), struct mpu_node, entry) {
+        struct list* mpu_order_list = &cpu()->arch.profile.mpu.order.list;
+        list_foreach ((*mpu_order_list), struct mpu_node, entry) {
             mpu_entry_get_region(entry->mpid, &reg);
 
             if ((mpr->base + mpr->size) < reg.base) {
@@ -513,12 +506,11 @@ bool mpu_unmap(priv_t priv, struct mp_region* mpr)
         vaddr_t mpr_limit = mpr->base + mpr->size;
         vaddr_t reg_limit = reg.base + reg.size;
         size_t top_size = mpr_limit >= reg_limit ? 0 : reg_limit - mpr_limit;
-        size_t bottom_size = mpr->base <= reg.base ? 0 : mpr->base -reg.base;
+        size_t bottom_size = mpr->base <= reg.base ? 0 : mpr->base - reg.base;
         struct mpu_perms orig_perms = cpu()->arch.profile.mpu.perms[mpid];
 
         mpu_entry_update_priv_perms(priv, mpid, PERM_NONE);
-        bool update_perms = 
-            !((cpu()->arch.profile.mpu.perms[mpid].el1 == PERM_NONE) &&
+        bool update_perms = !((cpu()->arch.profile.mpu.perms[mpid].el1 == PERM_NONE) &&
             (cpu()->arch.profile.mpu.perms[mpid].el2 == PERM_NONE));
 
         if (update_perms) {
@@ -550,7 +542,6 @@ bool mpu_unmap(priv_t priv, struct mp_region* mpr)
 
         size_t overlap_size = reg.size - top_size - bottom_size;
         size_left -= overlap_size;
-
     }
 
     // TODO: check if we can merge new regions after unmapping a given
@@ -559,17 +550,15 @@ bool mpu_unmap(priv_t priv, struct mp_region* mpr)
     return size_left == 0;
 }
 
-void mpu_init() {
-
+void mpu_init()
+{
     bitmap_clear_consecutive(cpu()->arch.profile.mpu.bitmap, 0, mpu_num_entries());
     list_init(&cpu()->arch.profile.mpu.order.list);
 
     for (mpid_t mpid = 0; mpid < mpu_num_entries(); mpid++) {
-
         cpu()->arch.profile.mpu.order.node[mpid].mpid = mpid;
-        
-        if (mpu_entry_valid(mpid)) {
 
+        if (mpu_entry_valid(mpid)) {
             bitmap_set(cpu()->arch.profile.mpu.bitmap, mpid);
             bitmap_set(cpu()->arch.profile.mpu.locked, mpid);
 
@@ -580,10 +569,8 @@ void mpu_init() {
             cpu()->arch.profile.mpu.perms[mpid].el1 = PERM_NONE;
             cpu()->arch.profile.mpu.perms[mpid].el2 = PERM_RWX;
 
-            list_insert_ordered(&cpu()->arch.profile.mpu.order.list, 
-                (node_t*)&cpu()->arch.profile.mpu.order.node[mpid],
-                mpu_node_cmp);
+            list_insert_ordered(&cpu()->arch.profile.mpu.order.list,
+                (node_t*)&cpu()->arch.profile.mpu.order.node[mpid], mpu_node_cmp);
         }
-
     }
 }

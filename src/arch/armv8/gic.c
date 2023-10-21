@@ -9,10 +9,9 @@
 #include <arch/gicv2.h>
 #elif (GIC_VERSION == GICV3)
 #include <arch/gicv3.h>
-#else 
+#else
 #error "unknown GIV version " GIC_VERSION
 #endif
-
 
 #include <interrupts.h>
 #include <cpu.h>
@@ -20,7 +19,7 @@
 #include <platform.h>
 #include <fences.h>
 
-volatile struct gicd_hw *gicd;
+volatile struct gicd_hw* gicd;
 spinlock_t gicd_lock;
 
 void gicd_init()
@@ -40,15 +39,13 @@ void gicd_init()
     }
 
     /* All interrupts have lowest priority possible by default */
-    for (size_t i = GIC_NUM_PRIO_REGS(GIC_CPU_PRIV);
-         i < GIC_NUM_PRIO_REGS(int_num); i++) {
+    for (size_t i = GIC_NUM_PRIO_REGS(GIC_CPU_PRIV); i < GIC_NUM_PRIO_REGS(int_num); i++) {
         gicd->IPRIORITYR[i] = -1;
     }
 
     if (GIC_VERSION == GICV2) {
         /* No CPU targets for any interrupt by default */
-        for (size_t i = GIC_NUM_TARGET_REGS(GIC_CPU_PRIV);
-             i < GIC_NUM_TARGET_REGS(int_num); i++) {
+        for (size_t i = GIC_NUM_TARGET_REGS(GIC_CPU_PRIV); i < GIC_NUM_TARGET_REGS(int_num); i++) {
             gicd->ITARGETSR[i] = 0;
         }
 
@@ -68,8 +65,7 @@ void gicd_init()
 
     /* No need to setup gicd->NSACR as all interrupts are  setup to group 1 */
 
-    if(!interrupts_reserve(platform.arch.gic.maintenance_id,
-                       gic_maintenance_handler)) {
+    if (!interrupts_reserve(platform.arch.gic.maintenance_id, gic_maintenance_handler)) {
         ERROR("Failed to reserve GIC maintenance interrupt");
     }
 }
@@ -102,7 +98,9 @@ void gic_handle()
     if (id < GIC_FIRST_SPECIAL_INTID) {
         enum irq_res res = interrupts_handle(id);
         gicc_eoir(ack);
-        if (res == HANDLED_BY_HYP) gicc_dir(ack);
+        if (res == HANDLED_BY_HYP) {
+            gicc_dir(ack);
+        }
     }
 }
 
@@ -111,8 +109,7 @@ uint8_t gicd_get_prio(irqid_t int_id)
     size_t reg_ind = GIC_PRIO_REG(int_id);
     size_t off = GIC_PRIO_OFF(int_id);
 
-    uint8_t prio =
-        gicd->IPRIORITYR[reg_ind] >> off & BIT32_MASK(off, GIC_PRIO_BITS);
+    uint8_t prio = gicd->IPRIORITYR[reg_ind] >> off & BIT32_MASK(off, GIC_PRIO_BITS);
 
     return prio;
 }
@@ -138,8 +135,7 @@ void gicd_set_prio(irqid_t int_id, uint8_t prio)
 
     spin_lock(&gicd_lock);
 
-    gicd->IPRIORITYR[reg_ind] =
-        (gicd->IPRIORITYR[reg_ind] & ~mask) | ((prio << off) & mask);
+    gicd->IPRIORITYR[reg_ind] = (gicd->IPRIORITYR[reg_ind] & ~mask) | ((prio << off) & mask);
 
     spin_unlock(&gicd_lock);
 }

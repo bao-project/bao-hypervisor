@@ -6,13 +6,12 @@
 #include <bao.h>
 #include <config.h>
 
-void config_mem_prot_init(paddr_t load_addr) {
-
-    for (size_t i = 0; i < config.vmlist_size; i++){
-
+void config_mem_prot_init(paddr_t load_addr)
+{
+    for (size_t i = 0; i < config.vmlist_size; i++) {
         for (size_t j = 0; j < config.vmlist[i].platform.region_num; j++) {
             /**
-             * On MPU systems all VM regions must be physical regions with 
+             * On MPU systems all VM regions must be physical regions with
              * 1-to-1 mapping.
              */
             config.vmlist[i].platform.regions[j].place_phys = true;
@@ -32,15 +31,13 @@ void config_mem_prot_init(paddr_t load_addr) {
                 ERROR("IPC base addr must be the same as its shmem base addr.");
             }
         }
-
     }
 
-    for (size_t i = 0; i < config.shmemlist_size; i++){
+    for (size_t i = 0; i < config.shmemlist_size; i++) {
         /**
          * On MPU systems all shared memory regions must be physical
          * regions with 1-to-1 mapping.
          */
         config.shmemlist[i].place_phys = true;
     }
-
 }

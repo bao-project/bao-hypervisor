@@ -9,7 +9,6 @@
 #include <bao.h>
 #include <stdarg.h>
 
-size_t vsnprintk(char* buf, size_t buf_size, const char** fmt,
-    va_list* args);
+size_t vsnprintk(char* buf, size_t buf_size, const char** fmt, va_list* args);
 
 #endif /* __PRINTK_H */

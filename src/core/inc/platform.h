@@ -15,11 +15,11 @@
 
 struct platform {
     size_t cpu_num;
-    bool    cpu_master_fixed;
+    bool cpu_master_fixed;
     cpuid_t cpu_master;
 
     size_t region_num;
-    struct mem_region *regions;
+    struct mem_region* regions;
 
     struct {
         paddr_t base;

@@ -35,10 +35,11 @@ bool mem_translate(struct addr_space* as, vaddr_t va, paddr_t* pa)
 
     par_saved = sysreg_par_el1_read();
 
-    if (as->type == AS_HYP || as->type == AS_HYP_CPY)
+    if (as->type == AS_HYP || as->type == AS_HYP_CPY) {
         arm_at_s1e2w(va);
-    else
+    } else {
         arm_at_s12e1w(va);
+    }
 
     ISB();
     par = sysreg_par_el1_read();
@@ -46,8 +47,9 @@ bool mem_translate(struct addr_space* as, vaddr_t va, paddr_t* pa)
     if (par & PAR_F) {
         return false;
     } else {
-        if (pa != NULL)
+        if (pa != NULL) {
             *pa = (par & PAR_PA_MSK) | (va & (PAGE_SIZE - 1));
+        }
         return true;
     }
 }

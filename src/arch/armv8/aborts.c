@@ -20,8 +20,7 @@ void aborts_data_lower(unsigned long iss, unsigned long far, unsigned long il, u
         ERROR("no information to handle data abort (0x%x)", far);
     }
 
-    unsigned long DSFC =
-        bit64_extract(iss, ESR_ISS_DA_DSFC_OFF, ESR_ISS_DA_DSFC_LEN) & (0xf << 2);
+    unsigned long DSFC = bit64_extract(iss, ESR_ISS_DA_DSFC_OFF, ESR_ISS_DA_DSFC_LEN) & (0xf << 2);
 
     if (DSFC != ESR_ISS_DA_DSFC_TRNSLT && DSFC != ESR_ISS_DA_DSFC_PERMIS) {
         ERROR("data abort is not translation fault - cant deal with it");
@@ -32,14 +31,11 @@ void aborts_data_lower(unsigned long iss, unsigned long far, unsigned long il, u
     if (handler != NULL) {
         struct emul_access emul;
         emul.addr = addr;
-        emul.width =
-            (1 << bit64_extract(iss, ESR_ISS_DA_SAS_OFF, ESR_ISS_DA_SAS_LEN));
+        emul.width = (1 << bit64_extract(iss, ESR_ISS_DA_SAS_OFF, ESR_ISS_DA_SAS_LEN));
         emul.write = iss & ESR_ISS_DA_WnR_BIT ? true : false;
         emul.reg = bit64_extract(iss, ESR_ISS_DA_SRT_OFF, ESR_ISS_DA_SRT_LEN);
-        emul.reg_width =
-            4 + (4 * bit64_extract(iss, ESR_ISS_DA_SF_OFF, ESR_ISS_DA_SF_LEN));
-        emul.sign_ext =
-            bit64_extract(iss, ESR_ISS_DA_SSE_OFF, ESR_ISS_DA_SSE_LEN);
+        emul.reg_width = 4 + (4 * bit64_extract(iss, ESR_ISS_DA_SF_OFF, ESR_ISS_DA_SF_LEN));
+        emul.sign_ext = bit64_extract(iss, ESR_ISS_DA_SSE_OFF, ESR_ISS_DA_SSE_LEN);
 
         // TODO: check if the access is aligned. If not, inject an exception in
         // the vm
@@ -51,13 +47,12 @@ void aborts_data_lower(unsigned long iss, unsigned long far, unsigned long il, u
             ERROR("data abort emulation failed (0x%x)", far);
         }
     } else {
-        ERROR("no emulation handler for abort(0x%x at 0x%x)", far,
-              vcpu_readpc(cpu()->vcpu));
+        ERROR("no emulation handler for abort(0x%x at 0x%x)", far, vcpu_readpc(cpu()->vcpu));
     }
 }
 
-long int standard_service_call(unsigned long _fn_num) {
-
+long int standard_service_call(unsigned long _fn_num)
+{
     int64_t ret = -1;
 
     unsigned long smc_fid = vcpu_readreg(cpu()->vcpu, 0);
@@ -74,13 +69,13 @@ long int standard_service_call(unsigned long _fn_num) {
     return ret;
 }
 
-static inline void syscall_handler(unsigned long iss, unsigned long far,
-    unsigned long il, unsigned long ec)
+static inline void syscall_handler(unsigned long iss, unsigned long far, unsigned long il,
+    unsigned long ec)
 {
     unsigned long fid = vcpu_readreg(cpu()->vcpu, 0);
 
     long ret = SMCC_E_NOT_SUPPORTED;
-    switch(fid & ~SMCC_FID_FN_NUM_MSK) {
+    switch (fid & ~SMCC_FID_FN_NUM_MSK) {
         case SMCC32_FID_STD_SRVC:
         case SMCC64_FID_STD_SRVC:
             ret = standard_service_call(fid);
@@ -117,9 +112,9 @@ static regaddr_t reg_addr_translate(unsigned long iss)
 {
     iss &= ESR_ISS_SYSREG_ADDR_64;
     if (iss == ICC_SGI1R_CASE) {
-        return (regaddr_t) ICC_SGI1R_ADDR;
+        return (regaddr_t)ICC_SGI1R_ADDR;
     } else {
-        return (regaddr_t) UNDEFINED_REG_ADDR;
+        return (regaddr_t)UNDEFINED_REG_ADDR;
     }
 }
 
@@ -133,7 +128,7 @@ void sysreg_handler(unsigned long iss, unsigned long far, unsigned long il, unsi
     }
 
     emul_handler_t handler = vm_emul_get_reg(cpu()->vcpu->vm, reg_addr);
-    if(handler != NULL){
+    if (handler != NULL) {
         struct emul_access emul;
         emul.addr = reg_addr;
         emul.width = 8;
@@ -141,7 +136,7 @@ void sysreg_handler(unsigned long iss, unsigned long far, unsigned long il, unsi
         emul.reg = bit64_extract(iss, ESR_ISS_SYSREG_REG_OFF, ESR_ISS_SYSREG_REG_LEN);
         emul.reg_high = bit64_extract(iss, ESR_ISS_SYSREG_REG2_OFF, ESR_ISS_SYSREG_REG2_LEN);
         emul.reg_width = 8;
-        emul.multi_reg = (ec == ESR_EC_RG_64)? true : false;
+        emul.multi_reg = (ec == ESR_EC_RG_64) ? true : false;
         emul.sign_ext = false;
 
         if (handler(&emul)) {
@@ -152,18 +147,20 @@ void sysreg_handler(unsigned long iss, unsigned long far, unsigned long il, unsi
         }
     } else {
         ERROR("no emulation handler for register access (0x%x at 0x%x)", reg_addr,
-              vcpu_readpc(cpu()->vcpu));
+            vcpu_readpc(cpu()->vcpu));
     }
 }
 
-abort_handler_t abort_handlers[64] = {[ESR_EC_DALEL] = aborts_data_lower,
-                                      [ESR_EC_SMC32] = smc_handler,
-                                      [ESR_EC_SMC64] = smc_handler,
-                                      [ESR_EC_SYSRG] = sysreg_handler,
-                                      [ESR_EC_RG_32] = sysreg_handler,
-                                      [ESR_EC_RG_64] = sysreg_handler,
-                                      [ESR_EC_HVC32] = hvc_handler,
-                                      [ESR_EC_HVC64] = hvc_handler,};
+abort_handler_t abort_handlers[64] = {
+    [ESR_EC_DALEL] = aborts_data_lower,
+    [ESR_EC_SMC32] = smc_handler,
+    [ESR_EC_SMC64] = smc_handler,
+    [ESR_EC_SYSRG] = sysreg_handler,
+    [ESR_EC_RG_32] = sysreg_handler,
+    [ESR_EC_RG_64] = sysreg_handler,
+    [ESR_EC_HVC32] = hvc_handler,
+    [ESR_EC_HVC64] = hvc_handler,
+};
 
 void aborts_sync_handler()
 {
@@ -183,8 +180,9 @@ void aborts_sync_handler()
     unsigned long iss = bit64_extract(esr, ESR_ISS_OFF, ESR_ISS_LEN);
 
     abort_handler_t handler = abort_handlers[ec];
-    if (handler)
+    if (handler) {
         handler(iss, ipa_fault_addr, il, ec);
-    else
-        ERROR("no handler for abort ec = 0x%x", ec);  // unknown guest exception
+    } else {
+        ERROR("no handler for abort ec = 0x%x", ec); // unknown guest exception
+    }
 }

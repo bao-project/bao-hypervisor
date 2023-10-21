@@ -44,27 +44,34 @@ static inline uint32_t gich_get_misr()
 static inline uint64_t gich_get_eisr()
 {
     uint64_t eisr = gich->EISR[0];
-    if (NUM_LRS > 32) eisr |= (((uint64_t)gich->EISR[1] << 32));
+    if (NUM_LRS > 32) {
+        eisr |= ((uint64_t)gich->EISR[1] << 32);
+    }
     return eisr;
 }
 
 static inline uint64_t gich_get_elrsr()
 {
     uint64_t elsr = gich->ELSR[0];
-    if (NUM_LRS > 32) elsr |= (((uint64_t)gich->ELSR[1] << 32));
+    if (NUM_LRS > 32) {
+        elsr |= ((uint64_t)gich->ELSR[1] << 32);
+    }
     return elsr;
 }
 
-static inline uint32_t gicc_iar() {
+static inline uint32_t gicc_iar()
+{
     return gicc->IAR;
 }
 
-static inline void gicc_eoir(uint32_t eoir) {
-     gicc->EOIR = eoir;
+static inline void gicc_eoir(uint32_t eoir)
+{
+    gicc->EOIR = eoir;
 }
 
-static inline void gicc_dir(uint32_t dir) {
-     gicc->DIR = dir;
+static inline void gicc_dir(uint32_t dir)
+{
+    gicc->DIR = dir;
 }
 
 #endif /* __GICV2_H__ */

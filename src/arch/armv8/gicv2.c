@@ -13,11 +13,11 @@
 #include <vm.h>
 #include <platform.h>
 
-extern volatile struct gicd_hw *gicd;
+extern volatile struct gicd_hw* gicd;
 extern spinlock_t gicd_lock;
 
-volatile struct gicc_hw *gicc;
-volatile struct gich_hw *gich;
+volatile struct gicc_hw* gicc;
+volatile struct gich_hw* gich;
 
 static cpuid_t gic_cpu_map[GIC_MAX_TARGETS];
 
@@ -38,17 +38,17 @@ static inline void gicc_init()
     gicc->CTLR |= GICC_CTLR_EN_BIT | GICC_CTLR_EOImodeNS_BIT;
 
     gich->HCR |= GICH_HCR_LRENPIE_BIT;
-    
+
     uint32_t sgi_targets = gicd->ITARGETSR[0] & BIT32_MASK(0, GIC_TARGET_BITS);
     ssize_t gic_cpu_id = bit32_ffs(sgi_targets);
-    if(gic_cpu_id < 0) {
+    if (gic_cpu_id < 0) {
         ERROR("cant find gic cpu id");
     }
 
     gic_cpu_map[cpu()->id] = (cpuid_t)gic_cpu_id;
 }
 
-void gicc_save_state(struct gicc_state *state)
+void gicc_save_state(struct gicc_state* state)
 {
     state->CTLR = gicc->CTLR;
     state->PMR = gicc->PMR;
@@ -69,7 +69,7 @@ void gicc_save_state(struct gicc_state *state)
     }
 }
 
-void gicc_restore_state(struct gicc_state *state)
+void gicc_restore_state(struct gicc_state* state)
 {
     gicc->CTLR = state->CTLR;
     gicc->PMR = state->PMR;
@@ -116,27 +116,27 @@ void gic_cpu_init()
 
 void gic_map_mmio()
 {
-    gicc = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
+    gicc = (void*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
         platform.arch.gic.gicc_addr, NUM_PAGES(sizeof(struct gicc_hw)));
-    gich = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
+    gich = (void*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
         platform.arch.gic.gich_addr, NUM_PAGES(sizeof(struct gich_hw)));
-    gicd = (void*) mem_alloc_map_dev(&cpu()->as,SEC_HYP_GLOBAL, INVALID_VA,
-        platform.arch.gic.gicd_addr,  NUM_PAGES(sizeof(struct gicd_hw)));
+    gicd = (void*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
+        platform.arch.gic.gicd_addr, NUM_PAGES(sizeof(struct gicd_hw)));
 }
 
 void gic_send_sgi(cpuid_t cpu_target, irqid_t sgi_num)
 {
     if (sgi_num < GIC_MAX_SGIS && cpu_target < GIC_MAX_TARGETS) {
-        gicd->SGIR = 
-            (1UL << (GICD_SGIR_CPUTRGLST_OFF + gic_cpu_map[cpu_target])) |
+        gicd->SGIR = (1UL << (GICD_SGIR_CPUTRGLST_OFF + gic_cpu_map[cpu_target])) |
             (sgi_num & GICD_SGIR_SGIINTID_MSK);
     }
 }
 
-static inline uint8_t gic_translate_cpu_to_trgt(uint8_t cpu_targets) {
+static inline uint8_t gic_translate_cpu_to_trgt(uint8_t cpu_targets)
+{
     uint8_t gic_targets = 0;
-    for(size_t i = 0; i < GIC_MAX_TARGETS; i++) {
-        if((1 << i) & cpu_targets) {
+    for (size_t i = 0; i < GIC_MAX_TARGETS; i++) {
+        if ((1 << i) & cpu_targets) {
             gic_targets |= (1 << gic_cpu_map[i]);
         }
     }
@@ -151,7 +151,7 @@ void gicd_set_trgt(irqid_t int_id, uint8_t cpu_targets)
 
     spin_lock(&gicd_lock);
 
-    gicd->ITARGETSR[reg_ind] = (gicd->ITARGETSR[reg_ind] & ~mask) | 
+    gicd->ITARGETSR[reg_ind] = (gicd->ITARGETSR[reg_ind] & ~mask) |
         ((gic_translate_cpu_to_trgt(cpu_targets) << off) & mask);
 
     spin_unlock(&gicd_lock);

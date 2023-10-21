@@ -13,8 +13,8 @@
 
 #define IRQC_MAX_INTERRUPTS (PLIC_MAX_INTERRUPTS)
 
-#define HART_REG_OFF PLIC_THRESHOLD_OFF
-#define IRQC_HART_INST PLIC_PLAT_CNTXT_NUM
+#define HART_REG_OFF        PLIC_THRESHOLD_OFF
+#define IRQC_HART_INST      PLIC_PLAT_CNTXT_NUM
 
 static inline void irqc_init()
 {
@@ -47,9 +47,9 @@ static inline void irqc_clr_pend(irqid_t int_id)
     WARNING("trying to clear external interrupt");
 }
 
-static inline void virqc_set_hw(struct vm *vm, irqid_t id)
+static inline void virqc_set_hw(struct vm* vm, irqid_t id)
 {
     vplic_set_hw(vm, id);
 }
 
-#endif //IRQC_H
+#endif // IRQC_H

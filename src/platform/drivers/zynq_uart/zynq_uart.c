@@ -25,8 +25,7 @@ bool uart_init(volatile struct Uart_Zynq_hw* uart)
     uart->isr_en = UART_ISR_EN_RTRIG;
 
     /** Enable (closer to Reset) the Controller */
-    uart->control |=
-        (UART_CONTROL_STPBRK | UART_CONTROL_RXRES | UART_CONTROL_TXRES);
+    uart->control |= (UART_CONTROL_STPBRK | UART_CONTROL_RXRES | UART_CONTROL_TXRES);
 
     return true;
 }
@@ -35,8 +34,8 @@ void uart_enable(volatile struct Uart_Zynq_hw* uart)
 {
     uint32_t ctrl_reg = uart->control;
 
-    ctrl_reg = (UART_CONTROL_STPBRK | UART_CONTROL_TXEN | UART_CONTROL_RXEN |
-                UART_CONTROL_RXRES | UART_CONTROL_TXRES);
+    ctrl_reg = (UART_CONTROL_STPBRK | UART_CONTROL_TXEN | UART_CONTROL_RXEN | UART_CONTROL_RXRES |
+        UART_CONTROL_TXRES);
 
     uart->control = ctrl_reg;
 }

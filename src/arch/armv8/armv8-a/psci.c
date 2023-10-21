@@ -11,8 +11,8 @@
 
 extern uint8_t root_l1_flat_pt;
 
-static void psci_save_state(enum wakeup_reason wakeup_reason){
-
+static void psci_save_state(enum wakeup_reason wakeup_reason)
+{
     cpu()->arch.profile.psci_off_state.tcr_el2 = sysreg_tcr_el2_read();
     cpu()->arch.profile.psci_off_state.ttbr0_el2 = sysreg_ttbr0_el2_read();
     cpu()->arch.profile.psci_off_state.mair_el2 = sysreg_mair_el2_read();
@@ -22,34 +22,33 @@ static void psci_save_state(enum wakeup_reason wakeup_reason){
     cpu()->arch.profile.psci_off_state.vtcr_el2 = sysreg_vtcr_el2_read();
     cpu()->arch.profile.psci_off_state.vttbr_el2 = sysreg_vttbr_el2_read();
     mem_translate(&cpu()->as, (vaddr_t)&root_l1_flat_pt,
-                    &cpu()->arch.profile.psci_off_state.flat_map);
+        &cpu()->arch.profile.psci_off_state.flat_map);
     cpu()->arch.profile.psci_off_state.wakeup_reason = wakeup_reason;
 
     /**
      * Although the real PSCI implementation is responsible for managing cache
      * state, make sure the saved state is in memory as we'll use this on wake
-     * up before enabling cache to restore basic processor state. 
+     * up before enabling cache to restore basic processor state.
      */
     cache_flush_range((vaddr_t)&cpu()->arch.profile.psci_off_state,
-                    sizeof(cpu()->arch.profile.psci_off_state));
+        sizeof(cpu()->arch.profile.psci_off_state));
 
     gicc_save_state(&cpu()->arch.profile.psci_off_state.gicc_state);
 }
 
-
-static void psci_restore_state(){
-
+static void psci_restore_state()
+{
     /**
      * The majority of the state is already restored in assembly routine
      *  psci_boot_entry.
      */
-    
+
     gicc_restore_state(&cpu()->arch.profile.psci_off_state.gicc_state);
 }
 
-void psci_wake_from_powerdown(){
-
-    if(cpu()->vcpu == NULL){
+void psci_wake_from_powerdown()
+{
+    if (cpu()->vcpu == NULL) {
         ERROR("cpu woke up but theres no vcpu to run");
     }
 
@@ -58,10 +57,9 @@ void psci_wake_from_powerdown(){
     vcpu_run(cpu()->vcpu);
 }
 
-void psci_wake_from_idle(){
-
+void psci_wake_from_idle()
+{
     cpu_idle_wakeup();
-
 }
 
 void psci_wake_from_off();
@@ -73,27 +71,26 @@ void (*psci_wake_handlers[PSCI_WAKEUP_NUM])(void) = {
 };
 
 void psci_wake(uint32_t handler_id)
-{    
-
+{
     psci_restore_state();
 
-    if(handler_id < PSCI_WAKEUP_NUM){
+    if (handler_id < PSCI_WAKEUP_NUM) {
         psci_wake_handlers[handler_id]();
     } else {
         ERROR("unkown reason for cpu wake up");
     }
-
 }
 
-int32_t psci_standby(){
+int32_t psci_standby()
+{
     /* only apply request to core level */
     uint32_t pwr_state_aux = PSCI_POWER_STATE_LVL_0 | PSCI_STATE_TYPE_STANDBY;
 
     return psci_cpu_suspend(pwr_state_aux, 0, 0);
 }
 
-int32_t psci_power_down(enum wakeup_reason reason){
-
+int32_t psci_power_down(enum wakeup_reason reason)
+{
     extern void psci_boot_entry(unsigned long x0);
 
     uint32_t pwr_state_aux = PSCI_POWER_STATE_LVL_0 | PSCI_STATE_TYPE_POWERDOWN;
@@ -107,15 +104,12 @@ int32_t psci_power_down(enum wakeup_reason reason){
     return psci_cpu_suspend(pwr_state_aux, psci_wakeup_addr, cntxt_paddr);
 }
 
-int32_t psci_cpu_suspend(uint32_t power_state, unsigned long entrypoint, 
-                        unsigned long context_id)
+int32_t psci_cpu_suspend(uint32_t power_state, unsigned long entrypoint, unsigned long context_id)
 {
-
     return smc_call(PSCI_CPU_SUSPEND, power_state, entrypoint, context_id, NULL);
 }
 
-int32_t psci_cpu_on(unsigned long target_cpu, unsigned long entrypoint, 
-                    unsigned long context_id)
+int32_t psci_cpu_on(unsigned long target_cpu, unsigned long entrypoint, unsigned long context_id)
 {
     return smc_call(PSCI_CPU_ON, target_cpu, entrypoint, context_id, NULL);
 }

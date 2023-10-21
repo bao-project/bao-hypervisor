@@ -1,5 +1,5 @@
 /**
- * SPDX-License-Identifier: Apache-2.0 
+ * SPDX-License-Identifier: Apache-2.0
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
@@ -19,13 +19,13 @@ struct platform platform = {
     },
 
     .arch = {
-        #if (IRQC == PLIC)
-        .irqc.plic.base = 0xc000000,        
-        #elif (IRQC == APLIC)
+#if (IRQC == PLIC)
+        .irqc.plic.base = 0xc000000,
+#elif (IRQC == APLIC)
         .irqc.aia.aplic.base = 0xd000000,
-        #else 
-        #error "unknown IRQC type " IRQC
-        #endif
+#else
+#error "unknown IRQC type " IRQC
+#endif
     },
 
 };

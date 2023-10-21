@@ -13,19 +13,19 @@
 #include <vm.h>
 #include <platform.h>
 
-bool vgic_int_has_other_target(struct vcpu *vcpu, struct vgic_int *interrupt)
+bool vgic_int_has_other_target(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
     bool priv = gic_is_priv(interrupt->id);
     bool has_other_targets = (interrupt->targets & ~(1 << cpu()->id)) != 0;
     return !priv && has_other_targets;
 }
 
-uint8_t vgic_int_ptarget_mask(struct vcpu *vcpu, struct vgic_int *interrupt)
+uint8_t vgic_int_ptarget_mask(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
     return interrupt->targets;
 }
 
-bool vgicd_set_trgt(struct vcpu *vcpu, struct vgic_int *interrupt, unsigned long targets)
+bool vgicd_set_trgt(struct vcpu* vcpu, struct vgic_int* interrupt, unsigned long targets)
 {
     if (gic_is_priv(interrupt->id)) {
         return false;
@@ -37,24 +37,22 @@ bool vgicd_set_trgt(struct vcpu *vcpu, struct vgic_int *interrupt, unsigned long
     return prev_targets != targets;
 }
 
-void vgicd_set_trgt_hw(struct vcpu *vcpu, struct vgic_int *interrupt)
+void vgicd_set_trgt_hw(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
     gicd_set_trgt(interrupt->id, interrupt->targets);
 }
 
-unsigned long vgicd_get_trgt(struct vcpu *vcpu, struct vgic_int *interrupt)
+unsigned long vgicd_get_trgt(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
     if (gic_is_priv(interrupt->id)) {
         return (((unsigned long)1) << vcpu->id);
     } else {
-        return vm_translate_to_vcpu_mask(vcpu->vm, interrupt->targets,
-                                                  GIC_TARGET_BITS);
+        return vm_translate_to_vcpu_mask(vcpu->vm, interrupt->targets, GIC_TARGET_BITS);
     }
 }
 
-void vgicd_emul_sgiregs_access(struct emul_access *acc,
-                               struct vgic_reg_handler_info *handlers,
-                               bool gicr_access, vcpuid_t vgicr_id)
+void vgicd_emul_sgiregs_access(struct emul_access* acc, struct vgic_reg_handler_info* handlers,
+    bool gicr_access, vcpuid_t vgicr_id)
 {
     unsigned long val = acc->write ? vcpu_readreg(cpu()->vcpu, acc->reg) : 0;
 
@@ -64,8 +62,7 @@ void vgicd_emul_sgiregs_access(struct emul_access *acc,
             irqid_t int_id = GICD_SGIR_SGIINTID(val);
             switch (GICD_SGIR_TRGLSTFLT(val)) {
                 case 0:
-                    trgtlist = vm_translate_to_pcpu_mask(
-                        cpu()->vcpu->vm, GICD_SGIR_CPUTRGLST(val),
+                    trgtlist = vm_translate_to_pcpu_mask(cpu()->vcpu->vm, GICD_SGIR_CPUTRGLST(val),
                         GIC_TARGET_BITS);
                     break;
                 case 1:
@@ -102,7 +99,7 @@ struct vgic_reg_handler_info sgir_info = {
     0b0100,
 };
 
-void vgic_inject_sgi(struct vcpu *vcpu, struct vgic_int *interrupt, vcpuid_t source)
+void vgic_inject_sgi(struct vcpu* vcpu, struct vgic_int* interrupt, vcpuid_t source)
 {
     spin_lock(&interrupt->lock);
 
@@ -127,23 +124,21 @@ void vgic_inject_sgi(struct vcpu *vcpu, struct vgic_int *interrupt, vcpuid_t sou
     spin_unlock(&interrupt->lock);
 }
 
-void vgic_init(struct vm *vm, const struct vgic_dscrp *vgic_dscrp)
+void vgic_init(struct vm* vm, const struct vgic_dscrp* vgic_dscrp)
 {
     vm->arch.vgicd.CTLR = 0;
     size_t vtyper_itln = vgic_get_itln(vgic_dscrp);
     vm->arch.vgicd.int_num = 32 * (vtyper_itln + 1);
-    vm->arch.vgicd.TYPER =
-        ((vtyper_itln << GICD_TYPER_ITLN_OFF) & GICD_TYPER_ITLN_MSK) |
+    vm->arch.vgicd.TYPER = ((vtyper_itln << GICD_TYPER_ITLN_OFF) & GICD_TYPER_ITLN_MSK) |
         (((vm->cpu_num - 1) << GICD_TYPER_CPUNUM_OFF) & GICD_TYPER_CPUNUM_MSK);
     vm->arch.vgicd.IIDR = gicd->IIDR;
 
     size_t n = NUM_PAGES(sizeof(struct gicc_hw));
-    mem_alloc_map_dev(&vm->as, SEC_VM_ANY,(vaddr_t)vgic_dscrp->gicc_addr, 
+    mem_alloc_map_dev(&vm->as, SEC_VM_ANY, (vaddr_t)vgic_dscrp->gicc_addr,
         (vaddr_t)platform.arch.gic.gicv_addr, n);
 
     size_t vgic_int_size = vm->arch.vgicd.int_num * sizeof(struct vgic_int);
-    vm->arch.vgicd.interrupts =
-        mem_alloc_page(NUM_PAGES(vgic_int_size), SEC_HYP_VM, false);
+    vm->arch.vgicd.interrupts = mem_alloc_page(NUM_PAGES(vgic_int_size), SEC_HYP_VM, false);
     if (vm->arch.vgicd.interrupts == NULL) {
         ERROR("failed to alloc vgic");
     }
@@ -161,18 +156,16 @@ void vgic_init(struct vm *vm, const struct vgic_dscrp *vgic_dscrp)
         vm->arch.vgicd.interrupts[i].enabled = false;
     }
 
-    vm->arch.vgicd_emul = (struct emul_mem) {
-        .va_base = vgic_dscrp->gicd_addr,
+    vm->arch.vgicd_emul = (struct emul_mem){ .va_base = vgic_dscrp->gicd_addr,
         .size = ALIGN(sizeof(struct gicd_hw), PAGE_SIZE),
-        .handler = vgicd_emul_handler
-    };
+        .handler = vgicd_emul_handler };
     vm_emul_add_mem(vm, &vm->arch.vgicd_emul);
 
     list_init(&vm->arch.vgic_spilled);
     vm->arch.vgic_spilled_lock = SPINLOCK_INITVAL;
 }
 
-void vgic_cpu_init(struct vcpu *vcpu)
+void vgic_cpu_init(struct vcpu* vcpu)
 {
     for (size_t i = 0; i < GIC_CPU_PRIV; i++) {
         vcpu->arch.vgic_priv.interrupts[i].owner = vcpu;
@@ -182,7 +175,7 @@ void vgic_cpu_init(struct vcpu *vcpu)
         vcpu->arch.vgic_priv.interrupts[i].prio = GIC_LOWEST_PRIO;
         vcpu->arch.vgic_priv.interrupts[i].cfg = 0;
         vcpu->arch.vgic_priv.interrupts[i].sgi.act = 0;
-        vcpu->arch.vgic_priv.interrupts[i].sgi.pend = 0;                              
+        vcpu->arch.vgic_priv.interrupts[i].sgi.pend = 0;
         vcpu->arch.vgic_priv.interrupts[i].hw = false;
         vcpu->arch.vgic_priv.interrupts[i].in_lr = false;
         vcpu->arch.vgic_priv.interrupts[i].enabled = false;

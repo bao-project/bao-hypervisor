@@ -12,14 +12,13 @@
 #include <cpu.h>
 #include <mem.h>
 
-
 #define SME_MAX_NUM 128
 #define CTX_MAX_NUM 128
 
 struct smmu_hw {
-    volatile struct smmu_glbl_rs0_hw *glbl_rs0;
-    volatile struct smmu_glbl_rs1_hw *glbl_rs1;
-    volatile struct smmu_cntxt_hw *cntxt;
+    volatile struct smmu_glbl_rs0_hw* glbl_rs0;
+    volatile struct smmu_glbl_rs1_hw* glbl_rs1;
+    volatile struct smmu_cntxt_hw* cntxt;
 };
 
 struct smmu_priv {
@@ -43,11 +42,11 @@ struct smmu_priv smmu;
  *
  * @sme: starting point of the loop cursor
  */
-#define smmu_for_each_sme(sme)                                             \
+#define smmu_for_each_sme(sme)                                                \
     for (size_t __bit = bitmap_get(smmu.sme_bitmap, sme); sme < smmu.sme_num; \
-         __bit = bitmap_get(smmu.sme_bitmap, ++sme))                       \
-        if (!__bit)                                                        \
-            continue;                                                      \
+         __bit = bitmap_get(smmu.sme_bitmap, ++sme))                          \
+        if (!__bit)                                                           \
+            continue;                                                         \
         else
 
 /**
@@ -75,8 +74,8 @@ inline streamid_t smmu_sme_get_mask(size_t sme)
 
 static void smmu_check_features()
 {
-    unsigned version = bit32_extract(smmu.hw.glbl_rs0->IDR7,
-                            SMMUV2_IDR7_MAJOR_OFF, SMMUV2_IDR7_MAJOR_LEN);
+    unsigned version =
+        bit32_extract(smmu.hw.glbl_rs0->IDR7, SMMUV2_IDR7_MAJOR_OFF, SMMUV2_IDR7_MAJOR_LEN);
     if (version != 2) {
         ERROR("smmu unsupported version: %d", version);
     }
@@ -107,10 +106,9 @@ static void smmu_check_features()
         ERROR("smmuv2 does not support 4kb page granule");
     }
 
-    size_t pasize = bit32_extract(smmu.hw.glbl_rs0->IDR2, SMMUV2_IDR2_OAS_OFF,
-                             SMMUV2_IDR2_OAS_LEN);
-    size_t ipasize = bit32_extract(smmu.hw.glbl_rs0->IDR2, SMMUV2_IDR2_IAS_OFF,
-                              SMMUV2_IDR2_IAS_LEN);
+    size_t pasize = bit32_extract(smmu.hw.glbl_rs0->IDR2, SMMUV2_IDR2_OAS_OFF, SMMUV2_IDR2_OAS_LEN);
+    size_t ipasize =
+        bit32_extract(smmu.hw.glbl_rs0->IDR2, SMMUV2_IDR2_IAS_OFF, SMMUV2_IDR2_IAS_LEN);
 
     if (pasize < parange) {
         ERROR("smmuv2 does not support the full available pa range");
@@ -128,25 +126,22 @@ void smmu_init()
      * allocate smmu registers.
      */
     vaddr_t smmu_glbl_rs0 = mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
-        platform.arch.smmu.base,  NUM_PAGES(sizeof(struct smmu_glbl_rs0_hw)));
+        platform.arch.smmu.base, NUM_PAGES(sizeof(struct smmu_glbl_rs0_hw)));
 
     smmu.hw.glbl_rs0 = (struct smmu_glbl_rs0_hw*)smmu_glbl_rs0;
 
-    size_t pg_size =
-        smmu.hw.glbl_rs0->IDR1 & SMMUV2_IDR1_PAGESIZE_BIT ? 0x10000 : 0x1000;
-    size_t num_page =
-        1ULL << (bit32_extract(smmu.hw.glbl_rs0->IDR1, SMMUV2_IDR1_NUMPAGEDXB_OFF,
-                             SMMUV2_IDR1_NUMPAGEDXB_LEN) +
-                 1);
-    size_t ctx_bank_num = bit32_extract(
-        smmu.hw.glbl_rs0->IDR1, SMMUV2_IDR1_NUMCB_OFF, SMMUV2_IDR1_NUMCB_LEN);
+    size_t pg_size = smmu.hw.glbl_rs0->IDR1 & SMMUV2_IDR1_PAGESIZE_BIT ? 0x10000 : 0x1000;
+    size_t num_page = 1ULL << (bit32_extract(smmu.hw.glbl_rs0->IDR1, SMMUV2_IDR1_NUMPAGEDXB_OFF,
+                                   SMMUV2_IDR1_NUMPAGEDXB_LEN) +
+                          1);
+    size_t ctx_bank_num =
+        bit32_extract(smmu.hw.glbl_rs0->IDR1, SMMUV2_IDR1_NUMCB_OFF, SMMUV2_IDR1_NUMCB_LEN);
 
     vaddr_t smmu_glbl_rs1 = mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
         platform.arch.smmu.base + pg_size, NUM_PAGES(sizeof(struct smmu_glbl_rs1_hw)));
 
     vaddr_t smmu_cntxt = mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
-        platform.arch.smmu.base + (num_page * pg_size),
-        NUM_PAGES(pg_size * ctx_bank_num));
+        platform.arch.smmu.base + (num_page * pg_size), NUM_PAGES(pg_size * ctx_bank_num));
 
     smmu.hw.glbl_rs1 = (struct smmu_glbl_rs1_hw*)smmu_glbl_rs1;
     smmu.hw.cntxt = (struct smmu_cntxt_hw*)smmu_cntxt;
@@ -239,11 +234,9 @@ void smmu_write_ctxbnk(size_t ctx_id, paddr_t root_pt, asid_t vm_id)
         tcr |= SMMUV2_TCR_IRGN0_WB_RA_WA;
         tcr |= SMMUV2_TCR_T0SZ(t0sz);
         tcr |= SMMUV2_TCR_SH0_IS;
-        tcr |= ((parange_table[parange] < 44) ? SMMUV2_TCR_SL0_1
-                                              : SMMUV2_TCR_SL0_0);
+        tcr |= ((parange_table[parange] < 44) ? SMMUV2_TCR_SL0_1 : SMMUV2_TCR_SL0_0);
         smmu.hw.cntxt[ctx_id].TCR = tcr;
-        smmu.hw.cntxt[ctx_id].TTBR0 =
-            root_pt & SMMUV2_CB_TTBA(smmu_cb_ttba_offset(t0sz));
+        smmu.hw.cntxt[ctx_id].TTBR0 = root_pt & SMMUV2_CB_TTBA(smmu_cb_ttba_offset(t0sz));
 
         uint32_t sctlr = smmu.hw.cntxt[ctx_id].SCTLR;
         sctlr = SMMUV2_SCTLR_CLEAR(sctlr);
@@ -258,7 +251,7 @@ ssize_t smmu_alloc_sme()
     spin_lock(&smmu.sme_lock);
     /* Find a free sme. */
     ssize_t nth = bitmap_find_nth(smmu.sme_bitmap, smmu.sme_num, 1, 0, false);
-    if(nth >= 0) {
+    if (nth >= 0) {
         bitmap_set(smmu.sme_bitmap, nth);
     }
     spin_unlock(&smmu.sme_lock);
@@ -280,8 +273,7 @@ ssize_t smmu_alloc_sme()
  * This function searches for existing smes that are compatible for merging
  * with the new sme, raising an ERROR when conflicting attributes are found.
  */
-bool smmu_compatible_sme_exists(streamid_t mask, streamid_t id, size_t ctx,
-                                bool group)
+bool smmu_compatible_sme_exists(streamid_t mask, streamid_t id, size_t ctx, bool group)
 {
     bool included = false;
     size_t sme = 0;
@@ -295,10 +287,8 @@ bool smmu_compatible_sme_exists(streamid_t mask, streamid_t id, size_t ctx,
 
         if (!diff_id) {
             /* Only group-to-group or device-to-group can be merged */
-            if (((group || smmu_sme_is_group(sme)) &&
-                (mask_r == mask || mask_r == sme_mask)) &&
+            if (((group || smmu_sme_is_group(sme)) && (mask_r == mask || mask_r == sme_mask)) &&
                 ctx == smmu_sme_get_ctx(sme)) {
-
                 /* Compatible entry found.
                  *
                  * If the new entry includes an existing one, there is the

@@ -28,10 +28,13 @@ void vm_cpu_init(struct vm* vm)
     spin_unlock(&vm->lock);
 }
 
-static vcpuid_t vm_calc_vcpu_id(struct vm* vm) {
+static vcpuid_t vm_calc_vcpu_id(struct vm* vm)
+{
     vcpuid_t vcpu_id = 0;
-    for(size_t i = 0; i < cpu()->id; i++) {
-        if (!!bit_get(vm->cpus, i)) vcpu_id++;
+    for (size_t i = 0; i < cpu()->id; i++) {
+        if (!!bit_get(vm->cpus, i)) {
+            vcpu_id++;
+        }
     }
     return vcpu_id;
 }
@@ -55,24 +58,23 @@ void vm_map_mem_region(struct vm* vm, struct vm_mem_region* reg)
     size_t n = NUM_PAGES(reg->size);
 
     struct ppages pa_reg;
-    struct ppages *pa_ptr = NULL;
+    struct ppages* pa_ptr = NULL;
     if (reg->place_phys) {
         pa_reg = mem_ppages_get(reg->phys, n);
-        pa_reg.colors = reg->colors;        
+        pa_reg.colors = reg->colors;
         pa_ptr = &pa_reg;
     } else {
         pa_ptr = NULL;
     }
 
-    vaddr_t va = mem_alloc_map(&vm->as, SEC_VM_ANY, pa_ptr,
-                (vaddr_t)reg->base, n, PTE_VM_FLAGS);
+    vaddr_t va = mem_alloc_map(&vm->as, SEC_VM_ANY, pa_ptr, (vaddr_t)reg->base, n, PTE_VM_FLAGS);
     if (va != (vaddr_t)reg->base) {
         ERROR("failed to allocate vm's region at 0x%lx", reg->base);
     }
 }
 
 static void vm_map_img_rgn_inplace(struct vm* vm, const struct vm_config* config,
-                                   struct vm_mem_region* reg)
+    struct vm_mem_region* reg)
 {
     vaddr_t img_base = config->image.base_addr;
     size_t img_size = config->image.size;
@@ -86,31 +88,29 @@ static void vm_map_img_rgn_inplace(struct vm* vm, const struct vm_config* config
     /* map img in place */
     struct ppages pa_img = mem_ppages_get(config->image.load_addr, n_img);
 
-    mem_alloc_map(&vm->as, SEC_VM_ANY, NULL, (vaddr_t)reg->base, n_before,
-        PTE_VM_FLAGS);
+    mem_alloc_map(&vm->as, SEC_VM_ANY, NULL, (vaddr_t)reg->base, n_before, PTE_VM_FLAGS);
     if (all_clrs(vm->as.colors)) {
         /* map img in place */
-        mem_alloc_map(&vm->as, SEC_VM_ANY, &pa_img, img_base, n_img,
-            PTE_VM_FLAGS);
+        mem_alloc_map(&vm->as, SEC_VM_ANY, &pa_img, img_base, n_img, PTE_VM_FLAGS);
         /* we are mapping in place, config is already reserved */
     } else {
         /* recolour img */
         mem_map_reclr(&vm->as, img_base, &pa_img, n_img, PTE_VM_FLAGS);
     }
     /* map pages after img */
-    mem_alloc_map(&vm->as, SEC_VM_ANY, NULL, img_base + NUM_PAGES(img_size)*PAGE_SIZE, n_aft,
+    mem_alloc_map(&vm->as, SEC_VM_ANY, NULL, img_base + NUM_PAGES(img_size) * PAGE_SIZE, n_aft,
         PTE_VM_FLAGS);
 }
 
-static void vm_install_image(struct vm* vm, struct vm_mem_region* reg) {
-
+static void vm_install_image(struct vm* vm, struct vm_mem_region* reg)
+{
     if (reg->place_phys) {
         paddr_t img_base = (paddr_t)vm->config->image.base_addr;
         paddr_t img_load_pa = vm->config->image.load_addr;
         size_t img_sz = vm->config->image.size;
 
         if (img_base == img_load_pa) {
-            // The image is already correctly installed. Our work is done. 
+            // The image is already correctly installed. Our work is done.
             return;
         }
 
@@ -120,27 +120,25 @@ static void vm_install_image(struct vm* vm, struct vm_mem_region* reg) {
             // limitations of mpu-based memory management which does not allow
             // overlapping mappings on the same address space.
             ERROR("failed installing vm image. Image load region overlaps with"
-                " image runtime region");
+                  " image runtime region");
         }
-    } 
-    
+    }
+
     size_t img_num_pages = NUM_PAGES(vm->config->image.size);
-    struct ppages img_ppages =
-        mem_ppages_get(vm->config->image.load_addr, img_num_pages);
-    vaddr_t src_va = mem_alloc_map(&cpu()->as, SEC_HYP_GLOBAL, &img_ppages,
-        INVALID_VA, img_num_pages, PTE_HYP_FLAGS);
-    vaddr_t dst_va = mem_map_cpy(&vm->as, &cpu()->as, vm->config->image.base_addr,
-                                INVALID_VA, img_num_pages);
+    struct ppages img_ppages = mem_ppages_get(vm->config->image.load_addr, img_num_pages);
+    vaddr_t src_va = mem_alloc_map(&cpu()->as, SEC_HYP_GLOBAL, &img_ppages, INVALID_VA,
+        img_num_pages, PTE_HYP_FLAGS);
+    vaddr_t dst_va =
+        mem_map_cpy(&vm->as, &cpu()->as, vm->config->image.base_addr, INVALID_VA, img_num_pages);
     memcpy((void*)dst_va, (void*)src_va, vm->config->image.size);
     cache_flush_range((vaddr_t)dst_va, vm->config->image.size);
     mem_unmap(&cpu()->as, src_va, img_num_pages, false);
     mem_unmap(&cpu()->as, dst_va, img_num_pages, false);
 }
 
-static void vm_map_img_rgn(struct vm* vm, const struct vm_config* config,
-                           struct vm_mem_region* reg)
+static void vm_map_img_rgn(struct vm* vm, const struct vm_config* config, struct vm_mem_region* reg)
 {
-    if(!reg->place_phys && config->image.inplace) {
+    if (!reg->place_phys && config->image.inplace) {
         vm_map_img_rgn_inplace(vm, config, reg);
     } else {
         vm_map_mem_region(vm, reg);
@@ -152,8 +150,8 @@ static void vm_init_mem_regions(struct vm* vm, const struct vm_config* config)
 {
     for (size_t i = 0; i < config->platform.region_num; i++) {
         struct vm_mem_region* reg = &config->platform.regions[i];
-        bool img_is_in_rgn = range_in_range(
-            config->image.base_addr, config->image.size, reg->base, reg->size);
+        bool img_is_in_rgn =
+            range_in_range(config->image.base_addr, config->image.size, reg->base, reg->size);
         if (img_is_in_rgn) {
             vm_map_img_rgn(vm, config, reg);
         } else {
@@ -167,18 +165,18 @@ static void vm_init_ipc(struct vm* vm, const struct vm_config* config)
     vm->ipc_num = config->platform.ipc_num;
     vm->ipcs = config->platform.ipcs;
     for (size_t i = 0; i < config->platform.ipc_num; i++) {
-        struct ipc *ipc = &config->platform.ipcs[i];
-        struct shmem *shmem = ipc_get_shmem(ipc->shmem_id);
-        if(shmem == NULL) {
+        struct ipc* ipc = &config->platform.ipcs[i];
+        struct shmem* shmem = ipc_get_shmem(ipc->shmem_id);
+        if (shmem == NULL) {
             WARNING("Invalid shmem id in configuration. Ignored.");
             continue;
         }
         size_t size = ipc->size;
-        if(ipc->size > shmem->size) {
+        if (ipc->size > shmem->size) {
             size = shmem->size;
             WARNING("Trying to map region to smaller shared memory. Truncated");
         }
-        
+
         spin_lock(&shmem->lock);
         shmem->cpu_masters |= (1ULL << cpu()->id);
         spin_unlock(&shmem->lock);
@@ -207,7 +205,7 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* config)
         }
 
         for (size_t j = 0; j < dev->interrupt_num; j++) {
-            if(!interrupts_vm_assign(vm, dev->interrupts[j])) {
+            if (!interrupts_vm_assign(vm, dev->interrupts[j])) {
                 ERROR("Failed to assign interrupt id %d", dev->interrupts[j]);
             }
         }
@@ -217,26 +215,25 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* config)
         for (size_t i = 0; i < config->platform.dev_num; i++) {
             struct vm_dev_region* dev = &config->platform.devs[i];
             if (dev->id) {
-                if(!io_vm_add_device(vm, dev->id)){
+                if (!io_vm_add_device(vm, dev->id)) {
                     ERROR("Failed to add device to iommu");
                 }
             }
         }
     }
-      
 }
 
-static struct vm* vm_allocation_init(struct vm_allocation* vm_alloc) {
-    struct vm *vm = vm_alloc->vm;
+static struct vm* vm_allocation_init(struct vm_allocation* vm_alloc)
+{
+    struct vm* vm = vm_alloc->vm;
     vm->vcpus = vm_alloc->vcpus;
     return vm;
 }
 
-struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* config,
-    bool master, vmid_t vm_id)
+struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* config, bool master,
+    vmid_t vm_id)
 {
-
-    struct vm *vm = vm_allocation_init(vm_alloc);
+    struct vm* vm = vm_allocation_init(vm_alloc);
 
     /**
      * Before anything else, initialize vm structure.
@@ -289,12 +286,12 @@ void vm_emul_add_mem(struct vm* vm, struct emul_mem* emu)
 void vm_emul_add_reg(struct vm* vm, struct emul_reg* emu)
 {
     list_push(&vm->emul_reg_list, &emu->node);
-}    
+}
 
 emul_handler_t vm_emul_get_mem(struct vm* vm, vaddr_t addr)
 {
     emul_handler_t handler = NULL;
-    list_foreach(vm->emul_mem_list, struct emul_mem, emu) {
+    list_foreach (vm->emul_mem_list, struct emul_mem, emu) {
         if (addr >= emu->va_base && (addr < (emu->va_base + emu->size))) {
             handler = emu->handler;
             break;
@@ -307,10 +304,10 @@ emul_handler_t vm_emul_get_mem(struct vm* vm, vaddr_t addr)
 emul_handler_t vm_emul_get_reg(struct vm* vm, vaddr_t addr)
 {
     emul_handler_t handler = NULL;
-    list_foreach(vm->emul_reg_list, struct emul_reg, emu) {
-        if(emu->addr == addr) {
+    list_foreach (vm->emul_reg_list, struct emul_reg, emu) {
+        if (emu->addr == addr) {
             handler = emu->handler;
-            break; 
+            break;
         }
     }
 
@@ -327,30 +324,24 @@ void vm_msg_broadcast(struct vm* vm, struct cpu_msg* msg)
     }
 }
 
-__attribute__((weak)) cpumap_t vm_translate_to_pcpu_mask(struct vm* vm,
-                                                         cpumap_t mask,
-                                                         size_t len)
+__attribute__((weak)) cpumap_t vm_translate_to_pcpu_mask(struct vm* vm, cpumap_t mask, size_t len)
 {
     cpumap_t pmask = 0;
     cpuid_t shift;
     for (size_t i = 0; i < len; i++) {
-        if ((mask & (1ULL << i)) &&
-            ((shift = vm_translate_to_pcpuid(vm, i)) != INVALID_CPUID)) {
+        if ((mask & (1ULL << i)) && ((shift = vm_translate_to_pcpuid(vm, i)) != INVALID_CPUID)) {
             pmask |= (1ULL << shift);
         }
     }
     return pmask;
 }
 
-__attribute__((weak)) cpumap_t vm_translate_to_vcpu_mask(struct vm* vm,
-                                                         cpumap_t mask,
-                                                         size_t len)
+__attribute__((weak)) cpumap_t vm_translate_to_vcpu_mask(struct vm* vm, cpumap_t mask, size_t len)
 {
     cpumap_t pmask = 0;
     vcpuid_t shift;
     for (size_t i = 0; i < len; i++) {
-        if ((mask & (1ULL << i)) &&
-            ((shift = vm_translate_to_vcpuid(vm, i)) != INVALID_CPUID)) {
+        if ((mask & (1ULL << i)) && ((shift = vm_translate_to_vcpuid(vm, i)) != INVALID_CPUID)) {
             pmask |= (1ULL << shift);
         }
     }

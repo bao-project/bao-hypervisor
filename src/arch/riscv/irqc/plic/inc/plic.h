@@ -10,12 +10,12 @@
 #include <platform.h>
 
 #define PLIC_MAX_INTERRUPTS (1024)
-#define PLIC_NUM_PRIO_REGS (PLIC_MAX_INTERRUPTS)
-#define PLIC_NUM_PEND_REGS (PLIC_MAX_INTERRUPTS)
-#define PLIC_NUM_ENBL_REGS (PLIC_MAX_INTERRUPTS / 32)
+#define PLIC_NUM_PRIO_REGS  (PLIC_MAX_INTERRUPTS)
+#define PLIC_NUM_PEND_REGS  (PLIC_MAX_INTERRUPTS)
+#define PLIC_NUM_ENBL_REGS  (PLIC_MAX_INTERRUPTS / 32)
 
-#define PLIC_ENBL_OFF (0x002000)
-#define PLIC_THRESHOLD_OFF (0x200000)
+#define PLIC_ENBL_OFF       (0x002000)
+#define PLIC_THRESHOLD_OFF  (0x200000)
 
 #ifndef PLAT_PLIC_CNTXT_PER_HART
 #define PLAT_PLIC_CNTXT_PER_HART 2
@@ -38,8 +38,8 @@ struct plic_hart_hw {
     uint8_t res[0x1000 - 0x0008];
 } __attribute__((__packed__, aligned(PAGE_SIZE)));
 
-extern volatile struct plic_global_hw *plic_global;
-extern volatile struct plic_hart_hw *plic_hart;
+extern volatile struct plic_global_hw* plic_global;
+extern volatile struct plic_hart_hw* plic_hart;
 extern size_t PLIC_IMPL_INTERRUPTS;
 
 void plic_init();

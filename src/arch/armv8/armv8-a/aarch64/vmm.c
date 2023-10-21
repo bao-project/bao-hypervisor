@@ -14,9 +14,9 @@ void vmm_arch_init_tcr()
      * IPA size. Patch 2-stage page table descriptors if this forces
      * the initial lookup to level 1.
      *
-     * In multi-cluster heterogenous we only support the minimum parange 
+     * In multi-cluster heterogenous we only support the minimum parange
      * for a vm's physicall adress space.
-     * TODO: we could make this more dynamic and adapt it to each virtual 
+     * TODO: we could make this more dynamic and adapt it to each virtual
      * machine.
      */
 
@@ -25,7 +25,7 @@ void vmm_arch_init_tcr()
 
     size_t temp_parange = sysreg_id_aa64mmfr0_el1_read() & ID_AA64MMFR0_PAR_MSK;
     spin_lock(&lock);
-    if(temp_parange < min_parange) {
+    if (temp_parange < min_parange) {
         min_parange = temp_parange;
     }
     spin_unlock(&lock);
@@ -47,10 +47,9 @@ void vmm_arch_init_tcr()
 
     cpu_sync_barrier(&cpu_glb_sync);
 
-    uint64_t vtcr = VTCR_RES1 | ((parange << VTCR_PS_OFF) & VTCR_PS_MSK) |
-                    VTCR_TG0_4K | VTCR_ORGN0_WB_RA_WA | VTCR_IRGN0_WB_RA_WA |
-                    VTCR_T0SZ(64 - parange_table[parange]) | VTCR_SH0_IS |
-                    ((parange_table[parange] < 44) ? VTCR_SL0_12 : VTCR_SL0_01);
+    uint64_t vtcr = VTCR_RES1 | ((parange << VTCR_PS_OFF) & VTCR_PS_MSK) | VTCR_TG0_4K |
+        VTCR_ORGN0_WB_RA_WA | VTCR_IRGN0_WB_RA_WA | VTCR_T0SZ(64 - parange_table[parange]) |
+        VTCR_SH0_IS | ((parange_table[parange] < 44) ? VTCR_SL0_12 : VTCR_SL0_01);
 
     sysreg_vtcr_el2_write(vtcr);
 }

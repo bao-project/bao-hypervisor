@@ -7,9 +7,9 @@
 #include <arch/sysregs.h>
 #include <cpu.h>
 
-void internal_abort_handler(unsigned long gprs[]) {
-
-    for(ssize_t i = 14; i >= 0; i--) {
+void internal_abort_handler(unsigned long gprs[])
+{
+    for (ssize_t i = 14; i >= 0; i--) {
         console_printk("x%d:\t\t0x%0lx\n", i, gprs[14 - i]);
     }
     console_printk("ESR:\t0x%0lx\n", sysreg_esr_el2_read());
