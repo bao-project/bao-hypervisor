@@ -17,13 +17,13 @@ void io_init()
 }
 
 /* Configure architecture dependent stuff. */
-bool io_vm_init(struct vm *vm, const struct vm_config *config)
+bool io_vm_init(struct vm* vm, const struct vm_config* config)
 {
     return iommu_arch_vm_init(vm, config);
 }
 
 /* Allows vms to add devices to their address space. */
-bool io_vm_add_device(struct vm *vm, deviceid_t dev_id)
+bool io_vm_add_device(struct vm* vm, deviceid_t dev_id)
 {
     bool res = false;
 
@@ -33,7 +33,6 @@ bool io_vm_add_device(struct vm *vm, deviceid_t dev_id)
      *
      * Assume there's no device id = 0 */
     if (dev_id != 0) {
-
         /* Stream id is valid. Match this device with this VM specifically. */
         res = iommu_arch_vm_add_device(vm, dev_id);
     }

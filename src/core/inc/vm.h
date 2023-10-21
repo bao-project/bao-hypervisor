@@ -31,24 +31,24 @@ struct vm_dev_region {
     vaddr_t va;
     size_t size;
     size_t interrupt_num;
-    irqid_t *interrupts;
+    irqid_t* interrupts;
     deviceid_t id; /* bus master id for iommu effects */
 };
-    
+
 struct vm_platform {
     size_t cpu_num;
 
     size_t region_num;
-    struct vm_mem_region *regions;
+    struct vm_mem_region* regions;
 
     size_t ipc_num;
-    struct ipc *ipcs;
+    struct ipc* ipcs;
 
     size_t dev_num;
-    struct vm_dev_region *devs;
+    struct vm_dev_region* devs;
 
     // /**
-    //  * In MPU-based platforms which might also support virtual memory 
+    //  * In MPU-based platforms which might also support virtual memory
     //  * (i.e. aarch64 cortex-r) the hypervisor sets up the VM using an MPU by
     //  * default. If the user wants this VM to use the MMU they must set the
     //  * config mmu parameter to true;
@@ -67,7 +67,7 @@ struct vm {
     struct cpu_synctoken sync;
     cpuid_t master;
 
-    struct vcpu *vcpus;
+    struct vcpu* vcpus;
     size_t cpu_num;
     cpumap_t cpus;
 
@@ -83,7 +83,7 @@ struct vm {
     BITMAP_ALLOC(interrupt_bitmap, MAX_INTERRUPTS);
 
     size_t ipc_num;
-    struct ipc *ipcs;
+    struct ipc* ipcs;
 };
 
 struct vcpu {
@@ -102,14 +102,14 @@ struct vcpu {
 struct vm_allocation {
     vaddr_t base;
     size_t size;
-    struct vm *vm;
-    struct vcpu *vcpus;
+    struct vm* vm;
+    struct vcpu* vcpus;
 };
 
 extern struct vm vm;
 
-struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* config,
-    bool master, vmid_t vm_id);
+struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* config, bool master,
+    vmid_t vm_id);
 void vm_start(struct vm* vm, vaddr_t entry);
 void vm_emul_add_mem(struct vm* vm, struct emul_mem* emu);
 void vm_emul_add_reg(struct vm* vm, struct emul_reg* emu);
@@ -120,7 +120,8 @@ void vm_msg_broadcast(struct vm* vm, struct cpu_msg* msg);
 cpumap_t vm_translate_to_pcpu_mask(struct vm* vm, cpumap_t mask, size_t len);
 cpumap_t vm_translate_to_vcpu_mask(struct vm* vm, cpumap_t mask, size_t len);
 
-static inline struct vcpu* vm_get_vcpu(struct vm* vm, vcpuid_t vcpuid) {
+static inline struct vcpu* vm_get_vcpu(struct vm* vm, vcpuid_t vcpuid)
+{
     if (vcpuid < vm->cpu_num) {
         return &vm->vcpus[vcpuid];
     }
@@ -129,9 +130,9 @@ static inline struct vcpu* vm_get_vcpu(struct vm* vm, vcpuid_t vcpuid) {
 
 static inline cpuid_t vm_translate_to_pcpuid(struct vm* vm, vcpuid_t vcpuid)
 {
-    struct vcpu *vcpu = vm_get_vcpu(vm, vcpuid);
+    struct vcpu* vcpu = vm_get_vcpu(vm, vcpuid);
 
-    if(vcpu == NULL) {
+    if (vcpu == NULL) {
         return INVALID_CPUID;
     } else {
         return vcpu->phys_id;
@@ -152,12 +153,12 @@ static inline bool vm_has_interrupt(struct vm* vm, irqid_t int_id)
     return !!bitmap_get(vm->interrupt_bitmap, int_id);
 }
 
-static inline void vcpu_inject_hw_irq(struct vcpu *vcpu, irqid_t id)
+static inline void vcpu_inject_hw_irq(struct vcpu* vcpu, irqid_t id)
 {
     vcpu_arch_inject_hw_irq(vcpu, id);
 }
 
-static inline void vcpu_inject_irq(struct vcpu *vcpu, irqid_t id)
+static inline void vcpu_inject_irq(struct vcpu* vcpu, irqid_t id)
 {
     vcpu_arch_inject_irq(vcpu, id);
 }

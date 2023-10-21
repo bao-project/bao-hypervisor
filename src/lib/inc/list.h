@@ -16,13 +16,12 @@ struct list {
     spinlock_t lock;
 };
 
-#define list_foreach(list, type, nodeptr)                     \
-    for (type* nodeptr = ((type*)list.head); nodeptr != NULL; \
-         nodeptr = *((type**)nodeptr))
+#define list_foreach(list, type, nodeptr) \
+    for (type* nodeptr = ((type*)list.head); nodeptr != NULL; nodeptr = *((type**)nodeptr))
 
-#define list_foreach_tail(list, type, nodeptr, tail)        \
-    for (type* nodeptr = ((type*)list.head), *tail = NULL;  \
-         nodeptr != NULL; tail = nodeptr, nodeptr = *((type**)nodeptr))
+#define list_foreach_tail(list, type, nodeptr, tail)                        \
+    for (type* nodeptr = ((type*)list.head), *tail = NULL; nodeptr != NULL; \
+         tail = nodeptr, nodeptr = *((type**)nodeptr))
 
 static inline void list_init(struct list* list)
 {
@@ -39,11 +38,15 @@ static inline void list_push(struct list* list, node_t* node)
         *node = NULL;
         spin_lock(&list->lock);
 
-        if (list->tail != NULL) *list->tail = node;
+        if (list->tail != NULL) {
+            *list->tail = node;
+        }
 
         list->tail = node;
 
-        if (list->head == NULL) list->head = node;
+        if (list->head == NULL) {
+            list->head = node;
+        }
 
         spin_unlock(&list->lock);
     }
@@ -59,7 +62,9 @@ static inline node_t* list_pop(struct list* list)
             temp = list->head;
             list->head = *list->head;
 
-            if (list->head == NULL) list->tail = NULL;
+            if (list->head == NULL) {
+                list->tail = NULL;
+            }
 
             *temp = NULL;
         }
@@ -96,13 +101,13 @@ static inline bool list_rm(struct list* list, node_t* node)
         }
         if (temp != NULL && temp == node) {
             /* found the node, remove it */
-            if(temp_prev != NULL) {
+            if (temp_prev != NULL) {
                 *temp_prev = *temp;
             } else {
                 list->head = *temp;
             }
 
-            if(list->head == NULL) {
+            if (list->head == NULL) {
                 list->tail = NULL;
             }
         }
@@ -121,8 +126,8 @@ static inline void list_insert_ordered(struct list* list, node_t* node, node_cmp
         *node = NULL;
         spin_lock(&list->lock);
 
-        node_t *cur = list->head;
-        node_t *tail = NULL;
+        node_t* cur = list->head;
+        node_t* tail = NULL;
 
         while (cur != NULL) {
             if (cmp(cur, node) > 0) {

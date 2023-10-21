@@ -44,10 +44,10 @@
         .size = VM_IMAGE_SIZE(img_name), .separately_loaded = false,          \
     }
 
-#define VM_IMAGE_LOADED(image_base_addr, image_load_addr, image_size) \
-    {                                                                 \
-        .base_addr = image_base_addr, .load_addr = image_load_addr,   \
-        .size = image_size, .separately_loaded = true,                \
+#define VM_IMAGE_LOADED(image_base_addr, image_load_addr, image_size)                   \
+    {                                                                                   \
+        .base_addr = image_base_addr, .load_addr = image_load_addr, .size = image_size, \
+        .separately_loaded = true,                                                      \
     }
 
 /* CONFIG_HEADER is just defined for compatibility with older configs */

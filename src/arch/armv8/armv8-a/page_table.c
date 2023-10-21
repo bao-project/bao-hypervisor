@@ -12,26 +12,25 @@
 
 struct page_table_dscr armv8_pt_dscr = {
     .lvls = 3,
-    .lvl_wdt = (size_t[]){32, 30, 21},
-    .lvl_off = (size_t[]){30, 21, 12},
-    .lvl_term = (bool[]){true, true, true},
+    .lvl_wdt = (size_t[]){ 32, 30, 21 },
+    .lvl_off = (size_t[]){ 30, 21, 12 },
+    .lvl_term = (bool[]){ true, true, true },
 };
-
 
 struct page_table_dscr armv8_pt_s2_dscr = {
     .lvls = 3,
-    .lvl_wdt = (size_t[]){39, 30, 21},
-    .lvl_off = (size_t[]){30, 21, 12},
-    .lvl_term = (bool[]){true, true, true},
+    .lvl_wdt = (size_t[]){ 39, 30, 21 },
+    .lvl_off = (size_t[]){ 30, 21, 12 },
+    .lvl_term = (bool[]){ true, true, true },
 };
 
 #else
 
 struct page_table_dscr armv8_pt_dscr = {
     .lvls = 4,
-    .lvl_wdt = (size_t[]){48, 39, 30, 21},
-    .lvl_off = (size_t[]){39, 30, 21, 12},
-    .lvl_term = (bool[]){false, true, true, true},
+    .lvl_wdt = (size_t[]){ 48, 39, 30, 21 },
+    .lvl_off = (size_t[]){ 39, 30, 21, 12 },
+    .lvl_term = (bool[]){ false, true, true, true },
 };
 
 /**
@@ -40,14 +39,14 @@ struct page_table_dscr armv8_pt_dscr = {
  */
 struct page_table_dscr armv8_pt_s2_dscr = {
     .lvls = 4,
-    .lvl_wdt = (size_t[]){48, 39, 30, 21},
-    .lvl_off = (size_t[]){39, 30, 21, 12},
-    .lvl_term = (bool[]){false, true, true, true},
+    .lvl_wdt = (size_t[]){ 48, 39, 30, 21 },
+    .lvl_off = (size_t[]){ 39, 30, 21, 12 },
+    .lvl_term = (bool[]){ false, true, true, true },
 };
 
 #endif
 
-size_t parange_table[] = {32, 36, 40, 42, 44, 48};
+size_t parange_table[] = { 32, 36, 40, 42, 44, 48 };
 
 struct page_table_dscr* hyp_pt_dscr = &armv8_pt_dscr;
 struct page_table_dscr* vm_pt_dscr = &armv8_pt_s2_dscr;
@@ -85,7 +84,9 @@ pte_t* pt_get_pte(struct page_table* pt, size_t lvl, vaddr_t va)
 
 pte_t* pt_get(struct page_table* pt, size_t lvl, vaddr_t va)
 {
-    if (lvl == 0) return pt->root;
+    if (lvl == 0) {
+        return pt->root;
+    }
 
     uintptr_t pte = (uintptr_t)pt_get_pte(pt, lvl, va);
     pte &= ~(pt_size(pt, lvl) - 1);
@@ -94,7 +95,7 @@ pte_t* pt_get(struct page_table* pt, size_t lvl, vaddr_t va)
 
 bool pte_page(struct page_table* pt, pte_t* pte, size_t lvl)
 {
-    if(!pt_lvl_terminal(pt, lvl)) {
+    if (!pt_lvl_terminal(pt, lvl)) {
         return false;
     }
 

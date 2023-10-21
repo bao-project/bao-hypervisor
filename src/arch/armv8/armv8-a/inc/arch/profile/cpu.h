@@ -13,7 +13,8 @@ struct cpu_arch_profile {
     struct psci_off_state psci_off_state;
 };
 
-static inline struct cpu* cpu() {
+static inline struct cpu* cpu()
+{
     return (struct cpu*)BAO_CPU_BASE;
 }
 

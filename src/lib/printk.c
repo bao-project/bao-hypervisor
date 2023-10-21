@@ -16,8 +16,7 @@ static inline char digit_to_char(unsigned long i, unsigned int base)
     if (i < 10U) {
         c = ((unsigned long)'0') + digit;
     } else {
-        c = ((unsigned long)'a') +
-            (digit - 10U);
+        c = ((unsigned long)'a') + (digit - 10U);
     }
     return (char)c;
 }
@@ -53,11 +52,9 @@ static size_t vprintd(char** buf, unsigned int flags, va_list* args)
     size_t char_count = 0;
 
     if (is_unsigned) {
-        u = is_long ? va_arg(*args, unsigned long) :
-                      va_arg(*args, unsigned int);
+        u = is_long ? va_arg(*args, unsigned long) : va_arg(*args, unsigned int);
     } else {
-        signed long s =
-            is_long ? va_arg(*args, signed long) : va_arg(*args, signed int);
+        signed long s = is_long ? va_arg(*args, signed long) : va_arg(*args, signed int);
         if (s < 0) {
             printc(buf, '-');
             char_count++;
@@ -95,8 +92,7 @@ static size_t vprintd(char** buf, unsigned int flags, va_list* args)
  * numbers of characters written to the buffer, and changes fmt to point to the
  * first character that was not printed.
  */
-size_t vsnprintk(char* buf, size_t buf_size, const char** fmt,
-    va_list* args)
+size_t vsnprintk(char* buf, size_t buf_size, const char** fmt, va_list* args)
 {
     char* buf_it = buf;
     size_t buf_left = buf_size;

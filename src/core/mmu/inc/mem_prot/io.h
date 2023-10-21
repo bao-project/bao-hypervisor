@@ -18,7 +18,7 @@ struct io_prot {
 
 /* Must be implemented by architecture. */
 bool iommu_arch_init();
-bool iommu_arch_vm_init(struct vm *vm, const struct vm_config *config);
-bool iommu_arch_vm_add_device(struct vm *vm, deviceid_t id);
+bool iommu_arch_vm_init(struct vm* vm, const struct vm_config* config);
+bool iommu_arch_vm_add_device(struct vm* vm, deviceid_t id);
 
 #endif /* MEM_PROT_IO_H */

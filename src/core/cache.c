@@ -19,18 +19,17 @@ static void cache_calc_colors(struct cache* dscrp, size_t page_size)
 
     size_t llc = dscrp->min_shared_lvl;
 
-    if ((dscrp->type[llc] != UNIFIED) || (dscrp->indexed[llc][0] != PIPT))
+    if ((dscrp->type[llc] != UNIFIED) || (dscrp->indexed[llc][0] != PIPT)) {
         return;
+    }
 
-    size_t llc_way_size =
-        dscrp->numset[llc][UNIFIED] * dscrp->line_size[llc][UNIFIED];
+    size_t llc_way_size = dscrp->numset[llc][UNIFIED] * dscrp->line_size[llc][UNIFIED];
 
     size_t flc_way_size = 0;
-    if ((dscrp->type[0] != UNIFIED)) {
+    if (dscrp->type[0] != UNIFIED) {
         flc_way_size = dscrp->numset[0][0] * dscrp->line_size[0][0];
         size_t flc_i_way_size = dscrp->numset[0][1] * dscrp->line_size[0][1];
-        if (((dscrp->indexed[0][0] == PIPT) ||
-             (flc_i_way_size < flc_way_size)) &&
+        if (((dscrp->indexed[0][0] == PIPT) || (flc_i_way_size < flc_way_size)) &&
             (dscrp->indexed[0][1] == PIPT)) {
             flc_way_size = flc_i_way_size;
         }

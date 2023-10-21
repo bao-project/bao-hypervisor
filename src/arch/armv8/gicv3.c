@@ -12,8 +12,8 @@
 #include <interrupts.h>
 #include <fences.h>
 
-extern volatile struct gicd_hw *gicd;
-volatile struct gicr_hw *gicr;
+extern volatile struct gicd_hw* gicd;
+volatile struct gicr_hw* gicr;
 
 static spinlock_t gicd_lock = SPINLOCK_INITVAL;
 static spinlock_t gicr_lock = SPINLOCK_INITVAL;
@@ -41,7 +41,7 @@ static inline void gicc_init()
 static inline void gicr_init()
 {
     gicr[cpu()->id].WAKER &= ~GICR_WAKER_ProcessorSleep_BIT;
-    while(gicr[cpu()->id].WAKER & GICR_WAKER_ChildrenASleep_BIT) { }
+    while (gicr[cpu()->id].WAKER & GICR_WAKER_ChildrenASleep_BIT) { }
 
     gicr[cpu()->id].IGROUPR0 = -1;
     gicr[cpu()->id].ICENABLER0 = -1;
@@ -53,7 +53,7 @@ static inline void gicr_init()
     }
 }
 
-void gicc_save_state(struct gicc_state *state)
+void gicc_save_state(struct gicc_state* state)
 {
     state->PMR = sysreg_icc_pmr_el1_read();
     state->BPR = sysreg_icc_bpr1_el1_read();
@@ -69,7 +69,7 @@ void gicc_save_state(struct gicc_state *state)
     }
 }
 
-void gicc_restore_state(struct gicc_state *state)
+void gicc_restore_state(struct gicc_state* state)
 {
     sysreg_icc_sre_el2_write(ICC_SRE_SRE_BIT);
     sysreg_icc_ctlr_el1_write(ICC_CTLR_EOIMode_BIT);
@@ -96,11 +96,10 @@ void gic_cpu_init()
 
 void gic_map_mmio()
 {
-    gicd = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA, 
+    gicd = (void*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
         platform.arch.gic.gicd_addr, NUM_PAGES(sizeof(struct gicd_hw)));
-    gicr = (void*) mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA, 
-       platform.arch.gic.gicr_addr, 
-       NUM_PAGES(sizeof(struct gicr_hw) * PLAT_CPU_NUM));
+    gicr = (void*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
+        platform.arch.gic.gicr_addr, NUM_PAGES(sizeof(struct gicr_hw) * PLAT_CPU_NUM));
 }
 
 void gicr_set_prio(irqid_t int_id, uint8_t prio, cpuid_t gicr_id)
@@ -124,8 +123,7 @@ uint8_t gicr_get_prio(irqid_t int_id, cpuid_t gicr_id)
 
     spin_lock(&gicr_lock);
 
-    uint8_t prio =
-        gicr[gicr_id].IPRIORITYR[reg_ind] >> off & BIT32_MASK(off, GIC_PRIO_BITS);
+    uint8_t prio = gicr[gicr_id].IPRIORITYR[reg_ind] >> off & BIT32_MASK(off, GIC_PRIO_BITS);
 
     spin_unlock(&gicr_lock);
 
@@ -141,11 +139,9 @@ void gicr_set_icfgr(irqid_t int_id, uint8_t cfg, cpuid_t gicr_id)
     spin_lock(&gicr_lock);
 
     if (reg_ind == 0) {
-        gicr[gicr_id].ICFGR0 =
-            (gicr[gicr_id].ICFGR0 & ~mask) | ((cfg << off) & mask);
+        gicr[gicr_id].ICFGR0 = (gicr[gicr_id].ICFGR0 & ~mask) | ((cfg << off) & mask);
     } else {
-        gicr[gicr_id].ICFGR1 =
-            (gicr[gicr_id].ICFGR1 & ~mask) | ((cfg << off) & mask);
+        gicr[gicr_id].ICFGR1 = (gicr[gicr_id].ICFGR1 & ~mask) | ((cfg << off) & mask);
     }
 
     spin_unlock(&gicr_lock);
@@ -198,16 +194,19 @@ void gicr_set_enable(irqid_t int_id, bool en, cpuid_t gicr_id)
     uint32_t bit = GIC_INT_MASK(int_id);
 
     spin_lock(&gicr_lock);
-    if (en)
+    if (en) {
         gicr[gicr_id].ISENABLER0 = bit;
-    else
+    } else {
         gicr[gicr_id].ICENABLER0 = bit;
+    }
     spin_unlock(&gicr_lock);
 }
 
 void gicd_set_route(irqid_t int_id, unsigned long route)
 {
-    if (gic_is_priv(int_id)) return;
+    if (gic_is_priv(int_id)) {
+        return;
+    }
 
     spin_lock(&gicd_lock);
 
@@ -222,8 +221,7 @@ void gic_send_sgi(cpuid_t cpu_target, irqid_t sgi_num)
         unsigned long mpidr = cpu_id_to_mpidr(cpu_target) & MPIDR_AFF_MSK;
         /* We only support two affinity levels */
         uint64_t sgi = (MPIDR_AFF_LVL(mpidr, 1) << ICC_SGIR_AFF1_OFFSET) |
-                       (1UL << MPIDR_AFF_LVL(mpidr, 0)) |
-                       (sgi_num << ICC_SGIR_SGIINTID_OFF);             
+            (1UL << MPIDR_AFF_LVL(mpidr, 0)) | (sgi_num << ICC_SGIR_SGIINTID_OFF);
         sysreg_icc_sgi1r_el1_write(sgi);
     }
 }

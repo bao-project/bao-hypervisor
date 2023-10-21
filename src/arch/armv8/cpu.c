@@ -12,7 +12,7 @@ cpuid_t CPU_MASTER __attribute__((section(".data")));
 
 /* Perform architecture dependent cpu cores initializations */
 void cpu_arch_init(cpuid_t cpuid, paddr_t load_addr)
-{   
+{
     cpu()->arch.mpidr = sysreg_mpidr_el1_read();
     cpu_arch_profile_init(cpuid, load_addr);
 }
@@ -28,13 +28,11 @@ void cpu_arch_idle()
 
     /*
      * In case the profile implementation does not jump to a predefined wake-up
-     * point and just returns from the profile, manually rewind stack and jump 
+     * point and just returns from the profile, manually rewind stack and jump
      * to idle wake up. Therefore, we should not return after this point.
      */
-    asm volatile(
-        "mov sp, %0\n\r"
-        "b cpu_idle_wakeup\n\r"
-        ::"r"(&cpu()->stack[STACK_SIZE]));
+    asm volatile("mov sp, %0\n\r"
+                 "b cpu_idle_wakeup\n\r" ::"r"(&cpu()->stack[STACK_SIZE]));
 
     ERROR("returned from idle wake up");
 }

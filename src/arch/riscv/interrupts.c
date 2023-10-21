@@ -1,5 +1,5 @@
 /**
- * SPDX-License-Identifier: Apache-2.0 
+ * SPDX-License-Identifier: Apache-2.0
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
@@ -17,7 +17,7 @@
 
 void interrupts_arch_init()
 {
-    if (cpu()->id  == CPU_MASTER) {  
+    if (cpu()->id == CPU_MASTER) {
         irqc_init();
     }
 
@@ -49,15 +49,17 @@ void interrupts_arch_cpu_enable(bool en)
 void interrupts_arch_enable(irqid_t int_id, bool en)
 {
     if (int_id == SOFT_INT_ID) {
-        if (en)
+        if (en) {
             CSRS(sie, SIE_SSIE);
-        else
+        } else {
             CSRC(sie, SIE_SSIE);
+        }
     } else if (int_id == TIMR_INT_ID) {
-        if (en)
+        if (en) {
             CSRS(sie, SIE_STIE);
-        else
+        } else {
             CSRC(sie, SIE_STIE);
+        }
     } else {
         irqc_config_irq(int_id, en);
     }
@@ -123,7 +125,7 @@ inline bool interrupts_arch_conflict(bitmap_t* interrupt_bitmap, irqid_t int_id)
     return bitmap_get(interrupt_bitmap, int_id);
 }
 
-void interrupts_arch_vm_assign(struct vm *vm, irqid_t id)
+void interrupts_arch_vm_assign(struct vm* vm, irqid_t id)
 {
     virqc_set_hw(vm, id);
 }

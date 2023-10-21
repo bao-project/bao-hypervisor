@@ -8,7 +8,7 @@
 
 #include <bao.h>
 
-#define IPI_CPU_MSG 1
+#define IPI_CPU_MSG    1
 #define MAX_INTERRUPTS GIC_MAX_INTERUPTS
 
 #endif /* __ARCH_INTERRUPTS_H__ */

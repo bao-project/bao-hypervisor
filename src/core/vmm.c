@@ -22,7 +22,8 @@ static struct vm_assignment {
     volatile bool install_info_ready;
 } vm_assign[CONFIG_VM_NUM];
 
-static bool vmm_assign_vcpu(bool *master, vmid_t *vm_id) {
+static bool vmm_assign_vcpu(bool* master, vmid_t* vm_id)
+{
     bool assigned = false;
     *master = false;
     /* Assign cpus according to vm affinity. */
@@ -36,8 +37,7 @@ static bool vmm_assign_vcpu(bool *master, vmid_t *vm_id) {
                 *master = true;
                 assigned = true;
                 *vm_id = i;
-            } else if (vm_assign[i].ncpus <
-                       config.vmlist[i].platform.cpu_num) {
+            } else if (vm_assign[i].ncpus < config.vmlist[i].platform.cpu_num) {
                 assigned = true;
                 vm_assign[i].ncpus++;
                 vm_assign[i].cpus |= (1UL << cpu()->id);
@@ -53,8 +53,7 @@ static bool vmm_assign_vcpu(bool *master, vmid_t *vm_id) {
     if (assigned == false) {
         for (size_t i = 0; i < config.vmlist_size && !assigned; i++) {
             spin_lock(&vm_assign[i].lock);
-            if (vm_assign[i].ncpus <
-                config.vmlist[i].platform.cpu_num) {
+            if (vm_assign[i].ncpus < config.vmlist[i].platform.cpu_num) {
                 if (!vm_assign[i].master) {
                     vm_assign[i].master = true;
                     vm_assign[i].ncpus++;
@@ -76,14 +75,14 @@ static bool vmm_assign_vcpu(bool *master, vmid_t *vm_id) {
     return assigned;
 }
 
-static bool vmm_alloc_vm(struct vm_allocation* vm_alloc, struct vm_config *config) {
-
+static bool vmm_alloc_vm(struct vm_allocation* vm_alloc, struct vm_config* config)
+{
     /**
      * We know that we will allocate a block aligned to the PAGE_SIZE, which
      * is guaranteed to fulfill the alignment of all types.
-     * However, to guarantee the alignment of all fields, when we calculate 
+     * However, to guarantee the alignment of all fields, when we calculate
      * the size of a field in the vm_allocation struct, we must align the
-     * previous total size calculated until that point, to the alignment of 
+     * previous total size calculated until that point, to the alignment of
      * the type of the next field.
      */
 
@@ -98,17 +97,18 @@ static bool vmm_alloc_vm(struct vm_allocation* vm_alloc, struct vm_config *confi
     }
     memset((void*)allocation, 0, total_size);
 
-    vm_alloc->base = (vaddr_t) allocation;
+    vm_alloc->base = (vaddr_t)allocation;
     vm_alloc->size = total_size;
-    vm_alloc->vm = (struct vm*) vm_alloc->base;
-    vm_alloc->vcpus = (struct vcpu*) (vm_alloc->base + vcpus_offset);
+    vm_alloc->vm = (struct vm*)vm_alloc->base;
+    vm_alloc->vcpus = (struct vcpu*)(vm_alloc->base + vcpus_offset);
 
     return true;
 }
 
-static struct vm_allocation* vmm_alloc_install_vm(vmid_t vm_id, bool master) {
-    struct vm_allocation *vm_alloc = &vm_assign[vm_id].vm_alloc;
-    struct vm_config *vm_config = &config.vmlist[vm_id];
+static struct vm_allocation* vmm_alloc_install_vm(vmid_t vm_id, bool master)
+{
+    struct vm_allocation* vm_alloc = &vm_assign[vm_id].vm_alloc;
+    struct vm_config* vm_config = &config.vmlist[vm_id];
     if (master) {
         if (!vmm_alloc_vm(vm_alloc, vm_config)) {
             ERROR("Failed to allocate vm internal structures");
@@ -136,9 +136,9 @@ void vmm_init()
     bool master = false;
     vmid_t vm_id = -1;
     if (vmm_assign_vcpu(&master, &vm_id)) {
-        struct vm_allocation *vm_alloc = vmm_alloc_install_vm(vm_id, master);
-        struct vm_config *vm_config = &config.vmlist[vm_id];
-        struct vm *vm = vm_init(vm_alloc, vm_config, master, vm_id);
+        struct vm_allocation* vm_alloc = vmm_alloc_install_vm(vm_id, master);
+        struct vm_config* vm_config = &config.vmlist[vm_id];
+        struct vm* vm = vm_init(vm_alloc, vm_config, master, vm_id);
         cpu_sync_barrier(&vm->sync);
         vcpu_run(cpu()->vcpu);
     } else {

@@ -5,8 +5,8 @@
 
 #include <arch/smc.h>
 
-unsigned long smc_call(unsigned long x0, unsigned long x1, unsigned long x2,
-                    unsigned long x3, struct smc_res *res)
+unsigned long smc_call(unsigned long x0, unsigned long x1, unsigned long x2, unsigned long x3,
+    struct smc_res* res)
 {
     register unsigned long r0 asm(GPR(0)) = x0;
     register unsigned long r1 asm(GPR(1)) = x1;

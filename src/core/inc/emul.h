@@ -63,16 +63,13 @@ static inline unsigned long emul_read(struct emul_access* emul)
 
     switch (emul->width) {
         case 1:
-            val = emul->sign_ext ? *((int8_t*)emul->addr)
-                                 : *((uint8_t*)emul->addr);
+            val = emul->sign_ext ? *((int8_t*)emul->addr) : *((uint8_t*)emul->addr);
             break;
         case 2:
-            val = emul->sign_ext ? *((int16_t*)emul->addr)
-                                 : *((uint16_t*)emul->addr);
+            val = emul->sign_ext ? *((int16_t*)emul->addr) : *((uint16_t*)emul->addr);
             break;
         case 4:
-            val = emul->sign_ext ? *((int32_t*)emul->addr)
-                                 : *((uint32_t*)emul->addr);
+            val = emul->sign_ext ? *((int32_t*)emul->addr) : *((uint32_t*)emul->addr);
             break;
         case 8:
             val = *((uint64_t*)emul->addr);

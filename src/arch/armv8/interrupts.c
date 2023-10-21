@@ -25,7 +25,9 @@ void interrupts_arch_init()
 
 void interrupts_arch_ipi_send(cpuid_t target_cpu, irqid_t ipi_id)
 {
-    if (ipi_id < GIC_MAX_SGIS) gic_send_sgi(target_cpu, ipi_id);
+    if (ipi_id < GIC_MAX_SGIS) {
+        gic_send_sgi(target_cpu, ipi_id);
+    }
 }
 
 void interrupts_arch_enable(irqid_t int_id, bool en)
@@ -55,7 +57,7 @@ void interrupts_arch_clear(irqid_t int_id)
     gic_set_pend(int_id, false);
 }
 
-void interrupts_arch_vm_assign(struct vm *vm, irqid_t id)
+void interrupts_arch_vm_assign(struct vm* vm, irqid_t id)
 {
     vgic_set_hw(vm, id);
 }

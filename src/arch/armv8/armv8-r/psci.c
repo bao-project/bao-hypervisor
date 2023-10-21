@@ -13,11 +13,13 @@
  * PSCI in Bao itself for each platform.
  */
 
-int32_t psci_standby() { 
-    asm volatile ("wfi");
+int32_t psci_standby()
+{
+    asm volatile("wfi");
     return PSCI_E_SUCCESS;
 }
 
-int32_t psci_power_down(enum wakeup_reason reason) {
+int32_t psci_power_down(enum wakeup_reason reason)
+{
     return psci_standby();
 }

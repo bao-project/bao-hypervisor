@@ -13,7 +13,7 @@ typedef struct {
     uint32_t next;
 } spinlock_t;
 
-#define SPINLOCK_INITVAL ((spinlock_t){0,0})
+#define SPINLOCK_INITVAL ((spinlock_t){ 0, 0 })
 
 static inline void spinlock_init(spinlock_t* lock)
 {
@@ -47,9 +47,8 @@ static inline void spin_lock(spinlock_t* lock)
         "b.eq   3f\n\t"
         "wfe\n\t"
         "b 2b\n\t"
-        "3:\n\t"
-        : "=&r"(ticket), "=&r"(next), "=&r"(temp)
-        : "Q"(lock->ticket), "Q"(lock->next) : "memory");
+        "3:\n\t" : "=&r"(ticket), "=&r"(next), "=&r"(temp) : "Q"(lock->ticket), "Q"(lock->next)
+        : "memory");
 }
 
 static inline void spin_unlock(spinlock_t* lock)
@@ -62,10 +61,7 @@ static inline void spin_unlock(spinlock_t* lock)
         "add    %w0, %w0, 1\n\t"
         "stlr   %w0, %1\n\t"
         "dsb ish\n\t"
-        "sev\n\t"
-        : "=&r"(temp)
-        : "Q"(lock->next) : "memory");
+        "sev\n\t" : "=&r"(temp) : "Q"(lock->next) : "memory");
 }
-
 
 #endif /* __ARCH_SPINLOCK__ */

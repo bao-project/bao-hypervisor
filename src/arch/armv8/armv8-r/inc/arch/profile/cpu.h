@@ -27,7 +27,7 @@ struct cpu_arch_profile {
         } perms[MPU_ARCH_MAX_NUM_ENTRIES];
         /**
          * We maintain an ordered list of the regions currently in the mpu
-         * to simplify the merging algorithm when mapping an overllaping 
+         * to simplify the merging algorithm when mapping an overllaping
          * region.
          */
         struct {
@@ -40,8 +40,9 @@ struct cpu_arch_profile {
     } mpu;
 };
 
-static inline struct cpu* cpu() {
-    return (struct cpu*) sysreg_tpidr_el2_read();
+static inline struct cpu* cpu()
+{
+    return (struct cpu*)sysreg_tpidr_el2_read();
 }
 
 #endif /* ARCH_PROFILE_CPU_H */

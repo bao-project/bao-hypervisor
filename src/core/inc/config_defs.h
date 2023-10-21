@@ -8,8 +8,8 @@
 
 #ifdef GENERATING_DEFS
 
-#define CONFIG_VCPU_NUM  1
-#define CONFIG_VM_NUM  1
+#define CONFIG_VCPU_NUM      1
+#define CONFIG_VM_NUM        1
 #define CONFIG_HYP_BASE_ADDR 0
 
 #else /* GENERATING_DEFS */

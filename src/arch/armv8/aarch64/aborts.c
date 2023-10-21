@@ -7,9 +7,9 @@
 #include <arch/sysregs.h>
 #include <cpu.h>
 
-void internal_abort_handler(unsigned long gprs[]) {
-
-    for(size_t i = 0; i < 31; i++) {
+void internal_abort_handler(unsigned long gprs[])
+{
+    for (size_t i = 0; i < 31; i++) {
         console_printk("x%d:\t\t0x%0lx\n", i, gprs[i]);
     }
     console_printk("SP:\t\t0x%0lx\n", gprs[31]);
