@@ -20,7 +20,7 @@ void interrupts_arch_init()
 {
     if (cpu_is_master()) {
         irqc_init();
-        if (DEFINED(ACLINT_PRESENT)) {
+        if (ACLINT_PRESENT()) {
             aclint_init();
         }
     }
@@ -38,7 +38,7 @@ void interrupts_arch_init()
 
 void interrupts_arch_ipi_send(cpuid_t target_cpu, irqid_t ipi_id)
 {
-    if (DEFINED(ACLINT_PRESENT)) {
+    if (ACLINT_PRESENT()) {
         aclint_send_ipi(target_cpu);
     } else {
         sbi_send_ipi(1ULL << target_cpu, 0);

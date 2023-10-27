@@ -10,4 +10,7 @@
 
 #define CPU_EXT_SSTC 1
 
+#define IPIC_SBI     (1)
+#define IPIC_ACLINT  (2)
+
 #endif
