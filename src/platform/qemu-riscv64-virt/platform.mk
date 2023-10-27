@@ -7,12 +7,14 @@ ARCH:=riscv
 CPU:=
 # Interrupt controller definition
 IRQC:=PLIC
+# Core IPIs controller
+IPIC:=IPIC_SBI
 
 drivers := sbi_uart
 
 platform_description:=virt_desc.c
 
-platform-cppflags =
+platform-cppflags =-DIPIC=$(IPIC)
 platform-cflags = 
 platform-asflags =
 platform-ldflags =

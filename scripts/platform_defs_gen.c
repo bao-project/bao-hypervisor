@@ -6,7 +6,9 @@
 #include <stdio.h>
 #include <platform.h>
 
-extern void arch_platform_defs();
+__attribute__((weak)) void arch_platform_defs(void){
+    return;
+}
 
 int main() {
 
@@ -15,6 +17,7 @@ int main() {
     if (platform.cpu_master_fixed) {
         printf("#define CPU_MASTER_FIXED (%ld)\n", platform.cpu_master);
     }
-
+    // Call arch specific platform defines generator
+    arch_platform_defs();
     return 0;
 }
