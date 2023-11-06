@@ -12,8 +12,8 @@ struct platform platform = {
         {   
             /* 
              * - 0x8000 at the bottom reserved for atf
-             * - 0x4c00000 (76 MiB) at the top reserved for gpu (depends on 
-             * gpu_mem in config.txt. this is the default)
+             * - 0x4c00000 (76 MiB) at the top reserved for gpu (depends on gpu_mem in config.txt.
+             * this is the default)
              */
             .base = 0x80000,
             .size = 0x40000000 - 0x80000 - 0x4c00000,

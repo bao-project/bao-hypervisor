@@ -9,10 +9,10 @@
 #include <bao.h>
 
 /**
- * The extra shift is because both arm and riscv logical shift instructions
- * support a maximum of machine word length minus one bit shits. This covers
- * the corner case of runtime full machine word length masks with the cost of
- * an extra shift instruction. For static masks, there should be no extra costs.
+ * The extra shift is because both arm and riscv logical shift instructions support a maximum of
+ * machine word length minus one bit shits. This covers the corner case of runtime full machine
+ * word length masks with the cost of an extra shift instruction. For static masks, there should be
+ * no extra costs.
  */
 #define BIT32_MASK(OFF, LEN) ((((UINT32_C(1) << ((LEN)-1)) << 1) - 1) << (OFF))
 #define BIT64_MASK(OFF, LEN) ((((UINT64_C(1) << ((LEN)-1)) << 1) - 1) << (OFF))

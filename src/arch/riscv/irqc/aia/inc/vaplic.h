@@ -49,15 +49,14 @@ void vaplic_init(struct vm* vm, const union vm_irqc_dscrp* vm_irqc_dscrp);
  * @param vcpu Virtual CPU that will inject the interrupt
  * @param id interrupt identification
  *
- * The virtual CPU passed by arg. may not be the CPU to which the interrupt
- * is associated. In that case the vcpu will send a msg to the target cpu.
+ * The virtual CPU passed by arg. may not be the CPU to which the interrupt is associated. In that
+ * case the vcpu will send a msg to the target cpu.
  */
 void vaplic_inject(struct vcpu* vcpu, irqid_t id);
 
 /**
- * @brief For a given virtual machine and an interrupt, associate this
- *        interrupt with the physical one. Thus, interrupt id is mapped
- *        to the physical id source.
+ * @brief For a given virtual machine and an interrupt, associate this interrupt with the physical
+ *        one. Thus, interrupt id is mapped to the physical id source.
  *
  * @param vm Virtual machine to associate the 1-1 virt/phys interrupt
  * @param id interrupt identification to associate.

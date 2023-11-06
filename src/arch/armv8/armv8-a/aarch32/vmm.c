@@ -10,8 +10,7 @@
 void vmm_arch_init_tcr()
 {
     if (cpu()->id == CPU_MASTER) {
-        /* Despite LPAE, we only support 32-bit guest physical address spaces.
-         */
+        /* Despite LPAE, we only support 32-bit guest physical address spaces. */
         parange = PAR_32BIT;
     }
 

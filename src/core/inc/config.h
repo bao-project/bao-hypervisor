@@ -12,9 +12,8 @@
 #include <config_defs.h>
 
 #ifndef GENERATING_DEFS
-// clang-format wont correctly recognize the syntax of assembly strings
-// interleaved with stringified tokens via XSTR and will format it in an
-// unreadable way
+// clang-format wont correctly recognize the syntax of assembly strings interleaved with
+// stringified tokens via XSTR and will format it in an unreadable way
 // clang-format off
 #define VM_IMAGE(img_name, img_path)                                         \
     extern uint8_t _##img_name##_vm_size;                                    \
@@ -55,8 +54,8 @@
 
 struct vm_config {
     /**
-     * To setup the image field either the VM_IMAGE_BUILTIN or VM_IMAGE_LOADED
-     * macros should be used.
+     * To setup the image field either the VM_IMAGE_BUILTIN or VM_IMAGE_LOADED macros should be
+     * used.
      */
     struct {
         /* Image load address in VM's address space */
@@ -66,8 +65,7 @@ struct vm_config {
         /* Image size */
         size_t size;
         /**
-         * Informs the hypervisor if the VM image is to be loaded
-         * separately by a bootloader.
+         * Informs the hypervisor if the VM image is to be loaded separately by a bootloader.
          */
         bool separately_loaded;
         /* Dont copy the image */
@@ -77,21 +75,21 @@ struct vm_config {
     /* Entry point address in VM's address space */
     vaddr_t entry;
     /**
-     * A bitmap signaling the preferred physical cpus assigned to the VM.
-     * If this value is each mutual exclusive for all the VMs, this field
-     * allows to direcly assign specific physical cpus to the VM.
+     * A bitmap signaling the preferred physical cpus assigned to the VM. If this value is each
+     * mutual exclusive for all the VMs, this field allows to direcly assign specific physical cpus
+     * to the VM.
      */
     cpumap_t cpu_affinity;
 
     /**
-     * A bitmap for the assigned colors of the VM. This value is truncated
-     * depending on the number of available colors calculated at runtime
+     * A bitmap for the assigned colors of the VM. This value is truncated depending on the number
+     * of available colors calculated at runtime
      */
     colormap_t colors;
 
     /**
-     * A description of the virtual platform available to the guest, i.e.,
-     * the virtual machine itself.
+     * A description of the virtual platform available to the guest, i.e., the virtual machine
+     * itself.
      */
 
     struct vm_platform platform;
@@ -100,11 +98,10 @@ struct vm_config {
 extern struct config {
     struct {
         /**
-         * Only meaningful for MPU-based platforms. The hypervisor base address
-         * will default to the platform's base address, i.e., the base address
-         * of the first region defined in the target platform's description.
-         * If the user wishes to relocate it to another address, they must set
-         * relocate to true and provide the new base address.
+         * Only meaningful for MPU-based platforms. The hypervisor base address will default to the
+         * platform's base address, i.e., the base address of the first region defined in the
+         * target platform's description. If the user wishes to relocate it to another address,
+         * they must set relocate to true and provide the new base address.
          */
         bool relocate;
         paddr_t base_addr;

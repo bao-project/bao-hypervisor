@@ -40,11 +40,11 @@ static inline bool mem_regions_overlap(struct mp_region* reg1, struct mp_region*
 }
 
 /**
- * This functions must be defined for the physical MPU. The abstraction provided
- * by the physical MPU layer is minimal. Besides initialization:
- *  i) It must provide the view of a separate physical MPU for each privilege;
- *  ii) It must allow the mapping and unmapping of regions on these MPUs,
- * returning a binary return success value.
+ * This functions must be defined for the physical MPU. The abstraction provided by the physical
+ * MPU layer is minimal. Besides initialization:
+ * i) It must provide the view of a separate physical MPU for each privilege;
+ * ii) It must allow the mapping and unmapping of regions on these MPUs,returning a binary return
+ * success value.
  */
 void mpu_init();
 bool mpu_map(priv_t priv, struct mp_region* mem);

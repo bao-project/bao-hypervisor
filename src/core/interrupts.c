@@ -55,8 +55,8 @@ static inline bool interrupt_assigned_to_hyp(irqid_t int_id)
 }
 
 /**
- * @brief For a given interrupt intp_id, return if this interrupt
- *        is already reserved by VMM or any VM
+ * @brief For a given interrupt intp_id, return if this interrupt is already reserved by VMM or any
+ *        VM
  *
  * @param int_id interrupt ID
  * @return true if interrupt is reserved

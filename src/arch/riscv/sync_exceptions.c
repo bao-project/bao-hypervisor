@@ -30,8 +30,8 @@ static uint32_t read_ins(uintptr_t ins_addr)
     }
 
     /**
-     * Read 16 bits at a time to make sure the access is aligned. If
-     * the instruction is not compressed, read the following 16-bits.
+     * Read 16 bits at a time to make sure the access is aligned. If the instruction is not
+     * compressed, read the following 16-bits.
      */
     ins = hlvxhu(ins_addr);
     if ((ins & 0b11) == 3) {
@@ -88,9 +88,8 @@ size_t guest_page_fault_handler()
         size_t ins_size;
         if (ins == 0) {
             /**
-             * If htinst does not provide information about the trap,
-             * we must read the instruction from the guest's memory
-             * manually.
+             * If htinst does not provide information about the trap, we must read the instruction
+             * from the guest's memory manually.
              */
             vaddr_t ins_addr = CSRR(sepc);
             ins = read_ins(ins_addr);
@@ -100,9 +99,8 @@ size_t guest_page_fault_handler()
             ERROR("fault on 1st stage page table walk");
         } else {
             /**
-             * If htinst is valid and is not a pseudo isntruction make sure
-             * the opcode is valid even if it was a compressed instruction,
-             * but before save the real instruction size.
+             * If htinst is valid and is not a pseudo isntruction make sure the opcode is valid
+             * even if it was a compressed instruction, but before save the real instruction size.
              */
             ins_size = TINST_INS_SIZE(ins);
             ins = ins | 0b10;
@@ -115,8 +113,7 @@ size_t guest_page_fault_handler()
         emul.addr = addr;
 
         /**
-         * TODO: check if the access is aligned.
-         * If not, inject an exception in the vm.
+         * TODO: check if the access is aligned. If not, inject an exception in the vm.
          */
 
         if (handler(&emul)) {
@@ -146,8 +143,7 @@ void sync_exception_handler()
         internal_exception_handler(&cpu()->vcpu->regs.x[0]);
     }
 
-    // TODO: Do we need to check call comes from VS-mode and not VU-mode
-    // or U-mode ?
+    // TODO: Do we need to check call comes from VS-mode and not VU-mode or U-mode ?
 
     if (_scause < sync_handler_table_size && sync_handler_table[_scause]) {
         pc_step = sync_handler_table[_scause]();

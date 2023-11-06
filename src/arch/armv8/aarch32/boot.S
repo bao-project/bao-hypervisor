@@ -19,15 +19,14 @@
 .data
 .balign 4
 /**
- * barrier is used to minimal synchronization in boot - other cores wait for
- * bsp to set it.
+ * barrier is used to minimal synchronization in boot - other cores wait for bsp to set it.
  */
 _barrier: .4byte 0
 
 /**
- * 	The following code MUST be at the base of the image, as this is bao's entry
- *	point. Therefore .boot section must also be the first in the linker script.
- *  DO NOT implement any code before the _reset_handler in this section.
+ *  The following code MUST be at the base of the image, as this is bao's entry point. Therefore
+ * .boot section must also be the first in the linker script. DO NOT implement any code before the
+ * _reset_handler in this section.
  */
  .section ".boot", "ax"
 .globl _reset_handler
@@ -57,10 +56,10 @@ _reset_handler:
     adr r1, _el2_entry
 
     /**
-     * Linearize cpu id according to the number of clusters and processors
-     * per cluster. We are only considering two levels of affinity.
-     * TODO: this should be done some other way. We shouldn't depend on the platform
-     * description this early in the initialization.
+     * Linearize cpu id according to the number of clusters and processors per cluster. We are only
+     * considering two levels of affinity.
+     * TODO: this should be done some other way. We shouldn't depend on the platform description
+     * this early in the initialization.
      */
     mov r3, r0, lsr #8
     and r3, r3, #0xff
@@ -88,8 +87,8 @@ _reset_handler:
     add r0, r0, r7
 
     /*
-     * Install vector table physical address early, in case exception occurs
-     * during this initialization.
+     * Install vector table physical address early, in case exception occurs during this
+     * initialization.
      */
     get_phys_addr r3, r4, _hyp_vector_table
     mcr p15, 4, r3, c12, c0, 0 // write HVBAR
@@ -103,9 +102,9 @@ _reset_handler:
    bne 1f
 #else
 /**
- * If the cpu master is not fixed, for setting it, we assume only one cpu is
- * initially activated which later will turn on all the others. Therefore, there
- * is no concurrency when setting CPU_MASTER and no atomic operations are needed.
+ * If the cpu master is not fixed, for setting it, we assume only one cpu is initially activated
+ * which later will turn on all the others. Therefore, there is no concurrency when setting
+ * CPU_MASTER and no atomic operations are needed.
  */
  .pushsection .data
 _master_set:
@@ -124,8 +123,8 @@ _set_master_cpu:
 1:
 
     /**
-     * TODO: bring the system to a well known state. This includes disabling
-     * the MPU, all caches, BP and others, and invalidating them.
+     * TODO: bring the system to a well known state. This includes disabling the MPU, all caches,
+     * BP and others, and invalidating them.
      */
 
     /* Clear stack pointer to avoid unaligned SP exceptions during boot */
@@ -182,7 +181,7 @@ _set_master_cpu:
     /* This point should never be reached */
     b .
 
-/***** 	Helper functions for boot code. ******/
+/*****  Helper functions for boot code. ******/
 
 .global boot_clear
 .func boot_clear
@@ -199,8 +198,7 @@ boot_clear:
 .endfunc
 
 /*
- * Code adapted from "Application Note Bare-metal Boot Code for ARMv8-A
- * Processors - Version 1.0"
+ * Code adapted from "Application Note Bare-metal Boot Code for ARMv8-A Processors - Version 1.0"
  *
  * r0 - cache level to be invalidated (0 - dl1$, 1 - il1$)
  */

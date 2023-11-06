@@ -59,8 +59,8 @@
     }
 
 /**
- * We give aarch32 registers the same name as aarch64's to which they are
- * architecturally mapped to, so that we can use the same name in common code.
+ * We give aarch32 registers the same name as aarch64's to which they are architecturally mapped
+ * to, so that we can use the same name in common code.
  */
 SYSREG_GEN_ACCESSORS(esr_el2, 4, c5, c2, 0); // hsr
 SYSREG_GEN_ACCESSORS_BANKED(elr_el2, elr_hyp);

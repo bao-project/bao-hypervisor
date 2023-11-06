@@ -12,10 +12,9 @@
 #include <limits.h>
 
 /**
- * We assume LP64 and ILP32 for 64- and 32-bit architectures, respectively, as
- * throughout the code `unsigned long` is the type used for values of the
- * architecture's word width. This is just a sanity check to verify this is the
- * ABI the compiler is effectively using.
+ * We assume LP64 and ILP32 for 64- and 32-bit architectures, respectively, as throughout the code
+ * `unsigned long` is the type used for values of the architecture's word width. This is just a
+ * sanity check to verify this is the ABI the compiler is effectively using.
  */
 #if UINTPTR_WIDTH != ULONG_WIDTH
 #error "Unsigned long type width is not the same as the architecture´s word with"

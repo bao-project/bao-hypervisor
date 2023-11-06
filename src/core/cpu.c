@@ -93,9 +93,8 @@ void cpu_idle()
     cpu_arch_idle();
 
     /**
-     * Should not return here.
-     * cpu should "wake up" from idle in cpu_idle_wakeup
-     * with a rewinded stack.
+     * Should not return here. cpu should "wake up" from idle in cpu_idle_wakeup with a rewinded
+     * stack.
      */
     ERROR("Spurious idle wake up");
 }

@@ -16,8 +16,8 @@ void vmm_arch_profile_init()
 {
     if (cpu()->id == CPU_MASTER) {
         /**
-         * Since there is no firmware in cortex-r platforms, we need to
-         * initialize the system counter.
+         * Since there is no firmware in cortex-r platforms, we need to initialize the system
+         * counter.
          */
         volatile struct generic_timer_cntctrl* timer_ctl;
         timer_ctl = (struct generic_timer_cntctrl*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_PRIVATE,

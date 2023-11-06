@@ -18,8 +18,8 @@ boot_arch_profile_init:
     mov x20, x30
 
 	/*
-     * Register x18 contains the size of the allocated physical memory between
-	 * the loadable sections of the image and the non-loadable.
+     * Register x18 contains the size of the allocated physical memory between the loadable
+	 * sections of the image and the non-loadable.
      */
     ldr x18, =extra_allocated_phys_mem
 
@@ -172,8 +172,8 @@ map_cpu:
 setup_cpu:
 
 	/**
-	 * 	The operation is purposely commented out.
-	 *  We are assuming monitor code already enabled smp coherency.
+	 * The operation is purposely commented out.  We are assuming monitor code already enabled smp
+	 * coherency.
 	 */ 
 
 	/* setup translation configurations */
@@ -195,14 +195,12 @@ setup_cpu:
 	msr TTBR0_EL2, x3
 
 	/**	
-	 * TODO: set implementation defined registers such as ACTLR or AMAIR.
-	 * Maybe define a macro for this in a implementation oriented directory
-	 * inside arch.
+	 * TODO: set implementation defined registers such as ACTLR or AMAIR. Maybe define a macro for
+	 * this in a implementation oriented directory inside arch.
 	 */
 
 	/**
-	 * TODO: invalidate caches, TLBs and branch prediction.
-	 * Need for barriers?
+	 * TODO: invalidate caches, TLBs and branch prediction. Need for barriers?
 	 */
 
 	ldr x5, =_enter_vas
@@ -248,7 +246,7 @@ warm_boot:
 
 	/* save x0 which contains pointer to saved state psci context */
 	mov x19, x0
-    	/* invalidate l1$ */
+    /* invalidate l1$ */
 	mov x0, #0
 	bl	boot_cache_invalidate
 

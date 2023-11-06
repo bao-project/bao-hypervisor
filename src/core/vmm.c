@@ -78,12 +78,10 @@ static bool vmm_assign_vcpu(bool* master, vmid_t* vm_id)
 static bool vmm_alloc_vm(struct vm_allocation* vm_alloc, struct vm_config* config)
 {
     /**
-     * We know that we will allocate a block aligned to the PAGE_SIZE, which
-     * is guaranteed to fulfill the alignment of all types.
-     * However, to guarantee the alignment of all fields, when we calculate
-     * the size of a field in the vm_allocation struct, we must align the
-     * previous total size calculated until that point, to the alignment of
-     * the type of the next field.
+     * We know that we will allocate a block aligned to the PAGE_SIZE, which is guaranteed to
+     * fulfill the alignment of all types. However, to guarantee the alignment of all fields, when
+     * we calculate the size of a field in the vm_allocation struct, we must align the previous
+     * total size calculated until that point, to the alignment of the type of the next field.
      */
 
     size_t total_size = sizeof(struct vm);

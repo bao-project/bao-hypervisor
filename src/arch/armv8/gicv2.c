@@ -94,8 +94,7 @@ void gic_cpu_init()
 {
     for (size_t i = 0; i < GIC_NUM_INT_REGS(GIC_CPU_PRIV); i++) {
         /**
-         * Make sure all private interrupts are not enabled, non pending,
-         * non active.
+         * Make sure all private interrupts are not enabled, non pending, non active.
          */
         gicd->ICENABLER[i] = -1;
         gicd->ICPENDR[i] = -1;

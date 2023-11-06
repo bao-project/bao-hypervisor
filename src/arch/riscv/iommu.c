@@ -301,23 +301,19 @@ void rv_iommu_init(void)
     // Read and check caps
     rv_iommu_check_features();
 
-    // Set fctl.WSI
-    // We will be first using WSI as IOMMU interrupt mechanism. Then MSIs will
-    // be included
+    // Set fctl.WSI We will be first using WSI as IOMMU interrupt mechanism. Then MSIs will be
+    // included
     rv_iommu.hw.reg_ptr->fctl = RV_IOMMU_FCTL_DEFAULT;
 
-    // Configure interrupt vectors (icvec)
-    // We use a different vector for each interrupt source CQ and FQ by now
+    // Configure interrupt vectors (icvec) We use a different vector for each interrupt source CQ
+    // and FQ by now
     rv_iommu.hw.reg_ptr->icvec = RV_IOMMU_ICVEC_DEFAULT;
 
     // Clear all IP flags (ipsr)
     rv_iommu.hw.reg_ptr->ipsr = RV_IOMMU_IPSR_CLEAR;
 
-    // TODO
-    // Allocate memory for CQ
-    // Configure cqb with queue size and base address. Clear cqt
-    // Allocate IRQ for CQ
-    // Enable CQ (cqcsr)
+    // TODO Allocate memory for CQ Configure cqb with queue size and base address. Clear cqt
+    // Allocate IRQ for CQ Enable CQ (cqcsr)
 
     // Allocate memory for FQ (aligned to 4kiB)
     vaddr_t fq_vaddr = (vaddr_t)mem_alloc_page(NUM_PAGES(sizeof(struct fq_entry) * FQ_N_ENTRIES),
@@ -386,8 +382,8 @@ bool rv_iommu_alloc_did(deviceid_t dev_id)
 }
 
 /**
- * Program DDT entry with base address of the root PT, VMID and translation
- * configuration. Enable DC.
+ * Program DDT entry with base address of the root PT, VMID and translation configuration. Enable
+ * DC.
  *
  * @dev_id:     device_id to index DDT
  * @vm:         VM to which the device is being assigned
@@ -410,9 +406,8 @@ void rv_iommu_write_ddt(deviceid_t dev_id, struct vm* vm, paddr_t root_pt)
         iohgatp |= RV_IOMMU_IOHGATP_SV39X4;
         rv_iommu.hw.ddt[dev_id].iohgatp = iohgatp;
 
-        // TODO:
-        // Configure first-stage translation. Second-stage only by now
-        // Configure MSI translation
+        // TODO: Configure first-stage translation. Second-stage only by now Configure MSI
+        // translation
     }
     spin_unlock(&rv_iommu.ddt_lock);
 }
@@ -426,8 +421,7 @@ void rv_iommu_write_ddt(deviceid_t dev_id, struct vm* vm, paddr_t root_pt)
  */
 bool iommu_arch_init()
 {
-    // By checking platform.arch.iommu.base we verify if an IOMMU is present in
-    // the platform
+    // By checking platform.arch.iommu.base we verify if an IOMMU is present in the platform
     if (cpu()->id == CPU_MASTER && platform.arch.iommu.base) {
         rv_iommu_init();
         return true;
@@ -437,9 +431,8 @@ bool iommu_arch_init()
 }
 
 /**
- * Initialize the DDT entry indexed by device_id for the given VM
- * Configure corresponding DDT entry with root PT base addr, VMID (GSCID) and
- * device config
+ * Initialize the DDT entry indexed by device_id for the given VM Configure corresponding DDT entry
+ * with root PT base addr, VMID (GSCID) and device config
  *
  * @vm:     VM struct to which the device will be assigned.
  * @dev_id: device_id of the device to be added.

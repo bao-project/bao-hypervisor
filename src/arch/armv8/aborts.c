@@ -37,8 +37,7 @@ void aborts_data_lower(unsigned long iss, unsigned long far, unsigned long il, u
         emul.reg_width = 4 + (4 * bit64_extract(iss, ESR_ISS_DA_SF_OFF, ESR_ISS_DA_SF_LEN));
         emul.sign_ext = bit64_extract(iss, ESR_ISS_DA_SSE_OFF, ESR_ISS_DA_SSE_LEN);
 
-        // TODO: check if the access is aligned. If not, inject an exception in
-        // the vm
+        // TODO: check if the access is aligned. If not, inject an exception in the vm
 
         if (handler(&emul)) {
             unsigned long pc_step = 2 + (2 * il);
@@ -101,9 +100,9 @@ void smc_handler(unsigned long iss, unsigned long far, unsigned long il, unsigne
     syscall_handler(iss, far, il, ec);
 
     /**
-     * Since SMCs are trapped due to setting hcr_el2.tsc, the "preferred
-     * exception return address" is the address of the actual smc instruction.
-     * Thus, we need to adjust it to the next instruction.
+     * Since SMCs are trapped due to setting hcr_el2.tsc, the "preferred exception return address"
+     * is the address of the actual smc instruction. Thus, we need to adjust it to the next
+     * instruction.
      */
     vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + 4);
 }

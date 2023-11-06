@@ -22,8 +22,7 @@ static inline void spinlock_init(spinlock_t* lock)
 }
 
 /**
- * This lock follows the ticket lock algorithm described in Arm's ARM DDI0487I.a
- * Appendix K13.
+ * This lock follows the ticket lock algorithm described in Arm's ARM DDI0487I.a Appendix K13.
  */
 
 static inline void spin_lock(spinlock_t* lock)

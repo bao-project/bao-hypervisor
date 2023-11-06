@@ -50,8 +50,7 @@ memcpy:
 switch_space:
         
     /**
-    * update flat maping page table entry  to feature new physical address space 
-    * entry page
+    * update flat maping page table entry  to feature new physical address space entry page
     */
     adr x3, _image_start
     PTE_INDEX_ASM x4, x3, 1

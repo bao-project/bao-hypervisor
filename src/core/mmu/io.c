@@ -28,8 +28,7 @@ bool io_vm_add_device(struct vm* vm, deviceid_t dev_id)
     bool res = false;
 
     /*
-     * If dev_id == 0 assume global mask includes
-     * the relevant devices for this VM.
+     * If dev_id == 0 assume global mask includes the relevant devices for this VM.
      *
      * Assume there's no device id = 0 */
     if (dev_id != 0) {

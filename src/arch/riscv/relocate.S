@@ -60,9 +60,8 @@ switch_space:
     csrw satp, a1
 
     /**
-     * Invalidate TLB: we can do this directly here without sbi support
-     * because we don't really need any shootdown as all harts must go
-     * through here.
+     * Invalidate TLB: we can do this directly here without sbi support because we don't really
+     * need any shootdown as all harts must go through here.
      */
     sfence.vma
 

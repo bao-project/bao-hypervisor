@@ -34,8 +34,8 @@ struct page_table_dscr armv8_pt_dscr = {
 };
 
 /**
- * This might be modified at initialization depending on the
- * value of parange and consequently SL0 in VTCR_EL2.
+ * This might be modified at initialization depending on the value of parange and consequently SL0
+ * in VTCR_EL2.
  */
 struct page_table_dscr armv8_pt_s2_dscr = {
     .lvls = 4,

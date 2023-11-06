@@ -111,8 +111,7 @@ static inline perms_t mem_vmpu_entry_perms(struct mp_region* mpr)
 
 static inline void mpu_entry_set_perms(struct mp_region* mpr, struct mpu_perms mpu_perms)
 {
-    // TODO: should we check this is following the allowed permission
-    // combinations?
+    // TODO: should we check this is following the allowed permission combinations?
 
     bool el1_priv = mpu_perms.el1 != PERM_NONE;
     perms_t perms = mpu_perms.el1 | mpu_perms.el2;
@@ -201,10 +200,9 @@ bool mpu_map(priv_t priv, struct mp_region* mpr)
 
     while (size_left > 0 && !failed) {
         /**
-         * Since we'll be checking for overlapping regions in order, there
-         * will be at most two regions to map in a given iteration. This
-         * happens when the previous iteration found an overlapping region
-         * that is fully contained by the new region.
+         * Since we'll be checking for overlapping regions in order, there will be at most two
+         * regions to map in a given iteration. This happens when the previous iteration found an
+         * overlapping region that is fully contained by the new region.
          */
 
         struct mp_region* new_reg;
@@ -216,17 +214,15 @@ bool mpu_map(priv_t priv, struct mp_region* mpr)
             break;
         }
 
-        // As Armv8-R does not allow overlapping regions, we must first check
-        // if usch regions already exist. Specifically, for the case where the
-        // regions has hypervisor permissions only, and this is a map
-        // targetting a guest mpu, we just need to flip the guest permission
-        // bit. This will allow us to share regions between guest and hypevisor
-        // to, for example, (i) share the use of a peripheral (mainly uart for
-        // debugging purposes), or (ii) share a RW page between hypervisor and
-        // guest. Although having a RO page for guest while RW for the
-        // hypervisor is highly useful, this MPU does not allow it. That said,
-        // in the case we need it in the future, we'll have to implement a
-        // mechanism for that based on traps.
+        // As Armv8-R does not allow overlapping regions, we must first check if usch regions
+        // already exist. Specifically, for the case where the regions has hypervisor permissions
+        // only, and this is a map targetting a guest mpu, we just need to flip the guest
+        // permission bit. This will allow us to share regions between guest and hypevisor to, for
+        // example, (i) share the use of a peripheral (mainly uart for debugging purposes), or (ii)
+        // share a RW page between hypervisor and guest. Although having a RO page for guest while
+        // RW for the hypervisor is highly useful, this MPU does not allow it. That said, in the
+        // case we need it in the future, we'll have to implement a mechanism for that based on
+        // traps.
 
         bool overlaped = false;
         perms_t new_perms = mem_vmpu_entry_perms(new_reg);
@@ -249,26 +245,24 @@ bool mpu_map(priv_t priv, struct mp_region* mpr)
             }
 
             if (!mem_regions_overlap(new_reg, &overlapped_reg)) {
-                // If we are not overlapping, continue to search for overlapped
-                // regions until we check all entries. This should be the most
-                // frequent case, so the overhead for the checks on overllap
-                // will rarely execute.
+                // If we are not overlapping, continue to search for overlapped regions until we
+                // check all entries. This should be the most frequent case, so the overhead for
+                // the checks on overllap will rarely execute.
                 prev = mpid;
                 continue;
             }
             overlaped = true;
 
             if (mpu_entry_has_priv(mpid, priv)) {
-                // We don't allow overlapping regions of the same privilege.
-                // This is something that should be checked at the vmpu level,
-                // but we re-check it here anyway.
+                // We don't allow overlapping regions of the same privilege. This is something that
+                // should be checked at the vmpu level, but we re-check it here anyway.
                 failed = true;
                 break;
             }
 
-            // We only allow to bump up permissions if the overlapped region
-            // is a RO hypervisor region. Otherwise permissions have to be
-            // RW in both regions. We don't allow to overlap executable regions.
+            // We only allow to bump up permissions if the overlapped region is a RO hypervisor
+            // region. Otherwise permissions have to be RW in both regions. We don't allow to
+            // overlap executable regions.
             struct mpu_perms overlapped_perms = cpu()->arch.profile.mpu.perms[mpid];
             struct mpu_perms overlap_perms = overlapped_perms;
             priv_t overlapped_priv;
@@ -285,23 +279,22 @@ bool mpu_map(priv_t priv, struct mp_region* mpr)
 
             if (((overlap_perms.el1 & PERM_RW) == PERM_R) &&
                 ((overlap_perms.el2 & PERM_W) != PERM_NONE)) {
-                // We allow promoting read/write privielges of the hypervisor
-                // region to match the guest's. However, this combination
-                // promotes the guest privielges, which we don't allow.
+                // We allow promoting read/write privielges of the hypervisor region to match the
+                // guest's. However, this combination promotes the guest privielges, which we don't
+                // allow.
                 failed = true;
                 break;
             }
 
             if ((overlap_perms.el1 & PERM_X) != (overlap_perms.el2 & PERM_X)) {
-                // Unless explicitly mapped, we don't promote execution
-                // privileges.
+                // Unless explicitly mapped, we don't promote execution privileges.
                 failed = true;
                 break;
             }
 
-            // The Armv8-R MPU does not allow us to have different permissions
-            // for hypervisor and guest. So we must fail if asked to add an
-            // overlapping mapping with different permissions or attributes
+            // The Armv8-R MPU does not allow us to have different permissions for hypervisor and
+            // guest. So we must fail if asked to add an overlapping mapping with different
+            // permissions or attributes
             if (mpu_entry_attrs(new_reg) != mpu_entry_attrs(&overlapped_reg)) {
                 failed = true;
                 break;
@@ -408,10 +401,9 @@ bool mpu_map(priv_t priv, struct mp_region* mpr)
             }
 
             /**
-             * Check if we can merge the current region with the region
-             * right before and/or right after. This can only be done if
-             * they are adjacent and have the same exect flags (i.e.
-             * permissions and memory attribtues).
+             * Check if we can merge the current region with the region right before and/or right
+             * after. This can only be done if they are adjacent and have the same exect flags
+             * (i.e. permissions and memory attribtues).
              */
 
             if ((prev != INVALID_MPID) && !mpu_entry_locked(prev)) {
@@ -442,8 +434,7 @@ bool mpu_map(priv_t priv, struct mp_region* mpr)
             }
 
             /**
-             * If we can merge the region do it. Otherwise, allocate a new
-             * entry and set it.
+             * If we can merge the region do it. Otherwise, allocate a new entry and set it.
              */
             if (merge_mpid != INVALID_MPID) {
                 mpu_entry_update_priv_perms(priv, merge_mpid, new_perms);
@@ -544,8 +535,8 @@ bool mpu_unmap(priv_t priv, struct mp_region* mpr)
         size_left -= overlap_size;
     }
 
-    // TODO: check if we can merge new regions after unmapping a given
-    // privilege from a shared region
+    // TODO: check if we can merge new regions after unmapping a given privilege from a shared
+    // region
 
     return size_left == 0;
 }
@@ -563,8 +554,8 @@ void mpu_init()
             bitmap_set(cpu()->arch.profile.mpu.locked, mpid);
 
             /**
-             * We are assuming all initial regions have all hyp perms.
-             * This might change in the future.
+             * We are assuming all initial regions have all hyp perms. This might change in the
+             * future.
              */
             cpu()->arch.profile.mpu.perms[mpid].el1 = PERM_NONE;
             cpu()->arch.profile.mpu.perms[mpid].el2 = PERM_RWX;

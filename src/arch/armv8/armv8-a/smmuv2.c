@@ -89,10 +89,9 @@ static void smmu_check_features()
     }
 
     /**
-     * TODO: the most common smmuv2 implementation (mmu-500) does not provide
-     * ptw coherency. So we must add some mechanism software-managed
-     * coherency mechanism for the vms using the smmu according to the
-     * result of this feature test.
+     * TODO: the most common smmuv2 implementation (mmu-500) does not provide ptw coherency. So we
+     * must add some mechanism software-managed coherency mechanism for the vms using the smmu
+     * according to the result of this feature test.
      */
     if (!(smmu.hw.glbl_rs0->IDR0 & SMMUV2_IDR0_CTTW_BIT)) {
         WARNING("smmuv2 does not support coherent page table walks");
@@ -122,8 +121,7 @@ void smmu_init()
     /*
      * Alloc pages for global address space.
      *
-     * Map the first 4k so we can read all the info we need to further
-     * allocate smmu registers.
+     * Map the first 4k so we can read all the info we need to further allocate smmu registers.
      */
     vaddr_t smmu_glbl_rs0 = mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
         platform.arch.smmu.base, NUM_PAGES(sizeof(struct smmu_glbl_rs0_hw)));
@@ -223,9 +221,8 @@ void smmu_write_ctxbnk(size_t ctx_id, paddr_t root_pt, asid_t vm_id)
         smmu.hw.glbl_rs1->CBA2R[ctx_id] = SMMUV2_CBAR_VA64;
 
         /**
-         * This should closely match to the VTCR configuration set up in
-         * vmm_arch_init as we're sharing page table between the VM and its
-         * smmu context.
+         * This should closely match to the VTCR configuration set up in vmm_arch_init as we're
+         * sharing page table between the VM and its smmu context.
          */
         uint32_t tcr = ((parange << SMMUV2_TCR_PS_OFF) & SMMUV2_TCR_PS_MSK);
         size_t t0sz = 64 - parange_table[parange];
@@ -265,13 +262,12 @@ ssize_t smmu_alloc_sme()
  *      1. sme is a group;
  *      2. sme is a device.
  *
- * Groups can be merged together if one is found to be inclusive or equal of
- * the other.
+ * Groups can be merged together if one is found to be inclusive or equal of the other.
  *
  * Devices can be added (i.e. merged into) a group, but not together.
  *
- * This function searches for existing smes that are compatible for merging
- * with the new sme, raising an ERROR when conflicting attributes are found.
+ * This function searches for existing smes that are compatible for merging with the new sme,
+ * raising an ERROR when conflicting attributes are found.
  */
 bool smmu_compatible_sme_exists(streamid_t mask, streamid_t id, size_t ctx, bool group)
 {
@@ -291,10 +287,9 @@ bool smmu_compatible_sme_exists(streamid_t mask, streamid_t id, size_t ctx, bool
                 ctx == smmu_sme_get_ctx(sme)) {
                 /* Compatible entry found.
                  *
-                 * If the new entry includes an existing one, there is the
-                 * possibility that it will include other existing entries, it
-                 * is therefore necessary to remove the existing entry and keep
-                 * searching.
+                 * If the new entry includes an existing one, there is the possibility that it will
+                 * include other existing entries, it is therefore necessary to remove the existing
+                 * entry and keep searching.
                  */
                 if (mask > sme_mask) {
                     bitmap_clear(smmu.sme_bitmap, sme);
