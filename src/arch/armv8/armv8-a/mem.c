@@ -13,9 +13,8 @@ void as_arch_init(struct addr_space* as)
     size_t index;
 
     /*
-     * If the address space is a copy of an existing hypervisor space it's not
-     * possible to use the PT_CPU_REC index to navigate it, so we have to use
-     * the PT_VM_REC_IND.
+     * If the address space is a copy of an existing hypervisor space it's not possible to use the
+     * PT_CPU_REC index to navigate it, so we have to use the PT_VM_REC_IND.
      */
     if (as->type == AS_HYP_CPY || as->type == AS_VM) {
         index = PT_VM_REC_IND;

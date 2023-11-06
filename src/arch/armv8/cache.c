@@ -13,8 +13,8 @@ void cache_arch_enumerate(struct cache* dscrp)
 {
     if (platform.cache.lvls != 0) {
         /**
-         * No need to probe cache registers, cache topology is described
-         * in the platform descrption.
+         * No need to probe cache registers, cache topology is described in the platform
+         * descrption.
          */
         *dscrp = platform.cache;
     }

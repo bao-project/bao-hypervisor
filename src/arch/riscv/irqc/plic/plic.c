@@ -149,8 +149,8 @@ void plic_handle()
 }
 
 /**
- * Context organization is spec-out by the vendor, this is the default
- * mapping found in sifive's plic.
+ * Context organization is spec-out by the vendor, this is the default mapping found in sifive's
+ * plic.
  */
 
 __attribute__((weak)) int plic_plat_cntxt_to_id(struct plic_cntxt cntxt)

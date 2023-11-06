@@ -226,10 +226,9 @@ static cpumap_t mem_section_shared_cpus(struct addr_space* as, as_sec_t section)
             cpus = BIT_MASK(0, PLAT_CPU_NUM);
         } else if (section == SEC_HYP_VM) {
             /**
-             * If we don't have a valid vcpu at this point, it means we are
-             * creating this region before even having a vm. Therefore, the
-             * sharing of the region must be guaranteed by other means (e.g.
-             * vmm_vm_install)
+             * If we don't have a valid vcpu at this point, it means we are creating this region
+             * before even having a vm. Therefore, the sharing of the region must be guaranteed by
+             * other means (e.g. vmm_vm_install)
              */
             if (cpu()->vcpu != NULL) {
                 cpus = cpu()->vcpu->vm->cpus;
@@ -416,10 +415,9 @@ bool mem_unmap_range(struct addr_space* as, vaddr_t vaddr, size_t size, bool bro
         mpid_t mpid = mem_vmpu_find_overlapping_region(as, &reg);
         if (mpid == INVALID_MPID) {
             /**
-             * FIXME: right now we are ignoring the fact that the range  or
-             * parts of it might not be mapped. This is in line to what the MMU
-             * mem_unmap function does. We should change this to only go ahead
-             * with the unpamming if the full range is indeed mapped.
+             * FIXME: right now we are ignoring the fact that the range  or parts of it might not
+             * be mapped. This is in line to what the MMU mem_unmap function does. We should change
+             * this to only go ahead with the unpamming if the full range is indeed mapped.
              */
             break;
         }
@@ -475,10 +473,9 @@ vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, vaddr_t vas,
     vaddr_t va_res = INVALID_VA;
 
     if ((ass != asd) && (vad == INVALID_VA || vad == vas)) {
-        // In mpu-based systems, we can only copy mappings between address
-        // spaces, as copying a mapping in a single address space would overlap
-        // the orignal mapping. Also because only identify mappings are
-        // supported, the source va must equal the destination va, or be an
+        // In mpu-based systems, we can only copy mappings between address spaces, as copying a
+        // mapping in a single address space would overlap the orignal mapping. Also because only
+        // identify mappings are supported, the source va must equal the destination va, or be an
         // invalid va. This still covers the most useful uses cases.
 
         spin_lock(&ass->lock);

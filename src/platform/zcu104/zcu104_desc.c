@@ -11,18 +11,16 @@ struct platform platform = {
     .regions =  (struct mem_region[]) {
         {
            /**
-            * The Arm Trusted Firmware shipped in the default Xilinx BOOT.BIN
-            * is loaded in a non secure zone, more specifically at the end of
-            * the first memory bank. Being in a non-secure zone means that can
-            * be easily overwritten.
+            * The Arm Trusted Firmware shipped in the default Xilinx BOOT.BIN is loaded in a non
+            * secure zone, more specifically at the end of the first memory bank. Being in a
+            * non-secure zone means that can be easily overwritten.
             *
-            * The memory size is therefore shrunk to take this into account and
-            * avoid memory corruption.
+            * The memory size is therefore shrunk to take this into account and avoid memory
+            * corruption.
             *
-            * Note that if the ATF is compiled with debug symbols or with a
-            * custom SPD service, then it gets loaded at the *beginning* of the
-            * first memory bank, in that case the base address should be
-            * changed to 0x80000, and the size shrunk accorindgly.
+            * Note that if the ATF is compiled with debug symbols or with a custom SPD service,
+            * then it gets loaded at the *beginning* of the first memory bank, in that case the
+            * base address should be changed to 0x80000, and the size shrunk accorindgly.
             */
             .base = 0x00080000,
             .size = 0x7FF00000 - 0x16000,

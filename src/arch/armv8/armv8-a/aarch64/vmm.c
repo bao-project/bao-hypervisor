@@ -10,14 +10,12 @@
 void vmm_arch_init_tcr()
 {
     /**
-     * Check available physical address range which will limit
-     * IPA size. Patch 2-stage page table descriptors if this forces
-     * the initial lookup to level 1.
+     * Check available physical address range which will limit IPA size. Patch 2-stage page table
+     * descriptors if this forces the initial lookup to level 1.
      *
-     * In multi-cluster heterogenous we only support the minimum parange
-     * for a vm's physicall adress space.
-     * TODO: we could make this more dynamic and adapt it to each virtual
-     * machine.
+     * In multi-cluster heterogenous we only support the minimum parange for a vm's physicall
+     * adress space.
+     * TODO: we could make this more dynamic and adapt it to each virtual machine.
      */
 
     static size_t min_parange = 0b111;

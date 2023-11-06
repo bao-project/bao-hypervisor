@@ -264,8 +264,8 @@ bool vgic_icc_sgir_handler(struct emul_access* acc)
             trgtlist = cpu()->vcpu->vm->cpus & ~(1U << cpu()->vcpu->phys_id);
         } else {
             /**
-             * TODO: we are assuming the vm has a single cluster. Change this
-             * when adding virtual cluster support.
+             * TODO: we are assuming the vm has a single cluster. Change this when adding virtual
+             * cluster support.
              */
             trgtlist = vm_translate_to_pcpu_mask(cpu()->vcpu->vm, ICC_SGIR_TRGLSTFLT(sgir),
                 cpu()->vcpu->vm->cpu_num);

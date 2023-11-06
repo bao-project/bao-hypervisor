@@ -49,9 +49,8 @@ int32_t psci_cpu_suspend_handler(uint32_t power_state, unsigned long entrypoint,
     unsigned long context_id)
 {
     /**
-     * !! Ignoring the rest of the requested  powerstate for now.
-     * This might be a problem howwver since powerlevel and stateid are
-     * implementation defined.
+     * !! Ignoring the rest of the requested  powerstate for now. This might be a problem howwver
+     * since powerlevel and stateid are implementation defined.
      */
     uint32_t state_type = power_state & PSCI_STATE_TYPE_BIT;
     int32_t ret;
@@ -66,11 +65,9 @@ int32_t psci_cpu_suspend_handler(uint32_t power_state, unsigned long entrypoint,
     } else {
         // PSCI_STATE_TYPE_STANDBY:
         /**
-         *  TODO: ideally we would emmit a standby request to PSCI
-         * (currently, ATF), but when we do, we do not wake up on interrupts
-         * on the current development target zcu104.
-         * We should understand why. To circunvent this, we directly emmit a
-         * wfi
+         *  TODO: ideally we would emmit a standby request to PSCI (currently, ATF), but when we
+         * do, we do not wake up on interrupts on the current development target zcu104. We should
+         * understand why. To circunvent this, we directly emmit a wfi
          */
         // ret = psci_standby();
         asm volatile("wfi\n\r");
@@ -83,9 +80,8 @@ int32_t psci_cpu_suspend_handler(uint32_t power_state, unsigned long entrypoint,
 int32_t psci_cpu_off_handler(void)
 {
     /**
-     *  Right now we only support one vcpu por cpu, so passthrough the request
-     *  directly to the monitor psci implementation. Later another vcpu, will
-     *  call cpu_on on this vcpu()->
+     *  Right now we only support one vcpu por cpu, so passthrough the request directly to the
+     *  monitor psci implementation. Later another vcpu, will call cpu_on on this vcpu()->
      */
 
     spin_lock(&cpu()->vcpu->arch.psci_ctx.lock);
@@ -142,15 +138,14 @@ int32_t psci_cpu_on_handler(unsigned long target_cpu, unsigned long entrypoint,
 
 int32_t psci_affinity_info_handler(unsigned long target_affinity, uint32_t lowest_affinity_level)
 {
-    /* return ON, if at least one core in the affinity instance: has been
-    enabled with a call to CPU_ON, and that core has not called CPU_OFF */
+    /* return ON, if at least one core in the affinity instance: has been enabled with a call to
+    CPU_ON, and that core has not called CPU_OFF */
 
-    /* return off if all of the cores in the affinity instance have called
-    CPU_OFF and each of these calls has been processed by the PSCI
-    implementation. */
+    /* return off if all of the cores in the affinity instance have called CPU_OFF and each of
+    these calls has been processed by the PSCI implementation. */
 
-    /*  return ON_PENDING if at least one core in the affinity instance is in
-    the ON_PENDING state */
+    /*  return ON_PENDING if at least one core in the affinity instance is in the ON_PENDING state
+     */
 
     /**
      * TODO

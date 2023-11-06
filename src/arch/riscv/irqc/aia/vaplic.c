@@ -144,8 +144,7 @@ static bool vaplic_get_active(struct vcpu* vcpu, irqid_t intp_id)
 /**
  * @brief Set a given interrupt as pending
  *
- * @pre This function should only be called by a function that
- *      has taken the lock.
+ * @pre This function should only be called by a function that has taken the lock.
  *
  * @param vcpu virtual cpu
  * @param intp_id interrupt id
@@ -166,8 +165,7 @@ static bool vaplic_set_pend(struct vcpu* vcpu, irqid_t intp_id)
 }
 
 /**
- * @brief Updates the topi register with with the
- *        highest pend & en interrupt id
+ * @brief Updates the topi register with with the highest pend & en interrupt id
  *
  * @param vcpu virtual cpu
  * @return true if topi was updated, requiring the handling of the interrupt
@@ -231,9 +229,8 @@ static void vaplic_update_hart_line(struct vcpu* vcpu, vcpuid_t vhart_index)
     cpuid_t pcpu_id = vaplic_vcpuid_to_pcpuid(vcpu, vhart_index);
 
     /**
-     *  If the current cpu is the targeting cpu, signal the intp
-     *  to the hart
-     *  Else, send a mensage to the targeting cpu
+     *  If the current cpu is the targeting cpu, signal the intp to the hart. Else, send a mensage
+     *  to the targeting cpu
      */
     if (pcpu_id == cpu()->id) {
         if (vaplic_update_topi(vcpu)) {
@@ -251,9 +248,9 @@ static void vaplic_update_hart_line(struct vcpu* vcpu, vcpuid_t vhart_index)
  * @brief Triggers the hart/harts interrupt line update.
  *
  * @param vcpu virtual cpu
- * @param vhart_index virtual hart to update the interrupt line.
- *        If UPDATE_ALL_HARTS were passed, this function will trigger
- *        the interrupt line update to all virtual harts running in this vm.
+ * @param vhart_index virtual hart to update the interrupt line. If UPDATE_ALL_HARTS were passed,
+ *        this function will trigger the interrupt line update to all virtual harts running in this
+ *        vm.
  */
 static void vaplic_update_hart(struct vcpu* vcpu, int16_t vhart_index)
 {
@@ -346,8 +343,8 @@ static void vaplic_set_sourcecfg(struct vcpu* vcpu, irqid_t intp_id, uint32_t ne
     spin_lock(&vaplic->lock);
     if (intp_id > 0 && intp_id < APLIC_MAX_INTERRUPTS &&
         vaplic_get_sourcecfg(vcpu, intp_id) != new_val) {
-        /** If intp is being delegated make whole reg 0.
-         *  This happens because a S domain is always a leaf. */
+        /** If intp is being delegated make whole reg 0. This happens because a S domain is always
+         *  a leaf. */
         new_val &= (new_val & APLIC_SRCCFG_D) ? 0 : APLIC_SRCCFG_SM;
 
         /** If SM is reserved make intp inactive */
@@ -652,10 +649,8 @@ static void vaplic_set_target(struct vcpu* vcpu, irqid_t intp_id, uint32_t new_v
 
     spin_lock(&vaplic->lock);
     if (pcpu_id == INVALID_CPUID) {
-        /** If the hart index is invalid, make it vcpu = 0
-         *  and read the new pcpu.
-         *  Software should not write anything other than legal
-         *  values to such a field */
+        /** If the hart index is invalid, make it vcpu = 0 and read the new pcpu. Software should
+         *  not write anything other than legal values to such a field */
         hart_index = 0;
         pcpu_id = vm_translate_to_pcpuid(vcpu->vm, hart_index);
     }
@@ -832,8 +827,8 @@ static uint32_t vaplic_get_topi(struct vcpu* vcpu, idcid_t idc_id)
 /**
  * @brief Returns the highest pending and enabled interrupt.
  *
- * Claimi has the same value as topi. However, reading claimi has the side
- * effect of clearing the pending bit for the reported interrupt identity.
+ * Claimi has the same value as topi. However, reading claimi has the side effect of clearing the
+ * pending bit for the reported interrupt identity.
  *
  * @param vcpu virtual CPU
  * @param idc_id idc identifier
@@ -862,8 +857,7 @@ static uint32_t vaplic_get_claimi(struct vcpu* vcpu, idcid_t idc_id)
  *
  * @param acc access information
  *
- * It determines whether it needs to call the write or read funcion
- * for the choosen register.
+ * It determines whether it needs to call the write or read funcion for the choosen register.
  */
 static void vaplic_emul_domaincfg_access(struct emul_access* acc)
 {
@@ -879,8 +873,7 @@ static void vaplic_emul_domaincfg_access(struct emul_access* acc)
  *
  * @param acc access information
  *
- * It determines whether it needs to call the write or read funcion
- * for the choosen register.
+ * It determines whether it needs to call the write or read funcion for the choosen register.
  */
 static void vaplic_emul_srccfg_access(struct emul_access* acc)
 {
@@ -897,8 +890,7 @@ static void vaplic_emul_srccfg_access(struct emul_access* acc)
  *
  * @param acc access information
  *
- * It determines whether it needs to call the write or read funcion
- * for the choosen register.
+ * It determines whether it needs to call the write or read funcion for the choosen register.
  */
 static void vaplic_emul_setip_access(struct emul_access* acc)
 {
@@ -915,8 +907,7 @@ static void vaplic_emul_setip_access(struct emul_access* acc)
  *
  * @param acc access information
  *
- * It determines whether it needs to call the write or read funcion
- * for the choosen register.
+ * It determines whether it needs to call the write or read funcion for the choosen register.
  */
 static void vaplic_emul_setipnum_access(struct emul_access* acc)
 {
@@ -930,8 +921,7 @@ static void vaplic_emul_setipnum_access(struct emul_access* acc)
  *
  * @param acc access information
  *
- * It determines whether it needs to call the write or read funcion
- * for the choosen register.
+ * It determines whether it needs to call the write or read funcion for the choosen register.
  */
 static void vaplic_emul_in_clrip_access(struct emul_access* acc)
 {
@@ -948,8 +938,7 @@ static void vaplic_emul_in_clrip_access(struct emul_access* acc)
  *
  * @param acc access information
  *
- * It determines whether it needs to call the write or read funcion
- * for the choosen register.
+ * It determines whether it needs to call the write or read funcion for the choosen register.
  */
 static void vaplic_emul_clripnum_access(struct emul_access* acc)
 {
@@ -963,8 +952,7 @@ static void vaplic_emul_clripnum_access(struct emul_access* acc)
  *
  * @param acc access information
  *
- * It determines whether it needs to call the write or read funcion
- * for the choosen register.
+ * It determines whether it needs to call the write or read funcion for the choosen register.
  */
 static void vaplic_emul_setie_access(struct emul_access* acc)
 {
@@ -981,8 +969,7 @@ static void vaplic_emul_setie_access(struct emul_access* acc)
  *
  * @param acc access information
  *
- * It determines whether it needs to call the write or read funcion
- * for the choosen register.
+ * It determines whether it needs to call the write or read funcion for the choosen register.
  */
 static void vaplic_emul_setienum_access(struct emul_access* acc)
 {
@@ -996,8 +983,7 @@ static void vaplic_emul_setienum_access(struct emul_access* acc)
  *
  * @param acc access information
  *
- * It determines whether it needs to call the write or read funcion
- * for the choosen register.
+ * It determines whether it needs to call the write or read funcion for the choosen register.
  */
 static void vaplic_emul_clrie_access(struct emul_access* acc)
 {
@@ -1012,8 +998,7 @@ static void vaplic_emul_clrie_access(struct emul_access* acc)
  *
  * @param acc access information
  *
- * It determines whether it needs to call the write or read funcion
- * for the choosen register.
+ * It determines whether it needs to call the write or read funcion for the choosen register.
  */
 static void vaplic_emul_clrienum_access(struct emul_access* acc)
 {
@@ -1027,8 +1012,7 @@ static void vaplic_emul_clrienum_access(struct emul_access* acc)
  *
  * @param acc access information
  *
- * It determines whether it needs to call the write or read funcion
- * for the choosen register.
+ * It determines whether it needs to call the write or read funcion for the choosen register.
  */
 static void vaplic_emul_target_access(struct emul_access* acc)
 {
@@ -1045,8 +1029,7 @@ static void vaplic_emul_target_access(struct emul_access* acc)
  *
  * @param acc access information
  *
- * It determines whether it needs to call the write or read funcion
- * for the choosen register.
+ * It determines whether it needs to call the write or read funcion for the choosen register.
  */
 static void vaplic_emul_idelivery_access(struct emul_access* acc, idcid_t idc_id)
 {
@@ -1062,8 +1045,7 @@ static void vaplic_emul_idelivery_access(struct emul_access* acc, idcid_t idc_id
  *
  * @param acc access information
  *
- * It determines whether it needs to call the write or read funcion
- * for the choosen register.
+ * It determines whether it needs to call the write or read funcion for the choosen register.
  */
 static void vaplic_emul_iforce_access(struct emul_access* acc, idcid_t idc_id)
 {
@@ -1079,8 +1061,7 @@ static void vaplic_emul_iforce_access(struct emul_access* acc, idcid_t idc_id)
  *
  * @param acc access information
  *
- * It determines whether it needs to call the write or read funcion
- * for the choosen register.
+ * It determines whether it needs to call the write or read funcion for the choosen register.
  */
 static void vaplic_emul_ithreshold_access(struct emul_access* acc, idcid_t idc_id)
 {
@@ -1096,8 +1077,7 @@ static void vaplic_emul_ithreshold_access(struct emul_access* acc, idcid_t idc_i
  *
  * @param acc access information
  *
- * It determines whether it needs to call the write or read funcion
- * for the choosen register.
+ * It determines whether it needs to call the write or read funcion for the choosen register.
  */
 static void vaplic_emul_topi_access(struct emul_access* acc, idcid_t idc_id)
 {
@@ -1111,8 +1091,7 @@ static void vaplic_emul_topi_access(struct emul_access* acc, idcid_t idc_id)
  *
  * @param acc access information
  *
- * It determines whether it needs to call the write or read funcion
- * for the choosen register.
+ * It determines whether it needs to call the write or read funcion for the choosen register.
  */
 static void vaplic_emul_claimi_access(struct emul_access* acc, idcid_t idc_id)
 {

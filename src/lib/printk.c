@@ -82,15 +82,14 @@ static size_t vprintd(char** buf, unsigned int flags, va_list* args)
 }
 
 /**
- * This is a limited printf implementation. The format string only supports
- * integer, string and char arguments. That is, 'd', 'u' or 'x', 's' and 'c'
- * specifiers, respectively. For integers, it only supports the none and 'l'
- * lengths. It does not support any flags, width or precision fields. If
- * present, this fields are ignored.
+ * This is a limited printf implementation. The format string only supports integer, string and
+ * char arguments. That is, 'd', 'u' or 'x', 's' and 'c' specifiers, respectively. For integers, it
+ * only supports the none and 'l' lengths. It does not support any flags, width or precision
+ * fields. If present, this fields are ignored.
  *
- * Note this does not follow the C lib vsnprintf specification. It returns the
- * numbers of characters written to the buffer, and changes fmt to point to the
- * first character that was not printed.
+ * Note this does not follow the C lib vsnprintf specification. It returns the numbers of
+ * characters written to the buffer, and changes fmt to point to the first character that was not
+ * printed.
  */
 size_t vsnprintk(char* buf, size_t buf_size, const char** fmt, va_list* args)
 {

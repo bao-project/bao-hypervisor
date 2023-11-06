@@ -32,8 +32,7 @@ bool pp_alloc(struct page_pool* pool, size_t num_pages, bool aligned, struct ppa
     spin_lock(&pool->lock);
 
     /**
-     *  If we need a contigous segment aligned to its size, lets start
-     * at an already aligned index.
+     * If we need a contigous segment aligned to its size, lets start at an already aligned index.
      */
     size_t start = aligned ? pool->base / PAGE_SIZE % num_pages : 0;
     size_t curr = pool->last + ((pool->last + start) % num_pages);
@@ -49,8 +48,8 @@ bool pp_alloc(struct page_pool* pool, size_t num_pages, bool aligned, struct ppa
 
             if (bit < 0) {
                 /**
-                 * No num_page page sement was found. If this is the first
-                 * iteration set position to 0 to start next search from index
+                 * No num_page page sement was found. If this is the first iteration set position
+                 * to 0 to start next search from index
                  * 0.
                  */
                 size_t next_aligned =
@@ -59,15 +58,14 @@ bool pp_alloc(struct page_pool* pool, size_t num_pages, bool aligned, struct ppa
                 break;
             } else if (aligned && (((bit + start) % num_pages) != 0)) {
                 /**
-                 *  If we're looking for an aligned segment and the found
-                 * contigous segment is not aligned, start the search again
-                 * from the last aligned index
+                 * If we're looking for an aligned segment and the found contigous segment is not
+                 * aligned, start the search again from the last aligned index
                  */
                 curr = bit + ((bit + start) % num_pages);
             } else {
                 /**
-                 * We've found our pages. Fill output argument info, mark
-                 * them as allocated, and update page pool bookkeeping.
+                 * We've found our pages. Fill output argument info, mark them as allocated, and
+                 * update page pool bookkeeping.
                  */
                 ppages->base = pool->base + (bit * PAGE_SIZE);
                 ppages->num_pages = num_pages;
@@ -280,12 +278,11 @@ bool mem_reserve_physical_memory(struct page_pool* pool)
         size_t n_pg = NUM_PAGES(vm_cfg->image.size);
         struct ppages ppages = mem_ppages_get(vm_cfg->image.load_addr, n_pg);
 
-        // If the vm image is part of a statically allocated region of the same
-        // vm, we defer the reservation of this memory to when we reserve the
-        // physical region below. Note that this not allow partial overlaps. If
-        // the image must be entirely inside a statically allocated region, or
-        // completely outside of it. This avoid overcamplicating the reservation
-        // logic while still covering all the useful use cases.
+        // If the vm image is part of a statically allocated region of the same vm, we defer the
+        // reservation of this memory to when we reserve the physical region below. Note that this
+        // not allow partial overlaps. If the image must be entirely inside a statically allocated
+        // region, or completely outside of it. This avoid overcamplicating the reservation logic
+        // while still covering all the useful use cases.
         if (mem_vm_img_in_phys_rgn(vm_cfg)) {
             continue;
         }

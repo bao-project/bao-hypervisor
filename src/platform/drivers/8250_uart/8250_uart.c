@@ -10,10 +10,9 @@ void uart_init(volatile struct uart8250_hw* uart)
     /* set baudrate */
     uart->lcr |= UART8250_LCR_DLAB;
     /**
-     * should set dll and dlh,
-     * to simplify instead lets assume the firmware did this for us.
-     * TODO: we should add uart clk and baudrate info to platform descrption
-     * and use this to calculate this values in runtime.
+     * should set dll and dlh, to simplify instead lets assume the firmware did this for us.
+     * TODO: we should add uart clk and baudrate info to platform descrption and use this to
+     * calculate this values in runtime.
      */
     uart->lcr &= ~UART8250_LCR_DLAB;
 

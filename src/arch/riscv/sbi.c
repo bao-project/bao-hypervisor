@@ -41,8 +41,8 @@
 #define SBI_REMOTE_HFENCE_VVMA_ASID_FID (6)
 
 /**
- * For now we're defining bao specific ecalls, ie, hypercall, under the
- * experimental extension id space.
+ * For now we're defining bao specific ecalls, ie, hypercall, under the experimental extension id
+ * space.
  */
 #define SBI_EXTID_BAO                   (0x08000ba0)
 

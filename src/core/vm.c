@@ -115,10 +115,9 @@ static void vm_install_image(struct vm* vm, struct vm_mem_region* reg)
         }
 
         if (range_overlap_range(img_base, img_sz, img_load_pa, img_sz)) {
-            // We impose an image load region cannot overlap its runtime region.
-            // This both simplifies the copying procedure as well as avoids
-            // limitations of mpu-based memory management which does not allow
-            // overlapping mappings on the same address space.
+            // We impose an image load region cannot overlap its runtime region. This both
+            // simplifies the copying procedure as well as avoids limitations of mpu-based memory
+            // management which does not allow overlapping mappings on the same address space.
             ERROR("failed installing vm image. Image load region overlaps with"
                   " image runtime region");
         }
@@ -257,15 +256,13 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* confi
     cpu_sync_barrier(&vm->sync);
 
     /**
-     * Perform architecture dependent initializations. This includes,
-     * for example, setting the page table pointer and other virtualization
-     * extensions specifics.
+     * Perform architecture dependent initializations. This includes, for example, setting the page
+     * table pointer and other virtualization extensions specifics.
      */
     vm_arch_init(vm, config);
 
     /**
-     * Create the VM's address space according to configuration and where
-     * its image was loaded.
+     * Create the VM's address space according to configuration and where its image was loaded.
      */
     if (master) {
         vm_init_mem_regions(vm, config);

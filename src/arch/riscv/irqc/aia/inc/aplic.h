@@ -135,8 +135,8 @@ uint32_t aplic_get_sourcecfg(irqid_t intp_id);
 void aplic_set_pend(irqid_t intp_id);
 
 /**
- * @brief Potentially modifies the pending bits for interrupt
- *        sources reg_indx × 32 through reg_indx × 32 + 31.
+ * @brief Potentially modifies the pending bits for interrupt sources reg_indx × 32 through
+ *        reg_indx × 32 + 31.
  *
  * @param reg_indx register index
  * @param reg_val register value to be written.
@@ -153,8 +153,7 @@ void aplic_set_pend_reg(size_t reg_indx, uint32_t reg_val);
 bool aplic_get_pend(irqid_t intp_id);
 
 /**
- * @brief Reads the pending bits for interrupt sources
- *        reg_indx × 32 through reg_indx × 32 + 31.
+ * @brief Reads the pending bits for interrupt sources reg_indx × 32 through reg_indx × 32 + 31.
  *
  * @param reg_indx register index
  * @return a 32 bit value containing interrupts pending state for reg_indx.
@@ -169,8 +168,7 @@ uint32_t aplic_get_pend_reg(size_t reg_indx);
 void aplic_clr_pend(irqid_t intp_id);
 
 /**
- * @brief Modifies the pending bits for interrupt
- *        sources reg_indx × 32 through reg_indx × 32 + 31.
+ * @brief Modifies the pending bits for interrupt sources reg_indx × 32 through reg_indx × 32 + 31.
  *
  * @param reg_indx register index
  * @return register value to be written.
@@ -178,8 +176,8 @@ void aplic_clr_pend(irqid_t intp_id);
 void aplic_clr_pend_reg(size_t reg_indx, uint32_t reg_val);
 
 /**
- * @brief Read the current rectified value for interrupt sources
- *        reg_indx × 32 through reg_indx × 32 + 31.
+ * @brief Read the current rectified value for interrupt sources reg_indx × 32 through reg_indx ×
+ *        32 + 31.
  *
  * @param reg_indx register index
  * @return a 32 bit value containing interrupts rectified state for reg_indx.
@@ -194,8 +192,7 @@ uint32_t aplic_get_inclrip_reg(size_t reg_indx);
 void aplic_set_enbl(irqid_t intp_id);
 
 /**
- * @brief Modifies the enable bits for interrupt
- *        sources reg_indx × 32 through reg_indx × 32 + 31.
+ * @brief Modifies the enable bits for interrupt sources reg_indx × 32 through reg_indx × 32 + 31.
  *
  * @param reg_indx register index
  * @param reg_val register value to be written.
@@ -219,8 +216,7 @@ bool aplic_get_enbl(irqid_t intp_id);
 void aplic_clr_enbl(irqid_t intp_id);
 
 /**
- * @brief Modifies the enable bits for interrupt
- *        sources reg_indx × 32 through reg_indx × 32 + 31.
+ * @brief Modifies the enable bits for interrupt sources reg_indx × 32 through reg_indx × 32 + 31.
  *
  * @param reg_indx register index
  * @param reg_val register value to be written.
@@ -262,8 +258,8 @@ cpuid_t aplic_get_target_hart(irqid_t intp_id);
 /**
  * @brief Returns the highest pending and enabled interrupt id.
  *
- * Claimi has the same value as topi. However, reading claimi has the side
- * effect of clearing the pending bit for the reported interrupt identity.
+ * Claimi has the same value as topi. However, reading claimi has the side effect of clearing the
+ * pending bit for the reported interrupt identity.
  *
  * @param idc_id IDC to read and clear the pending-bit the highest-priority
  * @return uint32_t returns the interrupt identity and interrupt priority.

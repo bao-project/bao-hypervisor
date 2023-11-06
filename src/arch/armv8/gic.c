@@ -29,8 +29,7 @@ void gicd_init()
     /* Bring distributor to known state */
     for (size_t i = GIC_NUM_PRIVINT_REGS; i < GIC_NUM_INT_REGS(int_num); i++) {
         /**
-         * Make sure all interrupts are not enabled, non pending,
-         * non active.
+         * Make sure all interrupts are not enabled, non pending, non active.
          */
         gicd->IGROUPR[i] = -1;
         gicd->ICENABLER[i] = -1;

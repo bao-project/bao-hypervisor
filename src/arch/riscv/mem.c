@@ -16,9 +16,8 @@ static inline void as_map_physical_identity(struct addr_space* as)
     pte_t* pt = as->pt.root;
 
     /**
-     *  Create identity mapping of existing physical memory regions using
-     * the largest pages possible pte (in riscv this is always at level 0
-     * pt).
+     *  Create identity mapping of existing physical memory regions using the largest pages
+     * possible pte (in riscv this is always at level 0 pt).
      */
 
     for (size_t i = 0; i < platform.region_num; i++) {

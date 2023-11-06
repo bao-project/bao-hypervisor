@@ -7,10 +7,10 @@
 #include <arch/sysregs.h>
 #include <asm_defs.h>
 
-/* In Armv8-R there is no virtual address space (VAS). Notwithstanding,  
- * we define VAS as an identity map of the PAS with MPU rules enforced 
- * using an equivalent "page size" of (at least) 64 bytes (minimal MPU 
- * granularity). 
+/**
+ * In Armv8-R there is no virtual address space (VAS). Notwithstanding, we define VAS as an
+ * identity map of the PAS with MPU rules enforced using an equivalent "page size" of (at least) 64
+ * bytes (minimal MPU granularity).
  */
 .section ".boot", "ax"
 .global boot_arch_profile_init
@@ -50,9 +50,8 @@ boot_arch_profile_init:
 
     /**
      * Map loadable image (and possibly unloadable)
-     * If the vm image section is used and has built-in vm images, we need
-     * to map the loadble and non-loadble region of the image separately.
-     * Otherwise we can map it as a single region.
+     * If the vm image section is used and has built-in vm images, we need to map the loadble and
+     * non-loadble region of the image separately. Otherwise we can map it as a single region.
      */
     msr prselr_el2, x4
     isb

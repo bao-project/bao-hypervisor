@@ -12,16 +12,15 @@
 .data
 .align 3
 /**
- * barrier is used to minimal synchronization in boot - other cores wait for
- * bsp to set it.
+ * barrier is used to minimal synchronization in boot - other cores wait for bsp to set it.
  */
  .global _boot_barrier
 _boot_barrier: .8byte 0
 
 /**
- * 	The following code MUST be at the base of the image, as this is bao's entry
- *	point. Therefore .boot section must also be the first in the linker script.
- *  DO NOT implement any code before the _reset_handler in this section.
+ * The following code MUST be at the base of the image, as this is bao's entry point. Therefore
+ * .boot section must also be the first in the linker script. DO NOT implement any code before the
+ * _reset_handler in this section.
  */
  .section ".boot", "ax"
 .globl _reset_handler
@@ -31,9 +30,8 @@ _reset_handler:
 
 	/**
 	 * TODO: before anything...
-	 * perform sanity checks on ID registers to ensure support for
-	 * VE and TZ, 4K granule and possibly other needed features.
-	 * Also, check current exception level. Act accordingly.
+	 * perform sanity checks on ID registers to ensure support for VE and TZ, 4K granule and
+	 * possibly other needed features. Also, check current exception level. Act accordingly.
 	 * However, we expect to be running at EL2 at this point.
 	 */
 
@@ -51,17 +49,17 @@ _reset_handler:
 	adrp x1, _image_start
 
 	/*
-	 * Install vector table physical address early, in case exception occurs
-	 * during this initialization.
+	 * Install vector table physical address early, in case exception occurs during this
+	 * initialization.
 	 */
 	adr	x3, _hyp_vector_table
 	msr	VBAR_EL2, x3
 
 	/**
-	 * 	Linearize cpu id according to the number of clusters and processors per
-	 * cluster. We are only considering two levels of affinity.
-	 *  TODO: this should be done some other way. We shouldn't depend on the platform
-	 * description this early in the initialization.
+	 * Linearize cpu id according to the number of clusters and processors per cluster. We are
+	 * only considering two levels of affinity.
+	 * TODO: this should be done some other way. We shouldn't depend on the platform description
+	 * this early in the initialization.
 	 */
 
 	mov x3, x0, lsr #8
@@ -96,9 +94,9 @@ _reset_handler:
    cbnz x9, 1f
 #else
 /**
- * If the cpu master is not fixed, for setting it, we assume only one cpu is
- * initially activated which later will turn on all the others. Therefore, there
- * is no concurrency when setting CPU_MASTER and no atomic operations are needed.
+ * If the cpu master is not fixed, for setting it, we assume only one cpu is initially activated
+ * which later will turn on all the others. Therefore, there is no concurrency when setting
+ * CPU_MASTER and no atomic operations are needed.
  */
  .pushsection .data
 _master_set:
@@ -116,9 +114,8 @@ _set_master_cpu:
 1:
 
 	/**
-	 * TODO: bring the system to a well known state. This includes disabling
-	 * the MMU (done), all caches (missing i$), BP and others...
-	 * and invalidating them.
+	 * TODO: bring the system to a well known state. This includes disabling the MMU (done),
+	 * all caches (missing i$), BP and others... and invalidating them.
 	 */
 
 	/* boot_clear stack pointer to avoid unaligned SP exceptions during boot */
@@ -195,8 +192,7 @@ boot_clear:
 .endfunc
 
 /*
- * Code taken from "Application Note Bare-metal Boot Code for ARMv8-A
- * Processors - Version 1.0"
+ * Code taken from "Application Note Bare-metal Boot Code for ARMv8-A Processors - Version 1.0"
  *
  * x0 - cache level to be invalidated (0 - dl1$, 1 - il1$, 2 - l2$)
  */

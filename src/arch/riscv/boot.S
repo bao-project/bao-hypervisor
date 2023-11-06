@@ -14,8 +14,8 @@
 #define PTE_INDEX_SHIFT(LEVEL) ((9 * (PT_LVLS - 1 - (LEVEL))) + 12)
 
 /**
- *  Calculates the index or offset of a page table entry for given virtual 
- * address(addr) at a given level of page table.
+ * Calculates the index or offset of a page table entry for given virtual address(addr) at a given
+ * level of page table.
  */
 .macro PTE_INDEX_ASM	index, addr, level
 	srl \index, \addr, PTE_INDEX_SHIFT(\level) 
@@ -25,8 +25,8 @@
 .endm
 
 /**
- * Calculates the pointer to a pte given the page table pointer(pt),
- * the page table level (levle) and the target virtual address (va)
+ * Calculates the pointer to a pte given the page table pointer(pt), the page table level (levle)
+ * and the target virtual address (va)
  */
 .macro PTE_PTR  pte, pt, level, va
     PTE_INDEX_ASM	s1, \va, \level
@@ -34,8 +34,7 @@
 .endm
 
 /**
- * Creates a page table entry (pte) for a given physical address (pa) 
- * and set of flags.
+ * Creates a page table entry (pte) for a given physical address (pa) and set of flags.
  */
 .macro PTE_FILL    pte, pa, flags
     srl     \pte, \pa, 2
@@ -61,15 +60,14 @@ _bss_end_sym: .8byte _bss_end
 .data 
 .align 3
 /**
- * barrier is used to minimal synchronization in boot - other cores wait for
- * bsp to set it.
+ * barrier is used to minimal synchronization in boot - other cores wait for bsp to set it.
  */
 _barrier: .8byte 0		
 
 /**
- * 	The following code MUST be at the base of the image, as this is bao's entry
- *	point. Therefore .boot section must also be the first in the linker script.
- *  DO NOT implement any code before the _reset_handler in this section.
+ * 	The following code MUST be at the base of the image, as this is bao's entrypoint. Therefore
+ * .boot section must also be the first in the linker script. DO NOT implement any code before the
+ * _reset_handler in this section.
  */
  .section ".boot", "ax"
 .globl _reset_handler
@@ -77,19 +75,17 @@ _barrier: .8byte 0
 _reset_handler:
 
     /**
-    *  The previous boot stage should pass the following arguments:
+    * The previous boot stage should pass the following arguments:
     *      a0 -> hart id
     *      a1 -> config binary load addr
-    * The following registers are reserved to be passed to init function
-    * as arguments:
+    * The following registers are reserved to be passed to init function as arguments:
     *      a0 -> hart id
     *      a1 -> contains image base load address
     *      a2 -> config binary load address (originally passed in a1)
     *
-    * The remaining code must use t0-t6 as scratchpad registers in the main
-    * flow and s0-s5 in auxiliary routines. s6-s11 are used to hold constants
-    * a3-a7 are used as arguments and return values (can be also corrputed in
-    * auxiliary routines).
+    * The remaining code must use t0-t6 as scratchpad registers in the main flow and s0-s5 in
+    * auxiliary routines. s6-s11 are used to hold constants a3-a7 are used as arguments and return
+    * values (can be also corrputed in auxiliary routines).
     */
 
     mv      a2, a1
@@ -97,8 +93,8 @@ _reset_handler:
     la      s6, extra_allocated_phys_mem
 
     /**
-     *  Setup stvec early. In case of we cause an exception in this boot code
-     * we end up at a known place.
+     * Setup stvec early. In case of we cause an exception in this boot code we end up at a known
+     * place.
      */
     la      t0, _hyp_trap_vector
     and     t0, t0, ~STVEC_MODE_MSK
@@ -106,8 +102,8 @@ _reset_handler:
     csrw    stvec, t0
 
     /**
-     *  Bring processor to known supervisor state: make sure interrupts
-     * and memory translation are disabled.
+     * Bring processor to known supervisor state: make sure interrupts and memory translation are
+     * disabled.
      */
 
     csrw   sstatus, zero

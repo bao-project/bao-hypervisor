@@ -27,9 +27,9 @@ void cpu_arch_idle()
     cpu_arch_profile_idle();
 
     /*
-     * In case the profile implementation does not jump to a predefined wake-up
-     * point and just returns from the profile, manually rewind stack and jump
-     * to idle wake up. Therefore, we should not return after this point.
+     * In case the profile implementation does not jump to a predefined wake-up point and just
+     * returns from the profile, manually rewind stack and jump to idle wake up. Therefore, we
+     * should not return after this point.
      */
     asm volatile("mov sp, %0\n\r"
                  "b cpu_idle_wakeup\n\r" ::"r"(&cpu()->stack[STACK_SIZE]));

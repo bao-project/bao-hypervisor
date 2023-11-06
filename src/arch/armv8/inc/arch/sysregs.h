@@ -111,8 +111,8 @@
 #define TCR_TBI                   (1 << 20)
 
 /**
- * Default hypervisor translation control
- * The PS field must be filled at runtime by first reading parange
+ * Default hypervisor translation control. The PS field must be filled at runtime by first reading
+ * parange
  */
 #define TCR_EL2_DFLT                                                                               \
     (TCR_RES1 | TCR_TG0_4K | TCR_PS_48B | TCR_ORGN0_WB_RA_WA | TCR_IRGN0_WB_RA_WA | TCR_T0SZ(16) | \
@@ -196,10 +196,8 @@
 #define MAIR_IWA        (0x1 << 0)
 
 /**
- * Default hypervisor memory attributes
- * 0 -> Device-nGnRnE
- * 1 -> Normal, Inner/Outer  WB/WA/RA
- * 2 -> Device-nGnRE
+ * Default hypervisor memory attributes 0 -> Device-nGnRnE 1 -> Normal, Inner/Outer  WB/WA/RA 2 ->
+ * Device-nGnRE
  */
 #define MAIR_EL2_DFLT                                                                             \
     (((MAIR_OWBNT | MAIR_ORA | MAIR_OWA | MAIR_IWBNT | MAIR_IRA | MAIR_IWA) << MAIR_ATTR_WIDTH) | \
@@ -274,8 +272,8 @@
 #define CCSIDR_NUMSETS_LEN         15
 
 /**
- * Below are platform implementation registers related to a53.
- * TODO: move them to a a53 specific file.
+ * Below are platform implementation registers related to a53. TODO: move them to a a53 specific
+ * file.
  */
 
 /* CPUECTLR_EL1 - CPU Extended Control Register  */
@@ -454,8 +452,7 @@
 #define ICC_SGI1R_CASE             (0x18)
 #define ICC_SGI1R_ADDR             (0x3A3016)
 
-// #define ICH_AP0R<n>_EL2     S3_4_C12_C8 _0-3
-// #define ICH_AP1R<n>_EL2     S3_4_C12_C9 _0-3
+// #define ICH_AP0R<n>_EL2     S3_4_C12_C8 _0-3 #define ICH_AP1R<n>_EL2     S3_4_C12_C9 _0-3
 #define ICH_HCR_EL2                S3_4_C12_C11_0
 #define ICH_VTR_EL2                S3_4_C12_C11_1
 #define ICH_MISR_EL2               S3_4_C12_C11_2

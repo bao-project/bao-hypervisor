@@ -22,8 +22,8 @@ extern uint8_t _image_start, _image_load_end, _image_end, _dmem_phys_beg, _dmem_
 void switch_space(struct cpu*, paddr_t);
 
 /**
- * An important note about sections its that they must have diferent entries
- * at the root page table.
+ * An important note about sections its that they must have diferent entries at the root page
+ * table.
  */
 
 struct section {
@@ -106,16 +106,15 @@ bool pp_alloc_clr(struct page_pool* pool, size_t n, colormap_t colors, struct pp
     spin_lock(&pool->lock);
 
     /**
-     * Lets start the search at the first available color after the last
-     * known free position to the top of the pool.
+     * Lets start the search at the first available color after the last known free position to the
+     * top of the pool.
      */
     size_t index = pp_next_clr(pool->base, pool->last, colors);
     size_t top = pool->size;
 
     /**
-     * Two iterations. One starting from the last known free page,
-     * other starting from the beggining of page pool to the start of the
-     * previous iteration.
+     * Two iterations. One starting from the last known free page, other starting from the
+     * beggining of page pool to the start of the previous iteration.
      */
     for (size_t i = 0; i < 2 && !ok; i++) {
         while ((allocated < n) && (index < top)) {
@@ -128,9 +127,8 @@ bool pp_alloc_clr(struct page_pool* pool, size_t n, colormap_t colors, struct pp
             first_index = index;
 
             /**
-             * Count the number of free pages contigous on the target
-             * color segement until n pages are found or we reach top page
-             * of the search.
+             * Count the number of free pages contigous on the target color segement until n pages
+             * are found or we reach top page of the search.
              */
             while ((index < top) && (bitmap_get(pool->bitmap, index) == 0) && (allocated < n)) {
                 allocated++;
@@ -142,9 +140,8 @@ bool pp_alloc_clr(struct page_pool* pool, size_t n, colormap_t colors, struct pp
 
         if (allocated == n) {
             /**
-             * We've found n contigous free pages that fit the color pattern,
-             * Fill the output ppage arg, mark the pages as allocated and
-             * update page pool internal state.
+             * We've found n contigous free pages that fit the color pattern, Fill the output ppage
+             * arg, mark the pages as allocated and update page pool internal state.
              */
             ppages->num_pages = n;
             ppages->base = pool->base + (first_index * PAGE_SIZE);
@@ -158,9 +155,8 @@ bool pp_alloc_clr(struct page_pool* pool, size_t n, colormap_t colors, struct pp
             break;
         } else {
             /**
-             * If this is the first iteration, setup index and top to search
-             * from base of the page pool until the previous iteration start
-             * point
+             * If this is the first iteration, setup index and top to search from base of the page
+             * pool until the previous iteration start point
              */
             index = 0;
         }
@@ -234,8 +230,7 @@ static void mem_expand_pte(struct addr_space* as, vaddr_t va, size_t lvl)
     pte_t* pte = pt_get_pte(&as->pt, lvl, va);
 
     /**
-     * only can expand if the pte exists and it isnt pointing to
-     * a next level table already.
+     * only can expand if the pte exists and it isnt pointing to a next level table already.
      */
     if (pte != NULL && !pte_table(&as->pt, pte, lvl)) {
         pte_t pte_val = *pte; // save the original pte
@@ -245,23 +240,20 @@ static void mem_expand_pte(struct addr_space* as, vaddr_t va, size_t lvl)
 
         if (vld || rsv) {
             /**
-             *  If this was valid before and it wasn't a table, it must
-             * have been a superpage, so fill the new expanded table to
-             * have the same mappings;
+             *  If this was valid before and it wasn't a table, it must have been a superpage, so
+             * fill the new expanded table to have the same mappings;
              */
 
             /**
-             * Invalidate the old TLB entries with superpage entries.
-             * This means that from now on to the end of the function,
-             * the original spaced mapped by the entry will be unmaped.
-             * Therefore this function cannot be call on the entry mapping
-             * hypervisor code or data used in it (including stack).
+             * Invalidate the old TLB entries with superpage entries. This means that from now on
+             * to the end of the function, the original spaced mapped by the entry will be unmaped.
+             * Therefore this function cannot be call on the entry mapping hypervisor code or data
+             * used in it (including stack).
              */
             tlb_inv_va(&cpu()->as, va);
 
             /**
-             *  Now traverse the new next level page table to replicate the
-             * original mapping.
+             *  Now traverse the new next level page table to replicate the original mapping.
              */
 
             lvl++;
@@ -293,8 +285,8 @@ static void mem_inflate_pt(struct addr_space* as, vaddr_t va, size_t length)
     /* Must have lock on as and va section to call */
 
     /**
-     * For each level in the pt, expand each entry in the specified range
-     * as a next level page table.
+     * For each level in the pt, expand each entry in the specified range as a next level page
+     * table.
      */
     for (size_t lvl = 0; lvl < as->pt.dscr->lvls - 1; lvl++) {
         vaddr_t vaddr = va;
@@ -341,9 +333,9 @@ vaddr_t mem_alloc_vpage(struct addr_space* as, enum AS_SEC section, vaddr_t at, 
     }
 
     while (count < n && !failed) {
-        // Check if there is still enough space in the address space.
-        // The corner case of top being the highest address in the address
-        // space and the target address being 0 is handled separate
+        // Check if there is still enough space in the address space. The corner case of top being
+        // the highest address in the address space and the target address being 0 is handled
+        // separate
         size_t full_as = (addr == 0) && (top == MAX_VA);
         if (!full_as && (((top + 1 - addr) / PAGE_SIZE) < n)) {
             vpage = INVALID_VA;
@@ -478,8 +470,7 @@ void mem_unmap(struct addr_space* as, vaddr_t at, size_t num_pages, bool free_pp
             }
 
             /**
-             * TODO: check if the current pt is now empty and if so,
-             * free it too up to the root.
+             * TODO: check if the current pt is now empty and if so, free it too up to the root.
              */
         }
     }
@@ -510,8 +501,7 @@ bool mem_map(struct addr_space* as, vaddr_t va, struct ppages* ppages, size_t nu
     }
 
     /**
-     * TODO check if entry is reserved. Unrolling mapping if something
-     * goes wrong.
+     * TODO check if entry is reserved. Unrolling mapping if something goes wrong.
      */
 
     struct ppages temp_ppages;
@@ -603,9 +593,8 @@ bool mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages, siz
     }
 
     /**
-     * Count how many pages are not colored in original images.
-     * Allocate the necessary colored pages.
-     * Mapped onto hypervisor address space.
+     * Count how many pages are not colored in original images. Allocate the necessary colored
+     * pages. Mapped onto hypervisor address space.
      */
     size_t reclrd_num = num_pages / (COLOR_NUM * COLOR_SIZE) * COLOR_SIZE *
         bit_count(~(as->colors & BIT_MASK(0, COLOR_NUM)));
@@ -617,8 +606,8 @@ bool mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages, siz
     }
 
     /**
-     * If the address space was not assigned any specific color,
-     * or there are no pages to recolor defer to vanilla mapping.
+     * If the address space was not assigned any specific color, or there are no pages to recolor
+     * defer to vanilla mapping.
      */
     if (all_clrs(as->colors) || (reclrd_num == 0)) {
         return mem_map(as, va, ppages, num_pages, flags);
@@ -642,8 +631,8 @@ bool mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages, siz
     size_t index = 0;
 
     /**
-     * Inflate reserved page tables to the last level. This assumes
-     * coloring always needs the finest grained mapping possible.
+     * Inflate reserved page tables to the last level. This assumes coloring always needs the
+     * finest grained mapping possible.
      */
     mem_inflate_pt(as, vaddr, num_pages * PAGE_SIZE);
 
@@ -651,8 +640,8 @@ bool mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages, siz
         pte = pt_get_pte(&as->pt, as->pt.dscr->lvls - 1, vaddr);
 
         /**
-         * If image page is already color, just map it.
-         * Otherwise first copy it to the previously allocated pages.
+         * If image page is already color, just map it. Otherwise first copy it to the previously
+         * allocated pages.
          */
         if (bit_get(as->colors, ((i + clr_offset) / COLOR_SIZE % COLOR_NUM))) {
             pte_set(pte, paddr, PTE_PAGE, flags);
@@ -671,8 +660,8 @@ bool mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages, siz
     }
 
     /**
-     * Flush the newly allocated colored pages to which parts of the
-     * image was copied, and might stayed in the cache system.
+     * Flush the newly allocated colored pages to which parts of the image was copied, and might
+     * stayed in the cache system.
      */
     cache_flush_range(reclrd_va_base, reclrd_num * PAGE_SIZE);
 
@@ -734,16 +723,16 @@ void* copy_space(void* base, const size_t size, struct ppages* pages)
 }
 
 /**
- * To have the true benefits of coloring it's necessary that not only the guest
- * images, but also the hypervisor itself, are colored.
+ * To have the true benefits of coloring it's necessary that not only the guest images, but also
+ * the hypervisor itself, are colored.
  *
- * Bao is coloring itself by copying everything that has been allocated until
- * this point in a new colored space, jumping into this new region and then
- * then deleting all that was allocated before.
+ * Bao is coloring itself by copying everything that has been allocated until this point in a new
+ * colored space, jumping into this new region and then then deleting all that was allocated
+ * before.
  *
- * Some regions need to be aligned due to some ARM restraint with the pagetable
- * structure, so true coloring is actually never achieved. The drawbacks of
- * this limitation are yet to be seen, and are in need of more testing.
+ * Some regions need to be aligned due to some ARM restraint with the pagetable structure, so true
+ * coloring is actually never achieved. The drawbacks of this limitation are yet to be seen, and
+ * are in need of more testing.
  */
 void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_region)
 {
@@ -771,9 +760,8 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
     /*
      * Copy the CPU space into a colored region.
      *
-     * It's not possible to simply copy the CPU space as-is, since there are a
-     * few pointers and structures that would point to the old, non-colored
-     * data.
+     * It's not possible to simply copy the CPU space as-is, since there are a few pointers and
+     * structures that would point to the old, non-colored data.
      *
      * the new CPU region is created, cleaned, prepared and finally mapped.
      */
@@ -787,10 +775,9 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
     mem_map(&cpu_new->as, va, &p_cpu, NUM_PAGES(sizeof(struct cpu)), PTE_HYP_FLAGS);
 
     /*
-     * Also, map the root page table in the new address space and keep both the
-     * virtual address and physical address in local variables as they will be
-     * needed later to perform the address space switch and new address space
-     * initialization.
+     * Also, map the root page table in the new address space and keep both the virtual address and
+     * physical address in local variables as they will be needed later to perform the address
+     * space switch and new address space initialization.
      */
     paddr_t p_root_pt_addr;
     vaddr_t v_root_pt_addr;
@@ -804,12 +791,11 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
     mem_map(&cpu_new->as, v_root_pt_addr, &p_root_pt_pages, root_pt_num_pages, PTE_HYP_FLAGS);
 
     /*
-     * Copy the Hypervisor image and root page pool bitmap into a colored
-     * region.
+     * Copy the Hypervisor image and root page pool bitmap into a colored region.
      *
-     * CPU_MASTER allocates, copies and maps the image and the root page pool
-     * bitmap on a shared space, whilst other CPUs only have to copy the image
-     * from the CPU_MASTER in order to be able to access it.
+     * CPU_MASTER allocates, copies and maps the image and the root page pool bitmap on a shared
+     * space, whilst other CPUs only have to copy the image from the CPU_MASTER in order to be able
+     * to access it.
      */
     if (cpu()->id == CPU_MASTER) {
         copy_space(&_image_start, image_size, &p_image);
@@ -833,12 +819,10 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
     cpu_sync_barrier(&cpu_glb_sync);
 
     /*
-     * CPU_MASTER will also take care of mapping the configuration onto the new
-     * space.
+     * CPU_MASTER will also take care of mapping the configuration onto the new space.
      *
-     * The root page pool bitmap tracks all the physical allocation, so it
-     * needs to be the last thing to be copied, as after that, no physical
-     * allocation will be tracked.
+     * The root page pool bitmap tracks all the physical allocation, so it needs to be the last
+     * thing to be copied, as after that, no physical allocation will be tracked.
      */
     if (cpu()->id == CPU_MASTER) {
         /* Copy root pool bitmap */
@@ -857,21 +841,19 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
     switch_space(cpu_new, p_root_pt_addr);
 
     /**
-     * Make sure the new physical pages containing image and cpu are flushed
-     * to main memmory
+     * Make sure the new physical pages containing image and cpu are flushed to main memmory
      */
 
     cache_flush_range((vaddr_t)&_image_start, image_size);
     cache_flush_range((vaddr_t)&_cpu_private_beg, sizeof(struct cpu));
 
     /**
-     * Bao's code from here's on still uses the static global variables, so
-     * they need to be updated.
+     * Bao's code from here's on still uses the static global variables, so they need to be
+     * updated.
      *
-     * The synchronization objects are in an inconsistent state, and they need
-     * to be re-initialized before they get used again, so CPUs need a way to
-     * communicate between themselves without an explicit barrier. To
-     * accomplish this a static global variable is used.
+     * The synchronization objects are in an inconsistent state, and they need to be re-initialized
+     * before they get used again, so CPUs need a way to communicate between themselves without an
+     * explicit barrier. To accomplish this a static global variable is used.
      */
     if (cpu()->id == CPU_MASTER) {
         cpu_sync_init(&cpu_glb_sync, platform.cpu_num);
@@ -885,8 +867,8 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
     /*
      * Clear the old region that have been copied.
      *
-     * CPU space regions and Hypervisor image region are contingent, starting
-     * from `load_addr`. The bitmap region is on top of the root pool region.
+     * CPU space regions and Hypervisor image region are contingent, starting from `load_addr`. The
+     * bitmap region is on top of the root pool region.
      */
     if (cpu()->id == CPU_MASTER) {
         p_image = mem_ppages_get(load_addr, NUM_PAGES(image_load_size));

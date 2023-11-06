@@ -24,8 +24,8 @@ boot_arch_profile_init:
     mov r13, lr
 
     /*
-     * Register r12 contains the size of the allocated physical memory between
-     * the loadable sections of the image and the non-loadable.
+     * Register r12 contains the size of the allocated physical memory between the loadable
+     * sections of the image and the non-loadable.
      */
     ldr r10, =extra_allocated_phys_mem
 

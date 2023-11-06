@@ -77,13 +77,11 @@ void interrupts_arch_handle()
         case SCAUSE_CODE_STI:
             interrupts_handle(TIMR_INT_ID);
             /**
-             * Clearing the timer pending bit actually has no effect. We could
-             * re-program the timer to "infinity" but we don't know if the
-             * handler itself re-programed the timer with a new event.
-             * Therefore, at this point, we must trust the handler either
-             * correctly re-programms the timer or disables the interrupt so the
-             * cpu is not starved by continously triggering the timer interrupt
-             * (spoiler alert, it does!)
+             * Clearing the timer pending bit actually has no effect. We could re-program the timer
+             * to "infinity" but we don't know if the handler itself re-programed the timer with a
+             * new event. Therefore, at this point, we must trust the handler either correctly
+             * re-programms the timer or disables the interrupt so the cpu is not starved by
+             * continously triggering the timer interrupt (spoiler alert, it does!)
              */
             break;
         case SCAUSE_CODE_SEI:

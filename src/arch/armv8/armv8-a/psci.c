@@ -26,9 +26,9 @@ static void psci_save_state(enum wakeup_reason wakeup_reason)
     cpu()->arch.profile.psci_off_state.wakeup_reason = wakeup_reason;
 
     /**
-     * Although the real PSCI implementation is responsible for managing cache
-     * state, make sure the saved state is in memory as we'll use this on wake
-     * up before enabling cache to restore basic processor state.
+     * Although the real PSCI implementation is responsible for managing cache state, make sure the
+     * saved state is in memory as we'll use this on wake up before enabling cache to restore basic
+     * processor state.
      */
     cache_flush_range((vaddr_t)&cpu()->arch.profile.psci_off_state,
         sizeof(cpu()->arch.profile.psci_off_state));
@@ -39,8 +39,7 @@ static void psci_save_state(enum wakeup_reason wakeup_reason)
 static void psci_restore_state()
 {
     /**
-     * The majority of the state is already restored in assembly routine
-     *  psci_boot_entry.
+     * The majority of the state is already restored in assembly routine psci_boot_entry.
      */
 
     gicc_restore_state(&cpu()->arch.profile.psci_off_state.gicc_state);

@@ -6,11 +6,10 @@
 #include <arch/psci.h>
 
 /**
- * In Armv8-R systems there is no standard firmware readily available that
- * implements PSCI for each platform. Therefore, we provide a minimal
- * implementation of the necessary PSCI functions.
- * Note this might change in the future, or we might decide to implement
- * PSCI in Bao itself for each platform.
+ * In Armv8-R systems there is no standard firmware readily available that implements PSCI for each
+ * platform. Therefore, we provide a minimal implementation of the necessary PSCI functions. Note
+ * this might change in the future, or we might decide to implement PSCI in Bao itself for each
+ * platform.
  */
 
 int32_t psci_standby()

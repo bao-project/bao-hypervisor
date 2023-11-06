@@ -11,8 +11,8 @@
 void cpu_arch_profile_init(cpuid_t cpuid, paddr_t load_addr)
 {
     if (cpuid == CPU_MASTER) {
-        /* power on necessary, but still sleeping, secondary cpu cores
-         * Assumes CPU zero is doing this */
+        /* power on necessary, but still sleeping, secondary cpu cores Assumes CPU zero is doing
+         * this */
         for (size_t cpu_core_id = 0; cpu_core_id < platform.cpu_num; cpu_core_id++) {
             if (cpu_core_id == cpuid) {
                 continue;
@@ -34,8 +34,7 @@ void cpu_arch_profile_idle()
         switch (err) {
             case PSCI_E_NOT_SUPPORTED:
                 /**
-                 * If power down is not supported let's just wait for an
-                 * interrupt
+                 * If power down is not supported let's just wait for an interrupt
                  */
                 asm volatile("wfi");
                 break;
@@ -45,7 +44,7 @@ void cpu_arch_profile_idle()
     }
 
     /**
-     * Power down was sucessful but did not jump to requested entry
-     * point. Just return to the architectural
+     * Power down was sucessful but did not jump to requested entry point. Just return to the
+     * architectural
      */
 }

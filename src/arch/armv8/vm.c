@@ -68,16 +68,15 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
     sysreg_cntvoff_el2_write(0);
 
     /**
-     *  See ARMv8-A ARM section D1.9.1 for registers that must be in a known
-     * state at reset.
+     *  See ARMv8-A ARM section D1.9.1 for registers that must be in a known state at reset.
      */
     sysreg_sctlr_el1_write(SCTLR_RES1);
     sysreg_cntkctl_el1_write(0);
     sysreg_pmcr_el0_write(0);
 
     /**
-     *  TODO: ARMv8-A ARM mentions another implementation optional registers
-     * that reset to a known value.
+     *  TODO: ARMv8-A ARM mentions another implementation optional registers that reset to a known
+     * value.
      */
 }
 
