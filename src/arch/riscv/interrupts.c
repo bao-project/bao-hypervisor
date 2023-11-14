@@ -14,11 +14,15 @@
 #include <vm.h>
 #include <arch/csrs.h>
 #include <fences.h>
+#include <arch/aclint.h>
 
 void interrupts_arch_init()
 {
     if (cpu_is_master()) {
         irqc_init();
+        if (DEFINED(ACLINT_PRESENT)) {
+            aclint_init();
+        }
     }
 
     /* Wait for master hart to finish irqc initialization */
@@ -34,7 +38,11 @@ void interrupts_arch_init()
 
 void interrupts_arch_ipi_send(cpuid_t target_cpu, irqid_t ipi_id)
 {
-    sbi_send_ipi(1ULL << target_cpu, 0);
+    if (DEFINED(ACLINT_PRESENT)) {
+        aclint_send_ipi(target_cpu);
+    } else {
+        sbi_send_ipi(1ULL << target_cpu, 0);
+    }
 }
 
 void interrupts_arch_cpu_enable(bool en)

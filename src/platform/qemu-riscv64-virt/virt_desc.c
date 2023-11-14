@@ -26,6 +26,8 @@ struct platform platform = {
 #else
 #error "unknown IRQC type " IRQC
 #endif
+        // Disable ACLINT by default
+        .aclint_sswi.base = 0
     },
 
 };
