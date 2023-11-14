@@ -15,3 +15,4 @@ cpu-objs-y+=cpu.o
 cpu-objs-y+=cache.o
 cpu-objs-y+=iommu.o
 cpu-objs-y+=relocate.o
+cpu-objs-y+=aclint.o

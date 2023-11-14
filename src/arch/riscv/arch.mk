@@ -18,6 +18,9 @@ irqc_arch_dir=$(cpu_arch_dir)/irqc/$(IRQC_DIR)
 src_dirs+=$(irqc_arch_dir)
 
 arch-cppflags+=-DIRQC=$(IRQC)
+ifeq ($(ACLINT_PRESENT), 1)
+arch-cppflags+=-DACLINT_PRESENT
+endif
 arch-cflags = -mcmodel=medany -march=rv64g -mstrict-align
 arch-asflags =
 arch-ldflags = 
