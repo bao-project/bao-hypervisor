@@ -20,8 +20,13 @@ jobs:
           "PLIC",
           "APLIC",
         ]
+        ipic: [
+          "IPIC_SBI",
+          "IPIC_ACLINT",
+        ]
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - run: make PLATFORM=${{ matrix.platform }} IRQC=${{ matrix.irqc }} CONFIG=null
+      - run: make PLATFORM=${{ matrix.platform }} IRQC=${{ matrix.irqc }} \
+            IPIC=${{ matrix.ipic }} CONFIG=null
