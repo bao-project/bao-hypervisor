@@ -14,7 +14,7 @@ static uint32_t timer_freq = 0;
 
 void vmm_arch_profile_init()
 {
-    if (cpu()->id == CPU_MASTER) {
+    if (cpu_is_master()) {
         /**
          * Since there is no firmware in cortex-r platforms, we need to initialize the system
          * counter.

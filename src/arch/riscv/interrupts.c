@@ -17,7 +17,7 @@
 
 void interrupts_arch_init()
 {
-    if (cpu()->id == CPU_MASTER) {
+    if (cpu_is_master()) {
         irqc_init();
     }
 

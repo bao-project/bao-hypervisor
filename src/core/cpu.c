@@ -41,7 +41,7 @@ void cpu_init(cpuid_t cpu_id, paddr_t load_addr)
 
     list_init(&cpu()->interface->event_list);
 
-    if (cpu()->id == CPU_MASTER) {
+    if (cpu_is_master()) {
         cpu_sync_init(&cpu_glb_sync, platform.cpu_num);
 
         ipi_cpumsg_handler_num = ((size_t)&_ipi_cpumsg_handlers_size) / sizeof(cpu_msg_handler_t);

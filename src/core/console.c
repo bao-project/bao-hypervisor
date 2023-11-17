@@ -20,7 +20,7 @@ static spinlock_t console_lock = SPINLOCK_INITVAL;
 
 void console_init()
 {
-    if (cpu()->id == CPU_MASTER) {
+    if (cpu_is_master()) {
         if ((platform.console.base & PAGE_OFFSET_MASK) != 0) {
             WARNING("console base must be page aligned");
         }

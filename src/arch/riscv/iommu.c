@@ -422,7 +422,7 @@ void rv_iommu_write_ddt(deviceid_t dev_id, struct vm* vm, paddr_t root_pt)
 bool iommu_arch_init()
 {
     // By checking platform.arch.iommu.base we verify if an IOMMU is present in the platform
-    if (cpu()->id == CPU_MASTER && platform.arch.iommu.base) {
+    if (cpu_is_master() && platform.arch.iommu.base) {
         rv_iommu_init();
         return true;
     }

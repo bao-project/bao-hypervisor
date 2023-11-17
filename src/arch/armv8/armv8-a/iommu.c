@@ -11,7 +11,7 @@
 
 bool iommu_arch_init()
 {
-    if (cpu()->id == CPU_MASTER && platform.arch.smmu.base) {
+    if (cpu_is_master() && platform.arch.smmu.base) {
         smmu_init();
         return true;
     }
