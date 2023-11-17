@@ -797,7 +797,7 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
      * space, whilst other CPUs only have to copy the image from the CPU_MASTER in order to be able
      * to access it.
      */
-    if (cpu()->id == CPU_MASTER) {
+    if (cpu_is_master()) {
         copy_space(&_image_start, image_size, &p_image);
         va = mem_alloc_vpage(&cpu_new->as, SEC_HYP_IMAGE, (vaddr_t)&_image_start,
             NUM_PAGES(image_size));
@@ -824,7 +824,7 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
      * The root page pool bitmap tracks all the physical allocation, so it needs to be the last
      * thing to be copied, as after that, no physical allocation will be tracked.
      */
-    if (cpu()->id == CPU_MASTER) {
+    if (cpu_is_master()) {
         /* Copy root pool bitmap */
         copy_space((void*)root_pool->bitmap, bitmap_size, &p_bitmap);
         va = mem_alloc_vpage(&cpu_new->as, SEC_HYP_GLOBAL, (vaddr_t)root_pool->bitmap,
@@ -855,7 +855,7 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
      * before they get used again, so CPUs need a way to communicate between themselves without an
      * explicit barrier. To accomplish this a static global variable is used.
      */
-    if (cpu()->id == CPU_MASTER) {
+    if (cpu_is_master()) {
         cpu_sync_init(&cpu_glb_sync, platform.cpu_num);
         shared_pte = 0;
     } else {
@@ -870,7 +870,7 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
      * CPU space regions and Hypervisor image region are contingent, starting from `load_addr`. The
      * bitmap region is on top of the root pool region.
      */
-    if (cpu()->id == CPU_MASTER) {
+    if (cpu_is_master()) {
         p_image = mem_ppages_get(load_addr, NUM_PAGES(image_load_size));
         va = mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA, p_image.num_pages);
         mem_map(&cpu()->as, va, &p_image, p_image.num_pages, PTE_HYP_FLAGS);

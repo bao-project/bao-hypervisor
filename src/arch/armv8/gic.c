@@ -78,7 +78,7 @@ void gic_init()
         ISB();
     }
 
-    if (cpu()->id == CPU_MASTER) {
+    if (cpu_is_master()) {
         gic_map_mmio();
         gicd_init();
         NUM_LRS = gich_num_lrs();

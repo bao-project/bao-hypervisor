@@ -79,6 +79,11 @@ static inline struct cpuif* cpu_if(cpuid_t cpu_id)
     return &cpu_interfaces[cpu_id];
 }
 
+static inline bool cpu_is_master(void)
+{
+    return cpu()->id == CPU_MASTER;
+}
+
 static inline void cpu_sync_init(struct cpu_synctoken* token, size_t n)
 {
     token->lock = SPINLOCK_INITVAL;

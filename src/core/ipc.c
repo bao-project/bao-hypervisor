@@ -116,7 +116,7 @@ static void ipc_alloc_shmem()
 
 void ipc_init()
 {
-    if (cpu()->id == CPU_MASTER) {
+    if (cpu_is_master()) {
         shmem_table_size = config.shmemlist_size;
         shmem_table = config.shmemlist;
         ipc_alloc_shmem();

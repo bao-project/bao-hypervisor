@@ -411,7 +411,7 @@ void mem_init(paddr_t load_addr)
 
     static struct mem_region* root_mem_region = NULL;
 
-    if (cpu()->id == CPU_MASTER) {
+    if (cpu_is_master()) {
         cache_enumerate();
 
         if (!mem_setup_root_pool(load_addr, &root_mem_region)) {
@@ -435,7 +435,7 @@ void mem_init(paddr_t load_addr)
         mem_color_hypervisor(load_addr, root_mem_region);
     }
 
-    if (cpu()->id == CPU_MASTER) {
+    if (cpu_is_master()) {
         if (!mem_create_ppools(root_mem_region)) {
             ERROR("couldn't create additional page pools");
         }
