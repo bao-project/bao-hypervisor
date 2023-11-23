@@ -183,6 +183,7 @@ vpath:.=CPPFLAGS
 
 ifeq ($(DEBUG), y)
 	debug_flags:=-g
+	OPTIMIZATIONS:=g
 endif
 
 override CFLAGS+=-O$(OPTIMIZATIONS) -Wall -Werror -ffreestanding -std=gnu11 \
