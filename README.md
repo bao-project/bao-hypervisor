@@ -123,3 +123,6 @@ In RTAS 2023, San Antonio, Texas, 2023. https://arxiv.org/abs/2303.11186
 
 7. José Martins and Sandro Pinto. "**Porting of a Static Partitioning Hypervisor to Arm’s Cortex-R52**"
 In Embedded Open Source Summit 2023, Prague, Czech Republic, 2023. https://www.youtube.com/watch?v=GmeOikZJRas
+
+8. David Cerdeira and José Martins. "**"Hello 'Bao' World" Tutorial**"
+In Bao Half-Day, Virtual Workshop, 2023. https://www.youtube.com/watch?v=6c8_MG-OHYo
