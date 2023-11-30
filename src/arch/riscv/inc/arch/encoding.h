@@ -6,8 +6,6 @@
 #ifndef __RISCV_ENCODING_H__
 #define __RISCV_ENCODING_H__
 
-#include <arch/opcodes.h>
-
 #define INS_COMPRESSED(ins) (!((ins & 3) == 3))
 #define INS_SIZE(ins)       ((ins & 3) == 3 ? 4 : 2)
 
