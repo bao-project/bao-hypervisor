@@ -297,6 +297,12 @@ $(directories):
 
 endif
 
+# Count lines of code for the exact target platform and configuration
+
+.PHONY: cloc
+cloc: | $(deps)
+	@cloc --by-file-by-lang  $(c_src_files) $(asm_src_files) $(c_hdr_files)
+
 #Clean all object, dependency and generated files
 
 .PHONY: clean
