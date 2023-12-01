@@ -57,7 +57,7 @@ non_build_targets+=ci clean
 build_targets:=$(strip $(foreach target, $(targets), \
 	$(if $(findstring $(target),$(non_build_targets)),,$(target))))
 
-#Plataform must be defined excpet for non-build-targets
+# Check platform target and set platform, driver and arch dirs based on it
 ifeq ($(PLATFORM),)
 ifneq ($(build_targets),)
  $(error Target platform argument (PLATFORM) not specified)
@@ -78,6 +78,23 @@ ifneq ($(MAKECMDGOALS), clean)
  core_mem_prot_dir:=$(core_dir)/$(arch_mem_prot)
 endif
 
+# Check configuration exists and set configurtion sources based on it
+config_dir:=$(CONFIG_REPO)
+config_src:=$(wildcard $(config_dir)/$(CONFIG).c)
+ifeq ($(config_src),)
+config_dir:=$(CONFIG_REPO)/$(CONFIG)
+config_src:=$(wildcard $(config_dir)/config.c)
+endif
+
+ifneq ($(build_targets),)
+ifeq ($(CONFIG),)
+$(error Configuration (CONFIG) not defined.)
+endif
+ifeq ($(config_src),)
+$(error Cant find file for $(CONFIG) config!)
+endif
+endif
+
 
 build_dir:=$(cur_dir)/build/$(PLATFORM)/$(CONFIG)
 bin_dir:=$(cur_dir)/bin/$(PLATFORM)/$(CONFIG)
@@ -86,19 +103,6 @@ directories:=$(build_dir) $(bin_dir)
 src_dirs+=$(cpu_arch_dir) $(lib_dir) $(core_dir) $(core_mem_prot_dir) \
 	$(platform_dir) $(addprefix $(drivers_dir)/, $(drivers))
 inc_dirs:=$(addsuffix /inc, $(src_dirs))
-
-# Setup list of objects for compilation
--include $(addsuffix /objects.mk, $(src_dirs))
-
-objs-y:=
-objs-y+=$(addprefix $(cpu_arch_dir)/, $(cpu-objs-y))
-objs-y+=$(addprefix $(lib_dir)/, $(lib-objs-y))
-objs-y+=$(addprefix $(core_dir)/, $(core-objs-y))
-objs-y+=$(addprefix $(platform_dir)/, $(boards-objs-y))
-objs-y+=$(addprefix $(drivers_dir)/, $(drivers-objs-y))
-
-deps+=$(patsubst %.o,%.d,$(objs-y))
-objs-y:=$(patsubst $(src_dir)%, $(build_dir)%, $(objs-y))
 
 build_dirs:=$(patsubst $(src_dir)%, $(build_dir)%, $(src_dirs) $(inc_dirs))
 directories+=$(build_dirs)
@@ -123,14 +127,6 @@ deps+=$(asm_defs_hdr).d
 gens:=
 gens+=$(asm_defs_hdr)
 
-
-config_dir:=$(CONFIG_REPO)
-config_src:=$(wildcard $(config_dir)/$(CONFIG).c)
-ifeq ($(config_src),)
-config_dir:=$(CONFIG_REPO)/$(CONFIG)
-config_src:=$(wildcard $(config_dir)/config.c)
-endif
-
 config_build_dir:=$(build_dir)/config
 platform_build_dir:=$(build_dir)/platform
 scripts_build_dir:=$(build_dir)/scripts
@@ -151,15 +147,22 @@ platform_description:=$(platform_dir)/$(platform_description)
 gens+=$(platform_defs) $(platform_def_generator)
 inc_dirs+=$(platform_build_dir)
 
+# Setup list of objects for compilation
+-include $(addsuffix /objects.mk, $(src_dirs))
 
-ifneq ($(build_targets),)
-ifeq ($(CONFIG),)
-$(error Configuration (CONFIG) not defined.)
-endif
-ifeq ($(config_src),)
-$(error Cant find file for $(CONFIG) config!)
-endif
-endif
+objs-y:=
+objs-y+=$(addprefix $(cpu_arch_dir)/, $(cpu-objs-y))
+objs-y+=$(addprefix $(lib_dir)/, $(lib-objs-y))
+objs-y+=$(addprefix $(core_dir)/, $(core-objs-y))
+objs-y+=$(addprefix $(platform_dir)/, $(boards-objs-y))
+objs-y+=$(addprefix $(drivers_dir)/, $(drivers-objs-y))
+
+c_src_files:=$(wildcard $(patsubst %.o,%.c, $(objs-y)))
+asm_src_files:=$(wildcard $(patsubst %.o,%.S, $(objs-y)))
+c_hdr_files=$(shell cat $(deps) | grep -o "$(src_dir)/\S*\.h" | sort | uniq)
+
+deps+=$(patsubst %.o,%.d,$(objs-y))
+objs-y:=$(patsubst $(src_dir)%, $(build_dir)%, $(objs-y))
 
 config_obj:=$(config_src:$(config_dir)/%.c=$(config_build_dir)/%.o)
 config_dep:=$(config_src:$(config_dir)/%.c=$(config_build_dir)/%.d)
@@ -310,12 +313,12 @@ all_files= $(realpath \
 	$(call list_dir_files_recursive, $(scripts_dir), *) \
 	$(call list_dir_files_recursive, $(config_dir)/example, *) \
 )
-c_src_files=$(realpath $(call list_dir_files_recursive, src, *.c))
-c_hdr_files=$(realpath $(call list_dir_files_recursive, src, *.h))
-c_files=$(c_src_files) $(c_hdr_files)
+all_c_src_files=$(realpath $(call list_dir_files_recursive, src, *.c))
+all_c_hdr_files=$(realpath $(call list_dir_files_recursive, src, *.h))
+all_c_files=$(all_c_src_files) $(all_c_hdr_files)
 
 $(call ci, license, "Apache-2.0", $(all_files))
-$(call ci, format, $(c_files))
+$(call ci, format, $(all_c_files))
 
 .PHONY: ci
 ci: license-check format-check
