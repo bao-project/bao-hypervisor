@@ -48,3 +48,11 @@ void cpu_arch_profile_idle()
      * architectural
      */
 }
+
+void cpu_arch_profile_standby()
+{
+    /**
+     * Wait for an interrupt
+     */
+    asm volatile("wfi");
+}
