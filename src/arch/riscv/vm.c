@@ -93,5 +93,5 @@ void vcpu_arch_run(struct vcpu* vcpu)
         vcpu_arch_entry();
     } else {
         cpu_standby();
-    }    
+    }
 }

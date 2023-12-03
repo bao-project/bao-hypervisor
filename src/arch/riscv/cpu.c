@@ -34,3 +34,8 @@ void cpu_arch_idle()
                  "j cpu_idle_wakeup\n\r" ::"r"(&cpu()->stack[STACK_SIZE]));
     ERROR("returned from idle wake up");
 }
+
+void cpu_arch_standby()
+{
+    cpu_arch_idle();
+}
