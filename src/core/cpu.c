@@ -99,6 +99,18 @@ void cpu_idle()
     ERROR("Spurious idle wake up");
 }
 
+void cpu_standby()
+{
+    cpu_arch_standby();
+
+    /**
+     * Should not return here.
+     * cpu should "wake up" from idle in cpu_idle_wakeup
+     * with a rewinded stack.
+     */
+    ERROR("Spurious idle wake up");
+}
+
 void cpu_idle_wakeup()
 {
     if (interrupts_check(IPI_CPU_MSG)) {
