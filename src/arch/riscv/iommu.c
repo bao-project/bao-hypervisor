@@ -359,7 +359,8 @@ static void rv_iommu_write_ddt(deviceid_t dev_id, struct vm* vm, paddr_t root_pt
 
         uint64_t iohgatp = 0;
         iohgatp |= ((root_pt >> 12) & RV_IOMMU_DC_IOHGATP_PPN_MASK);
-        iohgatp |= ((vm->id << RV_IOMMU_DC_IOHGATP_GSCID_OFF) & RV_IOMMU_DC_IOHGATP_GSCID_MASK);
+        iohgatp |= ((((uint64_t)vm->id) << RV_IOMMU_DC_IOHGATP_GSCID_OFF) &
+            RV_IOMMU_DC_IOHGATP_GSCID_MASK);
         iohgatp |= RV_IOMMU_IOHGATP_SV39X4;
         rv_iommu.hw.ddt[dev_id].iohgatp = iohgatp;
 
