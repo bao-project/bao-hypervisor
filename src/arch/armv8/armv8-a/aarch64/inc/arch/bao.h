@@ -12,6 +12,7 @@
 #define BAO_VAS_TOP  (0xff0000000000)
 #define PAGE_SIZE    (0x1000)
 #define STACK_SIZE   (PAGE_SIZE)
+#define VM_SHARED_PT_LVL    (0)
 
 #define GPR(N)       "x" #N
 

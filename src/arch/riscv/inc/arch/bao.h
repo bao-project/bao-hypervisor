@@ -41,6 +41,7 @@
 
 #define PAGE_SIZE  (0x1000)
 #define STACK_SIZE (PAGE_SIZE)
+#define VM_SHARED_PT_LVL    (0)
 
 #ifndef __ASSEMBLER__
 
