@@ -14,12 +14,13 @@
 
 #define PT_SHARED_LVL    (0)
 
-#if (RV64)
-#define PTE_MASK     BIT64_MASK
-#define PTE_ADDR_MSK PTE_MASK(12, 44)
-#elif (RV32)
+#if (RV32)
 #define PTE_MASK     BIT32_MASK
 #define PTE_ADDR_MSK PTE_MASK(12, 22)
+#else
+// This layout assumes Sv39 is available as mandated by the RVA23S64 profile
+#define PTE_MASK     BIT64_MASK
+#define PTE_ADDR_MSK PTE_MASK(12, 44)
 #endif
 
 #define PTE_FLAGS_MSK             PTE_MASK(0, 8)
@@ -70,7 +71,12 @@
 
 #ifndef __ASSEMBLER__
 
+#if (RV32)
+typedef uint32_t pte_t;
+#else
 typedef uint64_t pte_t;
+#endif
+
 typedef pte_t pte_type_t;
 typedef pte_t pte_flags_t;
 
