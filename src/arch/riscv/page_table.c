@@ -6,12 +6,13 @@
 #include <bao.h>
 #include <page_table.h>
 
-#if (SV32)
-struct page_table_dscr sv32_pt_dscr = { .lvls = 2,
+#if (RV32)
+struct page_table_dscr sv32_pt_dscr = {
+    .lvls = 2,
     .lvl_wdt = (size_t[]){ 32, 22 },
     .lvl_off = (size_t[]){ 22, 12 },
-    .lvl_term = (bool[]){ true, true } },
-                       ;
+    .lvl_term = (bool[]){ true, true },
+};
 struct page_table_dscr sv32x4_pt_dscr = {
     .lvls = 2,
     .lvl_wdt = (size_t[]){ 34, 22 },
@@ -19,7 +20,7 @@ struct page_table_dscr sv32x4_pt_dscr = {
     .lvl_term = (bool[]){ true, true },
 };
 struct page_table_dscr* hyp_pt_dscr = &sv32_pt_dscr;
-struct page_table_dscr* vm_pt_dscr = &sv32x2_pt_dscr;
+struct page_table_dscr* vm_pt_dscr = &sv32x4_pt_dscr;
 #elif (RV64)
 struct page_table_dscr sv39_pt_dscr = {
     .lvls = 3,
