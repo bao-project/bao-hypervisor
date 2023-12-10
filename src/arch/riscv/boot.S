@@ -19,9 +19,10 @@
  */
 .macro PTE_INDEX_ASM	index, addr, level
 	srl \index, \addr, PTE_INDEX_SHIFT(\level) 
-    li  s0, ((PAGE_SIZE/8)-1)
+    li  s0, ((PAGE_SIZE/REGLEN)-1)
 	and \index, \index, s0
-	sll \index, \index, 3
+    li  s0, REGLEN
+	mul \index, \index, s0
 .endm
 
 /**
@@ -118,7 +119,7 @@ _reset_handler:
  */
     la      t0, CPU_MASTER
     li      t1, CPU_MASTER_FIXED
-    sd      t1, 0(t0)
+    STORE   t1, 0(t0)
 #else
 /**
  * The first hart to grab the lock is CPU_MASTER.
@@ -135,7 +136,7 @@ _boot_lock:
     sc.w    t2, t1, (t0)   
     bnez    t2, 1b 
     la      t0, CPU_MASTER
-    sd      a0, 0(t0)
+    STORE      a0, 0(t0)
 2:
 #endif
 
@@ -151,6 +152,7 @@ _boot_lock:
     add     a4, a4, s6
 	call	clear		 
 
+
     la          t0, root_l1_pt
     add         t0, t0, s6
     la          t1, root_l2_pt
@@ -164,23 +166,23 @@ _boot_lock:
     la          t0, root_l2_pt
     add         t0, t0, s6
     LD_SYM      t1, _image_start_sym
-    PTE_PTR     t1, t0, 2, t1
+    PTE_PTR     t1, t0, (PT_LVLS - 1), t1
     LD_SYM      t2, _image_load_end_sym
-    PTE_PTR     t2, t0, 2, t2
+    PTE_PTR     t2, t0, (PT_LVLS - 1), t2
 
     la          t0, _image_start
     PTE_FILL    t0, t0, PTE_HYP_FLAGS | PTE_PAGE
 1:
     bge     t1, t2, 2f
     STORE   t0, 0(t1)
-    add     t1, t1, 8
-    add     t0, t0, 0x400
+    add     t1, t1, REGLEN
+    add     t0, t0, (PAGE_SIZE >> 2)
     j       1b
 2:
     la          t0, root_l2_pt
     add         t0, t0, s6
     LD_SYM      t2, _image_end_sym
-    PTE_PTR     t2, t0, 2, t2
+    PTE_PTR     t2, t0, (PT_LVLS - 1), t2
     bge         t1, t2, 3f
     la          t0, _image_noload_start
     PTE_FILL    t0, t0, PTE_HYP_FLAGS | PTE_PAGE
@@ -252,8 +254,8 @@ map_cpu:
 1:
     blez    t3, setup_cpu
     STORE   t2, 0(t1)
-    add     t1, t1, 8
-    add     t2, t2, 0x400
+    add     t1, t1, REGLEN
+    add     t2, t2, (PAGE_SIZE >> 2)
     sub     t3, t3, t4
     j       1b
     
