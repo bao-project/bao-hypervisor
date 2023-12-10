@@ -46,6 +46,9 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
 
     if (CPU_HAS_EXTENSION(CPU_EXT_SSTC)) {
         csrs_stimecmp_write(~0U);
+        csrs_henvcfg_set(HENVCFG_STCE);
+    } else {
+        csrs_henvcfg_clear(HENVCFG_STCE);
     }
 
     csrs_hcounteren_write(HCOUNTEREN_TM);
