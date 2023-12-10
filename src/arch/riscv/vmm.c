@@ -18,8 +18,8 @@ void vmm_arch_init()
      * Delegate all interrupts and exceptions not meant to be dealt by the hypervisor
      */
 
-    CSRW(CSR_HIDELEG, HIDELEG_VSSI | HIDELEG_VSTI | HIDELEG_VSEI);
-    CSRW(CSR_HEDELEG, HEDELEG_ECU | HEDELEG_IPF | HEDELEG_LPF | HEDELEG_SPF);
+    csrs_hideleg_write(HIDELEG_VSSI | HIDELEG_VSTI | HIDELEG_VSEI);
+    csrs_hedeleg_write(HEDELEG_ECU | HEDELEG_IPF | HEDELEG_LPF | HEDELEG_SPF);
 
     /**
      * TODO: consider delegating other exceptions e.g. breakpoint or ins misaligned

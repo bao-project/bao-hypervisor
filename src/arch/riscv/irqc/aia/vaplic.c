@@ -234,9 +234,9 @@ static void vaplic_update_hart_line(struct vcpu* vcpu, vcpuid_t vhart_index)
      */
     if (pcpu_id == cpu()->id) {
         if (vaplic_update_topi(vcpu)) {
-            CSRS(CSR_HVIP, HIP_VSEIP);
+            csrs_hvip_set(HIP_VSEIP);
         } else {
-            CSRC(CSR_HVIP, HIP_VSEIP);
+            csrs_hvip_clear(HIP_VSEIP);
         }
     } else {
         struct cpu_msg msg = { VPLIC_IPI_ID, UPDATE_HART_LINE, vhart_index };

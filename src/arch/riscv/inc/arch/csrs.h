@@ -96,7 +96,7 @@
 #define SSTATUS_XS_DIRTY            (3ULL << SSTATUS_XS_OFF)
 #define SSTATUS_SUM                 (1ULL << 18)
 #define SSTATUS_MXR                 (1ULL << 19)
-#define SSTATUS_SD                  (1ULL << 63)
+#define SSTATUS_SD                  (1ULL << (REGLEN-1))
 
 #define SIE_USIE                    (1ULL << 0)
 #define SIE_SSIE                    (1ULL << 1)
@@ -192,10 +192,15 @@
 #define HSTATUS_VTW                 (1ULL << 21)
 #define HSTATUS_VTSR                (1ULL << 22)
 #define HSTATUS_VSXL_OFF            (32)
+#if RV64
 #define HSTATUS_VSXL_LEN            (2)
 #define HSTATUS_VSXL_MSK            (BIT_MASK(HSTATUS_VSXL_OFF, HSTATUS_VSXL_LEN))
-#define HSTATUS_VSXL_32             (1ULL << HSTATUS_VSXL_OFF)
-#define HSTATUS_VSXL_64             (2ULL << HSTATUS_VSXL_OFF)
+#define HSTATUS_VSXL_32             (1UL << HSTATUS_VSXL_OFF)
+#define HSTATUS_VSXL_64             (2UL << HSTATUS_VSXL_OFF)
+#else
+#define HSTATUS_VSXL_32             0
+#define HSTATUS_VSXL_64             0
+#endif
 
 #define HENVCFG_FIOM                (1ULL << 0)
 #define HENVCFG_CBIE_OFF            (4)
@@ -217,16 +222,89 @@
 
 #ifndef __ASSEMBLER__
 
-#define CSRR(csr)                                                            \
-    ({                                                                       \
-        unsigned long _temp;                                                 \
-        asm volatile("csrr  %0, " XSTR(csr) "\n\r" : "=r"(_temp)::"memory"); \
-        _temp;                                                               \
-    })
+#define CSRS_GEN_ACCESSORS_NAMED(csr_name, csr_id) \
+    static inline unsigned long csrs_##csr_name##_read(void) { \
+        unsigned long csr_value; \
+        __asm__ volatile ("csrr %0," XSTR(csr_id) : "=r"(csr_value) :: "memory");\
+        return csr_value; \
+    } \
+    static inline void csrs_##csr_name##_write(unsigned long csr_value) { \
+        __asm__ volatile ("csrw " XSTR(csr_id) ",%0" :: "r"(csr_value) : "memory");\
+    } \
+    static inline void csrs_##csr_name##_set(unsigned long csr_value) { \
+        __asm__ volatile ("csrs " XSTR(csr_id) ",%0" :: "r"(csr_value) : "memory");\
+    } \
+    static inline void csrs_##csr_name##_clear(unsigned long csr_value) { \
+        __asm__ volatile ("csrc " XSTR(csr_id) ",%0" :: "r"(csr_value) : "memory");\
+    } \
 
-#define CSRW(csr, rs) asm volatile("csrw  " XSTR(csr) ", %0\n\r" ::"rK"(rs) : "memory")
-#define CSRS(csr, rs) asm volatile("csrs  " XSTR(csr) ", %0\n\r" ::"rK"(rs) : "memory")
-#define CSRC(csr, rs) asm volatile("csrc  " XSTR(csr) ", %0\n\r" ::"rK"(rs) : "memory")
+#define CSRS_GEN_ACCESSORS(csr) CSRS_GEN_ACCESSORS_NAMED(csr, csr)
+
+#define CSRS_GEN_ACCESSORS_MERGED(csr_name, csrl, csrh) \
+    static inline unsigned long long csrs_##csr_name##_read(void) { \
+        return ((unsigned long long)csrs_##csrh##_read() << 32) | csrs_##csrl##_read(); \
+    } \
+    static inline void csrs_##csr_name##_write(unsigned long long csr_value) { \
+        csrs_##csrl##_write(csr_value); \
+        csrs_##csrh##_write(csr_value >> 32); \
+    } \
+    static inline void csrs_##csr_name##_set(unsigned long long csr_value) { \
+        csrs_##csrl##_set(csr_value); \
+        csrs_##csrh##_set(csr_value >> 32); \
+    } \
+    static inline void csrs_##csr_name##_clear(unsigned long long csr_value) { \
+        csrs_##csrl##_clear(csr_value); \
+        csrs_##csrh##_clear(csr_value >> 32); \
+    } \
+
+CSRS_GEN_ACCESSORS(sstatus);
+CSRS_GEN_ACCESSORS(sscratch);
+CSRS_GEN_ACCESSORS(scause);
+CSRS_GEN_ACCESSORS(stval);
+CSRS_GEN_ACCESSORS(sepc);
+CSRS_GEN_ACCESSORS(sie);
+CSRS_GEN_ACCESSORS(sip);
+CSRS_GEN_ACCESSORS(satp);
+CSRS_GEN_ACCESSORS_NAMED(hstatus, CSR_HSTATUS);
+CSRS_GEN_ACCESSORS_NAMED(hgatp, CSR_HGATP);
+CSRS_GEN_ACCESSORS_NAMED(htinst, CSR_HTINST);
+CSRS_GEN_ACCESSORS_NAMED(htval, CSR_HTVAL);
+CSRS_GEN_ACCESSORS_NAMED(hie, CSR_HIE);
+CSRS_GEN_ACCESSORS_NAMED(hvip, CSR_HVIP);
+CSRS_GEN_ACCESSORS_NAMED(hedeleg, CSR_HEDELEG);
+CSRS_GEN_ACCESSORS_NAMED(hideleg, CSR_HIDELEG);
+CSRS_GEN_ACCESSORS_NAMED(hcounteren, CSR_HCOUNTEREN);
+CSRS_GEN_ACCESSORS_NAMED(vsstatus, CSR_VSSTATUS);
+CSRS_GEN_ACCESSORS_NAMED(vstvec, CSR_VSTVEC);
+CSRS_GEN_ACCESSORS_NAMED(vsscratch, CSR_VSSCRATCH);
+CSRS_GEN_ACCESSORS_NAMED(vsepc, CSR_VSEPC);
+CSRS_GEN_ACCESSORS_NAMED(vscause, CSR_VSCAUSE);
+CSRS_GEN_ACCESSORS_NAMED(vstval, CSR_VSTVAL);
+CSRS_GEN_ACCESSORS_NAMED(vsatp, CSR_VSATP);
+CSRS_GEN_ACCESSORS_NAMED(vsie, CSR_VSIE);
+
+#if (RV64)
+CSRS_GEN_ACCESSORS_NAMED(stimecmp, CSR_STIMECMP);
+CSRS_GEN_ACCESSORS_NAMED(vstimecmp, CSR_VSTIMECMP);
+CSRS_GEN_ACCESSORS_NAMED(henvcfg, CSR_HENVCFG);
+CSRS_GEN_ACCESSORS_NAMED(htimedelta, CSR_HTIMEDELTA);
+#else
+CSRS_GEN_ACCESSORS_NAMED(henvcfgl, CSR_HENVCFG);
+CSRS_GEN_ACCESSORS_NAMED(henvcfgh, CSR_HENVCFGH);
+CSRS_GEN_ACCESSORS_MERGED(henvcfg, henvcfgl, henvcfgh)
+
+CSRS_GEN_ACCESSORS_NAMED(htimedeltal, CSR_HTIMEDELTA);
+CSRS_GEN_ACCESSORS_NAMED(htimedeltah, CSR_HTIMEDELTAH);
+CSRS_GEN_ACCESSORS_MERGED(htimedelta, htimedeltal, htimedeltah)
+
+CSRS_GEN_ACCESSORS_NAMED(stimecmpl, CSR_STIMECMP);
+CSRS_GEN_ACCESSORS_NAMED(stimecmph, CSR_STIMECMPH);
+CSRS_GEN_ACCESSORS_MERGED(stimecmp, stimecmpl, stimecmph);
+
+CSRS_GEN_ACCESSORS_NAMED(vstimecmpl, CSR_VSTIMECMP);
+CSRS_GEN_ACCESSORS_NAMED(vstimecmph, CSR_VSTIMECMPH);
+CSRS_GEN_ACCESSORS_MERGED(vstimecmp, vstimecmpl, vstimecmph);
+#endif
 
 #endif /* __ASSEMBLER__ */
 

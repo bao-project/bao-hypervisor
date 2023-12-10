@@ -38,13 +38,13 @@ switch_space:
     li a4, 0
 1:
     /* Copy two words */
-    ld a2, (a6)
-    sd a2, (a0)
+    LOAD a2, (a6)
+    STORE a2, (a0)
     
     /* Increment addressess and count accordingly */
-    add a6, a6, 8
-    add a0, a0, 8
-    add a4, a4, 8
+    add a6, a6, REGLEN
+    add a0, a0, REGLEN
+    add a4, a4, REGLEN
     
     /* If count is less then size, repeat */
     blt a4, a5, 1b
