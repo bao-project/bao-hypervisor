@@ -9,6 +9,9 @@
 #include <cache.h>
 #include <config.h>
 #include <shmem.h>
+#include <objpool.h>
+
+OBJPOOL_ALLOC(emul_cache, struct emul_mem, sizeof(struct emul_mem));
 
 static void vm_master_init(struct vm* vm, const struct vm_config* config, vmid_t vm_id)
 {
@@ -48,6 +51,7 @@ void vm_vcpu_init(struct vm* vm, const struct vm_config* config)
     vcpu->id = vcpu_id;
     vcpu->phys_id = cpu()->id;
     vcpu->vm = vm;
+    vcpu->active = true;
     cpu()->vcpu = vcpu;
 
     vcpu_arch_init(vcpu, vm);
@@ -230,6 +234,52 @@ static struct vm* vm_allocation_init(struct vm_allocation* vm_alloc)
     return vm;
 }
 
+static void vm_init_remote_io(struct vm* vm, const struct vm_config* vm_config)
+{
+    if (vm_config->platform.remote_io_dev_num > 0) {
+        vm->remote_io_dev_num = vm_config->platform.remote_io_dev_num;
+        vm->remote_io_pooling = vm_config->platform.remote_io_pooling;
+        vm->remote_io_interrupt = vm_config->platform.remote_io_interrupt;
+        vm->remote_io_devs = vm_config->platform.remote_io_devs;
+
+        for (int i = 0; i < vm_config->platform.remote_io_dev_num; i++) {
+            struct remote_io_dev* remote_io_dev = &vm_config->platform.remote_io_devs[i];
+            struct shmem* shmem = shmem_get(remote_io_dev->shmem.shmem_id);
+            if (shmem == NULL) {
+                WARNING("Invalid shmem id in configuration. Ignored.");
+                continue;
+            }
+            size_t shmem_size = remote_io_dev->shmem.size;
+            if (shmem_size > shmem->size) {
+                shmem_size = shmem->size;
+                WARNING("Trying to map region to smaller shared memory. Truncated");
+            }
+            spin_lock(&shmem->lock);
+            shmem->cpu_masters |= (1ULL << cpu()->id);
+            spin_unlock(&shmem->lock);
+
+            struct vm_mem_region reg = {
+                .base = remote_io_dev->shmem.base,
+                .size = shmem_size,
+                .place_phys = true,
+                .phys = shmem->phys,
+                .colors = shmem->colors,
+            };
+
+            vm_map_mem_region(vm, &reg);
+
+            if (!remote_io_dev->is_back_end) {
+                struct emul_mem* emu = objpool_alloc(&emul_cache);
+                emu->va_base = remote_io_dev->va;
+                emu->size = remote_io_dev->size;
+                emu->handler = remote_io_mmio_emul_handler;
+                vm_emul_add_mem(vm, emu);
+            }
+        }
+        remote_io_assign_cpus(vm);
+    }
+}
+
 struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* config, bool master,
     vmid_t vm_id)
 {
@@ -269,6 +319,7 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* confi
         vm_init_mem_regions(vm, config);
         vm_init_dev(vm, config);
         vm_init_ipc(vm, config);
+        vm_init_remote_io(vm, config);
     }
 
     cpu_sync_and_clear_msgs(&vm->sync);
@@ -348,6 +399,9 @@ __attribute__((weak)) cpumap_t vm_translate_to_vcpu_mask(struct vm* vm, cpumap_t
 
 void vcpu_run(struct vcpu* vcpu)
 {
-    cpu()->vcpu->active = true;
-    vcpu_arch_run(vcpu);
+    if (vcpu->active == false) {
+        cpu_idle();
+    } else {
+        vcpu_arch_run(vcpu);
+    }
 }

@@ -128,6 +128,7 @@ void vmm_init()
     vmm_arch_init();
     vmm_io_init();
     shmem_init();
+    remote_io_init();
 
     cpu_sync_barrier(&cpu_glb_sync);
 
