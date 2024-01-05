@@ -6,14 +6,15 @@
 #ifndef __ARCH_BAO_H__
 #define __ARCH_BAO_H__
 
-#define BAO_VAS_BASE (0xfd8000000000)
-#define BAO_CPU_BASE (0xfe0000000000)
-#define BAO_VM_BASE  (0xfe8000000000)
-#define BAO_VAS_TOP  (0xff0000000000)
-#define PAGE_SIZE    (0x1000)
-#define STACK_SIZE   (PAGE_SIZE)
+#define BAO_VAS_BASE     (0xfd8000000000)
+#define BAO_CPU_BASE     (0xfe0000000000)
+#define BAO_VM_BASE      (0xfe8000000000)
+#define BAO_VAS_TOP      (0xff0000000000)
+#define PAGE_SIZE        (0x1000)
+#define STACK_SIZE       (PAGE_SIZE)
+#define VM_SHARED_PT_LVL (0)
 
-#define GPR(N)       "x" #N
+#define GPR(N)           "x" #N
 
 #ifndef __ASSEMBLER__
 
