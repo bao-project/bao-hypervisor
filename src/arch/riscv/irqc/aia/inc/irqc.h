@@ -14,6 +14,7 @@
 #include <arch/sbi.h>
 #elif (IRQC == AIA)
 #include <imsic.h>
+#include <vimsic.h>
 #endif
 
 #define IRQC_TIMR_INT_ID (APLIC_MAX_INTERRUPTS + 1)
@@ -163,6 +164,9 @@ static inline void irqc_clr_pend(irqid_t int_id)
 static inline void virqc_init(struct vm* vm, const union vm_irqc_dscrp* vm_irqc_dscrp)
 {
     vaplic_init(vm, vm_irqc_dscrp);
+    #if (IRQC == AIA)
+    vimsic_init(vm, vm_irqc_dscrp);
+    #endif
 }
 
 static inline void virqc_set_hw(struct vm* vm, irqid_t id)
