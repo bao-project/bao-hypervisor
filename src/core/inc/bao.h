@@ -14,15 +14,13 @@
 #include <console.h>
 #include <util.h>
 
-#define INFO(args, ...)    console_printk("BAO INFO: " args "\n" __VA_OPT__(, ) __VA_ARGS__);
+#define INFO(...)    console_printk("BAO INFO: " __VA_ARGS__);
 
-#define WARNING(args, ...) console_printk("BAO WARNING: " args "\n" __VA_OPT__(, ) __VA_ARGS__);
+#define WARNING(...) console_printk("BAO WARNING: " __VA_ARGS__);
 
-#define ERROR(args, ...)                                                    \
-    {                                                                       \
-        console_printk("BAO ERROR: " args "\n" __VA_OPT__(, ) __VA_ARGS__); \
-        while (1) { }                                                       \
-    }
+#define ERROR(...)                             \
+    console_printk("BAO ERROR: " __VA_ARGS__); \
+    while (true) { };
 
 #endif /* __ASSEMBLER__ */
 
