@@ -172,8 +172,7 @@ struct gicr_hw {
     uint32_t ID[(0x10000 - 0xFFD0) / sizeof(uint32_t)];
 
     /* SGI_base frame */
-    uint8_t sgi_base[0] __attribute__((aligned(0x10000)));
-    uint8_t pad6[0x0080 - 0x000];
+    uint8_t pad6[0x0080 - 0x000] __attribute__((aligned(0x10000)));
     uint32_t IGROUPR0;
     uint8_t pad7[0x0100 - 0x084];
     uint32_t ISENABLER0;
