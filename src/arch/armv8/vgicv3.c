@@ -129,7 +129,8 @@ void vgicd_emul_router_access(struct emul_access* acc, struct vgic_reg_handler_i
     struct vgic_int* interrupt = vgic_get_int(cpu()->vcpu, irq_id, cpu()->vcpu->id);
 
     if (interrupt == NULL) {
-        return vgic_emul_razwi(acc, handlers, gicr_access, vgicr_id);
+        vgic_emul_razwi(acc, handlers, gicr_access, vgicr_id);
+        return;
     }
 
     uint64_t route = vgic_int_get_route(cpu()->vcpu, interrupt);
