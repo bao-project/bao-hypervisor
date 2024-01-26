@@ -13,7 +13,7 @@ typedef struct {
     uint32_t next;
 } spinlock_t;
 
-#define SPINLOCK_INITVAL ((spinlock_t){ 0, 0 })
+static const spinlock_t SPINLOCK_INITVAL = { 0, 0 };
 
 static inline void spinlock_init(spinlock_t* lock)
 {
