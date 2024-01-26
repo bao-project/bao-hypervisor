@@ -119,7 +119,7 @@ static irqid_t vplic_next_pending(struct vcpu* vcpu, int vcntxt)
 
 enum { UPDATE_HART_LINE };
 static void vplic_ipi_handler(uint32_t event, uint64_t data);
-CPU_MSG_HANDLER(vplic_ipi_handler, VPLIC_IPI_ID);
+CPU_MSG_HANDLER(vplic_ipi_handler, VPLIC_IPI_ID)
 
 void vplic_update_hart_line(struct vcpu* vcpu, int vcntxt)
 {
