@@ -10,41 +10,42 @@
 
 #ifndef __ASSEMBLER__
 
-#define SYSREG_GEN_ACCESSORS(name, op1, crn, crm, op2)                                              \
-    static inline unsigned long sysreg_##name##_read()                                              \
-    {                                                                                               \
-        unsigned long _temp;                                                                        \
-        asm volatile("mrc p15, " #op1 ", %0, " #crn ", " #crm ", %1\n\r" : "=r"(_temp) : "i"(op2)); \
-        return _temp;                                                                               \
-    }                                                                                               \
-    static inline void sysreg_##name##_write(unsigned long val)                                     \
-    {                                                                                               \
-        asm volatile("mcr p15, " #op1 ", %0, " #crn ", " #crm ", " #op2 "\n\r" : : "r"(val));       \
+#define SYSREG_GEN_ACCESSORS(name, op1, crn, crm, op2)                                            \
+    static inline unsigned long sysreg_##name##_read()                                            \
+    {                                                                                             \
+        unsigned long _temp;                                                                      \
+        __asm__ volatile("mrc p15, " #op1 ", %0, " #crn ", " #crm ", %1\n\r" : "=r"(_temp)        \
+                         : "i"(op2));                                                             \
+        return _temp;                                                                             \
+    }                                                                                             \
+    static inline void sysreg_##name##_write(unsigned long val)                                   \
+    {                                                                                             \
+        __asm__ volatile("mcr p15, " #op1 ", %0, " #crn ", " #crm ", " #op2 "\n\r" : : "r"(val)); \
     }
 
-#define SYSREG_GEN_ACCESSORS_BANKED(name, reg)                   \
-    static inline unsigned long sysreg_##name##_read()           \
-    {                                                            \
-        unsigned long _temp;                                     \
-        asm volatile("mrs %0, " XSTR(reg) "\n\r" : "=r"(_temp)); \
-        return _temp;                                            \
-    }                                                            \
-    static inline void sysreg_##name##_write(unsigned long val)  \
-    {                                                            \
-        asm volatile("msr " XSTR(reg) ", %0\n\r" : : "r"(val));  \
+#define SYSREG_GEN_ACCESSORS_BANKED(name, reg)                       \
+    static inline unsigned long sysreg_##name##_read()               \
+    {                                                                \
+        unsigned long _temp;                                         \
+        __asm__ volatile("mrs %0, " XSTR(reg) "\n\r" : "=r"(_temp)); \
+        return _temp;                                                \
+    }                                                                \
+    static inline void sysreg_##name##_write(unsigned long val)      \
+    {                                                                \
+        __asm__ volatile("msr " XSTR(reg) ", %0\n\r" : : "r"(val));  \
     }
 
-#define SYSREG_GEN_ACCESSORS_64(reg, op1, crm)                                                \
-    static inline unsigned long long sysreg_##reg##_read()                                    \
-    {                                                                                         \
-        unsigned long long _temp, _tempH;                                                     \
-        asm volatile("mrrc p15, " #op1 ", %0, %1, " #crm "\n\r" : "=r"(_temp), "=r"(_tempH)); \
-        return ((_tempH << 32) | _temp);                                                      \
-    }                                                                                         \
-    static inline void sysreg_##reg##_write(unsigned long long val)                           \
-    {                                                                                         \
-        unsigned long long _tempH = (val >> 32);                                              \
-        asm volatile("mcrr p15, " #op1 ", %0, %1, " #crm "\n\r" : : "r"(val), "r"(_tempH));   \
+#define SYSREG_GEN_ACCESSORS_64(reg, op1, crm)                                                    \
+    static inline unsigned long long sysreg_##reg##_read()                                        \
+    {                                                                                             \
+        unsigned long long _temp, _tempH;                                                         \
+        __asm__ volatile("mrrc p15, " #op1 ", %0, %1, " #crm "\n\r" : "=r"(_temp), "=r"(_tempH)); \
+        return ((_tempH << 32) | _temp);                                                          \
+    }                                                                                             \
+    static inline void sysreg_##reg##_write(unsigned long long val)                               \
+    {                                                                                             \
+        unsigned long long _tempH = (val >> 32);                                                  \
+        __asm__ volatile("mcrr p15, " #op1 ", %0, %1, " #crm "\n\r" : : "r"(val), "r"(_tempH));   \
     }
 
 #define SYSREG_GEN_ACCESSORS_MERGE(reg, reg1, reg2)                                         \
@@ -145,32 +146,32 @@ static inline void arm_dc_civac(vaddr_t cache_addr)
 
 static inline void arm_at_s1e2w(vaddr_t vaddr)
 {
-    asm volatile("mcr p15, 4, %0, c7, c8, 1" ::"r"(vaddr)); // ats1hw
+    __asm__ volatile("mcr p15, 4, %0, c7, c8, 1" ::"r"(vaddr)); // ats1hw
 }
 
 static inline void arm_at_s12e1w(vaddr_t vaddr)
 {
-    asm volatile("mcr p15, 0, %0, c7, c8, 5" ::"r"(vaddr)); // ats12nsopw
+    __asm__ volatile("mcr p15, 0, %0, c7, c8, 5" ::"r"(vaddr)); // ats12nsopw
 }
 
 static inline void arm_tlbi_alle2is()
 {
-    asm volatile("mcr p15, 4, r0, c8, c7, 0");
+    __asm__ volatile("mcr p15, 4, r0, c8, c7, 0");
 }
 
 static inline void arm_tlbi_vmalls12e1is()
 {
-    asm volatile("mcr p15, 0, r0, c8, c7, 0");
+    __asm__ volatile("mcr p15, 0, r0, c8, c7, 0");
 }
 
 static inline void arm_tlbi_vae2is(vaddr_t vaddr)
 {
-    asm volatile("mcr p15, 4, %0, c8, c7, 1" ::"r"(vaddr));
+    __asm__ volatile("mcr p15, 4, %0, c8, c7, 1" ::"r"(vaddr));
 }
 
 static inline void arm_tlbi_ipas2e1is(vaddr_t vaddr)
 {
-    asm volatile("mcr p15, 4, %0, c8, c0, 1" ::"r"(vaddr >> 12));
+    __asm__ volatile("mcr p15, 4, %0, c8, c0, 1" ::"r"(vaddr >> 12));
 }
 
 #endif /* |__ASSEMBLER__ */

@@ -9,7 +9,8 @@
 static inline uint64_t hlvxhu(uintptr_t addr)
 {
     uint64_t value;
-    asm volatile(".insn r 0x73, 0x4, 0x32, %0, %1, x3\n\t" : "=r"(value) : "r"(addr) : "memory");
+    __asm__ volatile(".insn r 0x73, 0x4, 0x32, %0, %1, x3\n\t" : "=r"(value) : "r"(addr)
+                     : "memory");
     return value;
 }
 
