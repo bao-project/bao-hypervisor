@@ -8,11 +8,11 @@
 
 #include <bao.h>
 
-#define DMB(shdmn) asm volatile("dmb " XSTR(shdmn) "\n\t" ::: "memory")
+#define DMB(shdmn) __asm__ volatile("dmb " XSTR(shdmn) "\n\t" ::: "memory")
 
-#define DSB(shdmn) asm volatile("dsb " XSTR(shdmn) "\n\t" ::: "memory")
+#define DSB(shdmn) __asm__ volatile("dsb " XSTR(shdmn) "\n\t" ::: "memory")
 
-#define ISB()      asm volatile("isb\n\t" ::: "memory")
+#define ISB()      __asm__ volatile("isb\n\t" ::: "memory")
 
 static inline void fence_ord_write()
 {

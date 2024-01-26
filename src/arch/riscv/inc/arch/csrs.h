@@ -217,16 +217,16 @@
 
 #ifndef __ASSEMBLER__
 
-#define CSRR(csr)                                                            \
-    ({                                                                       \
-        unsigned long _temp;                                                 \
-        asm volatile("csrr  %0, " XSTR(csr) "\n\r" : "=r"(_temp)::"memory"); \
-        _temp;                                                               \
+#define CSRR(csr)                                                                \
+    ({                                                                           \
+        unsigned long _temp;                                                     \
+        __asm__ volatile("csrr  %0, " XSTR(csr) "\n\r" : "=r"(_temp)::"memory"); \
+        _temp;                                                                   \
     })
 
-#define CSRW(csr, rs) asm volatile("csrw  " XSTR(csr) ", %0\n\r" ::"rK"(rs) : "memory")
-#define CSRS(csr, rs) asm volatile("csrs  " XSTR(csr) ", %0\n\r" ::"rK"(rs) : "memory")
-#define CSRC(csr, rs) asm volatile("csrc  " XSTR(csr) ", %0\n\r" ::"rK"(rs) : "memory")
+#define CSRW(csr, rs) __asm__ volatile("csrw  " XSTR(csr) ", %0\n\r" ::"rK"(rs) : "memory")
+#define CSRS(csr, rs) __asm__ volatile("csrs  " XSTR(csr) ", %0\n\r" ::"rK"(rs) : "memory")
+#define CSRC(csr, rs) __asm__ volatile("csrc  " XSTR(csr) ", %0\n\r" ::"rK"(rs) : "memory")
 
 #endif /* __ASSEMBLER__ */
 

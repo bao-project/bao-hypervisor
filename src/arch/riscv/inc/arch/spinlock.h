@@ -27,7 +27,7 @@ static inline void spin_lock(spinlock_t* lock)
     uint32_t ticket;
     uint32_t serving;
 
-    asm volatile(
+    __asm__ volatile(
         /* Increment next ticket */
         "amoadd.w.aqrl  %0, %3, %2 \n\t"
         "1:\n\t"
@@ -42,8 +42,8 @@ static inline void spin_lock(spinlock_t* lock)
 static inline void spin_unlock(spinlock_t* lock)
 {
     uint32_t update_lock = lock->ticket + 1;
-    asm volatile("fence rw, rw\n\t"
-                 "sw %1, %0 \n\t" : "=A"(lock->ticket) : "r"(update_lock) : "memory");
+    __asm__ volatile("fence rw, rw\n\t"
+                     "sw %1, %0 \n\t" : "=A"(lock->ticket) : "r"(update_lock) : "memory");
 }
 
 #endif /* __ARCH_SPINLOCK__ */

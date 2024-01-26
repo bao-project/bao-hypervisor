@@ -70,7 +70,7 @@ int32_t psci_cpu_suspend_handler(uint32_t power_state, unsigned long entrypoint,
          * understand why. To circunvent this, we directly emmit a wfi
          */
         // ret = psci_standby();
-        asm volatile("wfi\n\r");
+        __asm__ volatile("wfi\n\r");
         ret = PSCI_E_SUCCESS;
     }
 

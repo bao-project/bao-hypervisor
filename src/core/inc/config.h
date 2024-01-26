@@ -18,7 +18,7 @@
 #define VM_IMAGE(img_name, img_path)                                         \
     extern uint8_t _##img_name##_vm_size;                                    \
     extern uint8_t _##img_name##_vm_beg;                                     \
-    asm(".pushsection .vm_image_" XSTR(img_name) ", \"a\"\n\t"               \
+    __asm__(".pushsection .vm_image_" XSTR(img_name) ", \"a\"\n\t"               \
         ".global _" XSTR(img_name) "_vm_beg\n\t"                             \
         "_" XSTR(img_name) "_vm_beg:\n\t"                                    \
         ".incbin " XSTR(img_path) "\n\t"                                     \

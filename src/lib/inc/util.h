@@ -34,12 +34,13 @@
 #ifndef __ASSEMBLER__
 
 #define DEFINE_OFFSET(SYMBOL, STRUCT, FIELD) \
-    asm volatile("\n-> " XSTR(SYMBOL) " %0 \n" : : "i"(offsetof(STRUCT, FIELD)))
+    __asm__ volatile("\n-> " XSTR(SYMBOL) " %0 \n" : : "i"(offsetof(STRUCT, FIELD)))
 
-#define DEFINE_SIZE(SYMBOL, TYPE) asm volatile("\n-> " XSTR(SYMBOL) " %0 \n" : : "i"(sizeof(TYPE)))
+#define DEFINE_SIZE(SYMBOL, TYPE) \
+    __asm__ volatile("\n-> " XSTR(SYMBOL) " %0 \n" : : "i"(sizeof(TYPE)))
 
-#define max(n1, n2)               (((n1) > (n2)) ? (n1) : (n2))
-#define min(n1, n2)               (((n1) < (n2)) ? (n1) : (n2))
+#define max(n1, n2) (((n1) > (n2)) ? (n1) : (n2))
+#define min(n1, n2) (((n1) < (n2)) ? (n1) : (n2))
 
 static inline bool range_overlap_range(unsigned long base1, unsigned long size1,
     unsigned long base2, unsigned long size2)
