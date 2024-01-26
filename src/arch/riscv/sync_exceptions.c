@@ -25,7 +25,7 @@ static uint32_t read_ins(uintptr_t ins_addr)
 {
     uint32_t ins = 0;
 
-    if (ins_addr & 0b1) {
+    if (ins_addr & 0x1) {
         ERROR("trying to read guest unaligned instruction");
     }
 
@@ -34,7 +34,7 @@ static uint32_t read_ins(uintptr_t ins_addr)
      * compressed, read the following 16-bits.
      */
     ins = hlvxhu(ins_addr);
-    if ((ins & 0b11) == 3) {
+    if ((ins & 0x3) == 3) {
         ins |= ((uint32_t)hlvxhu(ins_addr + 2)) << 16;
     }
 
@@ -103,7 +103,7 @@ size_t guest_page_fault_handler()
              * even if it was a compressed instruction, but before save the real instruction size.
              */
             ins_size = TINST_INS_SIZE(ins);
-            ins = ins | 0b10;
+            ins = ins | 0x2;
         }
 
         struct emul_access emul;
