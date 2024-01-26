@@ -693,7 +693,7 @@ void vgic_emul_generic_access(struct emul_access* acc, struct vgic_reg_handler_i
 
 struct vgic_reg_handler_info isenabler_info = {
     vgic_emul_generic_access,
-    0b0100,
+    0x4,
     VGIC_ISENABLER_ID,
     offsetof(struct gicd_hw, ISENABLER),
     1,
@@ -704,7 +704,7 @@ struct vgic_reg_handler_info isenabler_info = {
 
 struct vgic_reg_handler_info ispendr_info = {
     vgic_emul_generic_access,
-    0b0100,
+    0x4,
     VGIC_ISPENDR_ID,
     offsetof(struct gicd_hw, ISPENDR),
     1,
@@ -715,7 +715,7 @@ struct vgic_reg_handler_info ispendr_info = {
 
 struct vgic_reg_handler_info isactiver_info = {
     vgic_emul_generic_access,
-    0b0100,
+    0x4,
     VGIC_ISACTIVER_ID,
     offsetof(struct gicd_hw, ISACTIVER),
     1,
@@ -726,7 +726,7 @@ struct vgic_reg_handler_info isactiver_info = {
 
 struct vgic_reg_handler_info icenabler_info = {
     vgic_emul_generic_access,
-    0b0100,
+    0x4,
     VGIC_ICENABLER_ID,
     offsetof(struct gicd_hw, ICENABLER),
     1,
@@ -737,7 +737,7 @@ struct vgic_reg_handler_info icenabler_info = {
 
 struct vgic_reg_handler_info icpendr_info = {
     vgic_emul_generic_access,
-    0b0100,
+    0x4,
     VGIC_ICPENDR_ID,
     offsetof(struct gicd_hw, ICPENDR),
     1,
@@ -748,7 +748,7 @@ struct vgic_reg_handler_info icpendr_info = {
 
 struct vgic_reg_handler_info iactiver_info = {
     vgic_emul_generic_access,
-    0b0100,
+    0x4,
     VGIC_ICACTIVER_ID,
     offsetof(struct gicd_hw, ICACTIVER),
     1,
@@ -759,7 +759,7 @@ struct vgic_reg_handler_info iactiver_info = {
 
 struct vgic_reg_handler_info icfgr_info = {
     vgic_emul_generic_access,
-    0b0100,
+    0x4,
     VGIC_ICFGR_ID,
     offsetof(struct gicd_hw, ICFGR),
     2,
@@ -770,7 +770,7 @@ struct vgic_reg_handler_info icfgr_info = {
 
 struct vgic_reg_handler_info ipriorityr_info = {
     vgic_emul_generic_access,
-    0b0101,
+    0x5,
     VGIC_IPRIORITYR_ID,
     offsetof(struct gicd_hw, IPRIORITYR),
     8,
@@ -781,32 +781,32 @@ struct vgic_reg_handler_info ipriorityr_info = {
 
 struct vgic_reg_handler_info vgicd_misc_info = {
     vgicd_emul_misc_access,
-    0b0100,
+    0x4,
 };
 
 struct vgic_reg_handler_info vgicd_pidr_info = {
     vgicd_emul_pidr_access,
-    0b0100,
+    0x4,
 };
 
 struct vgic_reg_handler_info razwi_info = {
     vgic_emul_razwi,
-    0b0100,
+    0x4,
 };
 
 __attribute__((weak)) struct vgic_reg_handler_info itargetr_info = {
     vgic_emul_razwi,
-    0b0101,
+    0x5,
 };
 
 __attribute__((weak)) struct vgic_reg_handler_info sgir_info = {
     vgic_emul_razwi,
-    0b0100,
+    0x4,
 };
 
 __attribute__((weak)) struct vgic_reg_handler_info irouter_info = {
     vgic_emul_razwi,
-    0b0100,
+    0x4,
 };
 
 struct vgic_reg_handler_info* reg_handler_info_table[VGIC_REG_HANDLER_ID_NUM] = {
