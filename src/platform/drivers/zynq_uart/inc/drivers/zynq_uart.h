@@ -20,110 +20,110 @@
 
 /** UART Control register configurations */
 
-#define UART_CONTROL_STPBRK  (0b1 << 8) // Stop transmitter break
-#define UART_CONTROL_STTBRK  (0b1 << 7) // Start transmitter break
-#define UART_CONTROL_RSTTO   (0b1 << 6) // Restart receiver timeout counter
-#define UART_CONTROL_TXDIS   (0b1 << 5) // Transmit disable
-#define UART_CONTROL_TXEN    (0b1 << 4) // Transmit enable
-#define UART_CONTROL_RXDIS   (0b1 << 3) // Receive disable
-#define UART_CONTROL_RXEN    (0b1 << 2) // Receive enable
-#define UART_CONTROL_TXRES   (0b1 << 1) // Software reset for Tx data path
-#define UART_CONTROL_RXRES   (0b1 << 0) // Software reset for Rx data path
+#define UART_CONTROL_STPBRK  (0x1 << 8) // Stop transmitter break
+#define UART_CONTROL_STTBRK  (0x1 << 7) // Start transmitter break
+#define UART_CONTROL_RSTTO   (0x1 << 6) // Restart receiver timeout counter
+#define UART_CONTROL_TXDIS   (0x1 << 5) // Transmit disable
+#define UART_CONTROL_TXEN    (0x1 << 4) // Transmit enable
+#define UART_CONTROL_RXDIS   (0x1 << 3) // Receive disable
+#define UART_CONTROL_RXEN    (0x1 << 2) // Receive enable
+#define UART_CONTROL_TXRES   (0x1 << 1) // Software reset for Tx data path
+#define UART_CONTROL_RXRES   (0x1 << 0) // Software reset for Rx data path
 
 /** UART Mode Register configuration */
 
-#define UART_MODE_CHMODE_N   (0b00 << 8)  // Channel mode (Normal)
-#define UART_MODE_CHMODE_AE  (0b01 << 8)  // Channel mode (Automatic Echo)
-#define UART_MODE_CHMODE_LL  (0b10 << 8)  // Channel mode (Local Loopback)
-#define UART_MODE_CHMODE_RL  (0b11 << 8)  // Channel mode (Remote Loopback)
-#define UART_MODE_NBSTOP_1   (0b00 << 6)  // Number of stop bits (1)
-#define UART_MODE_NBSTOP_1_5 (0b01 << 6)  // Number of stop bits (1.5)
-#define UART_MODE_NBSTOP_2   (0b10 << 6)  // Number of stop bits (2)
-#define UART_MODE_PAR_EP     (0b000 << 3) // Parity type select (Even Parity)
-#define UART_MODE_PAR_OP     (0b001 << 3) // Parity type select (Odd Parity)
-#define UART_MODE_PAR_F0P    (0b010 << 3) // Parity type select (forced to 0 Parity, Space Parity Mode)
-#define UART_MODE_PAR_F1P    (0b011 << 3) // Parity type select (forced to 1 Parity, Mark Parity Mode)
-#define UART_MODE_PAR_NP     (0b100 << 3) // Parity type select (No Parity)
-#define UART_MODE_CHRL_6     (0b11 << 1)  // Character length select (6 bits)
-#define UART_MODE_CHRL_7     (0b10 << 1)  // Character length select (7 bits)
-#define UART_MODE_CHRL_8     (0b00 << 1)  // Character length select (8 bits)
-#define UART_MODE_CHRL_REF   (0b0 << 0)   // Clock source select (clock source is uart_ref_clk)
-#define UART_MODE_CLKS_REF_8 (0b1 << 0)   // Clock source select (clock source is uart_ref_clk/8)
+#define UART_MODE_CHMODE_N   (0x0 << 8) // Channel mode (Normal)
+#define UART_MODE_CHMODE_AE  (0x1 << 8) // Channel mode (Automatic Echo)
+#define UART_MODE_CHMODE_LL  (0x2 << 8) // Channel mode (Local Loopback)
+#define UART_MODE_CHMODE_RL  (0x3 << 8) // Channel mode (Remote Loopback)
+#define UART_MODE_NBSTOP_1   (0x0 << 6) // Number of stop bits (1)
+#define UART_MODE_NBSTOP_1_5 (0x1 << 6) // Number of stop bits (1.5)
+#define UART_MODE_NBSTOP_2   (0x2 << 6) // Number of stop bits (2)
+#define UART_MODE_PAR_EP     (0x0 << 3) // Parity type select (Even Parity)
+#define UART_MODE_PAR_OP     (0x1 << 3) // Parity type select (Odd Parity)
+#define UART_MODE_PAR_F0P    (0x2 << 3) // Parity type select (forced to 0 Parity, Space Parity Mode)
+#define UART_MODE_PAR_F1P    (0x3 << 3) // Parity type select (forced to 1 Parity, Mark Parity Mode)
+#define UART_MODE_PAR_NP     (0x4 << 3) // Parity type select (No Parity)
+#define UART_MODE_CHRL_6     (0x3 << 1) // Character length select (6 bits)
+#define UART_MODE_CHRL_7     (0x2 << 1) // Character length select (7 bits)
+#define UART_MODE_CHRL_8     (0x0 << 1) // Character length select (8 bits)
+#define UART_MODE_CHRL_REF   (0x0 << 0) // Clock source select (clock source is uart_ref_clk)
+#define UART_MODE_CLKS_REF_8 (0x1 << 0) // Clock source select (clock source is uart_ref_clk/8)
 
 /** UART Interrupt Enable Register configurations */
 
-#define UART_ISR_EN_RBRK     (0b1 << 13) // Receiver FIFO Break Detect interrupt (enable, clears mask=0)
-#define UART_ISR_EN_TOVR     (0b1 << 12) // Transmitter FIFO Overflow interrupt (enable, clears mask=0)
+#define UART_ISR_EN_RBRK     (0x1 << 13) // Receiver FIFO Break Detect interrupt (enable, clears mask=0)
+#define UART_ISR_EN_TOVR     (0x1 << 12) // Transmitter FIFO Overflow interrupt (enable, clears mask=0)
 #define UART_ISR_EN_TNFUL \
-    (0b1 << 11)                          // Transmitter FIFO Nearly Full interrupt (enable, clears
+    (0x1 << 11)                          // Transmitter FIFO Nearly Full interrupt (enable, clears
                                          // mask=0)
-#define UART_ISR_EN_TTRIG (0b1 << 10) // Transmitter FIFO Trigger interrupt (enable, clears mask=0)
+#define UART_ISR_EN_TTRIG (0x1 << 10) // Transmitter FIFO Trigger interrupt (enable, clears mask=0)
 #define UART_ISR_EN_DMSI \
-    (0b1 << 9) // Delta Modem Status Indicator interrupt (enable, clears mask=0)
-#define UART_ISR_EN_TIMEOUT (0b1 << 8) // Receiver Timeout Error interrupt (enable, clears mask=0)
-#define UART_ISR_EN_PARE    (0b1 << 7) // Receiver Parity Error interrupt (enable, clears mask=0)
-#define UART_ISR_EN_FRAME   (0b1 << 6) // Receiver Framing Error interrupt (enable, clears mask=0)
-#define UART_ISR_EN_ROVR    (0b1 << 5) // Receiver Overflow Error interrupt (enable, clears mask=0)
-#define UART_ISR_EN_TFUL    (0b1 << 4) // Transmitter FIFO Full interrupt (enable, clears mask=0)
-#define UART_ISR_EN_TEMPTY  (0b1 << 3) // Transmitter FIFO Empty interrupt (enable, clears mask=0)
-#define UART_ISR_EN_RFUL    (0b1 << 2) // Receiver FIFO Full interrupt (enable, clears mask=0)
-#define UART_ISR_EN_REMPTY  (0b1 << 1) // Receiver FIFO Empty interrupt (enable, clears mask=0)
-#define UART_ISR_EN_RTRIG   (0b1 << 0) // Receiver FIFO Trigger interrupt (enable, clears mask=0)
+    (0x1 << 9) // Delta Modem Status Indicator interrupt (enable, clears mask=0)
+#define UART_ISR_EN_TIMEOUT (0x1 << 8) // Receiver Timeout Error interrupt (enable, clears mask=0)
+#define UART_ISR_EN_PARE    (0x1 << 7) // Receiver Parity Error interrupt (enable, clears mask=0)
+#define UART_ISR_EN_FRAME   (0x1 << 6) // Receiver Framing Error interrupt (enable, clears mask=0)
+#define UART_ISR_EN_ROVR    (0x1 << 5) // Receiver Overflow Error interrupt (enable, clears mask=0)
+#define UART_ISR_EN_TFUL    (0x1 << 4) // Transmitter FIFO Full interrupt (enable, clears mask=0)
+#define UART_ISR_EN_TEMPTY  (0x1 << 3) // Transmitter FIFO Empty interrupt (enable, clears mask=0)
+#define UART_ISR_EN_RFUL    (0x1 << 2) // Receiver FIFO Full interrupt (enable, clears mask=0)
+#define UART_ISR_EN_REMPTY  (0x1 << 1) // Receiver FIFO Empty interrupt (enable, clears mask=0)
+#define UART_ISR_EN_RTRIG   (0x1 << 0) // Receiver FIFO Trigger interrupt (enable, clears mask=0)
 
 /** UART Interrupt Disable Register configurations */
 
-#define UART_ISR_DIS_RBRK   (0b1 << 13) // Receiver FIFO Break Detect interrupt (disable, sets mask=1)
-#define UART_ISR_DIS_TOVR   (0b1 << 12) // Transmitter FIFO Overflow interrupt (disable, sets mask=1)
+#define UART_ISR_DIS_RBRK   (0x1 << 13) // Receiver FIFO Break Detect interrupt (disable, sets mask=1)
+#define UART_ISR_DIS_TOVR   (0x1 << 12) // Transmitter FIFO Overflow interrupt (disable, sets mask=1)
 #define UART_ISR_DIS_TNFUL \
-    (0b1 << 11) // Transmitter FIFO Nearly Full interrupt (disable, sets mask=1)
-#define UART_ISR_DIS_TTRIG (0b1 << 10) // Transmitter FIFO Trigger interrupt (disable, sets mask=1)
+    (0x1 << 11) // Transmitter FIFO Nearly Full interrupt (disable, sets mask=1)
+#define UART_ISR_DIS_TTRIG (0x1 << 10) // Transmitter FIFO Trigger interrupt (disable, sets mask=1)
 #define UART_ISR_DIS_DMSI \
-    (0b1 << 9) // Delta Modem Status Indicator interrupt (disable, sets mask=1)
-#define UART_ISR_DIS_TIMEOUT  (0b1 << 8) // Receiver Timeout Error interrupt (disable, sets mask=1)
-#define UART_ISR_DIS_PARE     (0b1 << 7) // Receiver Parity Error interrupt (disable, sets mask=1)
-#define UART_ISR_DIS_FRAME    (0b1 << 6) // Receiver Framing Error interrupt (disable, sets mask=1)
-#define UART_ISR_DIS_ROVR     (0b1 << 5) // Receiver Overflow Error interrupt (disable, sets mask=1)
-#define UART_ISR_DIS_TFUL     (0b1 << 4) // Transmitter FIFO Full interrupt (disable, sets mask=1)
-#define UART_ISR_DIS_TEMPTY   (0b1 << 3) // Transmitter FIFO Empty interrupt (disable, sets mask=1)
-#define UART_ISR_DIS_RFUL     (0b1 << 2) // Receiver FIFO Full interrupt (disable, sets mask=1)
-#define UART_ISR_DIS_REMPTY   (0b1 << 1) // Receiver FIFO Empty interrupt (disable, sets mask=1)
-#define UART_ISR_DIS_RTRIG    (0b1 << 0) // Receiver FIFO Trigger interrupt (disable, sets mask=1)
+    (0x1 << 9) // Delta Modem Status Indicator interrupt (disable, sets mask=1)
+#define UART_ISR_DIS_TIMEOUT  (0x1 << 8) // Receiver Timeout Error interrupt (disable, sets mask=1)
+#define UART_ISR_DIS_PARE     (0x1 << 7) // Receiver Parity Error interrupt (disable, sets mask=1)
+#define UART_ISR_DIS_FRAME    (0x1 << 6) // Receiver Framing Error interrupt (disable, sets mask=1)
+#define UART_ISR_DIS_ROVR     (0x1 << 5) // Receiver Overflow Error interrupt (disable, sets mask=1)
+#define UART_ISR_DIS_TFUL     (0x1 << 4) // Transmitter FIFO Full interrupt (disable, sets mask=1)
+#define UART_ISR_DIS_TEMPTY   (0x1 << 3) // Transmitter FIFO Empty interrupt (disable, sets mask=1)
+#define UART_ISR_DIS_RFUL     (0x1 << 2) // Receiver FIFO Full interrupt (disable, sets mask=1)
+#define UART_ISR_DIS_REMPTY   (0x1 << 1) // Receiver FIFO Empty interrupt (disable, sets mask=1)
+#define UART_ISR_DIS_RTRIG    (0x1 << 0) // Receiver FIFO Trigger interrupt (disable, sets mask=1)
 
 /** UART Interrupt Mask Register configurations */
 
-#define UART_ISR_MASK_RBRK    (0b1 << 13) // Receiver FIFO Break Detect interrupt (enabled)
-#define UART_ISR_MASK_TOVR    (0b1 << 12) // Transmitter FIFO Overflow interrupt (enabled)
-#define UART_ISR_MASK_TNFUL   (0b1 << 11) // Transmitter FIFO Nearly Full interrupt (enabled)
-#define UART_ISR_MASK_TTRIG   (0b1 << 10) // Transmitter FIFO Trigger interrupt (enabled)
-#define UART_ISR_MASK_DMSI    (0b1 << 9)  // Delta Modem Status Indicator interrupt (enabled)
-#define UART_ISR_MASK_TIMEOUT (0b1 << 8)  // Receiver Timeout Error interrupt (enabled)
-#define UART_ISR_MASK_PARE    (0b1 << 7)  // Receiver Parity Error interrupt (enabled)
-#define UART_ISR_MASK_FRAME   (0b1 << 6)  // Receiver Framing Error interrupt (enabled)
-#define UART_ISR_MASK_ROVR    (0b1 << 5)  // Receiver Overflow Error interrupt (enabled)
-#define UART_ISR_MASK_TFUL    (0b1 << 4)  // Transmitter FIFO Full interrupt (enabled)
-#define UART_ISR_MASK_TEMPTY  (0b1 << 3)  // Transmitter FIFO Empty interrupt (enabled)
-#define UART_ISR_MASK_RFUL    (0b1 << 2)  // Receiver FIFO Full interrupt (enabled)
-#define UART_ISR_MASK_REMPTY  (0b1 << 1)  // Receiver FIFO Empty interrupt (enabled)
-#define UART_ISR_MASK_RTRIG   (0b1 << 0)  // Receiver FIFO Trigger interrupt (enabled)
+#define UART_ISR_MASK_RBRK    (0x1 << 13) // Receiver FIFO Break Detect interrupt (enabled)
+#define UART_ISR_MASK_TOVR    (0x1 << 12) // Transmitter FIFO Overflow interrupt (enabled)
+#define UART_ISR_MASK_TNFUL   (0x1 << 11) // Transmitter FIFO Nearly Full interrupt (enabled)
+#define UART_ISR_MASK_TTRIG   (0x1 << 10) // Transmitter FIFO Trigger interrupt (enabled)
+#define UART_ISR_MASK_DMSI    (0x1 << 9)  // Delta Modem Status Indicator interrupt (enabled)
+#define UART_ISR_MASK_TIMEOUT (0x1 << 8)  // Receiver Timeout Error interrupt (enabled)
+#define UART_ISR_MASK_PARE    (0x1 << 7)  // Receiver Parity Error interrupt (enabled)
+#define UART_ISR_MASK_FRAME   (0x1 << 6)  // Receiver Framing Error interrupt (enabled)
+#define UART_ISR_MASK_ROVR    (0x1 << 5)  // Receiver Overflow Error interrupt (enabled)
+#define UART_ISR_MASK_TFUL    (0x1 << 4)  // Transmitter FIFO Full interrupt (enabled)
+#define UART_ISR_MASK_TEMPTY  (0x1 << 3)  // Transmitter FIFO Empty interrupt (enabled)
+#define UART_ISR_MASK_RFUL    (0x1 << 2)  // Receiver FIFO Full interrupt (enabled)
+#define UART_ISR_MASK_REMPTY  (0x1 << 1)  // Receiver FIFO Empty interrupt (enabled)
+#define UART_ISR_MASK_RTRIG   (0x1 << 0)  // Receiver FIFO Trigger interrupt (enabled)
 
 /** UART Channel Interrupt Status Register configurations */
 
-#define UART_ISR_STATUS_RBRK  (0b1 << 13) // Receiver FIFO Break Detect interrupt (interrupt occured)
-#define UART_ISR_STATUS_TOVR  (0b1 << 12) // Transmitter FIFO Overflow interrupt (interrupt occurred)
+#define UART_ISR_STATUS_RBRK  (0x1 << 13) // Receiver FIFO Break Detect interrupt (interrupt occured)
+#define UART_ISR_STATUS_TOVR  (0x1 << 12) // Transmitter FIFO Overflow interrupt (interrupt occurred)
 #define UART_ISR_STATUS_TNFUL \
-    (0b1 << 11) // Transmitter FIFO Nearly Full interrupt (interrupt occurred)
-#define UART_ISR_STATUS_TTRIG (0b1 << 10) // Transmitter FIFO Trigger interrupt (interrupt occurred)
+    (0x1 << 11) // Transmitter FIFO Nearly Full interrupt (interrupt occurred)
+#define UART_ISR_STATUS_TTRIG (0x1 << 10) // Transmitter FIFO Trigger interrupt (interrupt occurred)
 #define UART_ISR_STATUS_DMSI \
-    (0b1 << 9) // Delta Modem Status Indicator interrupt (interrupt occurred)
-#define UART_ISR_STATUS_TIMEOUT (0b1 << 8) // Receiver Timeout Error interrupt (interrupt occurred)
-#define UART_ISR_STATUS_PARE    (0b1 << 7) // Receiver Parity Error interrupt (interrupt occurred)
-#define UART_ISR_STATUS_FRAME   (0b1 << 6) // Receiver Framing Error interrupt (interrupt occurred)
-#define UART_ISR_STATUS_ROVR    (0b1 << 5) // Receiver Overflow Error interrupt (interrupt occurred)
-#define UART_ISR_STATUS_TFUL    (0b1 << 4) // Transmitter FIFO Full interrupt (interrupt occurred)
-#define UART_ISR_STATUS_TEMPTY  (0b1 << 3) // Transmitter FIFO Empty interrupt (interrupt occurred)
-#define UART_ISR_STATUS_RFUL    (0b1 << 2) // Receiver FIFO Full interrupt (interrupt occurred)
-#define UART_ISR_STATUS_REMPTY  (0b1 << 1) // Receiver FIFO Empty interrupt (interrupt occurred)
-#define UART_ISR_STATUS_RTRIG   (0b1 << 0) // Receiver FIFO Trigger interrupt (interrupt occurred)
+    (0x1 << 9) // Delta Modem Status Indicator interrupt (interrupt occurred)
+#define UART_ISR_STATUS_TIMEOUT (0x1 << 8) // Receiver Timeout Error interrupt (interrupt occurred)
+#define UART_ISR_STATUS_PARE    (0x1 << 7) // Receiver Parity Error interrupt (interrupt occurred)
+#define UART_ISR_STATUS_FRAME   (0x1 << 6) // Receiver Framing Error interrupt (interrupt occurred)
+#define UART_ISR_STATUS_ROVR    (0x1 << 5) // Receiver Overflow Error interrupt (interrupt occurred)
+#define UART_ISR_STATUS_TFUL    (0x1 << 4) // Transmitter FIFO Full interrupt (interrupt occurred)
+#define UART_ISR_STATUS_TEMPTY  (0x1 << 3) // Transmitter FIFO Empty interrupt (interrupt occurred)
+#define UART_ISR_STATUS_RFUL    (0x1 << 2) // Receiver FIFO Full interrupt (interrupt occurred)
+#define UART_ISR_STATUS_REMPTY  (0x1 << 1) // Receiver FIFO Empty interrupt (interrupt occurred)
+#define UART_ISR_STATUS_RTRIG   (0x1 << 0) // Receiver FIFO Trigger interrupt (interrupt occurred)
 
 /** UART Baud Rate Generator Register */
 
@@ -141,51 +141,51 @@
 
 /** UART Modem Control Register */
 
-#define UART_MODEM_CTRL_FCM (0b1 << 5) // Automatic flow control mode (enable)
+#define UART_MODEM_CTRL_FCM (0x1 << 5) // Automatic flow control mode (enable)
 #define UART_MODEM_CTRL_RTS_FL1 \
-    (0b0 << 1) // Request to send output control (EMIOUARTxRTSN output forced to
+    (0x0 << 1) // Request to send output control (EMIOUARTxRTSN output forced to
                // logic 1)
 #define UART_MODEM_CTRL_RTS_FL0 \
-    (0b1 << 1) // Request to send output control (EMIOUARTxRTSN output forced to
+    (0x1 << 1) // Request to send output control (EMIOUARTxRTSN output forced to
                // logic 0)
 #define UART_MODEM_CTRL_DTR_FL1 \
-    (0b0 << 0) // Data Terminal Ready (EMIOUARTxDTRN output forced to logic 1)
+    (0x0 << 0) // Data Terminal Ready (EMIOUARTxDTRN output forced to logic 1)
 #define UART_MODEM_CTRL_DTR_FL0 \
-    (0b1 << 0) // Data Terminal Ready (EMIOUARTxDTRN output forced to logic 0)
+    (0x1 << 0) // Data Terminal Ready (EMIOUARTxDTRN output forced to logic 0)
 
 /** UART Modem Status Register */
 
-#define UART_MODEM_STATUS_FCMS (0b1 << 8) // Flow control mode (enabled)
+#define UART_MODEM_STATUS_FCMS (0x1 << 8) // Flow control mode (enabled)
 #define UART_MODEM_STATUS_DCD_H \
-    (0b0 << 7) // Data Carrier Detect (DCD) input signal from PL(EMIOUARTxDCDN)
+    (0x0 << 7) // Data Carrier Detect (DCD) input signal from PL(EMIOUARTxDCDN)
                // status (input is high)
 #define UART_MODEM_STATUS_DCD_L \
-    (0b1 << 7) // Data Carrier Detect (DCD) input signal from PL(EMIOUARTxDCDN)
+    (0x1 << 7) // Data Carrier Detect (DCD) input signal from PL(EMIOUARTxDCDN)
                // status (input is low)
 #define UART_MODEM_STATUS_RI_H \
-    (0b0 << 6) // Ring Indicator (RI) input signal from PL(EMIOUARTxRIN) status
+    (0x0 << 6) // Ring Indicator (RI) input signal from PL(EMIOUARTxRIN) status
                // (input is high)
 #define UART_MODEM_STATUS_RI_L \
-    (0b1 << 6) // Ring Indicator (RI) input signal from PL(EMIOUARTxRIN) status
+    (0x1 << 6) // Ring Indicator (RI) input signal from PL(EMIOUARTxRIN) status
                // (input is low)
 #define UART_MODEM_STATUS_DSR_H \
-    (0b0 << 5) // Data Set Ready (DSR) input signal from PL(EMIOUARTxDSRN)
+    (0x0 << 5) // Data Set Ready (DSR) input signal from PL(EMIOUARTxDSRN)
                // status (input is high)
 #define UART_MODEM_STATUS_DSR_L \
-    (0b1 << 5) // Data Set Ready (DSR) input signal from PL(EMIOUARTxDSRN)
+    (0x1 << 5) // Data Set Ready (DSR) input signal from PL(EMIOUARTxDSRN)
                // status (input is low)
 #define UART_MODEM_STATUS_CTS_H \
-    (0b0 << 4) // Clear to Send (CTS) input signal from PL(EMIOUARTxCTSN) status
+    (0x0 << 4) // Clear to Send (CTS) input signal from PL(EMIOUARTxCTSN) status
                // (input is high)
 #define UART_MODEM_STATUS_CTS_L \
-    (0b1 << 4) // Clear to Send (CTS) input signal from PL(EMIOUARTxCTSN) status
+    (0x1 << 4) // Clear to Send (CTS) input signal from PL(EMIOUARTxCTSN) status
                // (input is low)
-#define UART_MODEM_STATUS_DDCD (0b1 << 3) // Delta Data Carrier Detect status (change has occurred)
+#define UART_MODEM_STATUS_DDCD (0x1 << 3) // Delta Data Carrier Detect status (change has occurred)
 #define UART_MODEM_STATUS_TERI \
-    (0b1 << 2)                            // Trailing Edge Ring Indicator status (Trailing edge has
+    (0x1 << 2)                            // Trailing Edge Ring Indicator status (Trailing edge has
                                           // occurred)
-#define UART_MODEM_STATUS_DDSR (0b1 << 1) // Delta Data Set Ready status (change has occurred)
-#define UART_MODEM_STATUS_DCTS (0b1 << 0) // Delta Clear To Send status (change has occurred)
+#define UART_MODEM_STATUS_DDSR (0x1 << 1) // Delta Data Set Ready status (change has occurred)
+#define UART_MODEM_STATUS_DCTS (0x1 << 0) // Delta Clear To Send status (change has occurred)
 
 /** UART Channel Status Register */
 

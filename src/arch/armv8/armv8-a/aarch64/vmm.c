@@ -18,7 +18,7 @@ void vmm_arch_init_tcr()
      * TODO: we could make this more dynamic and adapt it to each virtual machine.
      */
 
-    static size_t min_parange = 0b111;
+    static size_t min_parange = 0x7;
     static spinlock_t lock = SPINLOCK_INITVAL;
 
     size_t temp_parange = sysreg_id_aa64mmfr0_el1_read() & ID_AA64MMFR0_PAR_MSK;
