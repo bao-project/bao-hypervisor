@@ -43,7 +43,7 @@ void psci_cpumsg_handler(uint32_t event, uint64_t data)
     }
 }
 
-CPU_MSG_HANDLER(psci_cpumsg_handler, PSCI_CPUMSG_ID);
+CPU_MSG_HANDLER(psci_cpumsg_handler, PSCI_CPUMSG_ID)
 
 int32_t psci_cpu_suspend_handler(uint32_t power_state, unsigned long entrypoint,
     unsigned long context_id)
