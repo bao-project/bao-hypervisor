@@ -216,7 +216,7 @@ static bool vaplic_update_topi(struct vcpu* vcpu)
 
 enum { UPDATE_HART_LINE };
 static void vaplic_ipi_handler(uint32_t event, uint64_t data);
-CPU_MSG_HANDLER(vaplic_ipi_handler, VPLIC_IPI_ID);
+CPU_MSG_HANDLER(vaplic_ipi_handler, VPLIC_IPI_ID)
 
 /**
  * @brief Updates the interrupt line for a single hart

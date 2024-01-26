@@ -63,82 +63,82 @@
  * We give aarch32 registers the same name as aarch64's to which they are architecturally mapped
  * to, so that we can use the same name in common code.
  */
-SYSREG_GEN_ACCESSORS(esr_el2, 4, c5, c2, 0); // hsr
-SYSREG_GEN_ACCESSORS_BANKED(elr_el2, elr_hyp);
-SYSREG_GEN_ACCESSORS(far_el2, 4, c6, c0, 0); // hdfar
-SYSREG_GEN_ACCESSORS(hpfar_el2, 4, c6, c0, 4);
-SYSREG_GEN_ACCESSORS(clidr_el1, 1, c0, c0, 1);
-SYSREG_GEN_ACCESSORS(csselr_el1, 2, c0, c0, 0);
-SYSREG_GEN_ACCESSORS(ctr_el0, 0, c0, c0, 1);
-SYSREG_GEN_ACCESSORS(mpidr_el1, 0, c0, c0, 5);
-SYSREG_GEN_ACCESSORS(vmpidr_el2, 4, c0, c0, 5);
-SYSREG_GEN_ACCESSORS_64(cntvoff_el2, 4, c14);
-SYSREG_GEN_ACCESSORS(sctlr_el1, 0, c1, c0, 0);
-SYSREG_GEN_ACCESSORS(cntkctl_el1, 0, c14, c1, 0);
-SYSREG_GEN_ACCESSORS(pmcr_el0, 0, c9, c12, 0);
-SYSREG_GEN_ACCESSORS_64(par_el1, 0, c7);
-SYSREG_GEN_ACCESSORS(tcr_el2, 4, c2, c0, 2);    // htcr
-SYSREG_GEN_ACCESSORS_64(ttbr0_el2, 4, c2);      // httbr
-SYSREG_GEN_ACCESSORS(cptr_el2, 4, c1, c1, 2);   // hcptr
-SYSREG_GEN_ACCESSORS(vtcr_el2, 4, c2, c1, 2);
-SYSREG_GEN_ACCESSORS_64(vttbr_el2, 6, c2);
-SYSREG_GEN_ACCESSORS(tpidr_el2, 4, c13, c0, 2); // htpidr
-SYSREG_GEN_ACCESSORS(ccsidr_el1, 1, c0, c0, 0);
-SYSREG_GEN_ACCESSORS(ccsidr2, 1, c0, c0, 2);
-SYSREG_GEN_ACCESSORS(hmair0, 4, c10, c2, 0);
-SYSREG_GEN_ACCESSORS(hmair1, 4, c10, c2, 1);
-SYSREG_GEN_ACCESSORS_MERGE(mair_el2, hmair0, hmair1);
-SYSREG_GEN_ACCESSORS(hcr, 4, c1, c1, 0);
-SYSREG_GEN_ACCESSORS(hcr2, 4, c6, c0, 0);
-SYSREG_GEN_ACCESSORS_MERGE(hcr_el2, hcr, hcr2);
-SYSREG_GEN_ACCESSORS(cntfrq_el0, 0, c14, c0, 0);
+SYSREG_GEN_ACCESSORS(esr_el2, 4, c5, c2, 0) // hsr
+SYSREG_GEN_ACCESSORS_BANKED(elr_el2, elr_hyp)
+SYSREG_GEN_ACCESSORS(far_el2, 4, c6, c0, 0) // hdfar
+SYSREG_GEN_ACCESSORS(hpfar_el2, 4, c6, c0, 4)
+SYSREG_GEN_ACCESSORS(clidr_el1, 1, c0, c0, 1)
+SYSREG_GEN_ACCESSORS(csselr_el1, 2, c0, c0, 0)
+SYSREG_GEN_ACCESSORS(ctr_el0, 0, c0, c0, 1)
+SYSREG_GEN_ACCESSORS(mpidr_el1, 0, c0, c0, 5)
+SYSREG_GEN_ACCESSORS(vmpidr_el2, 4, c0, c0, 5)
+SYSREG_GEN_ACCESSORS_64(cntvoff_el2, 4, c14)
+SYSREG_GEN_ACCESSORS(sctlr_el1, 0, c1, c0, 0)
+SYSREG_GEN_ACCESSORS(cntkctl_el1, 0, c14, c1, 0)
+SYSREG_GEN_ACCESSORS(pmcr_el0, 0, c9, c12, 0)
+SYSREG_GEN_ACCESSORS_64(par_el1, 0, c7)
+SYSREG_GEN_ACCESSORS(tcr_el2, 4, c2, c0, 2)    // htcr
+SYSREG_GEN_ACCESSORS_64(ttbr0_el2, 4, c2)      // httbr
+SYSREG_GEN_ACCESSORS(cptr_el2, 4, c1, c1, 2)   // hcptr
+SYSREG_GEN_ACCESSORS(vtcr_el2, 4, c2, c1, 2)
+SYSREG_GEN_ACCESSORS_64(vttbr_el2, 6, c2)
+SYSREG_GEN_ACCESSORS(tpidr_el2, 4, c13, c0, 2) // htpidr
+SYSREG_GEN_ACCESSORS(ccsidr_el1, 1, c0, c0, 0)
+SYSREG_GEN_ACCESSORS(ccsidr2, 1, c0, c0, 2)
+SYSREG_GEN_ACCESSORS(hmair0, 4, c10, c2, 0)
+SYSREG_GEN_ACCESSORS(hmair1, 4, c10, c2, 1)
+SYSREG_GEN_ACCESSORS_MERGE(mair_el2, hmair0, hmair1)
+SYSREG_GEN_ACCESSORS(hcr, 4, c1, c1, 0)
+SYSREG_GEN_ACCESSORS(hcr2, 4, c6, c0, 0)
+SYSREG_GEN_ACCESSORS_MERGE(hcr_el2, hcr, hcr2)
+SYSREG_GEN_ACCESSORS(cntfrq_el0, 0, c14, c0, 0)
 
-SYSREG_GEN_ACCESSORS(mpuir_el2, 4, c0, c0, 4);
-SYSREG_GEN_ACCESSORS(prselr_el2, 4, c6, c2, 1);
-SYSREG_GEN_ACCESSORS(prbar_el2, 4, c6, c3, 0);
-SYSREG_GEN_ACCESSORS(prlar_el2, 4, c6, c3, 1);
-SYSREG_GEN_ACCESSORS(prenr_el2, 4, c6, c1, 1);
+SYSREG_GEN_ACCESSORS(mpuir_el2, 4, c0, c0, 4)
+SYSREG_GEN_ACCESSORS(prselr_el2, 4, c6, c2, 1)
+SYSREG_GEN_ACCESSORS(prbar_el2, 4, c6, c3, 0)
+SYSREG_GEN_ACCESSORS(prlar_el2, 4, c6, c3, 1)
+SYSREG_GEN_ACCESSORS(prenr_el2, 4, c6, c1, 1)
 
-SYSREG_GEN_ACCESSORS(ich_misr_el2, 4, c12, c11, 2);
-SYSREG_GEN_ACCESSORS(ich_eisr_el2, 4, c12, c11, 3);
-SYSREG_GEN_ACCESSORS(ich_elrsr_el2, 4, c12, c11, 5);
-SYSREG_GEN_ACCESSORS(icc_iar1_el1, 0, c12, c12, 0);
-SYSREG_GEN_ACCESSORS(icc_eoir1_el1, 0, c12, c12, 1);
-SYSREG_GEN_ACCESSORS(icc_dir_el1, 0, c12, c11, 1);
-SYSREG_GEN_ACCESSORS(ich_vtr_el2, 4, c12, c11, 1);
-SYSREG_GEN_ACCESSORS(icc_sre_el2, 4, c12, c9, 5);
-SYSREG_GEN_ACCESSORS(icc_pmr_el1, 0, c4, c6, 0);
-SYSREG_GEN_ACCESSORS(icc_bpr1_el1, 0, c12, c12, 3);
-SYSREG_GEN_ACCESSORS(icc_ctlr_el1, 0, c12, c12, 4);
-SYSREG_GEN_ACCESSORS(icc_igrpen1_el1, 0, c12, c12, 7);
-SYSREG_GEN_ACCESSORS(ich_hcr_el2, 4, c12, c11, 0);
-SYSREG_GEN_ACCESSORS_64(icc_sgi1r_el1, 0, c12);
+SYSREG_GEN_ACCESSORS(ich_misr_el2, 4, c12, c11, 2)
+SYSREG_GEN_ACCESSORS(ich_eisr_el2, 4, c12, c11, 3)
+SYSREG_GEN_ACCESSORS(ich_elrsr_el2, 4, c12, c11, 5)
+SYSREG_GEN_ACCESSORS(icc_iar1_el1, 0, c12, c12, 0)
+SYSREG_GEN_ACCESSORS(icc_eoir1_el1, 0, c12, c12, 1)
+SYSREG_GEN_ACCESSORS(icc_dir_el1, 0, c12, c11, 1)
+SYSREG_GEN_ACCESSORS(ich_vtr_el2, 4, c12, c11, 1)
+SYSREG_GEN_ACCESSORS(icc_sre_el2, 4, c12, c9, 5)
+SYSREG_GEN_ACCESSORS(icc_pmr_el1, 0, c4, c6, 0)
+SYSREG_GEN_ACCESSORS(icc_bpr1_el1, 0, c12, c12, 3)
+SYSREG_GEN_ACCESSORS(icc_ctlr_el1, 0, c12, c12, 4)
+SYSREG_GEN_ACCESSORS(icc_igrpen1_el1, 0, c12, c12, 7)
+SYSREG_GEN_ACCESSORS(ich_hcr_el2, 4, c12, c11, 0)
+SYSREG_GEN_ACCESSORS_64(icc_sgi1r_el1, 0, c12)
 
-SYSREG_GEN_ACCESSORS(vsctlr_el2, 4, c2, c0, 0);
+SYSREG_GEN_ACCESSORS(vsctlr_el2, 4, c2, c0, 0)
 
-#define SYSREG_GEN_GIC_LR(n, crn1, crn2, op2)            \
-    SYSREG_GEN_ACCESSORS(ich_lr##n, 4, c12, crn1, op2);  \
-    SYSREG_GEN_ACCESSORS(ich_lrc##n, 4, c12, crn2, op2); \
-    SYSREG_GEN_ACCESSORS_MERGE(ich_lr##n##_el2, ich_lr##n, ich_lrc##n);
+#define SYSREG_GEN_GIC_LR(n, crn1, crn2, op2)           \
+    SYSREG_GEN_ACCESSORS(ich_lr##n, 4, c12, crn1, op2)  \
+    SYSREG_GEN_ACCESSORS(ich_lrc##n, 4, c12, crn2, op2) \
+    SYSREG_GEN_ACCESSORS_MERGE(ich_lr##n##_el2, ich_lr##n, ich_lrc##n)
 
-SYSREG_GEN_GIC_LR(0, c12, c14, 0);
-SYSREG_GEN_GIC_LR(1, c12, c14, 1);
-SYSREG_GEN_GIC_LR(2, c12, c14, 2);
-SYSREG_GEN_GIC_LR(3, c12, c14, 3);
-SYSREG_GEN_GIC_LR(4, c12, c14, 4);
-SYSREG_GEN_GIC_LR(5, c12, c14, 5);
-SYSREG_GEN_GIC_LR(6, c12, c14, 6);
-SYSREG_GEN_GIC_LR(7, c12, c14, 7);
-SYSREG_GEN_GIC_LR(8, c13, c15, 0);
-SYSREG_GEN_GIC_LR(9, c13, c15, 1);
-SYSREG_GEN_GIC_LR(10, c13, c15, 2);
-SYSREG_GEN_GIC_LR(11, c13, c15, 3);
-SYSREG_GEN_GIC_LR(12, c13, c15, 4);
-SYSREG_GEN_GIC_LR(13, c13, c15, 5);
-SYSREG_GEN_GIC_LR(14, c13, c15, 6);
-SYSREG_GEN_GIC_LR(15, c13, c15, 7);
+SYSREG_GEN_GIC_LR(0, c12, c14, 0)
+SYSREG_GEN_GIC_LR(1, c12, c14, 1)
+SYSREG_GEN_GIC_LR(2, c12, c14, 2)
+SYSREG_GEN_GIC_LR(3, c12, c14, 3)
+SYSREG_GEN_GIC_LR(4, c12, c14, 4)
+SYSREG_GEN_GIC_LR(5, c12, c14, 5)
+SYSREG_GEN_GIC_LR(6, c12, c14, 6)
+SYSREG_GEN_GIC_LR(7, c12, c14, 7)
+SYSREG_GEN_GIC_LR(8, c13, c15, 0)
+SYSREG_GEN_GIC_LR(9, c13, c15, 1)
+SYSREG_GEN_GIC_LR(10, c13, c15, 2)
+SYSREG_GEN_GIC_LR(11, c13, c15, 3)
+SYSREG_GEN_GIC_LR(12, c13, c15, 4)
+SYSREG_GEN_GIC_LR(13, c13, c15, 5)
+SYSREG_GEN_GIC_LR(14, c13, c15, 6)
+SYSREG_GEN_GIC_LR(15, c13, c15, 7)
 
-SYSREG_GEN_ACCESSORS(dccivac, 0, c7, c14, 1);
+SYSREG_GEN_ACCESSORS(dccivac, 0, c7, c14, 1)
 static inline void arm_dc_civac(vaddr_t cache_addr)
 {
     sysreg_dccivac_write(cache_addr);

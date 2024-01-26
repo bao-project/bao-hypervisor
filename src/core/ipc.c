@@ -64,7 +64,7 @@ static void ipc_handler(uint32_t event, uint64_t data)
             break;
     }
 }
-CPU_MSG_HANDLER(ipc_handler, IPC_CPUMSG_ID);
+CPU_MSG_HANDLER(ipc_handler, IPC_CPUMSG_ID)
 
 unsigned long ipc_hypercall(unsigned long ipc_id, unsigned long ipc_event, unsigned long arg2)
 {

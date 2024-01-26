@@ -173,7 +173,7 @@ static const size_t NUM_EXT = sizeof(ext_table) / sizeof(unsigned long);
 enum SBI_MSG_EVENTS { SEND_IPI, HART_START };
 
 void sbi_msg_handler(uint32_t event, uint64_t data);
-CPU_MSG_HANDLER(sbi_msg_handler, SBI_MSG_ID);
+CPU_MSG_HANDLER(sbi_msg_handler, SBI_MSG_ID)
 
 void sbi_msg_handler(uint32_t event, uint64_t data)
 {
