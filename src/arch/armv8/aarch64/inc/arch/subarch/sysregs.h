@@ -46,16 +46,16 @@
 
 #ifndef __ASSEMBLER__
 
-#define SYSREG_GEN_ACCESSORS_NAME(reg, name)                      \
-    static inline unsigned long sysreg##reg##read()               \
-    {                                                             \
-        unsigned long _temp;                                      \
-        asm volatile("mrs %0, " XSTR(name) "\n\r" : "=r"(_temp)); \
-        return _temp;                                             \
-    }                                                             \
-    static inline void sysreg##reg##write(unsigned long val)      \
-    {                                                             \
-        asm volatile("msr " XSTR(name) ", %0\n\r" ::"r"(val));    \
+#define SYSREG_GEN_ACCESSORS_NAME(reg, name)                          \
+    static inline unsigned long sysreg##reg##read()                   \
+    {                                                                 \
+        unsigned long _temp;                                          \
+        __asm__ volatile("mrs %0, " XSTR(name) "\n\r" : "=r"(_temp)); \
+        return _temp;                                                 \
+    }                                                                 \
+    static inline void sysreg##reg##write(unsigned long val)          \
+    {                                                                 \
+        __asm__ volatile("msr " XSTR(name) ", %0\n\r" ::"r"(val));    \
     }
 
 #define SYSREG_GEN_ACCESSORS(reg) SYSREG_GEN_ACCESSORS_NAME(_##reg##_, reg)
@@ -125,37 +125,37 @@ SYSREG_GEN_ACCESSORS(ich_lr15_el2);
 
 static inline void arm_dc_civac(vaddr_t cache_addr)
 {
-    asm volatile("dc civac, %0\n\t" ::"r"(cache_addr));
+    __asm__ volatile("dc civac, %0\n\t" ::"r"(cache_addr));
 }
 
 static inline void arm_at_s1e2w(vaddr_t vaddr)
 {
-    asm volatile("at s1e2w, %0" ::"r"(vaddr));
+    __asm__ volatile("at s1e2w, %0" ::"r"(vaddr));
 }
 
 static inline void arm_at_s12e1w(vaddr_t vaddr)
 {
-    asm volatile("at s12e1w, %0" ::"r"(vaddr));
+    __asm__ volatile("at s12e1w, %0" ::"r"(vaddr));
 }
 
 static inline void arm_tlbi_alle2is()
 {
-    asm volatile("tlbi alle2is");
+    __asm__ volatile("tlbi alle2is");
 }
 
 static inline void arm_tlbi_vmalls12e1is()
 {
-    asm volatile("tlbi vmalls12e1is");
+    __asm__ volatile("tlbi vmalls12e1is");
 }
 
 static inline void arm_tlbi_vae2is(vaddr_t vaddr)
 {
-    asm volatile("tlbi vae2is, %0" ::"r"(vaddr >> 12));
+    __asm__ volatile("tlbi vae2is, %0" ::"r"(vaddr >> 12));
 }
 
 static inline void arm_tlbi_ipas2e1is(vaddr_t vaddr)
 {
-    asm volatile("tlbi ipas2e1is, %0" ::"r"(vaddr >> 12));
+    __asm__ volatile("tlbi ipas2e1is, %0" ::"r"(vaddr >> 12));
 }
 
 #endif /* |__ASSEMBLER__ */
