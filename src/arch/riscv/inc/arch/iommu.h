@@ -9,6 +9,8 @@
 #include <bao.h>
 
 // VM-specific IOMMU data
-struct iommu_vm_arch { };
+struct iommu_vm_arch {
+    EMPTY_STRUCT_FIELDS
+};
 
 #endif /* __IOMMU_ARCH_H__ */
