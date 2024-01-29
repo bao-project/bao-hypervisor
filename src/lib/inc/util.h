@@ -83,6 +83,8 @@ static inline bool range_in_range(unsigned long base1, unsigned long size1, unsi
 #define __DEFINED(VALUE)                ___DEFINED(VALUE true, false)
 #define ___DEFINED(IGNORE, RESULT, ...) (RESULT)
 
+#define EMPTY_STRUCT_FIELDS             uint8_t dummy_;
+
 #endif
 
 #endif /* __UTIL_H__ */

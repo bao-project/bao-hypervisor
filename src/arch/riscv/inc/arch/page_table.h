@@ -76,7 +76,9 @@ typedef pte_t pte_flags_t;
 
 struct page_table;
 
-struct page_table_arch { };
+struct page_table_arch {
+    EMPTY_STRUCT_FIELDS
+};
 
 static inline void pte_set(pte_t* pte, paddr_t addr, pte_type_t type, pte_flags_t flags)
 {
