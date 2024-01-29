@@ -64,5 +64,6 @@ typedef struct uart8250_hw bao_uart_t;
 
 void uart_enable(volatile struct uart8250_hw* uart);
 void uart_init(volatile struct uart8250_hw* uart);
+void uart_putc(volatile struct uart8250_hw* uart, int8_t c);
 
 #endif /* UART8250_H */
