@@ -373,7 +373,7 @@ static void remote_io_inject_interrupt(uint64_t data, enum IO_DIRECTION dir)
 unsigned long remote_io_hypercall(unsigned long arg0, unsigned long arg1, unsigned long arg2)
 {
     unsigned long ret = -HC_E_SUCCESS;
-    unsigned long remote_io_id = cpu()->vcpu->regs.x[2];
+    unsigned long virt_remote_io_id = cpu()->vcpu->regs.x[2];
     unsigned long reg_off = cpu()->vcpu->regs.x[3];
     // unsigned long addr = cpu()->vcpu->regs.x[4];
     unsigned long op = cpu()->vcpu->regs.x[5];
@@ -381,13 +381,33 @@ unsigned long remote_io_hypercall(unsigned long arg0, unsigned long arg1, unsign
     unsigned long cpu_id = cpu()->vcpu->regs.x[7];
     unsigned long vcpu_id = cpu()->vcpu->regs.x[8];
 
+    unsigned long abs_remote_io_id = 0;
+    bool match = false;
+
+    list_foreach (remote_io_list, struct remote_io, io_device) {
+        if (cpu()->vcpu->vm->id == io_device->instance.backend_vm_id) {
+            if (abs_remote_io_id == virt_remote_io_id) {
+                match = true;
+                break;
+            } else {
+                abs_remote_io_id++;
+            }
+        }
+    }
+
+    if (!match) {
+        WARNING("No matching for Remote I/O ID (%d) within VM (%d)", virt_remote_io_id,
+            cpu()->vcpu->vm->id);
+        return -HC_E_FAILURE;
+    }
+
     switch (op) {
         case IO_WRITE_OP:
         case IO_READ_OP:
-            if (!remote_io_w_r_operation(remote_io_id, reg_off, value, cpu_id, vcpu_id)) {
+            if (!remote_io_w_r_operation(abs_remote_io_id, reg_off, value, cpu_id, vcpu_id)) {
                 ret = -HC_E_FAILURE;
             } else {
-                remote_io_cpu_send_msg(remote_io_id, op, cpu_id, vcpu_id);
+                remote_io_cpu_send_msg(abs_remote_io_id, op, cpu_id, vcpu_id);
             }
             break;
         case IO_ASK_OP:
@@ -397,7 +417,7 @@ unsigned long remote_io_hypercall(unsigned long arg0, unsigned long arg1, unsign
             }
             list_foreach (remote_io_list, struct remote_io, io_device) {
                 if (cpu()->vcpu->vm->id == io_device->instance.backend_vm_id &&
-                    io_device->id == remote_io_id) {
+                    io_device->id == abs_remote_io_id) {
                     struct io_access_event* node =
                         (struct io_access_event*)list_pop(&io_device->requests);
 
@@ -412,7 +432,7 @@ unsigned long remote_io_hypercall(unsigned long arg0, unsigned long arg1, unsign
                     request->state = IO_STATE_PROCESSING;
                     spin_unlock(&io_device->lock);
 
-                    vcpu_writereg(cpu()->vcpu, 1, remote_io_id);
+                    vcpu_writereg(cpu()->vcpu, 1, virt_remote_io_id);
                     vcpu_writereg(cpu()->vcpu, 2, request->reg_off);
                     vcpu_writereg(cpu()->vcpu, 3, request->addr);
                     vcpu_writereg(cpu()->vcpu, 4, request->op);
@@ -428,7 +448,7 @@ unsigned long remote_io_hypercall(unsigned long arg0, unsigned long arg1, unsign
             }
             break;
         case IO_NOTIFY_OP:
-            remote_io_cpu_send_msg(remote_io_id, op, cpu_id, vcpu_id);
+            remote_io_cpu_send_msg(abs_remote_io_id, op, cpu_id, vcpu_id);
             break;
         default:
             ret = -HC_E_INVAL_ARGS;
