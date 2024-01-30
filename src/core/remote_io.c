@@ -9,12 +9,19 @@
 #include <hypercall.h>
 #include <objpool.h>
 #include <config.h>
+#include <spinlock.h>
 
-/* Remote I/O instances' maximum limit */
-#define IO_INSTANCES_NUM_MAX      50
-
-/* Default value assigned to Remote I/O instances */
+// TODO: Get this value from the config
+#define IO_INSTANCES_NUM_MAX      16
 #define IO_INSTANCE_UNINITIALIZED -1
+#define IO_CPU_NUM                PLAT_CPU_NUM
+#define IO_VCPU_NUM               PLAT_CPU_NUM
+#define ID_SHIFT                  0
+#define CPU_ID_SHIFT              16
+#define VCPU_ID_SHIFT             32
+#define ID_MASK                   (long long)((long long)0x000000000000FFFF << ID_SHIFT)
+#define CPU_ID_MASK               (long long)((long long)0x000000000000FFFF << CPU_ID_SHIFT)
+#define VCPU_ID_MASK              (long long)((long long)0x000000000000FFFF << VCPU_ID_SHIFT)
 
 /*!
  * @enum
@@ -33,10 +40,11 @@ enum IO_HYP_EVENTS {
  * @brief   Remote I/O cpu_msg events
  */
 enum IO_CPU_MSG_EVENTS {
-    IO_WRITE_NOTIFY,        // Write notification
-    IO_READ_NOTIFY,         // Read notification
-    IO_INJECT_INTERRUPT,    // Interrupt injection operation
-    IO_NOTIFY_BACKEND_POOL, // Pooling notification
+    IO_WRITE_NOTIFY,              // Write notification
+    IO_READ_NOTIFY,               // Read notification
+    IO_INJECT_INTERRUPT_FRONTEND, // Interrupt injection operation on the frontend
+    IO_INJECT_INTERRUPT_BACKEND,  // Interrupt injection operation on the backend
+    IO_NOTIFY_BACKEND_POOL,       // Pooling notification
 };
 
 /*!
@@ -60,60 +68,83 @@ struct io_instance {
     vmid_t frontend_vm_id;       // VM ID associated with the Remote I/O frontend
     irqid_t remote_io_interrupt; // Backend VM interrupt
     irqid_t device_interrupt;    // Device interrupt
-    unsigned int priority; // Driver priority for backend scheduling (Higher number indicates lower
-                           // priority)
-    unsigned int device_type; // Identifies the actual physical device type
-    bool pooling;             // Define the backend execution mode: polling or interrupt-based
+    unsigned int device_type;    // Identifies the actual physical device type
+};
+
+/*!
+ * @enum
+ * @brief   I/O request states
+ */
+enum IO_STATE {
+    IO_STATE_FREE, // The I/O request slot is not used or the client has completed it and a new I/O
+                   // requests can be delivered
+    IO_STATE_PENDING,    // The I/O request slot is occupied with an I/O request pending to be
+                         // processed by Backend VM
+    IO_STATE_PROCESSING, // The I/O request has been dispatched to a client but the client has not
+                         // finished handling it yet
+    IO_STATE_COMPLETE,   // The client has completed the I/O request but the hypervisor has not
+                         // updated the register value yet
 };
 
 /*!
  * @struct  io_access
- * @brief   Contains the specific parameters of a Remote I/O device access
+ * @brief   Contains the specific parameters of a I/O device access
  */
 struct io_access {
-    node_t node;                // Node of the list
     unsigned long reg_off;      // Offset of the accessed MMIO Register
     vaddr_t addr;               // Address of the accessed MMIO Register
     unsigned long access_width; // Access width
     unsigned long op;           // Operation
     unsigned long value;        // Value to write or read
     unsigned long reg;          // CPU register for storing the MMIO register valu
-    unsigned int priority; // Driver priority for backend scheduling (Higher number indicates lower
-                           // priority)
-    cpuid_t frontend_cpu_id; // CPU ID assigned to the Remote I/O frontend
-    bool handled;            // Indicate whether the request was handled by the backend VM
+    enum IO_STATE state;        // I/O request state
+};
+
+/*!
+ * @struct  io_access_event
+ * @brief   Contains the specific parameters of a I/O device access event
+ *
+ * @note    This is used to only advertise the backend that a new I/O request is available
+ *          and the backend can ask for it, avoiding the need to iterate over all the
+ *          CPUs and vCPUs slots to find the next I/O request to be processed
+ */
+struct io_access_event {
+    node_t node;
+    cpuid_t cpu_id;   // Frontend CPU ID of the I/O request
+    vcpuid_t vcpu_id; // Frontend vCPU ID of the I/O request
+};
+
+/*!
+ * @struct  io_requests
+ * @brief   Contains the I/O requests for a specific CPU
+ *
+ * @note    Each remote_io frontend can run on multiple vCPUs
+ */
+struct io_requests {
+    struct io_access io_access[IO_VCPU_NUM]; // I/O requests for each vCPU
 };
 
 /*!
  * @struct  remote_io
- * @brief   Comprises all the information about the Remote I/O infrastructure
+ * @brief   Comprises all the information about the Remote I/O infrastructure for each Remote I/O
+ * instance
  */
 struct remote_io {
-    node_t node;                 // Node of the list
-    uint64_t remote_io_id;       // Unique Remote I/O ID linking each frontend driver to the backend
-                                 // device
-    enum IO_DIRECTION direction; // Direction of the request
-    struct list frontend_access_list; // Frontend access list
-    struct list backend_access_list;  // Backend access list
-    struct io_instance instance;      // Static information about the Remote I/O instance
+    node_t node;
+    uint64_t id;
+    struct io_instance instance;
+    struct list requests;
+    spinlock_t lock;
 };
 
-/*!
- * @struct  remote_io_list
- * @brief   Holds all Remote I/O information
- */
 struct list remote_io_list;
+struct io_requests remote_io_requests[IO_CPU_NUM];
 
-OBJPOOL_ALLOC(remote_io_frontend_access_pool, struct io_access, sizeof(struct io_access));
-OBJPOOL_ALLOC(remote_io_backend_access_pool, struct io_access, sizeof(struct io_access));
-OBJPOOL_ALLOC(remote_io_pool, struct remote_io, sizeof(struct remote_io));
-
-/* functions prototypes */
 static void remote_io_handler(uint32_t, uint64_t);
-static int remote_io_prio_node_cmp(node_t* _n1, node_t* _n2);
+CPU_MSG_HANDLER(remote_io_handler, REMOTE_IO_CPUMSG_ID);
 
-/* create the handler for the cpu_msg */
-CPU_MSG_HANDLER(remote_io_handler, VIRTIO_CPUMSG_ID);
+OBJPOOL_ALLOC(remote_io_pool, struct remote_io, sizeof(struct remote_io));
+OBJPOOL_ALLOC(remote_io_access_event_pool, struct io_access_event, sizeof(struct io_access_event));
 
 void remote_io_init()
 {
@@ -125,8 +156,7 @@ void remote_io_init()
     }
 
     objpool_init(&remote_io_pool);
-    objpool_init(&remote_io_frontend_access_pool);
-    objpool_init(&remote_io_backend_access_pool);
+    objpool_init(&remote_io_access_event_pool);
     list_init(&remote_io_list);
 
     for (i = 0; i < IO_INSTANCES_NUM_MAX; i++) {
@@ -139,14 +169,13 @@ void remote_io_init()
             struct remote_io_dev* dev = &vm_config->platform.remote_io_devs[i];
             if (dev->is_back_end) {
                 struct remote_io* node = objpool_alloc(&remote_io_pool);
-                node->remote_io_id = dev->remote_io_id;
+                node->id = dev->remote_io_id;
+                node->lock = SPINLOCK_INITVAL;
+                list_init(&node->requests);
                 list_push(&remote_io_list, (node_t*)node);
 
                 if (backend_devices[dev->remote_io_id] != IO_INSTANCE_UNINITIALIZED) {
-                    list_foreach (remote_io_list, struct remote_io, remote_io_dev) {
-                        objpool_free(&remote_io_pool, (struct remote_io*)list_pop(&remote_io_list));
-                    }
-                    ERROR("Failed to link backend to the device, more than one back-end was "
+                    ERROR("Failed to link backend to the frontend, more than one back-end was "
                           "atributed to the Remote I/O instance %d",
                         dev->remote_io_id);
                 } else {
@@ -169,21 +198,25 @@ void remote_io_init()
         struct vm_config* vm_config = &config.vmlist[vm_id];
         for (i = 0; i < vm_config->platform.remote_io_dev_num; i++) {
             struct remote_io_dev* dev = &vm_config->platform.remote_io_devs[i];
-            list_foreach (remote_io_list, struct remote_io, remote_io_dev) {
-                if (dev->remote_io_id == remote_io_dev->remote_io_id) {
+            list_foreach (remote_io_list, struct remote_io, io_device) {
+                if (dev->remote_io_id == io_device->id) {
                     if (dev->is_back_end) {
-                        remote_io_dev->instance.backend_vm_id = dev->backend_vm_id;
-                        remote_io_dev->instance.device_type = dev->device_type;
-                        remote_io_dev->instance.remote_io_interrupt =
+                        io_device->instance.backend_vm_id = dev->backend_vm_id;
+                        io_device->instance.device_type = dev->device_type;
+                        io_device->instance.remote_io_interrupt =
                             vm_config->platform.remote_io_interrupt;
-                        remote_io_dev->instance.pooling = vm_config->platform.remote_io_pooling;
                     } else {
-                        remote_io_dev->instance.frontend_vm_id = dev->frontend_vm_id;
-                        remote_io_dev->instance.priority = dev->priority;
-                        remote_io_dev->instance.device_interrupt = dev->device_interrupt;
+                        io_device->instance.frontend_vm_id = dev->frontend_vm_id;
+                        io_device->instance.device_interrupt = dev->device_interrupt;
                     }
                 }
             }
+        }
+    }
+
+    for (int cpu_idx = 0; cpu_idx < IO_CPU_NUM; cpu_idx++) {
+        for (int vcpu_idx = 0; vcpu_idx < IO_VCPU_NUM; vcpu_idx++) {
+            remote_io_requests[cpu_idx].io_access[vcpu_idx].state = IO_STATE_FREE;
         }
     }
 }
@@ -191,12 +224,12 @@ void remote_io_init()
 void remote_io_assign_cpus(struct vm* vm)
 {
     for (int i = 0; i < vm->remote_io_dev_num; i++) {
-        list_foreach (remote_io_list, struct remote_io, remote_io_dev) {
-            if (vm->remote_io_devs[i].remote_io_id == remote_io_dev->remote_io_id) {
+        list_foreach (remote_io_list, struct remote_io, io_device) {
+            if (vm->remote_io_devs[i].remote_io_id == io_device->id) {
                 if (vm->remote_io_devs[i].backend_vm_id == cpu()->vcpu->vm->id) {
-                    remote_io_dev->instance.backend_cpu_id = cpu()->id;
+                    io_device->instance.backend_cpu_id = cpu()->id;
                 } else if (vm->remote_io_devs[i].frontend_vm_id == cpu()->vcpu->vm->id) {
-                    remote_io_dev->instance.frontend_cpu_id = cpu()->id;
+                    io_device->instance.frontend_cpu_id = cpu()->id;
                 }
             }
         }
@@ -204,31 +237,32 @@ void remote_io_assign_cpus(struct vm* vm)
 }
 
 /*!
- * @fn                  remote_io_hypercall_w_r_operation
+ * @fn                  remote_io_w_r_operation
  * @brief               Performs the write or read operation by updating the value
- * @param remote_io_id     Contains the remote_io id
+ * @param remote_io_id     Contains the Remote I/O
  * @param reg_off       Contains the MMIO register offset
  * @param value         Contains the register value
+ * @param cpu_id        Contains the frontend CPU ID of the I/O request
+ * @param vcpu_id       Contains the frontend vCPU ID of the I/O request
  * @return              true if the operation was successful, false otherwise
  */
-static bool remote_io_hypercall_w_r_operation(unsigned long remote_io_id, unsigned long reg_off,
-    unsigned long value)
+static bool remote_io_w_r_operation(unsigned long remote_io_id, unsigned long reg_off,
+    unsigned long value, unsigned long cpu_id, unsigned long vcpu_id)
 {
-    list_foreach (remote_io_list, struct remote_io, remote_io_dev) {
-        if (remote_io_dev->remote_io_id == remote_io_id) {
-            struct io_access* node =
-                (struct io_access*)list_pop(&remote_io_dev->backend_access_list);
+    list_foreach (remote_io_list, struct remote_io, io_device) {
+        if (io_device->id == remote_io_id) {
+            spin_lock(&io_device->lock);
+            struct io_access* node = &remote_io_requests[cpu_id].io_access[vcpu_id];
+            spin_unlock(&io_device->lock);
 
-            if (node->reg_off != reg_off) {
+            if (node->reg_off != reg_off || node->state != IO_STATE_PROCESSING) {
                 break;
             }
 
+            spin_lock(&io_device->lock);
             node->value = value;
-
-            struct io_access* frontend_node = objpool_alloc(&remote_io_frontend_access_pool);
-            *frontend_node = *node;
-            list_push(&remote_io_dev->frontend_access_list, (node_t*)frontend_node);
-            objpool_free(&remote_io_backend_access_pool, node);
+            node->state = IO_STATE_COMPLETE;
+            spin_unlock(&io_device->lock);
             return true;
         }
     }
@@ -239,15 +273,20 @@ static bool remote_io_hypercall_w_r_operation(unsigned long remote_io_id, unsign
  * @fn              remote_io_cpu_msg_handler
  * @brief           Handles the cpu_msg comming from the backend
  * @param event     Contains the message event
- * @param data      Contains the remote_io id
+ * @param data      Contains the Remote I/O
  * @return          void
  */
 static void remote_io_cpu_msg_handler(uint32_t event, uint64_t data)
 {
-    list_foreach (remote_io_list, struct remote_io, remote_io_dev) {
-        if (remote_io_dev->remote_io_id == data) {
-            struct io_access* node =
-                (struct io_access*)list_pop(&remote_io_dev->frontend_access_list);
+    uint16_t id = (data & ID_MASK) >> ID_SHIFT;
+    uint16_t cpu_id = (data & CPU_ID_MASK) >> CPU_ID_SHIFT;
+    uint16_t vcpu_id = (data & VCPU_ID_MASK) >> VCPU_ID_SHIFT;
+
+    list_foreach (remote_io_list, struct remote_io, io_device) {
+        if (io_device->id == id) {
+            spin_lock(&io_device->lock);
+            struct io_access* node = &remote_io_requests[cpu_id].io_access[vcpu_id];
+            spin_unlock(&io_device->lock);
 
             switch (event) {
                 case IO_READ_NOTIFY:
@@ -255,7 +294,10 @@ static void remote_io_cpu_msg_handler(uint32_t event, uint64_t data)
                     break;
             }
 
-            objpool_free(&remote_io_frontend_access_pool, node);
+            spin_lock(&io_device->lock);
+            node->state = IO_STATE_FREE;
+            spin_unlock(&io_device->lock);
+
             cpu()->vcpu->active = true;
             break;
         }
@@ -265,7 +307,7 @@ static void remote_io_cpu_msg_handler(uint32_t event, uint64_t data)
 /*!
  * @fn                  remote_io_cpu_send_msg
  * @brief               Dispatches a message from the backend CPU to the frontend CPU
- * @param remote_io_id     Contains the remote_io id
+ * @param remote_io_id     Contains the Remote I/O
  * @param op            Contains the operation type
  * @param cpu_id        Contains the frontend CPU ID of the I/O request
  * @param vcpu_id       Contains the frontend vCPU ID of the I/O request
@@ -274,29 +316,24 @@ static void remote_io_cpu_msg_handler(uint32_t event, uint64_t data)
 static void remote_io_cpu_send_msg(unsigned long remote_io_id, unsigned long op,
     unsigned long cpu_id, unsigned long long vcpu_id)
 {
-    struct cpu_msg msg = { VIRTIO_CPUMSG_ID, IO_WRITE_NOTIFY, (uint64_t)remote_io_id };
+    struct cpu_msg msg = { REMOTE_IO_CPUMSG_ID, IO_WRITE_NOTIFY, 0 };
     cpuid_t target_cpu = 0;
 
     if (op == IO_READ_OP) {
         msg.event = IO_READ_NOTIFY;
     } else if (op == IO_NOTIFY_OP) {
-        msg.event = IO_INJECT_INTERRUPT;
+        msg.event = IO_INJECT_INTERRUPT_FRONTEND;
     }
 
-    list_foreach (remote_io_list, struct remote_io, remote_io_dev) {
-        if (remote_io_dev->remote_io_id == remote_io_id) {
-            remote_io_dev->direction = IO_BACKEND_TO_FRONTEND;
-
+    list_foreach (remote_io_list, struct remote_io, io_device) {
+        if (io_device->id == remote_io_id) {
             if (op == IO_READ_OP || op == IO_WRITE_OP) {
-                struct io_access* node =
-                    (struct io_access*)list_peek(&remote_io_dev->frontend_access_list);
-                if (node == NULL) {
-                    ERROR("Failed to get the element from the list");
-                }
-                target_cpu = node->frontend_cpu_id;
+                target_cpu = cpu_id;
             } else {
-                target_cpu = remote_io_dev->instance.frontend_cpu_id;
+                target_cpu = io_device->instance.frontend_cpu_id;
             }
+
+            msg.data = remote_io_id | (target_cpu << CPU_ID_SHIFT) | (vcpu_id << VCPU_ID_SHIFT);
 
             cpu_send_msg(target_cpu, &msg);
             break;
@@ -307,19 +344,20 @@ static void remote_io_cpu_send_msg(unsigned long remote_io_id, unsigned long op,
 /*!
  * @fn              remote_io_inject_interrupt
  * @brief           Injects an interrupt into the vCPU running the frontend or backend VM
- * @param data      Contains the remote_io id
+ * @param data      Contains the Remote I/O ID
  * @return          void
  */
-static void remote_io_inject_interrupt(uint64_t data)
+static void remote_io_inject_interrupt(uint64_t data, enum IO_DIRECTION dir)
 {
     irqid_t irq_id = 0;
+    uint16_t id = (data & ID_MASK) >> ID_SHIFT;
 
-    list_foreach (remote_io_list, struct remote_io, remote_io_dev) {
-        if (remote_io_dev->remote_io_id == data) {
-            if (remote_io_dev->direction == IO_FRONTEND_TO_BACKEND) {
-                irq_id = remote_io_dev->instance.remote_io_interrupt;
+    list_foreach (remote_io_list, struct remote_io, io_device) {
+        if (io_device->id == id) {
+            if (dir == IO_FRONTEND_TO_BACKEND) {
+                irq_id = io_device->instance.remote_io_interrupt;
             } else {
-                irq_id = remote_io_dev->instance.device_interrupt;
+                irq_id = io_device->instance.device_interrupt;
             }
             break;
         }
@@ -334,20 +372,22 @@ static void remote_io_inject_interrupt(uint64_t data)
 
 unsigned long remote_io_hypercall(unsigned long arg0, unsigned long arg1, unsigned long arg2)
 {
-    unsigned long ret = -HC_E_SUCCESS;                   // return value
-    unsigned long remote_io_id = cpu()->vcpu->regs.x[2]; // remote_io id
-    unsigned long reg_off = cpu()->vcpu->regs.x[3];      // MMIO register offset
-    // unsigned long addr = cpu()->vcpu->regs.x[4];            // MMIO register address
-    unsigned long op = cpu()->vcpu->regs.x[5];    // operation
-    unsigned long value = cpu()->vcpu->regs.x[6]; // register value
+    unsigned long ret = -HC_E_SUCCESS;
+    unsigned long remote_io_id = cpu()->vcpu->regs.x[2];
+    unsigned long reg_off = cpu()->vcpu->regs.x[3];
+    // unsigned long addr = cpu()->vcpu->regs.x[4];
+    unsigned long op = cpu()->vcpu->regs.x[5];
+    unsigned long value = cpu()->vcpu->regs.x[6];
+    unsigned long cpu_id = cpu()->vcpu->regs.x[7];
+    unsigned long vcpu_id = cpu()->vcpu->regs.x[8];
 
     switch (op) {
         case IO_WRITE_OP:
         case IO_READ_OP:
-            if (!remote_io_hypercall_w_r_operation(remote_io_id, reg_off, value)) {
+            if (!remote_io_w_r_operation(remote_io_id, reg_off, value, cpu_id, vcpu_id)) {
                 ret = -HC_E_FAILURE;
             } else {
-                remote_io_cpu_send_msg(remote_io_id, op);
+                remote_io_cpu_send_msg(remote_io_id, op, cpu_id, vcpu_id);
             }
             break;
         case IO_ASK_OP:
@@ -355,28 +395,40 @@ unsigned long remote_io_hypercall(unsigned long arg0, unsigned long arg1, unsign
             if (reg_off != 0 || value != 0) {
                 break;
             }
-            list_foreach (remote_io_list, struct remote_io, remote_io_dev) {
-                if (remote_io_dev->remote_io_id == remote_io_id &&
-                    cpu()->vcpu->vm->id == remote_io_dev->instance.backend_vm_id) {
-                    list_foreach (remote_io_dev->backend_access_list, struct io_access, node) {
-                        if (!node->handled) {
-                            node->handled = true;
-                            vcpu_writereg(cpu()->vcpu, 1, remote_io_id);
-                            vcpu_writereg(cpu()->vcpu, 2, node->reg_off);
-                            vcpu_writereg(cpu()->vcpu, 3, node->addr);
-                            vcpu_writereg(cpu()->vcpu, 4, node->op);
-                            vcpu_writereg(cpu()->vcpu, 5, node->value);
-                            vcpu_writereg(cpu()->vcpu, 6, node->access_width);
-                            return HC_E_SUCCESS;
-                        }
+            list_foreach (remote_io_list, struct remote_io, io_device) {
+                if (cpu()->vcpu->vm->id == io_device->instance.backend_vm_id &&
+                    io_device->id == remote_io_id) {
+                    struct io_access_event* node =
+                        (struct io_access_event*)list_pop(&io_device->requests);
+
+                    if (!node) {
+                        ret = -HC_E_FAILURE;
+                        break;
                     }
-                    ret = -HC_E_FAILURE;
-                    break;
+
+                    spin_lock(&io_device->lock);
+                    struct io_access* request =
+                        &remote_io_requests[node->cpu_id].io_access[node->vcpu_id];
+                    request->state = IO_STATE_PROCESSING;
+                    spin_unlock(&io_device->lock);
+
+                    vcpu_writereg(cpu()->vcpu, 1, remote_io_id);
+                    vcpu_writereg(cpu()->vcpu, 2, request->reg_off);
+                    vcpu_writereg(cpu()->vcpu, 3, request->addr);
+                    vcpu_writereg(cpu()->vcpu, 4, request->op);
+                    vcpu_writereg(cpu()->vcpu, 5, request->value);
+                    vcpu_writereg(cpu()->vcpu, 6, request->access_width);
+                    vcpu_writereg(cpu()->vcpu, 7, node->cpu_id);
+                    vcpu_writereg(cpu()->vcpu, 8, node->vcpu_id);
+
+                    objpool_free(&remote_io_access_event_pool, node);
+
+                    return HC_E_SUCCESS;
                 }
             }
             break;
         case IO_NOTIFY_OP:
-            remote_io_cpu_send_msg(remote_io_id, op);
+            remote_io_cpu_send_msg(remote_io_id, op, cpu_id, vcpu_id);
             break;
         default:
             ret = -HC_E_INVAL_ARGS;
@@ -403,25 +455,27 @@ bool remote_io_mmio_emul_handler(struct emul_access* acc)
         return false;
     }
 
-    list_foreach (remote_io_list, struct remote_io, remote_io_dev) {
-        if (remote_io_dev->remote_io_id == dev.remote_io_id) {
-            struct io_access* node = objpool_alloc(&remote_io_backend_access_pool);
-            struct cpu_msg msg = { VIRTIO_CPUMSG_ID, IO_INJECT_INTERRUPT, dev.remote_io_id };
-            node->reg_off = acc->addr - dev.va;
-            node->addr = acc->addr;
-            node->reg = acc->reg;
-            node->access_width = acc->width;
-            node->priority = remote_io_dev->instance.priority;
-            node->frontend_cpu_id = cpu()->id;
-            node->handled = false;
+    list_foreach (remote_io_list, struct remote_io, io_device) {
+        if (io_device->id == dev.remote_io_id) {
+            struct io_access_event* node = objpool_alloc(&remote_io_access_event_pool);
+            struct io_access request;
+            struct cpu_msg msg = { REMOTE_IO_CPUMSG_ID, IO_INJECT_INTERRUPT_BACKEND,
+                dev.remote_io_id };
+            request.reg_off = acc->addr - dev.va;
+            request.addr = acc->addr;
+            request.reg = acc->reg;
+            request.access_width = acc->width;
+            request.state = IO_STATE_PENDING;
+            node->cpu_id = cpu()->id;
+            node->vcpu_id = cpu()->vcpu->id;
 
             if (acc->write) {
                 int value = vcpu_readreg(cpu()->vcpu, acc->reg);
-                node->op = IO_WRITE_OP;
-                node->value = value;
+                request.op = IO_WRITE_OP;
+                request.value = value;
             } else {
-                node->op = IO_READ_OP;
-                node->value = 0;
+                request.op = IO_READ_OP;
+                request.value = 0;
             }
             for (j = 0; j < config.vmlist[dev.backend_vm_id].platform.remote_io_dev_num; j++) {
                 if (config.vmlist[dev.backend_vm_id].platform.remote_io_devs[j].remote_io_id ==
@@ -450,7 +504,7 @@ bool remote_io_mmio_emul_handler(struct emul_access* acc)
  * @fn              remote_io_handler
  * @brief           Manages incoming cpu_msg from the frontend or backend
  * @param event     Contains the message event
- * @param data      Contains the remote_io id
+ * @param data      Contains the Remote I/O ID
  * @return          void
  */
 static void remote_io_handler(uint32_t event, uint64_t data)
@@ -460,29 +514,11 @@ static void remote_io_handler(uint32_t event, uint64_t data)
         case IO_READ_NOTIFY:
             remote_io_cpu_msg_handler(event, data);
             break;
-        case IO_INJECT_INTERRUPT:
-            remote_io_inject_interrupt(data);
+        case IO_INJECT_INTERRUPT_FRONTEND:
+        case IO_INJECT_INTERRUPT_BACKEND:
+            remote_io_inject_interrupt(data,
+                (event == IO_INJECT_INTERRUPT_FRONTEND) ? IO_BACKEND_TO_FRONTEND :
+                                                          IO_FRONTEND_TO_BACKEND);
             break;
-    }
-}
-
-/*!
- * @fn              remote_io_prio_node_cmp
- * @brief           Compares two elements by priority
- * @param _n1       Contains the first node
- * @param _n2       Contains the second node
- * @return          int
- */
-static int remote_io_prio_node_cmp(node_t* _n1, node_t* _n2)
-{
-    struct io_access* n1 = (struct io_access*)_n1;
-    struct io_access* n2 = (struct io_access*)_n2;
-
-    if (n1->priority > n2->priority) {
-        return 1;
-    } else if (n1->priority < n2->priority) {
-        return -1;
-    } else {
-        return 0;
     }
 }
