@@ -30,6 +30,10 @@ void interrupts_arch_ipi_send(cpuid_t target_cpu, irqid_t ipi_id)
     }
 }
 
+inline interrupts_arch_reserve(irqid_t pint_id){
+    return pint_id;
+}
+
 void interrupts_arch_enable(irqid_t int_id, bool en)
 {
     gic_set_enable(int_id, en);

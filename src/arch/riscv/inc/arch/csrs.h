@@ -8,6 +8,10 @@
 
 #include <bao.h>
 
+#define CSR_SISELECT	  0x150
+#define CSR_SIREG		  0x151
+#define CSR_STOPEI		  0x15c
+#define CSR_STOPI		  0xdb0
 #define CSR_VSSTATUS      0x200
 #define CSR_VSIE          0x204
 #define CSR_VSTVEC        0x205
@@ -16,6 +20,8 @@
 #define CSR_VSCAUSE       0x242
 #define CSR_VSTVAL        0x243
 #define CSR_VSIP          0x244
+#define CSR_VSISELECT	  0x250
+#define CSR_VSIREG		  0x251
 #define CSR_VSATP         0x280
 /* Sstc Extension */
 #define CSR_VSTIMECMP     0x24D
@@ -38,6 +44,8 @@
 /* Hypervisor Configuration */
 #define CSR_HENVCFG       0x60A
 #define CSR_HENVCFGH      0x61A
+
+#define TOPI_IID_SHIFT	  (16)
 
 /* Sstc Extension */
 #define CSR_STIMECMP      0x14D
@@ -122,16 +130,19 @@
 #define HIP_VSEIP                   HIE_VSEIE
 #define HIP_SGEIP                   HIE_SGEIE
 
+#define IRQ_S_SOFT		            (1)
+#define IRQ_S_TIMER		            (5)
+#define IRQ_S_EXT		            (9)
 #define SCAUSE_INT_BIT              (1ULL << ((REGLEN * 8) - 1))
 #define SCAUSE_CODE_MSK             (SCAUSE_INT_BIT - 1)
 #define SCAUSE_CODE_USI             (0 | SCAUSE_INT_BIT)
-#define SCAUSE_CODE_SSI             (1 | SCAUSE_INT_BIT)
+#define SCAUSE_CODE_SSI             (IRQ_S_SOFT | SCAUSE_INT_BIT)
 #define SCAUSE_CODE_VSSI            (2 | SCAUSE_INT_BIT)
 #define SCAUSE_CODE_UTI             (4 | SCAUSE_INT_BIT)
-#define SCAUSE_CODE_STI             (5 | SCAUSE_INT_BIT)
+#define SCAUSE_CODE_STI             (IRQ_S_TIMER | SCAUSE_INT_BIT)
 #define SCAUSE_CODE_VSTI            (6 | SCAUSE_INT_BIT)
 #define SCAUSE_CODE_UEI             (8 | SCAUSE_INT_BIT)
-#define SCAUSE_CODE_SEI             (9 | SCAUSE_INT_BIT)
+#define SCAUSE_CODE_SEI             (IRQ_S_EXT | SCAUSE_INT_BIT)
 #define SCAUSE_CODE_VSEI            (10 | SCAUSE_INT_BIT)
 #define SCAUSE_CODE_IAM             (0)
 #define SCAUSE_CODE_IAF             (1)
