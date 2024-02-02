@@ -5,6 +5,7 @@
 
 #include <vmm.h>
 #include <io.h>
+#include <fences.h>
 
 void vmm_io_init()
 {
@@ -24,4 +25,7 @@ void vmm_vm_install(struct vm_install_info* install_info)
 {
     pte_t* pte = pt_get_pte(&cpu()->as.pt, 0, (vaddr_t)install_info->base);
     *pte = install_info->vm_section_pte;
+    // We don't invalidate the TLB as we know there was no previous mapping or accesses to the
+    // addresses in the VM section. Just make sure the write commited before leaving.
+    fence_ord_write();
 }
