@@ -32,7 +32,9 @@ typedef uint32_t uart8250_reg_t;
 #endif
 
 struct uart8250_hw {
+#if (UART8250_PAGE_OFFSET != 0)
     uint8_t offset[UART8250_PAGE_OFFSET];
+#endif
     union {
         uart8250_reg_t thr;
         uart8250_reg_t rbr;
