@@ -16,7 +16,6 @@ struct generic_timer_cntctrl {
     uint64_t CNTCV;
     uint8_t res0[0x20 - 0x10];
     uint32_t CNTDIF0;
-    uint32_t CNTDIF[0];
     uint8_t res1[0xfd0 - 0x24];
     uint32_t CounterID[12];
 } __attribute__((packed, aligned(PAGE_SIZE)));
