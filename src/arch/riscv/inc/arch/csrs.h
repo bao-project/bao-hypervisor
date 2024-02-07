@@ -217,16 +217,58 @@
 
 #ifndef __ASSEMBLER__
 
-#define CSRR(csr)                                                                \
-    ({                                                                           \
-        unsigned long _temp;                                                     \
-        __asm__ volatile("csrr  %0, " XSTR(csr) "\n\r" : "=r"(_temp)::"memory"); \
-        _temp;                                                                   \
-    })
+#define CSRS_GEN_ACCESSORS_NAMED(csr_name, csr_id)                                \
+    static inline unsigned long csrs_##csr_name##_read(void)                      \
+    {                                                                             \
+        unsigned long csr_value;                                                  \
+        __asm__ volatile("csrr %0," XSTR(csr_id) : "=r"(csr_value)::"memory");    \
+        return csr_value;                                                         \
+    }                                                                             \
+    static inline void csrs_##csr_name##_write(unsigned long csr_value)           \
+    {                                                                             \
+        __asm__ volatile("csrw " XSTR(csr_id) ",%0" ::"r"(csr_value) : "memory"); \
+    }                                                                             \
+    static inline void csrs_##csr_name##_set(unsigned long csr_value)             \
+    {                                                                             \
+        __asm__ volatile("csrs " XSTR(csr_id) ",%0" ::"r"(csr_value) : "memory"); \
+    }                                                                             \
+    static inline void csrs_##csr_name##_clear(unsigned long csr_value)           \
+    {                                                                             \
+        __asm__ volatile("csrc " XSTR(csr_id) ",%0" ::"r"(csr_value) : "memory"); \
+    }
 
-#define CSRW(csr, rs) __asm__ volatile("csrw  " XSTR(csr) ", %0\n\r" ::"rK"(rs) : "memory")
-#define CSRS(csr, rs) __asm__ volatile("csrs  " XSTR(csr) ", %0\n\r" ::"rK"(rs) : "memory")
-#define CSRC(csr, rs) __asm__ volatile("csrc  " XSTR(csr) ", %0\n\r" ::"rK"(rs) : "memory")
+#define CSRS_GEN_ACCESSORS(csr) CSRS_GEN_ACCESSORS_NAMED(csr, csr)
+
+CSRS_GEN_ACCESSORS(sstatus)
+CSRS_GEN_ACCESSORS(sscratch)
+CSRS_GEN_ACCESSORS(scause)
+CSRS_GEN_ACCESSORS(stval)
+CSRS_GEN_ACCESSORS(sepc)
+CSRS_GEN_ACCESSORS(sie)
+CSRS_GEN_ACCESSORS(sip)
+CSRS_GEN_ACCESSORS(satp)
+
+CSRS_GEN_ACCESSORS_NAMED(hstatus, CSR_HSTATUS)
+CSRS_GEN_ACCESSORS_NAMED(hgatp, CSR_HGATP)
+CSRS_GEN_ACCESSORS_NAMED(htinst, CSR_HTINST)
+CSRS_GEN_ACCESSORS_NAMED(htval, CSR_HTVAL)
+CSRS_GEN_ACCESSORS_NAMED(hideleg, CSR_HIDELEG)
+CSRS_GEN_ACCESSORS_NAMED(hedeleg, CSR_HEDELEG)
+CSRS_GEN_ACCESSORS_NAMED(hcounteren, CSR_HCOUNTEREN)
+CSRS_GEN_ACCESSORS_NAMED(stimecmp, CSR_STIMECMP)
+CSRS_GEN_ACCESSORS_NAMED(vstimecmp, CSR_VSTIMECMP)
+CSRS_GEN_ACCESSORS_NAMED(henvcfg, CSR_HENVCFG)
+CSRS_GEN_ACCESSORS_NAMED(vsstatus, CSR_VSSTATUS)
+CSRS_GEN_ACCESSORS_NAMED(vstvec, CSR_VSTVEC)
+CSRS_GEN_ACCESSORS_NAMED(vsscratch, CSR_VSSCRATCH)
+CSRS_GEN_ACCESSORS_NAMED(vsepc, CSR_VSEPC)
+CSRS_GEN_ACCESSORS_NAMED(vscause, CSR_VSCAUSE)
+CSRS_GEN_ACCESSORS_NAMED(vstval, CSR_VSTVAL)
+CSRS_GEN_ACCESSORS_NAMED(vsatp, CSR_VSATP)
+CSRS_GEN_ACCESSORS_NAMED(hvip, CSR_HVIP)
+CSRS_GEN_ACCESSORS_NAMED(vsie, CSR_VSIE)
+CSRS_GEN_ACCESSORS_NAMED(htimedelta, CSR_HTIMEDELTA)
+CSRS_GEN_ACCESSORS_NAMED(hie, CSR_HIE)
 
 #endif /* __ASSEMBLER__ */
 
