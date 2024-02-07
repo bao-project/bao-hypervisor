@@ -179,7 +179,7 @@ void sbi_msg_handler(uint32_t event, uint64_t data)
 {
     switch (event) {
         case SEND_IPI:
-            CSRS(CSR_HVIP, HIP_VSSIP);
+            csrs_hvip_set(HIP_VSSIP);
             break;
         case HART_START: {
             spin_lock(&cpu()->vcpu->arch.sbi_ctx.lock);
@@ -204,11 +204,11 @@ struct sbiret sbi_time_handler(unsigned long fid)
 
     uint64_t stime_value = vcpu_readreg(cpu()->vcpu, REG_A0);
     if (CPU_HAS_EXTENSION(CPU_EXT_SSTC)) {
-        CSRW(CSR_VSTIMECMP, stime_value);
+        csrs_vstimecmp_write(stime_value);
     } else {
         sbi_set_timer(stime_value); // assumes always success
-        CSRC(CSR_HVIP, HIP_VSTIP);
-        CSRS(sie, SIE_STIE);
+        csrs_hvip_clear(HIP_VSTIP);
+        csrs_sie_set(SIE_STIE);
     }
 
     return (struct sbiret){ SBI_SUCCESS };
@@ -216,8 +216,8 @@ struct sbiret sbi_time_handler(unsigned long fid)
 
 void sbi_timer_irq_handler()
 {
-    CSRS(CSR_HVIP, HIP_VSTIP);
-    CSRC(sie, SIE_STIE);
+    csrs_hvip_set(HIP_VSTIP);
+    csrs_sie_clear(SIE_STIE);
 }
 
 struct sbiret sbi_ipi_handler(unsigned long fid)

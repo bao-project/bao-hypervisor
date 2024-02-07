@@ -18,8 +18,8 @@ void vmm_arch_init()
      * Delegate all interrupts and exceptions not meant to be dealt by the hypervisor
      */
 
-    CSRW(CSR_HIDELEG, HIDELEG_VSSI | HIDELEG_VSTI | HIDELEG_VSEI);
-    CSRW(CSR_HEDELEG, HEDELEG_ECU | HEDELEG_IPF | HEDELEG_LPF | HEDELEG_SPF);
+    csrs_hideleg_write(HIDELEG_VSSI | HIDELEG_VSTI | HIDELEG_VSEI);
+    csrs_hedeleg_write(HEDELEG_ECU | HEDELEG_IPF | HEDELEG_LPF | HEDELEG_SPF);
 
     /**
      * Enable and sanity check presence of Sstc extension if the hypervisor was
@@ -27,16 +27,16 @@ void vmm_arch_init()
      * it is disabled.
      */
     if (CPU_HAS_EXTENSION(CPU_EXT_SSTC)) {
-        CSRS(CSR_HENVCFG, HENVCFG_STCE);
-        bool sstc_present = (CSRR(CSR_HENVCFG) & HENVCFG_STCE) != 0;
+        csrs_henvcfg_set(HENVCFG_STCE);
+        bool sstc_present = (csrs_henvcfg_read() & HENVCFG_STCE) != 0;
         if (cpu_is_master() && !sstc_present) {
             ERROR("Platform configured to use Sstc extension, but extension not present.");
         }
         // Set stimecmp to infinity in case we enable the stimer interrupt somewhere else
         // and fail to set the timer to a point in the future.
-        CSRS(CSR_STIMECMP, -1);
+        csrs_stimecmp_write(-1);
     } else {
-        CSRC(CSR_HENVCFG, HENVCFG_STCE);
+        csrs_henvcfg_clear(HENVCFG_STCE);
     }
 
     /**
