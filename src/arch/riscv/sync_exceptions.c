@@ -15,9 +15,9 @@ void internal_exception_handler(unsigned long gprs[])
     for (int i = 0; i < 31; i++) {
         console_printk("x%d:\t\t0x%0lx\n", i, gprs[i]);
     }
-    console_printk("sstatus:\t0x%0lx\n", CSRR(sstatus));
-    console_printk("stval:\t\t0x%0lx\n", CSRR(stval));
-    console_printk("sepc:\t\t0x%0lx\n", CSRR(sepc));
+    console_printk("sstatus:\t0x%0lx\n", csrs_sstatus_read());
+    console_printk("stval:\t\t0x%0lx\n", csrs_stval_read());
+    console_printk("sepc:\t\t0x%0lx\n", csrs_sepc_read());
     ERROR("cpu%d internal hypervisor abort - PANIC\n", cpu()->id);
 }
 
@@ -80,18 +80,18 @@ static inline bool is_pseudo_ins(uint32_t ins)
 
 size_t guest_page_fault_handler()
 {
-    vaddr_t addr = CSRR(CSR_HTVAL) << 2;
+    vaddr_t addr = csrs_htval_read() << 2;
 
     emul_handler_t handler = vm_emul_get_mem(cpu()->vcpu->vm, addr);
     if (handler != NULL) {
-        unsigned long ins = CSRR(CSR_HTINST);
+        unsigned long ins = csrs_htinst_read();
         size_t ins_size;
         if (ins == 0) {
             /**
              * If htinst does not provide information about the trap, we must read the instruction
              * from the guest's memory manually.
              */
-            vaddr_t ins_addr = CSRR(sepc);
+            vaddr_t ins_addr = csrs_sepc_read();
             ins = read_ins(ins_addr);
             ins_size = INS_SIZE(ins);
         } else if (is_pseudo_ins(ins)) {
@@ -119,10 +119,10 @@ size_t guest_page_fault_handler()
         if (handler(&emul)) {
             return ins_size;
         } else {
-            ERROR("emulation handler failed (0x%x at 0x%x)", addr, CSRR(sepc));
+            ERROR("emulation handler failed (0x%x at 0x%x)", addr, csrs_sepc_read());
         }
     } else {
-        ERROR("no emulation handler for abort(0x%x at 0x%x)", addr, CSRR(sepc));
+        ERROR("no emulation handler for abort(0x%x at 0x%x)", addr, csrs_sepc_read());
     }
 }
 
@@ -137,9 +137,9 @@ static const size_t sync_handler_table_size = sizeof(sync_handler_table) / sizeo
 void sync_exception_handler()
 {
     size_t pc_step = 0;
-    unsigned long _scause = CSRR(scause);
+    unsigned long _scause = csrs_scause_read();
 
-    if (!(CSRR(CSR_HSTATUS) & HSTATUS_SPV)) {
+    if (!(csrs_hstatus_read() & HSTATUS_SPV)) {
         internal_exception_handler(&cpu()->vcpu->regs.x[0]);
     }
 
