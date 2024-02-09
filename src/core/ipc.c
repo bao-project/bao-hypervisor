@@ -9,6 +9,7 @@
 #include <vmm.h>
 #include <hypercall.h>
 #include <config.h>
+#include <shmem.h>
 
 enum { IPC_NOTIFY };
 
@@ -19,18 +20,6 @@ union ipc_msg_data {
     };
     uint64_t raw;
 };
-
-static size_t shmem_table_size;
-static struct shmem* shmem_table;
-
-struct shmem* ipc_get_shmem(size_t shmem_id)
-{
-    if (shmem_id < shmem_table_size) {
-        return &shmem_table[shmem_id];
-    } else {
-        return NULL;
-    }
-}
 
 static struct ipc* ipc_find_by_shmemid(struct vm* vm, size_t shmem_id)
 {
@@ -73,7 +62,7 @@ unsigned long ipc_hypercall(unsigned long ipc_id, unsigned long ipc_event, unsig
     struct shmem* shmem = NULL;
     bool valid_ipc_obj = ipc_id < cpu()->vcpu->vm->ipc_num;
     if (valid_ipc_obj) {
-        shmem = ipc_get_shmem(cpu()->vcpu->vm->ipcs[ipc_id].shmem_id);
+        shmem = shmem_get(cpu()->vcpu->vm->ipcs[ipc_id].shmem_id);
     }
     bool valid_shmem = shmem != NULL;
 
@@ -97,32 +86,4 @@ unsigned long ipc_hypercall(unsigned long ipc_id, unsigned long ipc_event, unsig
     }
 
     return ret;
-}
-
-static void ipc_alloc_shmem()
-{
-    for (size_t i = 0; i < shmem_table_size; i++) {
-        struct shmem* shmem = &shmem_table[i];
-        if (!shmem->place_phys) {
-            size_t n_pg = NUM_PAGES(shmem->size);
-            struct ppages ppages = mem_alloc_ppages(shmem->colors, n_pg, false);
-            if (ppages.num_pages < n_pg) {
-                ERROR("failed to allocate shared memory");
-            }
-            shmem->phys = ppages.base;
-        }
-    }
-}
-
-void ipc_init()
-{
-    if (cpu_is_master()) {
-        shmem_table_size = config.shmemlist_size;
-        shmem_table = config.shmemlist;
-        ipc_alloc_shmem();
-
-        for (size_t i = 0; i < config.shmemlist_size; i++) {
-            config.shmemlist[i].cpu_masters = 0;
-        }
-    }
 }

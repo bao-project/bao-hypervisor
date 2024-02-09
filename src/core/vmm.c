@@ -10,7 +10,7 @@
 #include <spinlock.h>
 #include <fences.h>
 #include <string.h>
-#include <ipc.h>
+#include <shmem.h>
 
 static struct vm_assignment {
     spinlock_t lock;
@@ -127,7 +127,7 @@ void vmm_init()
 {
     vmm_arch_init();
     vmm_io_init();
-    ipc_init();
+    shmem_init();
 
     cpu_sync_barrier(&cpu_glb_sync);
 
