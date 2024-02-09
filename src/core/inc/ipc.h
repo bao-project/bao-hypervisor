@@ -21,6 +21,5 @@ struct vm_config;
 
 long int ipc_hypercall(unsigned long arg0, unsigned long arg1, unsigned long arg2);
 void ipc_init(void);
-struct shmem* ipc_get_shmem(size_t shmem_id);
 
 #endif /* IPC_H */
