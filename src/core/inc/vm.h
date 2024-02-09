@@ -17,6 +17,7 @@
 #include <bitmap.h>
 #include <io.h>
 #include <ipc.h>
+#include <remote_io.h>
 
 struct vm_mem_region {
     paddr_t base;
@@ -46,6 +47,12 @@ struct vm_platform {
 
     size_t dev_num;
     struct vm_dev_region* devs;
+
+    /* Remote I/O devices */
+    size_t remote_io_dev_num;
+    bool remote_io_pooling;
+    size_t remote_io_interrupt;
+    struct remote_io_dev* remote_io_devs;
 
     // /**
     //  * In MPU-based platforms which might also support virtual memory
@@ -84,6 +91,12 @@ struct vm {
 
     size_t ipc_num;
     struct ipc* ipcs;
+
+    /* Remote I/O devices */
+    size_t remote_io_dev_num;
+    bool remote_io_pooling;
+    size_t remote_io_interrupt;
+    struct remote_io_dev* remote_io_devs;
 };
 
 struct vcpu {
