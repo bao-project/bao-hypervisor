@@ -8,6 +8,7 @@
 #include <mem.h>
 #include <cache.h>
 #include <config.h>
+#include <shmem.h>
 
 static void vm_master_init(struct vm* vm, const struct vm_config* vm_config, vmid_t vm_id)
 {
@@ -166,7 +167,7 @@ static void vm_init_ipc(struct vm* vm, const struct vm_config* vm_config)
     vm->ipcs = vm_config->platform.ipcs;
     for (size_t i = 0; i < vm_config->platform.ipc_num; i++) {
         struct ipc* ipc = &vm_config->platform.ipcs[i];
-        struct shmem* shmem = ipc_get_shmem(ipc->shmem_id);
+        struct shmem* shmem = shmem_get(ipc->shmem_id);
         if (shmem == NULL) {
             WARNING("Invalid shmem id in configuration. Ignored.");
             continue;
