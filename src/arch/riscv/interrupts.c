@@ -38,6 +38,8 @@ void interrupts_arch_init()
 
 void interrupts_arch_ipi_send(cpuid_t target_cpu, irqid_t ipi_id)
 {
+    UNUSED_ARG(ipi_id);
+
     if (ACLINT_PRESENT()) {
         aclint_send_ipi(target_cpu);
     } else {

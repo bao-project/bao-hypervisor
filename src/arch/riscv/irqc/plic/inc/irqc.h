@@ -44,6 +44,8 @@ static inline bool irqc_get_pend(irqid_t int_id)
 
 static inline void irqc_clr_pend(irqid_t int_id)
 {
+    UNUSED_ARG(int_id);
+
     WARNING("trying to clear external interrupt");
 }
 

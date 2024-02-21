@@ -11,6 +11,8 @@
 
 static inline bool vgic_broadcast(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
+    UNUSED_ARG(vcpu);
+
     return (interrupt->route & GICD_IROUTER_IRM_BIT);
 }
 

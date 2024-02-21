@@ -26,6 +26,8 @@ void vm_arch_init(struct vm* vm, const struct vm_config* config)
 
 void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm)
 {
+    UNUSED_ARG(vm);
+
     vcpu->arch.sbi_ctx.lock = SPINLOCK_INITVAL;
     vcpu->arch.sbi_ctx.state = vcpu->id == 0 ? STARTED : STOPPED;
 }

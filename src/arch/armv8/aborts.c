@@ -16,6 +16,8 @@ typedef void (*abort_handler_t)(unsigned long, unsigned long, unsigned long, uns
 
 void aborts_data_lower(unsigned long iss, unsigned long far, unsigned long il, unsigned long ec)
 {
+    UNUSED_ARG(ec);
+
     if (!(iss & ESR_ISS_DA_ISV_BIT) || (iss & ESR_ISS_DA_FnV_BIT)) {
         ERROR("no information to handle data abort (0x%x)", far);
     }
@@ -52,6 +54,8 @@ void aborts_data_lower(unsigned long iss, unsigned long far, unsigned long il, u
 
 long int standard_service_call(unsigned long _fn_num)
 {
+    UNUSED_ARG(_fn_num);
+
     int64_t ret = -1;
 
     unsigned long smc_fid = vcpu_readreg(cpu()->vcpu, 0);
@@ -71,6 +75,11 @@ long int standard_service_call(unsigned long _fn_num)
 static inline void syscall_handler(unsigned long iss, unsigned long far, unsigned long il,
     unsigned long ec)
 {
+    UNUSED_ARG(iss);
+    UNUSED_ARG(far);
+    UNUSED_ARG(il);
+    UNUSED_ARG(ec);
+
     unsigned long fid = vcpu_readreg(cpu()->vcpu, 0);
 
     long ret = SMCC_E_NOT_SUPPORTED;
@@ -97,6 +106,8 @@ void hvc_handler(unsigned long iss, unsigned long far, unsigned long il, unsigne
 
 void smc_handler(unsigned long iss, unsigned long far, unsigned long il, unsigned long ec)
 {
+    UNUSED_ARG(far);
+
     syscall_handler(iss, far, il, ec);
 
     /**
@@ -119,6 +130,8 @@ static regaddr_t reg_addr_translate(unsigned long iss)
 
 void sysreg_handler(unsigned long iss, unsigned long far, unsigned long il, unsigned long ec)
 {
+    UNUSED_ARG(far);
+
     regaddr_t reg_addr = UNDEFINED_REG_ADDR;
     if (ec == ESR_EC_RG_64) {
         reg_addr = reg_addr_translate(iss);
