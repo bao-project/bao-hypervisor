@@ -15,6 +15,8 @@
 
 bool vgic_int_has_other_target(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
+    UNUSED_ARG(vcpu);
+
     bool priv = gic_is_priv(interrupt->id);
     bool has_other_targets = (interrupt->targets & ~(1 << cpu()->id)) != 0;
     return !priv && has_other_targets;
@@ -22,6 +24,8 @@ bool vgic_int_has_other_target(struct vcpu* vcpu, struct vgic_int* interrupt)
 
 uint8_t vgic_int_ptarget_mask(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
+    UNUSED_ARG(vcpu);
+
     return interrupt->targets;
 }
 
@@ -39,6 +43,8 @@ bool vgicd_set_trgt(struct vcpu* vcpu, struct vgic_int* interrupt, unsigned long
 
 void vgicd_set_trgt_hw(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
+    UNUSED_ARG(vcpu);
+
     gicd_set_trgt(interrupt->id, interrupt->targets);
 }
 
@@ -54,6 +60,10 @@ unsigned long vgicd_get_trgt(struct vcpu* vcpu, struct vgic_int* interrupt)
 void vgicd_emul_sgiregs_access(struct emul_access* acc, struct vgic_reg_handler_info* handlers,
     bool gicr_access, vcpuid_t vgicr_id)
 {
+    UNUSED_ARG(handlers);
+    UNUSED_ARG(gicr_access);
+    UNUSED_ARG(vgicr_id);
+
     unsigned long val = acc->write ? vcpu_readreg(cpu()->vcpu, acc->reg) : 0;
 
     if ((acc->addr & 0xfff) == (((uintptr_t)&gicd->SGIR) & 0xfff)) {

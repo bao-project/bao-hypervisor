@@ -241,6 +241,8 @@ static void rv_iommu_check_features(void)
  */
 void rv_iommu_fq_irq_handler(irqid_t irq_id)
 {
+    UNUSED_ARG(irq_id);
+
     // Read ipsr.fip
     uint32_t ipsr = rv_iommu.hw.reg_ptr->ipsr;
 
@@ -484,6 +486,9 @@ inline bool iommu_arch_vm_add_device(struct vm* vm, deviceid_t dev_id)
  */
 bool iommu_arch_vm_init(struct vm* vm, const struct vm_config* config)
 {
+    UNUSED_ARG(vm);
+    UNUSED_ARG(config);
+
     // For now there is no data to initialize
     return true;
 }

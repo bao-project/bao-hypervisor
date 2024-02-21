@@ -8,11 +8,18 @@
 
 bool uart_init(bao_uart_t* uart)
 {
+    UNUSED_ARG(uart);
+
     return true;
 }
-void uart_enable(bao_uart_t* uart) { }
+void uart_enable(bao_uart_t* uart)
+{
+    UNUSED_ARG(uart);
+}
 
 void uart_putc(bao_uart_t* uart, const char c)
 {
+    UNUSED_ARG(uart);
+
     sbi_console_putchar(c);
 }

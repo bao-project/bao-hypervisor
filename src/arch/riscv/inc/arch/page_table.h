@@ -108,6 +108,9 @@ static inline bool pte_check_rsw(pte_t* pte, pte_flags_t flag)
 
 static inline bool pte_table(struct page_table* pt, pte_t* pte, size_t lvl)
 {
+    UNUSED_ARG(pt);
+    UNUSED_ARG(lvl);
+
     return (*pte & 0xf) == PTE_VALID;
 }
 

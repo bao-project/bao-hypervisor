@@ -20,5 +20,7 @@ int32_t psci_standby()
 
 int32_t psci_power_down(enum wakeup_reason reason)
 {
+    UNUSED_ARG(reason);
+
     return psci_standby();
 }
