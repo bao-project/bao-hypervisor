@@ -194,14 +194,32 @@ struct vgic_reg_handler_info irouter_info = {
 struct vgic_reg_handler_info vgicr_ctrl_info = {
     vgicr_emul_ctrl_access,
     0x4,
+    0,
+    0,
+    0,
+    NULL,
+    NULL,
+    NULL,
 };
 struct vgic_reg_handler_info vgicr_typer_info = {
     vgicr_emul_typer_access,
     0xC,
+    0,
+    0,
+    0,
+    NULL,
+    NULL,
+    NULL,
 };
 struct vgic_reg_handler_info vgicr_pidr_info = {
     vgicr_emul_pidr_access,
     0x4,
+    0,
+    0,
+    0,
+    NULL,
+    NULL,
+    NULL,
 };
 
 static inline vcpuid_t vgicr_get_id(struct emul_access* acc)
