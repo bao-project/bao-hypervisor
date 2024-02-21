@@ -822,31 +822,67 @@ struct vgic_reg_handler_info ipriorityr_info = {
 struct vgic_reg_handler_info vgicd_misc_info = {
     vgicd_emul_misc_access,
     0x4,
+    0,
+    0,
+    0,
+    NULL,
+    NULL,
+    NULL,
 };
 
 struct vgic_reg_handler_info vgicd_pidr_info = {
     vgicd_emul_pidr_access,
     0x4,
+    0,
+    0,
+    0,
+    NULL,
+    NULL,
+    NULL,
 };
 
 struct vgic_reg_handler_info razwi_info = {
     vgic_emul_razwi,
     0x4,
+    0,
+    0,
+    0,
+    NULL,
+    NULL,
+    NULL,
 };
 
 __attribute__((weak)) struct vgic_reg_handler_info itargetr_info = {
     vgic_emul_razwi,
     0x5,
+    0,
+    0,
+    0,
+    NULL,
+    NULL,
+    NULL,
 };
 
 __attribute__((weak)) struct vgic_reg_handler_info sgir_info = {
     vgic_emul_razwi,
     0x4,
+    0,
+    0,
+    0,
+    NULL,
+    NULL,
+    NULL,
 };
 
 __attribute__((weak)) struct vgic_reg_handler_info irouter_info = {
     vgic_emul_razwi,
     0x4,
+    0,
+    0,
+    0,
+    NULL,
+    NULL,
+    NULL,
 };
 
 struct vgic_reg_handler_info* reg_handler_info_table[VGIC_REG_HANDLER_ID_NUM] = {

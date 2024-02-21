@@ -412,10 +412,10 @@ bool mem_unmap_range(struct addr_space* as, vaddr_t vaddr, size_t size, bool bro
     size_t size_left = size;
 
     while (size_left > 0) {
-        struct mp_region reg = (struct mp_region){
-            reg.base = vaddr,
-            reg.size = size,
-        };
+        struct mp_region reg;
+        reg.base = vaddr;
+        reg.size = size;
+
         mpid_t mpid = mem_vmpu_find_overlapping_region(as, &reg);
         if (mpid == INVALID_MPID) {
             /**
