@@ -373,6 +373,9 @@ bool mem_setup_root_pool(paddr_t load_addr, struct mem_region** root_mem_region)
 __attribute__((weak)) void mem_color_hypervisor(const paddr_t load_addr,
     struct mem_region* root_region)
 {
+    UNUSED_ARG(load_addr);
+    UNUSED_ARG(root_region);
+
     WARNING("Trying to color hypervisor, but implementation does not suuport "
             "it");
 }
@@ -380,12 +383,23 @@ __attribute__((weak)) void mem_color_hypervisor(const paddr_t load_addr,
 __attribute__((weak)) bool mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages,
     size_t num_pages, mem_flags_t flags)
 {
+    UNUSED_ARG(as);
+    UNUSED_ARG(va);
+    UNUSED_ARG(ppages);
+    UNUSED_ARG(num_pages);
+    UNUSED_ARG(flags);
+
     ERROR("Trying to recolor section but there is no coloring implementation");
 }
 
 __attribute__((weak)) bool pp_alloc_clr(struct page_pool* pool, size_t num_pages, colormap_t colors,
     struct ppages* ppages)
 {
+    UNUSED_ARG(pool);
+    UNUSED_ARG(num_pages);
+    UNUSED_ARG(colors);
+    UNUSED_ARG(ppages);
+
     ERROR("Trying to allocate colored pages but there is no coloring "
           "implementation");
 }
