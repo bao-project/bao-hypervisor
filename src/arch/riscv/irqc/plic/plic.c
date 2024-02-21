@@ -168,7 +168,7 @@ __attribute__((weak)) struct plic_cntxt plic_plat_id_to_cntxt(int id)
         cntxt.hart_id = id / 2;
         cntxt.mode = (id % 2) == 0 ? PRIV_M : PRIV_S;
     } else {
-        return (struct plic_cntxt){ -1 };
+        return (struct plic_cntxt){ -1, 0 };
     }
     return cntxt;
 }
