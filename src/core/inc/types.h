@@ -44,7 +44,7 @@ typedef unsigned long cpumap_t;
 
 typedef unsigned irqid_t;
 
-typedef unsigned deviceid_t;
+typedef unsigned int deviceid_t;
 
 typedef enum AS_SEC {
     /*--- HYP AS SECTIONS -----*/
