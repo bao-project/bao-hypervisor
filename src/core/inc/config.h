@@ -118,7 +118,7 @@ extern struct config {
     size_t vmlist_size;
 
     /* Array list with VM configuration */
-    struct vm_config vmlist[];
+    struct vm_config* vmlist;
 
 } config;
 
