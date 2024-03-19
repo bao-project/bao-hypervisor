@@ -736,7 +736,7 @@ void* copy_space(void* base, const size_t size, struct ppages* pages)
  */
 void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_region)
 {
-    volatile static pte_t shared_pte;
+    static volatile pte_t shared_pte;
     vaddr_t va = INVALID_VA;
     struct cpu* cpu_new;
     struct ppages p_cpu;
