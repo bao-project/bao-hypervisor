@@ -8,7 +8,7 @@
 #include <arch/sysregs.h>
 #include <arch/fences.h>
 
-static inline const size_t mpu_num_entries()
+static inline size_t mpu_num_entries()
 {
     return (size_t)MPUIR_REGION(sysreg_mpuir_el2_read());
 }
