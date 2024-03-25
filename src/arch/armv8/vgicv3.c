@@ -25,7 +25,7 @@ bool vgic_int_has_other_target(struct vcpu* vcpu, struct vgic_int* interrupt)
     bool priv = gic_is_priv(interrupt->id);
     bool routed_here =
         !priv && !(interrupt->phys.route ^ (sysreg_mpidr_el1_read() & MPIDR_AFF_MSK));
-    bool route_valid = interrupt->phys.route != GICD_IROUTER_INV;
+    bool route_valid = interrupt->phys.route != (unsigned int)GICD_IROUTER_INV;
     bool any = !priv && vgic_broadcast(vcpu, interrupt);
     return any || (!routed_here && route_valid);
 }

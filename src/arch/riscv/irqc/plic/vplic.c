@@ -29,7 +29,7 @@ static int vplic_vcntxt_to_pcntxt(struct vcpu* vcpu, int vcntxt_id)
 static bool vplic_vcntxt_valid(struct vcpu* vcpu, int vcntxt_id)
 {
     struct plic_cntxt vcntxt = plic_plat_id_to_cntxt(vcntxt_id);
-    return vcntxt_id < vcpu->vm->arch.vplic.cntxt_num && vcntxt.mode <= PRIV_S;
+    return (unsigned int)vcntxt_id < vcpu->vm->arch.vplic.cntxt_num && vcntxt.mode <= PRIV_S;
 }
 
 static bool vplic_get_pend(struct vcpu* vcpu, irqid_t id)

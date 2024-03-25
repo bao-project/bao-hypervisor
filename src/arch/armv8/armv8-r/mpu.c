@@ -157,7 +157,7 @@ static inline mem_attrs_t mpu_entry_attrs(struct mp_region* mpr)
 static mpid_t mpu_entry_allocate()
 {
     mpid_t reg_num = INVALID_MPID;
-    for (mpid_t i = 0; i < mpu_num_entries(); i++) {
+    for (mpid_t i = 0; i < (mpid_t)mpu_num_entries(); i++) {
         if (bitmap_get(cpu()->arch.profile.mpu.bitmap, i) == 0) {
             bitmap_set(cpu()->arch.profile.mpu.bitmap, i);
             reg_num = i;
@@ -546,7 +546,7 @@ void mpu_init()
     bitmap_clear_consecutive(cpu()->arch.profile.mpu.bitmap, 0, mpu_num_entries());
     list_init(&cpu()->arch.profile.mpu.order.list);
 
-    for (mpid_t mpid = 0; mpid < mpu_num_entries(); mpid++) {
+    for (mpid_t mpid = 0; mpid < (mpid_t)mpu_num_entries(); mpid++) {
         cpu()->arch.profile.mpu.order.node[mpid].mpid = mpid;
 
         if (mpu_entry_valid(mpid)) {
