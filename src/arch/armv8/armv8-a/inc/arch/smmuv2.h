@@ -325,6 +325,8 @@ struct smmu_glbl_rs1_hw {
 #define SMMUV2_TCR_PS_48B          (0x5 << SMMUV2_TCR_PS_OFF)
 #define SMMUV2_TCR_PS_52B          (0x6 << SMMUV2_TCR_PS_OFF)
 
+#define SMMUV2_PMU_MAX_GROUP_CNTRS (15)
+
 struct smmu_cntxt_hw {
     uint32_t SCTLR;
     uint32_t ACTLR;
@@ -347,9 +349,9 @@ struct smmu_cntxt_hw {
     uint32_t TLBSYNC;
     uint32_t TLBSTATUS;
     uint8_t res6[0xe00 - 0x7f8];
-    uint32_t PMEVCNTRm;
+    uint32_t PMEVCNTRm[SMMUV2_PMU_MAX_GROUP_CNTRS];
     uint8_t res7[0xe80 - 0xe3c];
-    uint32_t PMEVTYPERm;
+    uint32_t PMEVTYPERm[SMMUV2_PMU_MAX_GROUP_CNTRS];
     uint8_t res8[0xf00 - 0xebc];
     uint32_t PMCFGR;
     uint32_t PMCR;
