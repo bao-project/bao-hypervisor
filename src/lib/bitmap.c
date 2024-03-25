@@ -7,7 +7,7 @@
 
 ssize_t bitmap_find_nth(bitmap_t* map, size_t size, size_t nth, size_t start, bool set)
 {
-    if (size <= 0 || nth <= 0 || start < 0) {
+    if (size <= 0 || nth <= 0) {
         return -1;
     }
 
