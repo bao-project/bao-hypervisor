@@ -216,7 +216,7 @@ static bool vaplic_update_topi(struct vcpu* vcpu)
 
 enum { UPDATE_HART_LINE };
 static void vaplic_ipi_handler(uint32_t event, uint64_t data);
-CPU_MSG_HANDLER(vaplic_ipi_handler, VPLIC_IPI_ID);
+CPU_MSG_HANDLER(vaplic_ipi_handler, VPLIC_IPI_ID)
 
 /**
  * @brief Updates the interrupt line for a single hart
@@ -234,9 +234,9 @@ static void vaplic_update_hart_line(struct vcpu* vcpu, vcpuid_t vhart_index)
      */
     if (pcpu_id == cpu()->id) {
         if (vaplic_update_topi(vcpu)) {
-            CSRS(CSR_HVIP, HIP_VSEIP);
+            csrs_hvip_set(HIP_VSEIP);
         } else {
-            CSRC(CSR_HVIP, HIP_VSEIP);
+            csrs_hvip_clear(HIP_VSEIP);
         }
     } else {
         struct cpu_msg msg = { VPLIC_IPI_ID, UPDATE_HART_LINE, vhart_index };

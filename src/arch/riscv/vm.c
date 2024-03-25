@@ -19,7 +19,7 @@ void vm_arch_init(struct vm* vm, const struct vm_config* config)
     unsigned long hgatp = (root_pt_pa >> PAGE_SHIFT) | (HGATP_MODE_DFLT) |
         ((vm->id << HGATP_VMID_OFF) & HGATP_VMID_MSK);
 
-    CSRW(CSR_HGATP, hgatp);
+    csrs_hgatp_write(hgatp);
 
     virqc_init(vm, &config->platform.arch.irqc);
 }
@@ -34,7 +34,7 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
 {
     memset(&vcpu->regs, 0, sizeof(struct arch_regs));
 
-    CSRW(sscratch, &vcpu->regs);
+    csrs_sscratch_write((uintptr_t)&vcpu->regs);
 
     vcpu->regs.hstatus = HSTATUS_SPV | HSTATUS_VSXL_64;
     vcpu->regs.sstatus = SSTATUS_SPP_BIT | SSTATUS_FS_DIRTY | SSTATUS_XS_DIRTY;
@@ -43,19 +43,20 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
     vcpu->regs.a1 = 0; // according to sbi it should be the dtb load address
 
     if (CPU_HAS_EXTENSION(CPU_EXT_SSTC)) {
-        CSRW(CSR_VSTIMECMP, -1);
+        csrs_stimecmp_write(-1);
     }
-    CSRW(CSR_HCOUNTEREN, HCOUNTEREN_TM);
-    CSRW(CSR_HTIMEDELTA, 0);
-    CSRW(CSR_VSSTATUS, SSTATUS_SD | SSTATUS_FS_DIRTY | SSTATUS_XS_DIRTY);
-    CSRW(CSR_HIE, 0);
-    CSRW(CSR_VSTVEC, 0);
-    CSRW(CSR_VSSCRATCH, 0);
-    CSRW(CSR_VSEPC, 0);
-    CSRW(CSR_VSCAUSE, 0);
-    CSRW(CSR_VSTVAL, 0);
-    CSRW(CSR_HVIP, 0);
-    CSRW(CSR_VSATP, 0);
+
+    csrs_hcounteren_write(HCOUNTEREN_TM);
+    csrs_htimedelta_write(0);
+    csrs_vsstatus_write(SSTATUS_SD | SSTATUS_FS_DIRTY | SSTATUS_XS_DIRTY);
+    csrs_hie_write(0);
+    csrs_vstvec_write(0);
+    csrs_vsscratch_write(0);
+    csrs_vsepc_write(0);
+    csrs_vscause_write(0);
+    csrs_vstval_write(0);
+    csrs_hvip_write(0);
+    csrs_vsatp_write(0);
 }
 
 unsigned long vcpu_readreg(struct vcpu* vcpu, unsigned long reg)

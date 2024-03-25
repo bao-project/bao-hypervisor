@@ -189,7 +189,7 @@ ifeq ($(DEBUG), y)
 	OPTIMIZATIONS:=g
 endif
 
-override CFLAGS+=-O$(OPTIMIZATIONS) -Wall -Werror -ffreestanding -std=gnu11 \
+override CFLAGS+=-O$(OPTIMIZATIONS) -Wall -Werror -ffreestanding -std=c11 -pedantic -pedantic-errors \
 	-fno-pic $(arch-cflags) $(platform-cflags) $(CPPFLAGS) $(debug_flags)
 
 override ASFLAGS+=$(CFLAGS) $(arch-asflags) $(platform-asflags)

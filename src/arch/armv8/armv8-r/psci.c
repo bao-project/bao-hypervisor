@@ -14,7 +14,7 @@
 
 int32_t psci_standby()
 {
-    asm volatile("wfi");
+    __asm__ volatile("wfi");
     return PSCI_E_SUCCESS;
 }
 

@@ -6,6 +6,8 @@
 #ifndef MEM_PROT_IO_H
 #define MEM_PROT_IO_H
 
-struct io_prot { };
+struct io_prot {
+    EMPTY_STRUCT_FIELDS
+};
 
 #endif /* MEM_PROT_IO_H */

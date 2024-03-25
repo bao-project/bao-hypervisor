@@ -119,7 +119,7 @@ static irqid_t vplic_next_pending(struct vcpu* vcpu, int vcntxt)
 
 enum { UPDATE_HART_LINE };
 static void vplic_ipi_handler(uint32_t event, uint64_t data);
-CPU_MSG_HANDLER(vplic_ipi_handler, VPLIC_IPI_ID);
+CPU_MSG_HANDLER(vplic_ipi_handler, VPLIC_IPI_ID)
 
 void vplic_update_hart_line(struct vcpu* vcpu, int vcntxt)
 {
@@ -128,9 +128,9 @@ void vplic_update_hart_line(struct vcpu* vcpu, int vcntxt)
     if (pcntxt.hart_id == cpu()->id) {
         int id = vplic_next_pending(vcpu, vcntxt);
         if (id != 0) {
-            CSRS(CSR_HVIP, HIP_VSEIP);
+            csrs_hvip_set(HIP_VSEIP);
         } else {
-            CSRC(CSR_HVIP, HIP_VSEIP);
+            csrs_hvip_clear(HIP_VSEIP);
         }
     } else {
         struct cpu_msg msg = { VPLIC_IPI_ID, UPDATE_HART_LINE, vcntxt };

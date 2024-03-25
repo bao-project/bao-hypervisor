@@ -74,10 +74,10 @@
 #define UART_LCR_EPS            (1 << 2)
 #define UART_LCR_STP2           (1 << 3)
 #define UART_LCR_FEN            (1 << 4)
-#define UART_LCR_WLEN_8         (0b11 << 5)
-#define UART_LCR_WLEN_7         (0b10 << 5)
-#define UART_LCR_WLEN_6         (0b01 << 5)
-#define UART_LCR_WLEN_5         (0b00 << 5)
+#define UART_LCR_WLEN_8         (0x3 << 5)
+#define UART_LCR_WLEN_7         (0x2 << 5)
+#define UART_LCR_WLEN_6         (0x1 << 5)
+#define UART_LCR_WLEN_5         (0x0 << 5)
 #define UART_LCR_SPS            (1 << 7)
 
 /* UART Control Register */
@@ -97,16 +97,16 @@
 
 /* UART Interrupt FIFO Level Select Register */
 
-#define UART_IFLS_TXIFLSEL_1_8  (0b000 << 0)
-#define UART_IFLS_TXIFLSEL_1_4  (0b001 << 0)
-#define UART_IFLS_TXIFLSEL_1_2  (0b010 << 0)
-#define UART_IFLS_TXIFLSEL_3_4  (0b011 << 0)
-#define UART_IFLS_TXIFLSEL_7_8  (0b100 << 0)
-#define UART_IFLS_RXIFLSEL_1_8  (0b000 << 3)
-#define UART_IFLS_RXIFLSEL_1_4  (0b001 << 3)
-#define UART_IFLS_RXIFLSEL_1_2  (0b010 << 3)
-#define UART_IFLS_RXIFLSEL_3_4  (0b011 << 3)
-#define UART_IFLS_RXIFLSEL_7_8  (0b100 << 3)
+#define UART_IFLS_TXIFLSEL_1_8  (0x0 << 0)
+#define UART_IFLS_TXIFLSEL_1_4  (0x1 << 0)
+#define UART_IFLS_TXIFLSEL_1_2  (0x2 << 0)
+#define UART_IFLS_TXIFLSEL_3_4  (0x3 << 0)
+#define UART_IFLS_TXIFLSEL_7_8  (0x4 << 0)
+#define UART_IFLS_RXIFLSEL_1_8  (0x0 << 3)
+#define UART_IFLS_RXIFLSEL_1_4  (0x1 << 3)
+#define UART_IFLS_RXIFLSEL_1_2  (0x2 << 3)
+#define UART_IFLS_RXIFLSEL_3_4  (0x3 << 3)
+#define UART_IFLS_RXIFLSEL_7_8  (0x4 << 3)
 
 /* UART Interrupt Mask Set/Clear Register */
 

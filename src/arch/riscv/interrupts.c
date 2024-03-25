@@ -33,7 +33,7 @@ void interrupts_arch_init()
     /**
      * Enable external interrupts.
      */
-    CSRS(sie, SIE_SEIE);
+    csrs_sie_set(SIE_SEIE);
 }
 
 void interrupts_arch_ipi_send(cpuid_t target_cpu, irqid_t ipi_id)
@@ -48,9 +48,9 @@ void interrupts_arch_ipi_send(cpuid_t target_cpu, irqid_t ipi_id)
 void interrupts_arch_cpu_enable(bool en)
 {
     if (en) {
-        CSRS(sstatus, SSTATUS_SIE_BIT);
+        csrs_sstatus_set(SSTATUS_SIE_BIT);
     } else {
-        CSRC(sstatus, SSTATUS_SIE_BIT);
+        csrs_sstatus_clear(SSTATUS_SIE_BIT);
     }
 }
 
@@ -58,15 +58,15 @@ void interrupts_arch_enable(irqid_t int_id, bool en)
 {
     if (int_id == SOFT_INT_ID) {
         if (en) {
-            CSRS(sie, SIE_SSIE);
+            csrs_sie_set(SIE_SSIE);
         } else {
-            CSRC(sie, SIE_SSIE);
+            csrs_sie_clear(SIE_SSIE);
         }
     } else if (int_id == TIMR_INT_ID) {
         if (en) {
-            CSRS(sie, SIE_STIE);
+            csrs_sie_set(SIE_STIE);
         } else {
-            CSRC(sie, SIE_STIE);
+            csrs_sie_clear(SIE_STIE);
         }
     } else {
         irqc_config_irq(int_id, en);
@@ -75,11 +75,11 @@ void interrupts_arch_enable(irqid_t int_id, bool en)
 
 void interrupts_arch_handle()
 {
-    unsigned long _scause = CSRR(scause);
+    unsigned long _scause = csrs_scause_read();
 
     switch (_scause) {
         case SCAUSE_CODE_SSI:
-            CSRC(sip, SIP_SSIP);
+            csrs_sip_clear(SIP_SSIP);
             interrupts_handle(SOFT_INT_ID);
             break;
         case SCAUSE_CODE_STI:
@@ -104,9 +104,9 @@ void interrupts_arch_handle()
 bool interrupts_arch_check(irqid_t int_id)
 {
     if (int_id == SOFT_INT_ID) {
-        return CSRR(sip) & SIP_SSIP;
+        return csrs_sip_read() & SIP_SSIP;
     } else if (int_id == TIMR_INT_ID) {
-        return CSRR(sip) & SIP_STIP;
+        return csrs_sip_read() & SIP_STIP;
     } else {
         return irqc_get_pend(int_id);
     }
@@ -115,7 +115,7 @@ bool interrupts_arch_check(irqid_t int_id)
 void interrupts_arch_clear(irqid_t int_id)
 {
     if (int_id == SOFT_INT_ID) {
-        CSRC(sip, SIP_SSIP);
+        csrs_sip_clear(SIP_SSIP);
     } else if (int_id == TIMR_INT_ID) {
         /**
          * It is not actually possible to clear timer by software.

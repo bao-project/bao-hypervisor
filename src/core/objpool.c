@@ -19,7 +19,7 @@ void* objpool_alloc(struct objpool* objpool)
     ssize_t n = bitmap_find_nth(objpool->bitmap, objpool->num, 1, 0, false);
     if (n >= 0) {
         bitmap_set(objpool->bitmap, n);
-        obj = objpool->pool + (objpool->objsize * n);
+        obj = (void*)((uintptr_t)objpool->pool + (objpool->objsize * n));
     }
     spin_unlock(&objpool->lock);
     return obj;

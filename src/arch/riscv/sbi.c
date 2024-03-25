@@ -49,17 +49,17 @@
 static inline struct sbiret sbi_ecall(long eid, long fid, long a0, long a1, long a2, long a3,
     long a4, long a5)
 {
-    long register _a0 asm("a0") = a0;
-    long register _a1 asm("a1") = a1;
-    long register _a2 asm("a2") = a2;
-    long register _a3 asm("a3") = a3;
-    long register _a4 asm("a4") = a4;
-    long register _a5 asm("a5") = a5;
-    long register _a6 asm("a6") = fid;
-    long register _a7 asm("a7") = eid;
+    long register _a0 __asm__("a0") = a0;
+    long register _a1 __asm__("a1") = a1;
+    long register _a2 __asm__("a2") = a2;
+    long register _a3 __asm__("a3") = a3;
+    long register _a4 __asm__("a4") = a4;
+    long register _a5 __asm__("a5") = a5;
+    long register _a6 __asm__("a6") = fid;
+    long register _a7 __asm__("a7") = eid;
 
-    asm volatile("ecall" : "+r"(_a0), "+r"(_a1) : "r"(_a2), "r"(_a3), "r"(_a4), "r"(_a5), "r"(_a6),
-                 "r"(_a7) : "memory");
+    __asm__ volatile("ecall" : "+r"(_a0), "+r"(_a1) : "r"(_a2), "r"(_a3), "r"(_a4), "r"(_a5),
+                     "r"(_a6), "r"(_a7) : "memory");
 
     struct sbiret ret = { .error = _a0, .value = _a1 };
 
@@ -173,13 +173,13 @@ static const size_t NUM_EXT = sizeof(ext_table) / sizeof(unsigned long);
 enum SBI_MSG_EVENTS { SEND_IPI, HART_START };
 
 void sbi_msg_handler(uint32_t event, uint64_t data);
-CPU_MSG_HANDLER(sbi_msg_handler, SBI_MSG_ID);
+CPU_MSG_HANDLER(sbi_msg_handler, SBI_MSG_ID)
 
 void sbi_msg_handler(uint32_t event, uint64_t data)
 {
     switch (event) {
         case SEND_IPI:
-            CSRS(CSR_HVIP, HIP_VSSIP);
+            csrs_hvip_set(HIP_VSSIP);
             break;
         case HART_START: {
             spin_lock(&cpu()->vcpu->arch.sbi_ctx.lock);
@@ -204,11 +204,11 @@ struct sbiret sbi_time_handler(unsigned long fid)
 
     uint64_t stime_value = vcpu_readreg(cpu()->vcpu, REG_A0);
     if (CPU_HAS_EXTENSION(CPU_EXT_SSTC)) {
-        CSRW(CSR_VSTIMECMP, stime_value);
+        csrs_vstimecmp_write(stime_value);
     } else {
         sbi_set_timer(stime_value); // assumes always success
-        CSRC(CSR_HVIP, HIP_VSTIP);
-        CSRS(sie, SIE_STIE);
+        csrs_hvip_clear(HIP_VSTIP);
+        csrs_sie_set(SIE_STIE);
     }
 
     return (struct sbiret){ SBI_SUCCESS };
@@ -216,8 +216,8 @@ struct sbiret sbi_time_handler(unsigned long fid)
 
 void sbi_timer_irq_handler()
 {
-    CSRS(CSR_HVIP, HIP_VSTIP);
-    CSRC(sie, SIE_STIE);
+    csrs_hvip_set(HIP_VSTIP);
+    csrs_sie_clear(SIE_STIE);
 }
 
 struct sbiret sbi_ipi_handler(unsigned long fid)

@@ -67,9 +67,9 @@
         return count;                                                            \
     }
 
-BIT_OPS_GEN(bit32, uint32_t, UINT32_C(1), BIT32_MASK);
-BIT_OPS_GEN(bit64, uint64_t, UINT64_C(1), BIT64_MASK);
-BIT_OPS_GEN(bit, unsigned long, (1UL), BIT_MASK);
+BIT_OPS_GEN(bit32, uint32_t, UINT32_C(1), BIT32_MASK)
+BIT_OPS_GEN(bit64, uint64_t, UINT64_C(1), BIT64_MASK)
+BIT_OPS_GEN(bit, unsigned long, (1UL), BIT_MASK)
 
 #endif /* |__ASSEMBLER__ */
 
