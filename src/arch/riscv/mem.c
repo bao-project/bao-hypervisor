@@ -27,7 +27,7 @@ static inline void as_map_physical_identity(struct addr_space* as)
         size_t num_entries = ((top - base - 1) / lvl_size) + 1;
 
         paddr_t addr = base;
-        for (int j = 0; j < num_entries; j++) {
+        for (unsigned int j = 0; j < num_entries; j++) {
             int index = pt_getpteindex_by_va(&as->pt, (vaddr_t)addr, lvl);
             pte_set(&pt[index], addr, PTE_SUPERPAGE, PTE_HYP_FLAGS);
             addr += lvl_size;

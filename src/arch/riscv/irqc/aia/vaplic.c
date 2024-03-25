@@ -260,7 +260,7 @@ static void vaplic_update_hart(struct vcpu* vcpu, int16_t vhart_index)
         for (size_t i = 0; i < vaplic->idc_num; i++) {
             vaplic_update_hart_line(vcpu, (vcpuid_t)i);
         }
-    } else if (vhart_index < vaplic->idc_num) {
+    } else if ((uint16_t)vhart_index < vaplic->idc_num) {
         vaplic_update_hart_line(vcpu, (vcpuid_t)vhart_index);
     }
 }
