@@ -20,4 +20,6 @@ struct config config = {
          */
         .vmlist_size = 1,
 
+        .vmlist = (struct vm_config[]){ {.entry = 0 } },
+
 };
