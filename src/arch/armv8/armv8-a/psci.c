@@ -105,10 +105,10 @@ int32_t psci_power_down(enum wakeup_reason reason)
 
 int32_t psci_cpu_suspend(uint32_t power_state, unsigned long entrypoint, unsigned long context_id)
 {
-    return smc_call(PSCI_CPU_SUSPEND, power_state, entrypoint, context_id, NULL);
+    return (int32_t)smc_call(PSCI_CPU_SUSPEND, power_state, entrypoint, context_id, NULL);
 }
 
 int32_t psci_cpu_on(unsigned long target_cpu, unsigned long entrypoint, unsigned long context_id)
 {
-    return smc_call(PSCI_CPU_ON, target_cpu, entrypoint, context_id, NULL);
+    return (int32_t)smc_call(PSCI_CPU_ON, target_cpu, entrypoint, context_id, NULL);
 }

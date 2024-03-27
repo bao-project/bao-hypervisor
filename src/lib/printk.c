@@ -74,7 +74,7 @@ static size_t vprintd(char** buf, unsigned int flags, va_list* args)
         unsigned long digit = u / divisor;
         u -= digit * divisor;
         divisor /= base;
-        printc(buf, digit_to_char(digit, base));
+        printc(buf, digit_to_char(digit, (unsigned int)base));
         char_count++;
     }
 

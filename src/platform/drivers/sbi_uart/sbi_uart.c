@@ -17,7 +17,7 @@ void uart_enable(bao_uart_t* uart)
     UNUSED_ARG(uart);
 }
 
-void uart_putc(bao_uart_t* uart, const char c)
+void uart_putc(bao_uart_t* uart, const int8_t c)
 {
     UNUSED_ARG(uart);
 

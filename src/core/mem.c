@@ -56,22 +56,22 @@ bool pp_alloc(struct page_pool* pool, size_t num_pages, bool aligned, struct ppa
                     (num_pages - ((pool->base / PAGE_SIZE) % num_pages)) % num_pages;
                 curr = aligned ? next_aligned : 0;
                 break;
-            } else if (aligned && (((bit + start) % num_pages) != 0)) {
+            } else if (aligned && (((((size_t)bit) + start) % num_pages) != 0)) {
                 /**
                  * If we're looking for an aligned segment and the found contigous segment is not
                  * aligned, start the search again from the last aligned index
                  */
-                curr = bit + ((bit + start) % num_pages);
+                curr = ((size_t)bit) + ((((size_t)bit) + start) % num_pages);
             } else {
                 /**
                  * We've found our pages. Fill output argument info, mark them as allocated, and
                  * update page pool bookkeeping.
                  */
-                ppages->base = pool->base + (bit * PAGE_SIZE);
+                ppages->base = pool->base + (((size_t)bit) * PAGE_SIZE);
                 ppages->num_pages = num_pages;
-                bitmap_set_consecutive(pool->bitmap, bit, num_pages);
+                bitmap_set_consecutive(pool->bitmap, ((size_t)bit), num_pages);
                 pool->free -= num_pages;
-                pool->last = bit + num_pages;
+                pool->last = ((size_t)bit) + num_pages;
                 ok = true;
                 break;
             }

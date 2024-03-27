@@ -86,7 +86,7 @@ void gicc_restore_state(struct gicc_state* state)
 
     gich->HCR = state->HCR;
     for (size_t i = 0; i < gich_num_lrs(); i++) {
-        gich->LR[i] = state->LR[i];
+        gich->LR[i] = (gic_lr_t)state->LR[i];
     }
 }
 
@@ -96,18 +96,18 @@ void gic_cpu_init()
         /**
          * Make sure all private interrupts are not enabled, non pending, non active.
          */
-        gicd->ICENABLER[i] = -1;
-        gicd->ICPENDR[i] = -1;
-        gicd->ICACTIVER[i] = -1;
+        gicd->ICENABLER[i] = ~0U;
+        gicd->ICPENDR[i] = ~0U;
+        gicd->ICACTIVER[i] = ~0U;
     }
 
     /* Clear any pending SGIs. */
     for (size_t i = 0; i < GIC_NUM_SGI_REGS; i++) {
-        gicd->CPENDSGIR[i] = -1;
+        gicd->CPENDSGIR[i] = ~0U;
     }
 
     for (size_t i = 0; i < GIC_NUM_PRIO_REGS(GIC_CPU_PRIV); i++) {
-        gicd->IPRIORITYR[i] = -1;
+        gicd->IPRIORITYR[i] = ~0U;
     }
 
     gicc_init();
@@ -126,7 +126,7 @@ void gic_map_mmio()
 void gic_send_sgi(cpuid_t cpu_target, irqid_t sgi_num)
 {
     if (sgi_num < GIC_MAX_SGIS && cpu_target < GIC_MAX_TARGETS) {
-        gicd->SGIR = (1UL << (GICD_SGIR_CPUTRGLST_OFF + gic_cpu_map[cpu_target])) |
+        gicd->SGIR = (1U << (GICD_SGIR_CPUTRGLST_OFF + gic_cpu_map[cpu_target])) |
             (sgi_num & GICD_SGIR_SGIINTID_MSK);
     }
 }
@@ -136,7 +136,7 @@ static inline uint8_t gic_translate_cpu_to_trgt(uint8_t cpu_targets)
     uint8_t gic_targets = 0;
     for (size_t i = 0; i < GIC_MAX_TARGETS; i++) {
         if ((1 << i) & cpu_targets) {
-            gic_targets |= (1 << gic_cpu_map[i]);
+            gic_targets |= (uint8_t)(1U << gic_cpu_map[i]);
         }
     }
     return gic_targets;
@@ -147,11 +147,11 @@ void gicd_set_trgt(irqid_t int_id, uint8_t cpu_targets)
     size_t reg_ind = GIC_TARGET_REG(int_id);
     size_t off = GIC_TARGET_OFF(int_id);
     uint32_t mask = BIT32_MASK(off, GIC_TARGET_BITS);
+    uint32_t pcpu_targets = (uint32_t)gic_translate_cpu_to_trgt(cpu_targets);
 
     spin_lock(&gicd_lock);
 
-    gicd->ITARGETSR[reg_ind] = (gicd->ITARGETSR[reg_ind] & ~mask) |
-        ((gic_translate_cpu_to_trgt(cpu_targets) << off) & mask);
+    gicd->ITARGETSR[reg_ind] = (gicd->ITARGETSR[reg_ind] & ~mask) | ((pcpu_targets << off) & mask);
 
     spin_unlock(&gicd_lock);
 }

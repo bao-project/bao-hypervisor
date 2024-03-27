@@ -12,6 +12,6 @@ typedef volatile uint8_t bao_uart_t;
 
 bool uart_init(bao_uart_t* uart);
 void uart_enable(bao_uart_t* uart);
-void uart_putc(bao_uart_t* uart, const char c);
+void uart_putc(bao_uart_t* uart, const int8_t c);
 
 #endif /* __SBI_UART_H__ */

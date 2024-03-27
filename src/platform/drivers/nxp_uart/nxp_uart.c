@@ -18,8 +18,8 @@ void uart_enable(volatile struct lpuart* uart)
     uart->ctrl = LPUART_CTRL_TE_BIT;
 }
 
-void uart_putc(volatile struct lpuart* uart, char c)
+void uart_putc(volatile struct lpuart* uart, int8_t c)
 {
     while (!(uart->stat & LPUART_STAT_TDRE_BIT)) { }
-    uart->data = c;
+    uart->data = (uint32_t)c;
 }

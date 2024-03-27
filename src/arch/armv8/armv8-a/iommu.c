@@ -21,14 +21,14 @@ bool iommu_arch_init()
 
 static ssize_t iommu_vm_arch_init_ctx(struct vm* vm)
 {
-    ssize_t ctx_id = vm->io.prot.mmu.ctx_id;
+    ssize_t ctx_id = (ssize_t)vm->io.prot.mmu.ctx_id;
     if (ctx_id < 0) {
         /* Set up ctx bank to vm address space in an available ctx. */
         ctx_id = smmu_alloc_ctxbnk();
         if (ctx_id >= 0) {
             paddr_t rootpt;
             mem_translate(&cpu()->as, (vaddr_t)vm->as.pt.root, &rootpt);
-            smmu_write_ctxbnk(ctx_id, rootpt, vm->id);
+            smmu_write_ctxbnk((size_t)ctx_id, rootpt, vm->id);
             vm->io.prot.mmu.ctx_id = ctx_id;
         } else {
             INFO("iommu: smmuv2 could not allocate ctx for vm: %d", vm->id);
@@ -51,14 +51,14 @@ static bool iommu_vm_arch_add(struct vm* vm, streamid_t mask, streamid_t id)
         return false;
     }
 
-    if (!smmu_compatible_sme_exists(prep_mask, prep_id, vm_ctx, group)) {
+    if (!smmu_compatible_sme_exists(prep_mask, prep_id, (size_t)vm_ctx, group)) {
         ssize_t sme = smmu_alloc_sme();
         if (sme < 0) {
             INFO("iommu: smmuv2 no more free sme available.");
             return false;
         }
-        smmu_write_sme(sme, prep_mask, prep_id, group);
-        smmu_write_s2c(sme, vm_ctx);
+        smmu_write_sme((size_t)sme, prep_mask, prep_id, group);
+        smmu_write_s2c((size_t)sme, (size_t)vm_ctx);
     }
 
     return true;

@@ -12,7 +12,7 @@
 #include <arch/csrs.h>
 
 #define APLIC_MIN_PRIO             (0xFF)
-#define UPDATE_ALL_HARTS           (-1)
+#define UPDATE_ALL_HARTS           (~0U)
 #define MASK_INTP_ZERO             (0xFFFFFFFE)
 
 #define SET_INTP_REG(reg, intp_id) (reg[intp_id / 32] = bit32_set(reg[intp_id / 32], intp_id % 32))
@@ -185,7 +185,7 @@ static bool vaplic_update_topi(struct vcpu* vcpu)
     uint32_t update_topi = 0;
 
     /** Find highest pending and enabled interrupt */
-    for (size_t i = 1; i < APLIC_MAX_INTERRUPTS; i++) {
+    for (irqid_t i = 1; i < APLIC_MAX_INTERRUPTS; i++) {
         if (vaplic_get_hart_index(vcpu, i) == vcpu->id) {
             if (vaplic_get_pend(vcpu, i) && vaplic_get_enbl(vcpu, i)) {
                 prio = vaplic_get_target(vcpu, i) & APLIC_TARGET_IPRIO_MASK;
@@ -239,7 +239,7 @@ static void vaplic_update_hart_line(struct vcpu* vcpu, vcpuid_t vhart_index)
             csrs_hvip_clear(HIP_VSEIP);
         }
     } else {
-        struct cpu_msg msg = { VPLIC_IPI_ID, UPDATE_HART_LINE, vhart_index };
+        struct cpu_msg msg = { (uint32_t)VPLIC_IPI_ID, UPDATE_HART_LINE, vhart_index };
         cpu_send_msg(pcpu_id, &msg);
     }
 }
@@ -252,7 +252,7 @@ static void vaplic_update_hart_line(struct vcpu* vcpu, vcpuid_t vhart_index)
  *        this function will trigger the interrupt line update to all virtual harts running in this
  *        vm.
  */
-static void vaplic_update_hart(struct vcpu* vcpu, int16_t vhart_index)
+static void vaplic_update_hart(struct vcpu* vcpu, size_t vhart_index)
 {
     struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
 
@@ -275,7 +275,7 @@ static void vaplic_ipi_handler(uint32_t event, uint64_t data)
 {
     switch (event) {
         case UPDATE_HART_LINE:
-            vaplic_update_hart(cpu()->vcpu, (int16_t)data);
+            vaplic_update_hart(cpu()->vcpu, (size_t)data);
             break;
     }
 }
@@ -418,7 +418,7 @@ static void vaplic_set_setip(struct vcpu* vcpu, size_t reg, uint32_t new_val)
         for (size_t i = (reg * APLIC_NUM_INTP_PER_REG);
              i < (reg * APLIC_NUM_INTP_PER_REG) + APLIC_NUM_INTP_PER_REG; i++) {
             if (!!bit32_get(update_intps, i % 32)) {
-                vaplic_update_hart(vcpu, vaplic_get_hart_index(vcpu, i));
+                vaplic_update_hart(vcpu, vaplic_get_hart_index(vcpu, (irqid_t)i));
             }
         }
     }
@@ -466,7 +466,7 @@ static void vaplic_set_in_clrip(struct vcpu* vcpu, size_t reg, uint32_t new_val)
         for (size_t i = (reg * APLIC_NUM_INTP_PER_REG);
              i < (reg * APLIC_NUM_INTP_PER_REG) + APLIC_NUM_INTP_PER_REG; i++) {
             if (!!bit32_get(update_intps, i % 32)) {
-                vaplic_update_hart(vcpu, vaplic_get_hart_index(vcpu, i));
+                vaplic_update_hart(vcpu, vaplic_get_hart_index(vcpu, (irqid_t)i));
             }
         }
     }
@@ -521,7 +521,7 @@ static void vaplic_set_clripnum(struct vcpu* vcpu, uint32_t new_val)
  * @param reg regiter index
  * @return uint32_t value with enabled value bit-mapped
  */
-static uint32_t vaplic_get_setie(struct vcpu* vcpu, uint32_t reg)
+static uint32_t vaplic_get_setie(struct vcpu* vcpu, size_t reg)
 {
     struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
     uint32_t ret = 0;
@@ -554,7 +554,7 @@ static void vaplic_set_setie(struct vcpu* vcpu, size_t reg, uint32_t new_val)
         for (size_t i = (reg * APLIC_NUM_INTP_PER_REG);
              i < (reg * APLIC_NUM_INTP_PER_REG) + APLIC_NUM_INTP_PER_REG; i++) {
             if (!!bit32_get(update_intps, i % 32)) {
-                vaplic_update_hart(vcpu, vaplic_get_hart_index(vcpu, i));
+                vaplic_update_hart(vcpu, vaplic_get_hart_index(vcpu, (irqid_t)i));
             }
         }
     }
@@ -604,7 +604,7 @@ static void vaplic_set_clrie(struct vcpu* vcpu, size_t reg, uint32_t new_val)
         for (size_t i = (reg * APLIC_NUM_INTP_PER_REG);
              i < (reg * APLIC_NUM_INTP_PER_REG) + APLIC_NUM_INTP_PER_REG; i++) {
             if (!!bit32_get(update_intps, i % 32)) {
-                vaplic_update_hart(vcpu, vaplic_get_hart_index(vcpu, i));
+                vaplic_update_hart(vcpu, vaplic_get_hart_index(vcpu, (irqid_t)i));
             }
         }
     }
@@ -643,7 +643,7 @@ static void vaplic_set_target(struct vcpu* vcpu, irqid_t intp_id, uint32_t new_v
 {
     struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
     vcpuid_t hart_index = (new_val >> APLIC_TARGET_HART_IDX_SHIFT) & APLIC_TARGET_HART_IDX_MASK;
-    uint8_t priority = new_val & APLIC_IPRIO_MASK;
+    uint8_t priority = (uint8_t)(new_val & APLIC_IPRIO_MASK);
     cpuid_t pcpu_id = vm_translate_to_pcpuid(vcpu->vm, hart_index);
     vcpuid_t prev_hart_index = 0;
 
@@ -667,7 +667,8 @@ static void vaplic_set_target(struct vcpu* vcpu, irqid_t intp_id, uint32_t new_v
             aplic_set_target_prio(intp_id, priority);
             priority = aplic_get_target_prio(intp_id);
         }
-        vaplic->target[intp_id] = (hart_index << APLIC_TARGET_HART_IDX_SHIFT) | priority;
+        vaplic->target[intp_id] =
+            (uint32_t)((hart_index << APLIC_TARGET_HART_IDX_SHIFT) | priority);
         if (prev_hart_index != hart_index) {
             vaplic_update_hart(vcpu, prev_hart_index);
         }
@@ -862,7 +863,7 @@ static uint32_t vaplic_get_claimi(struct vcpu* vcpu, idcid_t idc_id)
 static void vaplic_emul_domaincfg_access(struct emul_access* acc)
 {
     if (acc->write) {
-        vaplic_set_domaincfg(cpu()->vcpu, vcpu_readreg(cpu()->vcpu, acc->reg));
+        vaplic_set_domaincfg(cpu()->vcpu, (uint32_t)vcpu_readreg(cpu()->vcpu, acc->reg));
     } else {
         vcpu_writereg(cpu()->vcpu, acc->reg, vaplic_get_domaincfg(cpu()->vcpu));
     }
@@ -877,11 +878,12 @@ static void vaplic_emul_domaincfg_access(struct emul_access* acc)
  */
 static void vaplic_emul_srccfg_access(struct emul_access* acc)
 {
-    int intp = (acc->addr & 0xFFF) / 4;
+    size_t intp = (acc->addr & 0xFFF) / 4;
     if (acc->write) {
-        vaplic_set_sourcecfg(cpu()->vcpu, intp, vcpu_readreg(cpu()->vcpu, acc->reg));
+        vaplic_set_sourcecfg(cpu()->vcpu, (irqid_t)intp,
+            (uint32_t)vcpu_readreg(cpu()->vcpu, acc->reg));
     } else {
-        vcpu_writereg(cpu()->vcpu, acc->reg, vaplic_get_sourcecfg(cpu()->vcpu, intp));
+        vcpu_writereg(cpu()->vcpu, acc->reg, vaplic_get_sourcecfg(cpu()->vcpu, (irqid_t)intp));
     }
 }
 
@@ -894,9 +896,9 @@ static void vaplic_emul_srccfg_access(struct emul_access* acc)
  */
 static void vaplic_emul_setip_access(struct emul_access* acc)
 {
-    int reg = (acc->addr & 0x7F) / 4;
+    size_t reg = (acc->addr & 0x7F) / 4;
     if (acc->write) {
-        vaplic_set_setip(cpu()->vcpu, reg, vcpu_readreg(cpu()->vcpu, acc->reg));
+        vaplic_set_setip(cpu()->vcpu, reg, (uint32_t)vcpu_readreg(cpu()->vcpu, acc->reg));
     } else {
         vcpu_writereg(cpu()->vcpu, acc->reg, vaplic_get_setip(cpu()->vcpu, reg));
     }
@@ -912,7 +914,7 @@ static void vaplic_emul_setip_access(struct emul_access* acc)
 static void vaplic_emul_setipnum_access(struct emul_access* acc)
 {
     if (acc->write) {
-        vaplic_set_setipnum(cpu()->vcpu, vcpu_readreg(cpu()->vcpu, acc->reg));
+        vaplic_set_setipnum(cpu()->vcpu, (uint32_t)vcpu_readreg(cpu()->vcpu, acc->reg));
     }
 }
 
@@ -925,9 +927,9 @@ static void vaplic_emul_setipnum_access(struct emul_access* acc)
  */
 static void vaplic_emul_in_clrip_access(struct emul_access* acc)
 {
-    int reg = (acc->addr & 0x7F) / 4;
+    size_t reg = (acc->addr & 0x7F) / 4;
     if (acc->write) {
-        vaplic_set_in_clrip(cpu()->vcpu, reg, vcpu_readreg(cpu()->vcpu, acc->reg));
+        vaplic_set_in_clrip(cpu()->vcpu, reg, (uint32_t)vcpu_readreg(cpu()->vcpu, acc->reg));
     } else {
         vcpu_writereg(cpu()->vcpu, acc->reg, vaplic_get_in_clrip(cpu()->vcpu, reg));
     }
@@ -943,7 +945,7 @@ static void vaplic_emul_in_clrip_access(struct emul_access* acc)
 static void vaplic_emul_clripnum_access(struct emul_access* acc)
 {
     if (acc->write) {
-        vaplic_set_clripnum(cpu()->vcpu, vcpu_readreg(cpu()->vcpu, acc->reg));
+        vaplic_set_clripnum(cpu()->vcpu, (uint32_t)vcpu_readreg(cpu()->vcpu, acc->reg));
     }
 }
 
@@ -956,9 +958,9 @@ static void vaplic_emul_clripnum_access(struct emul_access* acc)
  */
 static void vaplic_emul_setie_access(struct emul_access* acc)
 {
-    int reg = (acc->addr & 0x7F) / 4;
+    size_t reg = (acc->addr & 0x7F) / 4;
     if (acc->write) {
-        vaplic_set_setie(cpu()->vcpu, reg, vcpu_readreg(cpu()->vcpu, acc->reg));
+        vaplic_set_setie(cpu()->vcpu, reg, (uint32_t)vcpu_readreg(cpu()->vcpu, acc->reg));
     } else {
         vcpu_writereg(cpu()->vcpu, acc->reg, vaplic_get_setie(cpu()->vcpu, reg));
     }
@@ -974,7 +976,7 @@ static void vaplic_emul_setie_access(struct emul_access* acc)
 static void vaplic_emul_setienum_access(struct emul_access* acc)
 {
     if (acc->write) {
-        vaplic_set_setienum(cpu()->vcpu, vcpu_readreg(cpu()->vcpu, acc->reg));
+        vaplic_set_setienum(cpu()->vcpu, (uint32_t)vcpu_readreg(cpu()->vcpu, acc->reg));
     }
 }
 
@@ -987,9 +989,9 @@ static void vaplic_emul_setienum_access(struct emul_access* acc)
  */
 static void vaplic_emul_clrie_access(struct emul_access* acc)
 {
-    int reg = (acc->addr & 0x7F) / 4;
+    size_t reg = (acc->addr & 0x7F) / 4;
     if (acc->write) {
-        vaplic_set_clrie(cpu()->vcpu, reg, vcpu_readreg(cpu()->vcpu, acc->reg));
+        vaplic_set_clrie(cpu()->vcpu, reg, (uint32_t)vcpu_readreg(cpu()->vcpu, acc->reg));
     }
 }
 
@@ -1003,7 +1005,7 @@ static void vaplic_emul_clrie_access(struct emul_access* acc)
 static void vaplic_emul_clrienum_access(struct emul_access* acc)
 {
     if (acc->write) {
-        vaplic_set_clrienum(cpu()->vcpu, vcpu_readreg(cpu()->vcpu, acc->reg));
+        vaplic_set_clrienum(cpu()->vcpu, (uint32_t)vcpu_readreg(cpu()->vcpu, acc->reg));
     }
 }
 
@@ -1016,11 +1018,11 @@ static void vaplic_emul_clrienum_access(struct emul_access* acc)
  */
 static void vaplic_emul_target_access(struct emul_access* acc)
 {
-    int intp = (acc->addr & 0xFFF) / 4;
+    size_t intp = (acc->addr & 0xFFF) / 4;
     if (acc->write) {
-        vaplic_set_target(cpu()->vcpu, intp, vcpu_readreg(cpu()->vcpu, acc->reg));
+        vaplic_set_target(cpu()->vcpu, (irqid_t)intp, (uint32_t)vcpu_readreg(cpu()->vcpu, acc->reg));
     } else {
-        vcpu_writereg(cpu()->vcpu, acc->reg, vaplic_get_target(cpu()->vcpu, intp));
+        vcpu_writereg(cpu()->vcpu, acc->reg, vaplic_get_target(cpu()->vcpu, (irqid_t)intp));
     }
 }
 
@@ -1034,7 +1036,7 @@ static void vaplic_emul_target_access(struct emul_access* acc)
 static void vaplic_emul_idelivery_access(struct emul_access* acc, idcid_t idc_id)
 {
     if (acc->write) {
-        vaplic_set_idelivery(cpu()->vcpu, idc_id, vcpu_readreg(cpu()->vcpu, acc->reg));
+        vaplic_set_idelivery(cpu()->vcpu, idc_id, (uint32_t)vcpu_readreg(cpu()->vcpu, acc->reg));
     } else {
         vcpu_writereg(cpu()->vcpu, acc->reg, vaplic_get_idelivery(cpu()->vcpu, idc_id));
     }
@@ -1050,7 +1052,7 @@ static void vaplic_emul_idelivery_access(struct emul_access* acc, idcid_t idc_id
 static void vaplic_emul_iforce_access(struct emul_access* acc, idcid_t idc_id)
 {
     if (acc->write) {
-        vaplic_set_iforce(cpu()->vcpu, idc_id, vcpu_readreg(cpu()->vcpu, acc->reg));
+        vaplic_set_iforce(cpu()->vcpu, idc_id, (uint32_t)vcpu_readreg(cpu()->vcpu, acc->reg));
     } else {
         vcpu_writereg(cpu()->vcpu, acc->reg, vaplic_get_iforce(cpu()->vcpu, idc_id));
     }
@@ -1066,7 +1068,7 @@ static void vaplic_emul_iforce_access(struct emul_access* acc, idcid_t idc_id)
 static void vaplic_emul_ithreshold_access(struct emul_access* acc, idcid_t idc_id)
 {
     if (acc->write) {
-        vaplic_set_ithreshold(cpu()->vcpu, idc_id, vcpu_readreg(cpu()->vcpu, acc->reg));
+        vaplic_set_ithreshold(cpu()->vcpu, idc_id, (uint32_t)vcpu_readreg(cpu()->vcpu, acc->reg));
     } else {
         vcpu_writereg(cpu()->vcpu, acc->reg, vaplic_get_ithreshold(cpu()->vcpu, idc_id));
     }
@@ -1249,7 +1251,7 @@ static bool vaplic_idc_emul_handler(struct emul_access* acc)
         return false;
     }
 
-    uint32_t addr = acc->addr;
+    uint32_t addr = (uint32_t)(acc->addr);
     idcid_t idc_id = ((acc->addr - cpu()->vcpu->vm->arch.vaplic.aplic_idc_emul.va_base) >> 5) &
         APLIC_MAX_NUM_HARTS_MAKS;
 

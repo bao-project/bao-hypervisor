@@ -40,7 +40,7 @@ void sbi_console_putchar(int ch);
 struct sbiret sbi_get_spec_version(void);
 struct sbiret sbi_get_impl_id(void);
 struct sbiret sbi_get_impl_version(void);
-struct sbiret sbi_probe_extension(long extension_id);
+struct sbiret sbi_probe_extension(unsigned long extension_id);
 struct sbiret sbi_get_mvendorid(void);
 struct sbiret sbi_get_marchid(void);
 struct sbiret sbi_get_mimpid(void);

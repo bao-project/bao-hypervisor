@@ -55,8 +55,8 @@
     }                                                                                       \
     static inline void sysreg_##reg##_write(unsigned long long val)                         \
     {                                                                                       \
-        sysreg_##reg1##_write(val);                                                         \
-        sysreg_##reg2##_write(val >> 32);                                                   \
+        sysreg_##reg1##_write((unsigned long)val);                                          \
+        sysreg_##reg2##_write((unsigned long)(val >> 32));                                  \
     }
 
 /**
@@ -83,8 +83,9 @@ SYSREG_GEN_ACCESSORS(cptr_el2, 4, c1, c1, 2)   // hcptr
 SYSREG_GEN_ACCESSORS(vtcr_el2, 4, c2, c1, 2)
 SYSREG_GEN_ACCESSORS_64(vttbr_el2, 6, c2)
 SYSREG_GEN_ACCESSORS(tpidr_el2, 4, c13, c0, 2) // htpidr
-SYSREG_GEN_ACCESSORS(ccsidr_el1, 1, c0, c0, 0)
+SYSREG_GEN_ACCESSORS(ccsidr, 1, c0, c0, 0)
 SYSREG_GEN_ACCESSORS(ccsidr2, 1, c0, c0, 2)
+SYSREG_GEN_ACCESSORS_MERGE(ccsidr_el1, ccsidr, ccsidr2)
 SYSREG_GEN_ACCESSORS(hmair0, 4, c10, c2, 0)
 SYSREG_GEN_ACCESSORS(hmair1, 4, c10, c2, 1)
 SYSREG_GEN_ACCESSORS_MERGE(mair_el2, hmair0, hmair1)

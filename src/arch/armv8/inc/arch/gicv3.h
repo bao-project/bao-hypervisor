@@ -112,7 +112,7 @@ static inline void gich_write_lr(size_t i, uint64_t val)
 
 static inline uint32_t gich_get_hcr()
 {
-    return sysreg_ich_hcr_el2_read();
+    return (uint32_t)sysreg_ich_hcr_el2_read();
 }
 
 static inline void gich_set_hcr(uint32_t hcr)
@@ -122,7 +122,7 @@ static inline void gich_set_hcr(uint32_t hcr)
 
 static inline uint32_t gich_get_misr()
 {
-    return sysreg_ich_misr_el2_read();
+    return (uint32_t)sysreg_ich_misr_el2_read();
 }
 
 static inline uint64_t gich_get_eisr()
@@ -137,7 +137,7 @@ static inline uint64_t gich_get_elrsr()
 
 static inline uint32_t gicc_iar()
 {
-    return sysreg_icc_iar1_el1_read();
+    return (uint32_t)sysreg_icc_iar1_el1_read();
 }
 
 static inline void gicc_eoir(uint32_t eoir)

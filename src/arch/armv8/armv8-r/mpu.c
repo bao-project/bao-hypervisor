@@ -116,7 +116,7 @@ static inline void mpu_entry_set_perms(struct mp_region* mpr, struct mpu_perms m
     bool el1_priv = mpu_perms.el1 != PERM_NONE;
     perms_t perms = mpu_perms.el1 | mpu_perms.el2;
 
-    mpr->mem_flags.prbar &= ~(PRBAR_PERMS_FLAGS_MSK);
+    mpr->mem_flags.prbar &= (uint16_t) ~(PRBAR_PERMS_FLAGS_MSK);
     if (perms & PERM_W) {
         mpr->mem_flags.prbar |= PRBAR_AP_RW_EL2;
     } else {

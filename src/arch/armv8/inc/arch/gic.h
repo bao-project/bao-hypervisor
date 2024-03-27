@@ -28,7 +28,7 @@
 #define GIC_CONFIG_BITS           2
 #define GIC_SEC_BITS              2
 #define GIC_SGI_BITS              8
-#define GICD_IROUTER_INV          (~MPIDR_AFF_MSK)
+#define GICD_IROUTER_INV          (~0xffffU)
 #define GIC_LOWEST_PRIO           (0xff)
 
 #define GIC_INT_REG(NINT)         (NINT / (sizeof(uint32_t) * 8))
@@ -141,13 +141,13 @@ struct gicd_hw {
 
 /* Redistributor Wake Register, GICD_WAKER */
 
-#define GICR_CTRL_DS_BIT              (1 << 6)
-#define GICR_CTRL_DS_DPG1NS           (1 << 25)
+#define GICR_CTRL_DS_BIT              (1U << 6)
+#define GICR_CTRL_DS_DPG1NS           (1U << 25)
 #define GICR_TYPER_LAST_OFF           (4)
 #define GICR_TYPER_PRCNUM_OFF         (8)
 #define GICR_TYPER_AFFVAL_OFF         (32)
-#define GICR_WAKER_ProcessorSleep_BIT (0x2)
-#define GICR_WAKER_ChildrenASleep_BIT (0x4)
+#define GICR_WAKER_ProcessorSleep_BIT (0x2U)
+#define GICR_WAKER_ChildrenASleep_BIT (0x4U)
 
 struct gicr_hw {
     /* RD_base frame */
@@ -217,7 +217,7 @@ struct gicr_hw {
 #define ICC_SGIR_SGIINTID_OFF    24
 #define ICC_SGIR_SGIINTID_LEN    4
 #define ICC_SGIR_SGIINTID(sgir)  bit64_extract(sgir, ICC_SGIR_SGIINTID_OFF, ICC_SGIR_SGIINTID_LEN)
-#define ICC_SGIR_IRM_BIT         (1ull << 40)
+#define ICC_SGIR_IRM_BIT         (1ULL << 40)
 #define ICC_SGIR_TRGLSTFLT_OFF   0
 #define ICC_SGIR_TRGLSTFLT_LEN   16
 #define ICC_SGIR_TRGLSTFLT_MSK   BIT64_MASK(ICC_SGIR_TRGLSTFLT_OFF, ICC_SGIR_TRGLSTFLT_LEN)
@@ -251,14 +251,14 @@ struct gicc_hw {
     uint32_t DIR;
 } __attribute__((__packed__, aligned(0x1000)));
 
-#define GICH_HCR_En_BIT        (1 << 0)
-#define GICH_HCR_UIE_BIT       (1 << 1)
-#define GICH_HCR_LRENPIE_BIT   (1 << 2)
-#define GICH_HCR_NPIE_BIT      (1 << 3)
-#define GICH_HCR_VGrp0DIE_BIT  (1 << 4)
-#define GICH_HCR_VGrp0EIE_BIT  (1 << 5)
-#define GICH_HCR_VGrp1EIE_BIT  (1 << 6)
-#define GICH_HCR_VGrp1DIE_BIT  (1 << 7)
+#define GICH_HCR_En_BIT        (1U << 0)
+#define GICH_HCR_UIE_BIT       (1U << 1)
+#define GICH_HCR_LRENPIE_BIT   (1U << 2)
+#define GICH_HCR_NPIE_BIT      (1U << 3)
+#define GICH_HCR_VGrp0DIE_BIT  (1U << 4)
+#define GICH_HCR_VGrp0EIE_BIT  (1U << 5)
+#define GICH_HCR_VGrp1EIE_BIT  (1U << 6)
+#define GICH_HCR_VGrp1DIE_BIT  (1U << 7)
 #define GICH_HCR_EOICount_OFF  (27)
 #define GICH_HCR_EOICount_LEN  (5)
 #define GICH_HCR_EOICount_MASK BIT32_MASK(GICH_HCR_EOICount_OFF, GICH_HCR_EOICount_LEN)
@@ -315,10 +315,10 @@ typedef uint64_t gic_lr_t;
 #define GICH_LR_CPUID_LEN     (3)
 
 #define GICH_LR_VID_MSK       BIT_MASK(GICH_LR_VID_OFF, GICH_LR_VID_LEN)
-#define GICH_LR_VID(LR)       (bit_extract(LR, GICH_LR_VID_OFF, GICH_LR_VID_LEN))
+#define GICH_LR_VID(LR)       (bit64_extract(LR, GICH_LR_VID_OFF, GICH_LR_VID_LEN))
 
 #define GICH_LR_CPUID_MSK     BIT_MASK(GICH_LR_CPUID_OFF, GICH_LR_CPUID_LEN)
-#define GICH_LR_CPUID(LR)     (bit_extract(LR, GICH_LR_CPUID_OFF, GICH_LR_CPUID_LEN))
+#define GICH_LR_CPUID(LR)     (bit64_extract(LR, GICH_LR_CPUID_OFF, GICH_LR_CPUID_LEN))
 
 #define GICH_LR_STATE_INV     ((0ULL << GICH_LR_STATE_OFF) & GICH_LR_STATE_MSK)
 #define GICH_LR_STATE_PND     ((1ULL << GICH_LR_STATE_OFF) & GICH_LR_STATE_MSK)
@@ -388,7 +388,7 @@ struct gicc_state {
     uint32_t priv_IPRIORITYR[GIC_NUM_PRIO_REGS(GIC_CPU_PRIV)];
 
     uint32_t HCR;
-    unsigned long LR[GIC_NUM_LIST_REGS];
+    gic_lr_t LR[GIC_NUM_LIST_REGS];
 };
 
 extern size_t NUM_LRS;
@@ -415,7 +415,7 @@ void gicd_set_prio(irqid_t int_id, uint8_t prio);
 void gicd_set_icfgr(irqid_t int_id, uint8_t cfg);
 void gicd_set_act(irqid_t int_id, bool act);
 void gicd_set_trgt(irqid_t int_id, uint8_t cpu_targets);
-void gicd_set_route(irqid_t int_id, unsigned long route);
+void gicd_set_route(irqid_t int_id, uint64_t route);
 bool gicd_get_pend(irqid_t int_id);
 bool gicd_get_act(irqid_t int_id);
 uint8_t gicd_get_prio(irqid_t int_id);

@@ -487,7 +487,7 @@ bool mem_map(struct addr_space* as, vaddr_t va, struct ppages* ppages, size_t nu
 {
     size_t count = 0;
     pte_t* pte = NULL;
-    vaddr_t vaddr = va & ~(PAGE_SIZE - 1);
+    vaddr_t vaddr = va & ~((vaddr_t)(PAGE_SIZE - 1));
 
     struct section* sec = mem_find_sec(as, vaddr);
 
@@ -624,7 +624,7 @@ bool mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages, siz
     mem_map(&cpu()->as, phys_va_base, ppages, num_pages, PTE_HYP_FLAGS);
 
     pte_t* pte = NULL;
-    vaddr_t vaddr = va & ~(PAGE_SIZE - 1);
+    vaddr_t vaddr = va & ~((vaddr_t)(PAGE_SIZE - 1));
     paddr_t paddr = ppages->base;
     vaddr_t clrd_vaddr = reclrd_va_base;
     vaddr_t phys_va = phys_va_base;

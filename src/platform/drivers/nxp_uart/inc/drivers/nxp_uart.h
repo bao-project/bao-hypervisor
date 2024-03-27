@@ -33,5 +33,5 @@ typedef struct lpuart bao_uart_t;
 
 void uart_enable(volatile struct lpuart* uart);
 void uart_init(volatile struct lpuart* uart);
-void uart_putc(volatile struct lpuart* uart, char c);
+void uart_putc(volatile struct lpuart* uart, int8_t c);
 #endif /* __UART_NXP_H */

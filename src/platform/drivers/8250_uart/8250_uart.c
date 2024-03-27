@@ -14,7 +14,7 @@ void uart_init(volatile struct uart8250_hw* uart)
      * TODO: we should add uart clk and baudrate info to platform descrption and use this to
      * calculate this values in runtime.
      */
-    uart->lcr &= ~UART8250_LCR_DLAB;
+    uart->lcr &= (uart8250_reg_t)~UART8250_LCR_DLAB;
 
     /* configure 8n1 */
     uart->lcr = UART8250_LCR_8BIT;
@@ -38,5 +38,5 @@ void uart_enable(volatile struct uart8250_hw* uart)
 void uart_putc(volatile struct uart8250_hw* uart, int8_t c)
 {
     while (!(uart->lsr & UART8250_LSR_THRE)) { }
-    uart->thr = c;
+    uart->thr = (uart8250_reg_t)c;
 }

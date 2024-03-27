@@ -16,7 +16,7 @@ void vmm_arch_init_tcr()
 
     cpu_sync_barrier(&cpu_glb_sync);
 
-    uint64_t vtcr = VTCR_RES1 | VTCR_ORGN0_WB_RA_WA | VTCR_IRGN0_WB_RA_WA | VTCR_T0SZ(0) |
+    unsigned long vtcr = VTCR_RES1 | VTCR_ORGN0_WB_RA_WA | VTCR_IRGN0_WB_RA_WA | VTCR_T0SZ(0) |
         VTCR_SH0_IS | VTCR_SL0_12;
 
     sysreg_vtcr_el2_write(vtcr);
