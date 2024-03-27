@@ -18,7 +18,7 @@ static size_t plic_scan_max_int()
 {
     size_t res = 0;
     for (size_t i = 1; i < PLIC_MAX_INTERRUPTS; i++) {
-        plic_global->prio[i] = -1;
+        plic_global->prio[i] = ~0U;
         if (plic_global->prio[i] == 0) {
             res = i - 1;
             break;
@@ -56,19 +56,20 @@ void plic_init()
 
 void plic_cpu_init()
 {
-    cpu()->arch.plic_cntxt = plic_plat_cntxt_to_id((struct plic_cntxt){ cpu()->id, PRIV_S });
+    cpu()->arch.plic_cntxt =
+        (unsigned)plic_plat_cntxt_to_id((struct plic_cntxt){ cpu()->id, PRIV_S });
     plic_hart[cpu()->arch.plic_cntxt].threshold = 0;
 }
 
-bool plic_cntxt_valid(unsigned cntxt_id)
+bool plic_cntxt_valid(size_t cntxt_id)
 {
     struct plic_cntxt cntxt = plic_plat_id_to_cntxt(cntxt_id);
     return (cntxt_id < PLIC_PLAT_CNTXT_NUM) && (cntxt.mode <= PRIV_S);
 }
 
-void plic_set_enbl(unsigned cntxt, irqid_t int_id, bool en)
+void plic_set_enbl(size_t cntxt, irqid_t int_id, bool en)
 {
-    int reg_ind = int_id / (sizeof(uint32_t) * 8);
+    size_t reg_ind = int_id / (sizeof(uint32_t) * 8);
     uint32_t mask = 1U << (int_id % (sizeof(uint32_t) * 8));
 
     if (int_id <= PLIC_IMPL_INTERRUPTS && plic_cntxt_valid(cntxt)) {
@@ -80,9 +81,9 @@ void plic_set_enbl(unsigned cntxt, irqid_t int_id, bool en)
     }
 }
 
-bool plic_get_enbl(unsigned cntxt, irqid_t int_id)
+bool plic_get_enbl(size_t cntxt, irqid_t int_id)
 {
-    int reg_ind = int_id / (sizeof(uint32_t) * 8);
+    size_t reg_ind = int_id / (sizeof(uint32_t) * 8);
     uint32_t mask = 1U << (int_id % (sizeof(uint32_t) * 8));
 
     if (int_id <= PLIC_IMPL_INTERRUPTS && plic_cntxt_valid(cntxt)) {
@@ -110,8 +111,8 @@ uint32_t plic_get_prio(irqid_t int_id)
 
 bool plic_get_pend(irqid_t int_id)
 {
-    int reg_ind = int_id / 32;
-    int mask = (1U << (int_id % 32));
+    size_t reg_ind = (size_t)(int_id / 32);
+    uint32_t mask = (1U << (int_id % 32));
 
     if (int_id <= PLIC_IMPL_INTERRUPTS) {
         return plic_global->pend[reg_ind] & mask;
@@ -120,7 +121,7 @@ bool plic_get_pend(irqid_t int_id)
     }
 }
 
-void plic_set_threshold(unsigned cntxt, uint32_t threshold)
+void plic_set_threshold(size_t cntxt, uint32_t threshold)
 {
     if (plic_cntxt_valid(cntxt)) {
         plic_hart[cntxt].threshold = threshold;
@@ -153,22 +154,22 @@ void plic_handle()
  * plic.
  */
 
-__attribute__((weak)) int plic_plat_cntxt_to_id(struct plic_cntxt cntxt)
+__attribute__((weak)) ssize_t plic_plat_cntxt_to_id(struct plic_cntxt cntxt)
 {
     if (cntxt.mode != PRIV_M && cntxt.mode != PRIV_S) {
         return -1;
     }
-    return (cntxt.hart_id * 2) + (cntxt.mode == PRIV_M ? 0 : 1);
+    return (ssize_t)((cntxt.hart_id * 2) + (cntxt.mode == PRIV_M ? 0 : 1));
 }
 
-__attribute__((weak)) struct plic_cntxt plic_plat_id_to_cntxt(int id)
+__attribute__((weak)) struct plic_cntxt plic_plat_id_to_cntxt(size_t id)
 {
     struct plic_cntxt cntxt;
     if (id < PLIC_PLAT_CNTXT_NUM) {
         cntxt.hart_id = id / 2;
         cntxt.mode = (id % 2) == 0 ? PRIV_M : PRIV_S;
     } else {
-        return (struct plic_cntxt){ -1, 0 };
+        return (struct plic_cntxt){ INVALID_CPUID, 0 };
     }
     return cntxt;
 }

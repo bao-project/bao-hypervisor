@@ -22,7 +22,7 @@ void aborts_data_lower(unsigned long iss, unsigned long far, unsigned long il, u
         ERROR("no information to handle data abort (0x%x)", far);
     }
 
-    unsigned long DSFC = bit64_extract(iss, ESR_ISS_DA_DSFC_OFF, ESR_ISS_DA_DSFC_LEN) & (0xf << 2);
+    unsigned long DSFC = bit_extract(iss, ESR_ISS_DA_DSFC_OFF, ESR_ISS_DA_DSFC_LEN) & (0xf << 2);
 
     if (DSFC != ESR_ISS_DA_DSFC_TRNSLT && DSFC != ESR_ISS_DA_DSFC_PERMIS) {
         ERROR("data abort is not translation fault - cant deal with it");
@@ -33,11 +33,11 @@ void aborts_data_lower(unsigned long iss, unsigned long far, unsigned long il, u
     if (handler != NULL) {
         struct emul_access emul;
         emul.addr = addr;
-        emul.width = (1 << bit64_extract(iss, ESR_ISS_DA_SAS_OFF, ESR_ISS_DA_SAS_LEN));
+        emul.width = (1U << bit_extract(iss, ESR_ISS_DA_SAS_OFF, ESR_ISS_DA_SAS_LEN));
         emul.write = iss & ESR_ISS_DA_WnR_BIT ? true : false;
-        emul.reg = bit64_extract(iss, ESR_ISS_DA_SRT_OFF, ESR_ISS_DA_SRT_LEN);
-        emul.reg_width = 4 + (4 * bit64_extract(iss, ESR_ISS_DA_SF_OFF, ESR_ISS_DA_SF_LEN));
-        emul.sign_ext = bit64_extract(iss, ESR_ISS_DA_SSE_OFF, ESR_ISS_DA_SSE_LEN);
+        emul.reg = bit_extract(iss, ESR_ISS_DA_SRT_OFF, ESR_ISS_DA_SRT_LEN);
+        emul.reg_width = 4 + (4 * bit_extract(iss, ESR_ISS_DA_SF_OFF, ESR_ISS_DA_SF_LEN));
+        emul.sign_ext = bit_extract(iss, ESR_ISS_DA_SSE_OFF, ESR_ISS_DA_SSE_LEN);
 
         // TODO: check if the access is aligned. If not, inject an exception in the vm
 
@@ -56,7 +56,7 @@ long int standard_service_call(unsigned long _fn_num)
 {
     UNUSED_ARG(_fn_num);
 
-    int64_t ret = -1;
+    long int ret = -1;
 
     unsigned long smc_fid = vcpu_readreg(cpu()->vcpu, 0);
     unsigned long x1 = vcpu_readreg(cpu()->vcpu, 1);
@@ -64,7 +64,7 @@ long int standard_service_call(unsigned long _fn_num)
     unsigned long x3 = vcpu_readreg(cpu()->vcpu, 3);
 
     if (is_psci_fid(smc_fid)) {
-        ret = psci_smc_handler(smc_fid, x1, x2, x3);
+        ret = psci_smc_handler((uint32_t)smc_fid, x1, x2, x3);
     } else {
         INFO("unknown smc_fid 0x%lx", smc_fid);
     }
@@ -96,7 +96,7 @@ static inline void syscall_handler(unsigned long iss, unsigned long far, unsigne
             WARNING("Unknown system call fid 0x%x", fid);
     }
 
-    vcpu_writereg(cpu()->vcpu, 0, ret);
+    vcpu_writereg(cpu()->vcpu, 0, (unsigned long)ret);
 }
 
 void hvc_handler(unsigned long iss, unsigned long far, unsigned long il, unsigned long ec)
@@ -145,8 +145,8 @@ void sysreg_handler(unsigned long iss, unsigned long far, unsigned long il, unsi
         emul.addr = reg_addr;
         emul.width = 8;
         emul.write = iss & ESR_ISS_SYSREG_DIR ? false : true;
-        emul.reg = bit64_extract(iss, ESR_ISS_SYSREG_REG_OFF, ESR_ISS_SYSREG_REG_LEN);
-        emul.reg_high = bit64_extract(iss, ESR_ISS_SYSREG_REG2_OFF, ESR_ISS_SYSREG_REG2_LEN);
+        emul.reg = bit_extract(iss, ESR_ISS_SYSREG_REG_OFF, ESR_ISS_SYSREG_REG_LEN);
+        emul.reg_high = bit_extract(iss, ESR_ISS_SYSREG_REG2_OFF, ESR_ISS_SYSREG_REG2_LEN);
         emul.reg_width = 8;
         emul.multi_reg = (ec == ESR_EC_RG_64) ? true : false;
         emul.sign_ext = false;
@@ -187,9 +187,9 @@ void aborts_sync_handler()
         ipa_fault_addr = far;
     }
 
-    unsigned long ec = bit64_extract(esr, ESR_EC_OFF, ESR_EC_LEN);
-    unsigned long il = bit64_extract(esr, ESR_IL_OFF, ESR_IL_LEN);
-    unsigned long iss = bit64_extract(esr, ESR_ISS_OFF, ESR_ISS_LEN);
+    unsigned long ec = bit_extract(esr, ESR_EC_OFF, ESR_EC_LEN);
+    unsigned long il = bit_extract(esr, ESR_IL_OFF, ESR_IL_LEN);
+    unsigned long iss = bit_extract(esr, ESR_ISS_OFF, ESR_ISS_LEN);
 
     abort_handler_t handler = abort_handlers[ec];
     if (handler) {

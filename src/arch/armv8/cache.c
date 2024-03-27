@@ -49,10 +49,10 @@ void cache_arch_enumerate(struct cache* dscrp)
     }
 
     for (size_t lvl = 0; lvl < dscrp->lvls; lvl++) {
-        uint64_t csselr = 0;
+        unsigned long csselr = 0;
         uint64_t ccsidr = 0;
-        uint64_t ctr = 0;
-        csselr = bit64_insert(csselr, lvl, CSSELR_LVL_OFF, CSSELR_LVL_LEN);
+        unsigned long ctr = 0;
+        csselr = bit_insert(csselr, lvl, CSSELR_LVL_OFF, CSSELR_LVL_LEN);
 
         if (dscrp->type[lvl] == UNIFIED && first_unified == false) {
             first_unified = true;
@@ -60,31 +60,33 @@ void cache_arch_enumerate(struct cache* dscrp)
         }
 
         if (dscrp->type[lvl] != INSTRUCTION) {
-            csselr = bit64_clear(csselr, CSSELR_IND_BIT);
+            csselr = bit_clear(csselr, CSSELR_IND_BIT);
             sysreg_csselr_el1_write(csselr);
             ccsidr = sysreg_ccsidr_el1_read();
 
             dscrp->line_size[lvl][0] = 1UL
                 << (bit64_extract(ccsidr, CCSIDR_LINESIZE_OFF, CCSIDR_LINESIZE_LEN) + 4);
             dscrp->assoc[lvl][0] =
-                bit64_extract(ccsidr, CCSIDR_ASSOCIATIVITY_OFF, CCSIDR_ASSOCIATIVITY_LEN) + 1;
+                (size_t)bit64_extract(ccsidr, CCSIDR_ASSOCIATIVITY_OFF, CCSIDR_ASSOCIATIVITY_LEN) +
+                1;
             dscrp->numset[lvl][0] =
-                bit64_extract(ccsidr, CCSIDR_NUMSETS_OFF, CCSIDR_NUMSETS_LEN) + 1;
+                (size_t)bit64_extract(ccsidr, CCSIDR_NUMSETS_OFF, CCSIDR_NUMSETS_LEN) + 1;
 
             dscrp->indexed[lvl][0] = PIPT;
         }
 
         if (dscrp->type[lvl] == SEPARATE || dscrp->type[lvl] == INSTRUCTION) {
-            csselr = bit64_set(csselr, CSSELR_IND_BIT);
+            csselr = bit_set(csselr, CSSELR_IND_BIT);
             sysreg_csselr_el1_write(csselr);
             ccsidr = sysreg_ccsidr_el1_read();
 
             dscrp->line_size[lvl][1] = 1UL
                 << (bit64_extract(ccsidr, CCSIDR_LINESIZE_OFF, CCSIDR_LINESIZE_LEN) + 4);
             dscrp->assoc[lvl][1] =
-                bit64_extract(ccsidr, CCSIDR_ASSOCIATIVITY_OFF, CCSIDR_ASSOCIATIVITY_LEN) + 1;
+                (size_t)bit64_extract(ccsidr, CCSIDR_ASSOCIATIVITY_OFF, CCSIDR_ASSOCIATIVITY_LEN) +
+                1;
             dscrp->numset[lvl][1] =
-                bit64_extract(ccsidr, CCSIDR_NUMSETS_OFF, CCSIDR_NUMSETS_LEN) + 1;
+                (size_t)bit64_extract(ccsidr, CCSIDR_NUMSETS_OFF, CCSIDR_NUMSETS_LEN) + 1;
 
             ctr = sysreg_ctr_el0_read();
             if ((ctr & BIT64_MASK(CTR_L1LP_OFF, CTR_L1LP_LEN)) == CTR_L1LP_PIPT) {

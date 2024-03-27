@@ -45,11 +45,11 @@ extern size_t PLIC_IMPL_INTERRUPTS;
 void plic_init();
 void plic_cpu_init();
 void plic_handle();
-void plic_set_enbl(unsigned cntxt, irqid_t int_id, bool en);
-bool plic_get_enbl(unsigned cntxt, irqid_t int_id);
+void plic_set_enbl(size_t cntxt, irqid_t int_id, bool en);
+bool plic_get_enbl(size_t cntxt, irqid_t int_id);
 void plic_set_prio(irqid_t int_id, uint32_t prio);
 uint32_t plic_get_prio(irqid_t int_id);
-void plic_set_threshold(unsigned cntxt, uint32_t threshold);
+void plic_set_threshold(size_t cntxt, uint32_t threshold);
 uint32_t plic_get_threshold(irqid_t int_id);
 bool plic_get_pend(irqid_t int_id);
 
@@ -58,7 +58,7 @@ struct plic_cntxt {
     enum { PRIV_M = 3, PRIV_S = 2, PRIV_U = 0 } mode;
 };
 
-int plic_plat_cntxt_to_id(struct plic_cntxt cntxt);
-struct plic_cntxt plic_plat_id_to_cntxt(int id);
+ssize_t plic_plat_cntxt_to_id(struct plic_cntxt cntxt);
+struct plic_cntxt plic_plat_id_to_cntxt(size_t id);
 
 #endif /* __PLIC_H__ */

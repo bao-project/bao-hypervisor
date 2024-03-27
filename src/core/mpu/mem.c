@@ -264,7 +264,7 @@ void mem_region_broadcast(struct addr_space* as, struct mp_region* mpr, uint32_t
                 ERROR("Failed allocating shared region node");
             }
             *node = shared_region;
-            struct cpu_msg msg = { MEM_PROT_SYNC, op, (uintptr_t)node };
+            struct cpu_msg msg = { (uint32_t)MEM_PROT_SYNC, op, (uintptr_t)node };
             cpu_send_msg(cpuid, &msg);
         }
     }

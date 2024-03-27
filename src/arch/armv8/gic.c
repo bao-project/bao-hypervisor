@@ -31,15 +31,15 @@ void gicd_init()
         /**
          * Make sure all interrupts are not enabled, non pending, non active.
          */
-        gicd->IGROUPR[i] = -1;
-        gicd->ICENABLER[i] = -1;
-        gicd->ICPENDR[i] = -1;
-        gicd->ICACTIVER[i] = -1;
+        gicd->IGROUPR[i] = ~0U;
+        gicd->ICENABLER[i] = ~0U;
+        gicd->ICPENDR[i] = ~0U;
+        gicd->ICACTIVER[i] = ~0U;
     }
 
     /* All interrupts have lowest priority possible by default */
     for (size_t i = GIC_NUM_PRIO_REGS(GIC_CPU_PRIV); i < GIC_NUM_PRIO_REGS(int_num); i++) {
-        gicd->IPRIORITYR[i] = -1;
+        gicd->IPRIORITYR[i] = ~0U;
     }
 
     if (GIC_VERSION == GICV2) {
@@ -108,7 +108,7 @@ uint8_t gicd_get_prio(irqid_t int_id)
     size_t reg_ind = GIC_PRIO_REG(int_id);
     size_t off = GIC_PRIO_OFF(int_id);
 
-    uint8_t prio = gicd->IPRIORITYR[reg_ind] >> off & BIT32_MASK(off, GIC_PRIO_BITS);
+    uint8_t prio = (uint8_t)((gicd->IPRIORITYR[reg_ind] >> off) & BIT32_MASK(off, GIC_PRIO_BITS));
 
     return prio;
 }
@@ -121,7 +121,7 @@ void gicd_set_icfgr(irqid_t int_id, uint8_t cfg)
 
     spin_lock(&gicd_lock);
 
-    gicd->ICFGR[reg_ind] = (gicd->ICFGR[reg_ind] & ~mask) | ((cfg << off) & mask);
+    gicd->ICFGR[reg_ind] = (gicd->ICFGR[reg_ind] & ~mask) | ((((uint32_t)cfg) << off) & mask);
 
     spin_unlock(&gicd_lock);
 }
@@ -134,7 +134,8 @@ void gicd_set_prio(irqid_t int_id, uint8_t prio)
 
     spin_lock(&gicd_lock);
 
-    gicd->IPRIORITYR[reg_ind] = (gicd->IPRIORITYR[reg_ind] & ~mask) | ((prio << off) & mask);
+    gicd->IPRIORITYR[reg_ind] =
+        (gicd->IPRIORITYR[reg_ind] & ~mask) | ((((uint32_t)prio) << off) & mask);
 
     spin_unlock(&gicd_lock);
 }

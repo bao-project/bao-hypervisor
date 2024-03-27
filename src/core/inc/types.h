@@ -25,6 +25,7 @@ typedef signed long ssize_t;
 typedef unsigned long asid_t;
 
 typedef unsigned long vmid_t;
+#define INVALID_VMID ((vmid_t)-1)
 
 typedef uintptr_t paddr_t;
 typedef uintptr_t regaddr_t;
@@ -32,7 +33,7 @@ typedef uintptr_t vaddr_t;
 #define MAX_VA     ((vaddr_t)-1)
 #define INVALID_VA MAX_VA
 
-typedef ssize_t mpid_t;
+typedef size_t mpid_t;
 #define INVALID_MPID ((mpid_t)-1)
 
 typedef unsigned long colormap_t;

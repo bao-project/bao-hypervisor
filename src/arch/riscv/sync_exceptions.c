@@ -33,7 +33,7 @@ static uint32_t read_ins(uintptr_t ins_addr)
      * Read 16 bits at a time to make sure the access is aligned. If the instruction is not
      * compressed, read the following 16-bits.
      */
-    ins = hlvxhu(ins_addr);
+    ins = (uint32_t)hlvxhu(ins_addr);
     if ((ins & 0x3) == 3) {
         ins |= ((uint32_t)hlvxhu(ins_addr + 2)) << 16;
     }
@@ -94,7 +94,7 @@ size_t guest_page_fault_handler()
             vaddr_t ins_addr = csrs_sepc_read();
             ins = read_ins(ins_addr);
             ins_size = INS_SIZE(ins);
-        } else if (is_pseudo_ins(ins)) {
+        } else if (is_pseudo_ins((uint32_t)ins)) {
             // TODO: we should reinject this in the guest as a fault access
             ERROR("fault on 1st stage page table walk");
         } else {

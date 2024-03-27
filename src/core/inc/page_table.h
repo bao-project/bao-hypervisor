@@ -29,12 +29,12 @@ extern struct page_table_dscr* vm_pt_dscr;
 
 static inline size_t pt_nentries(struct page_table* pt, size_t lvl)
 {
-    return (1ULL << pt->dscr->lvl_wdt[lvl]) >> pt->dscr->lvl_off[lvl];
+    return (size_t)((1ULL << pt->dscr->lvl_wdt[lvl]) >> pt->dscr->lvl_off[lvl]);
 }
 
 static inline size_t pt_lvlsize(struct page_table* pt, size_t lvl)
 {
-    return 1ULL << pt->dscr->lvl_off[lvl];
+    return (size_t)(1ULL << pt->dscr->lvl_off[lvl]);
 }
 
 static inline size_t pt_size(struct page_table* pt, size_t lvl)

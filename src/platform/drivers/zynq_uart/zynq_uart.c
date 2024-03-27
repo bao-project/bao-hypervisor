@@ -105,5 +105,5 @@ void uart_putc(volatile struct Uart_Zynq_hw* uart, int8_t c)
     /* Wait until txFIFO is not full */
     while (uart->ch_status & UART_CH_STATUS_TFUL) { }
 
-    uart->tx_rx_fifo = c;
+    uart->tx_rx_fifo = (uint32_t)c;
 }

@@ -20,7 +20,7 @@ static inline uint64_t gich_read_lr(size_t i)
 static inline void gich_write_lr(size_t i, uint64_t val)
 {
     if (i < NUM_LRS) {
-        gich->LR[i] = val;
+        gich->LR[i] = (gic_lr_t)val;
     } else {
         ERROR("gic: trying to write inexistent list register");
     }

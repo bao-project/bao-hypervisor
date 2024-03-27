@@ -46,29 +46,29 @@
  */
 #define SBI_EXTID_BAO                   (0x08000ba0)
 
-static inline struct sbiret sbi_ecall(long eid, long fid, long a0, long a1, long a2, long a3,
-    long a4, long a5)
+static inline struct sbiret sbi_ecall(unsigned long eid, unsigned long fid, unsigned long a0,
+    unsigned long a1, unsigned long a2, unsigned long a3, unsigned long a4, unsigned long a5)
 {
-    register long _a0 __asm__("a0") = a0;
-    register long _a1 __asm__("a1") = a1;
-    register long _a2 __asm__("a2") = a2;
-    register long _a3 __asm__("a3") = a3;
-    register long _a4 __asm__("a4") = a4;
-    register long _a5 __asm__("a5") = a5;
-    register long _a6 __asm__("a6") = fid;
-    register long _a7 __asm__("a7") = eid;
+    register unsigned long _a0 __asm__("a0") = a0;
+    register unsigned long _a1 __asm__("a1") = a1;
+    register unsigned long _a2 __asm__("a2") = a2;
+    register unsigned long _a3 __asm__("a3") = a3;
+    register unsigned long _a4 __asm__("a4") = a4;
+    register unsigned long _a5 __asm__("a5") = a5;
+    register unsigned long _a6 __asm__("a6") = fid;
+    register unsigned long _a7 __asm__("a7") = eid;
 
     __asm__ volatile("ecall" : "+r"(_a0), "+r"(_a1) : "r"(_a2), "r"(_a3), "r"(_a4), "r"(_a5),
                      "r"(_a6), "r"(_a7) : "memory");
 
-    struct sbiret ret = { .error = _a0, .value = _a1 };
+    struct sbiret ret = { .error = (long)_a0, .value = (long)_a1 };
 
     return ret;
 }
 
 void sbi_console_putchar(int ch)
 {
-    (void)sbi_ecall(0x1, 0, ch, 0, 0, 0, 0, 0);
+    (void)sbi_ecall(0x1, 0, (unsigned long)ch, 0, 0, 0, 0, 0);
 }
 
 struct sbiret sbi_get_spec_version(void)
@@ -83,7 +83,7 @@ struct sbiret sbi_get_impl_version(void)
 {
     return sbi_ecall(SBI_EXTID_BASE, SBI_GET_SBI_IMPL_VERSION_FID, 0, 0, 0, 0, 0, 0);
 }
-struct sbiret sbi_probe_extension(long extension_id)
+struct sbiret sbi_probe_extension(unsigned long extension_id)
 {
     return sbi_ecall(SBI_EXTID_BASE, SBI_PROBE_EXTENSION_FID, extension_id, 0, 0, 0, 0, 0);
 }
@@ -232,7 +232,7 @@ struct sbiret sbi_ipi_handler(unsigned long fid)
     unsigned long hart_mask_base = vcpu_readreg(cpu()->vcpu, REG_A1);
 
     struct cpu_msg msg = {
-        .handler = SBI_MSG_ID,
+        .handler = (uint32_t)SBI_MSG_ID,
         .event = SEND_IPI,
     };
 
@@ -262,7 +262,7 @@ struct sbiret sbi_base_handler(unsigned long fid)
             ret.value = 0;
             for (size_t i = 0; i < NUM_EXT; i++) {
                 if (ext_table[i] == extid) {
-                    ret.value = extid;
+                    ret.value = (long)extid;
                 }
             }
             break;
@@ -334,7 +334,7 @@ struct sbiret sbi_hsm_start_handler()
                 ret.error = SBI_ERR_FAILURE;
             } else {
                 vaddr_t start_addr = vcpu_readreg(cpu()->vcpu, REG_A1);
-                unsigned priv = vcpu_readreg(cpu()->vcpu, REG_A2);
+                unsigned priv = (unsigned)vcpu_readreg(cpu()->vcpu, REG_A2);
                 vcpu->arch.sbi_ctx.state = START_PENDING;
                 vcpu->arch.sbi_ctx.start_addr = start_addr;
                 vcpu->arch.sbi_ctx.priv = priv;
@@ -342,7 +342,7 @@ struct sbiret sbi_hsm_start_handler()
                 fence_sync_write();
 
                 struct cpu_msg msg = {
-                    .handler = SBI_MSG_ID,
+                    .handler = (uint32_t)SBI_MSG_ID,
                     .event = HART_START,
                     .data = 0xdeadbeef,
                 };
@@ -430,8 +430,8 @@ size_t sbi_vs_handler()
             ret.value = SBI_ERR_NOT_SUPPORTED;
     }
 
-    vcpu_writereg(cpu()->vcpu, REG_A0, ret.error);
-    vcpu_writereg(cpu()->vcpu, REG_A1, ret.value);
+    vcpu_writereg(cpu()->vcpu, REG_A0, (unsigned long)ret.error);
+    vcpu_writereg(cpu()->vcpu, REG_A1, (unsigned long)ret.value);
 
     return 4;
 }

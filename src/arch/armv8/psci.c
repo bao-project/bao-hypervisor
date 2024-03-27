@@ -126,7 +126,7 @@ int32_t psci_cpu_on_handler(unsigned long target_cpu, unsigned long entrypoint,
         if (pcpuid == INVALID_CPUID) {
             ret = PSCI_E_INVALID_PARAMS;
         } else {
-            struct cpu_msg msg = { PSCI_CPUMSG_ID, PSCI_MSG_ON, 0 };
+            struct cpu_msg msg = { (uint32_t)PSCI_CPUMSG_ID, PSCI_MSG_ON, 0 };
             cpu_send_msg(pcpuid, &msg);
             ret = PSCI_E_SUCCESS;
         }
@@ -195,7 +195,7 @@ int32_t psci_smc_handler(uint32_t smc_fid, unsigned long x1, unsigned long x2, u
 
         case PSCI_CPU_SUSPEND_SMC32:
         case PSCI_CPU_SUSPEND_SMC64:
-            ret = psci_cpu_suspend_handler(x1, x2, x3);
+            ret = psci_cpu_suspend_handler((uint32_t)x1, x2, x3);
             break;
 
         case PSCI_CPU_ON_SMC32:
@@ -205,11 +205,11 @@ int32_t psci_smc_handler(uint32_t smc_fid, unsigned long x1, unsigned long x2, u
 
         case PSCI_AFFINITY_INFO_SMC32:
         case PSCI_AFFINITY_INFO_SMC64:
-            ret = psci_affinity_info_handler(x1, x2);
+            ret = psci_affinity_info_handler(x1, (uint32_t)x2);
             break;
 
         case PSCI_FEATURES:
-            ret = psci_features_handler(x1);
+            ret = psci_features_handler((uint32_t)x1);
             break;
 
         case PSCI_MIG_INFO_TYPE:

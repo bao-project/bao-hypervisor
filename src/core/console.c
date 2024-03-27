@@ -47,7 +47,7 @@ void console_write(const char* buf, size_t n)
         if (buf[i] == '\n') {
             uart_putc(uart, '\r');
         }
-        uart_putc(uart, buf[i]);
+        uart_putc(uart, (int8_t)buf[i]);
     }
 }
 

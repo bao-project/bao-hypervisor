@@ -45,7 +45,7 @@ size_t bitmap_count_consecutive(bitmap_t* map, size_t size, size_t start, size_t
         pos += first_word_bits;
     }
 
-    mask = set ? ~0 : 0;
+    mask = set ? ~0U : 0U;
     while ((pos < size) && !(map[pos / BITMAP_GRANULE_LEN] ^ mask) && (count < n)) {
         count += BITMAP_GRANULE_LEN;
         pos += BITMAP_GRANULE_LEN;
@@ -71,11 +71,11 @@ ssize_t bitmap_find_consec(bitmap_t* map, size_t size, size_t start, size_t n, b
 
     while (i < (ssize_t)size) {
         // find the last (with n as maximum) contiguous set page
-        count = bitmap_count_consecutive(map, size, i, n);
+        count = (ssize_t)bitmap_count_consecutive(map, size, (size_t)i, n);
         if (count < (ssize_t)n) { // if didn't found enough n contiguous set pages
             i += count;
             // find the last contiguous ~set page
-            i += bitmap_count_consecutive(map, size, i, -1);
+            i += (ssize_t)bitmap_count_consecutive(map, size, (size_t)i, SIZE_MAX);
         } else {
             break;
         }
@@ -100,7 +100,7 @@ void bitmap_set_consecutive(bitmap_t* map, size_t start, size_t n)
     count -= first_word_bits;
 
     while (count >= BITMAP_GRANULE_LEN) {
-        map[pos / BITMAP_GRANULE_LEN] |= ~0;
+        map[pos / BITMAP_GRANULE_LEN] |= ~((bitmap_granule_t)0);
         pos += BITMAP_GRANULE_LEN;
         count -= BITMAP_GRANULE_LEN;
     }

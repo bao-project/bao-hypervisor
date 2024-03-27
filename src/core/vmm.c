@@ -132,7 +132,7 @@ void vmm_init()
     cpu_sync_barrier(&cpu_glb_sync);
 
     bool master = false;
-    vmid_t vm_id = -1;
+    vmid_t vm_id = INVALID_VMID;
     if (vmm_assign_vcpu(&master, &vm_id)) {
         struct vm_allocation* vm_alloc = vmm_alloc_install_vm(vm_id, master);
         struct vm_config* vm_config = &config.vmlist[vm_id];

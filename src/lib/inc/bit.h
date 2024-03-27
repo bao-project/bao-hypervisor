@@ -54,7 +54,7 @@
         }                                                                        \
         return (mask != 0U) ? pos : (ssize_t)-1;                                 \
     }                                                                            \
-    static inline ssize_t PRE##_count(TYPE word)                                 \
+    static inline size_t PRE##_count(TYPE word)                                  \
     {                                                                            \
         size_t count = 0;                                                        \
         TYPE mask = (LIT);                                                       \

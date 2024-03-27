@@ -42,7 +42,7 @@ void* memset(void* dest, int c, size_t count)
     d = (uint8_t*)dest;
 
     while (count--) {
-        *d = c;
+        *d = (uint8_t)c;
         d++;
     }
 
@@ -66,7 +66,7 @@ size_t strlen(const char* s)
     for (sc = s; *sc != '\0'; ++sc) {
         /* Just iterate */
     }
-    return sc - s;
+    return (size_t)((uintptr_t)sc - (uintptr_t)s);
 }
 
 size_t strnlen(const char* s, size_t n)
@@ -76,7 +76,7 @@ size_t strnlen(const char* s, size_t n)
     for (str = s; *str != '\0' && n--; ++str) {
         /* Just iterate */
     }
-    return str - s;
+    return (size_t)((uintptr_t)str - (uintptr_t)s);
 }
 
 char* strcpy(char* dest, char* src)

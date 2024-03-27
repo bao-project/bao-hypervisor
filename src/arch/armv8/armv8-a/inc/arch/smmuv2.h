@@ -8,15 +8,15 @@
 
 #include <bao.h>
 
-#define SMMUV2_CR0_GFRE                 (0x1 << 1)
-#define SMMUV2_CR0_GFIE                 (0x1 << 2)
-#define SMMUV2_CR0_GCFGFRE              (0x1 << 4)
-#define SMMUV2_CR0_GCFGFIE              (0x1 << 5)
-#define SMMUV2_CR0_USFCFG               (0x1 << 10)
-#define SMMUV2_CR0_SMCFCFG              (0x1 << 21)
-#define SMMUV2_CR0_CLIENTPD             (0x1 << 0)
+#define SMMUV2_CR0_GFRE                 (0x1U << 1)
+#define SMMUV2_CR0_GFIE                 (0x1U << 2)
+#define SMMUV2_CR0_GCFGFRE              (0x1U << 4)
+#define SMMUV2_CR0_GCFGFIE              (0x1U << 5)
+#define SMMUV2_CR0_USFCFG               (0x1U << 10)
+#define SMMUV2_CR0_SMCFCFG              (0x1U << 21)
+#define SMMUV2_CR0_CLIENTPD             (0x1U << 0)
 
-#define SMMUV2_CR0_CLEAR(cr0)           (cr0 & (0x3 << 30 | 0x1 << 11))
+#define SMMUV2_CR0_CLEAR(cr0)           (cr0 & (0x3U << 30 | 0x1U << 11))
 
 #define SMMUV2_IDR0_MASK                (0xFF)
 #define SMMUV2_IDR0_S2TS_BIT            (0x1 << 30)
@@ -24,7 +24,7 @@
 #define SMMUV2_IDR0_CTTW_BIT            (0x1 << 14)
 #define SMMUV2_IDR0_BTM_BIT             (0x1 << 13)
 
-#define SMMUV2_IDR1_PAGESIZE_BIT        (0x1 << 31)
+#define SMMUV2_IDR1_PAGESIZE_BIT        (0x1U << 31)
 #define SMMUV2_IDR1_NUMCB_OFF           (0)
 #define SMMUV2_IDR1_NUMCB_LEN           (8)
 #define SMMUV2_IDR1_NUMPAGEDXB_OFF      (28)
@@ -49,7 +49,7 @@
 #define SMMU_SMR_MASK_LEN               15
 #define SMMU_SMR_MASK(smr)              bit32_extract(smr, SMMU_SMR_MASK_OFF, SMMU_SMR_MASK_LEN)
 
-#define SMMUV2_SMR_VALID                (0x1 << 31)
+#define SMMUV2_SMR_VALID                (0x1U << 31)
 
 #define S2CR_IMPL_OFF                   (30)
 #define S2CR_IMPL_LEN                   (2)
@@ -282,7 +282,7 @@ struct smmu_glbl_rs1_hw {
 #define SMMUV2_SCTLR_BSU_OSH       (0x2 << 14)
 #define SMMUV2_SCTLR_BSU_SYS       (0x3 << 14)
 
-#define SMMUV2_SCTLR_CLEAR(sctlr)  (sctlr & (0xF << 28 | 0x1 << 20 | 0xF << 9 | 0x1 << 11))
+#define SMMUV2_SCTLR_CLEAR(sctlr)  (sctlr & (0xFU << 28 | 0x1U << 20 | 0xFU << 9 | 0x1U << 11))
 
 #define SMMUV2_SCTLR_DEFAULT       (SMMUV2_SCTLR_CFCFG | SMMUV2_SCTLR_M)
 

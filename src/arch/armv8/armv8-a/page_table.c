@@ -74,10 +74,10 @@ pte_t* pt_get_pte(struct page_table* pt, size_t lvl, vaddr_t va)
 
     size_t rec_ind_off = cpu_pt->dscr->lvl_off[cpu_pt->dscr->lvls - lvl - 1];
     size_t rec_ind_len = cpu_pt->dscr->lvl_wdt[cpu_pt->dscr->lvls - lvl - 1];
-    uintptr_t rec_ind_mask = PTE_MASK(rec_ind_off, rec_ind_len - rec_ind_off);
-    uintptr_t addr = cpu_pt->arch.rec_mask & ~PTE_MASK(0, rec_ind_len);
+    uintptr_t rec_ind_mask = (uintptr_t)PTE_MASK(rec_ind_off, rec_ind_len - rec_ind_off);
+    uintptr_t addr = (uintptr_t)(cpu_pt->arch.rec_mask & ~PTE_MASK(0, rec_ind_len));
     addr |= (pt->arch.rec_ind << rec_ind_off) & rec_ind_mask;
-    addr |= (va >> pt->dscr->lvl_off[lvl]) * sizeof(pte_t) & PTE_MASK(0, rec_ind_off);
+    addr |= (uintptr_t)((va >> pt->dscr->lvl_off[lvl]) * sizeof(pte_t) & PTE_MASK(0, rec_ind_off));
 
     return (pte_t*)addr;
 }
