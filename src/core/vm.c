@@ -28,6 +28,7 @@ static void vm_cpu_init(struct vm* vm)
 {
     spin_lock(&vm->lock);
     vm->cpus |= (1UL << cpu()->id);
+    vm->as.cpus |= (1UL << cpu()->id);
     spin_unlock(&vm->lock);
 }
 

@@ -15,6 +15,7 @@
 struct addr_space {
     struct page_table pt;
     enum AS_TYPE type;
+    cpumap_t cpus;
     colormap_t colors;
     asid_t id;
     spinlock_t lock;
