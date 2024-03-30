@@ -24,6 +24,7 @@ struct mp_region {
 struct addr_space {
     asid_t id;
     enum AS_TYPE type;
+    cpumap_t cpus;
     colormap_t colors;
     struct mpe {
         enum { MPE_S_FREE, MPE_S_INVALID, MPE_S_VALID } state;
@@ -32,7 +33,7 @@ struct addr_space {
     spinlock_t lock;
 };
 
-void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, colormap_t colors);
+void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, cpumap_t cpus, colormap_t colors);
 
 static inline bool mem_regions_overlap(struct mp_region* reg1, struct mp_region* reg2)
 {
