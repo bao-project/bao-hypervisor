@@ -8,6 +8,7 @@
 
 #include <bao.h>
 #include <bitmap.h>
+#include <list.h>
 #include <arch/mem.h>
 #include <arch/spinlock.h>
 
@@ -26,10 +27,16 @@ struct addr_space {
     enum AS_TYPE type;
     cpumap_t cpus;
     colormap_t colors;
-    struct mpe {
-        enum { MPE_S_FREE, MPE_S_INVALID, MPE_S_VALID } state;
-        struct mp_region region;
-    } vmpu[VMPU_NUM_ENTRIES];
+    struct {
+        struct list ordered_list;
+        struct mpe {
+            node_t node;
+            enum { MPE_S_FREE, MPE_S_INVALID, MPE_S_VALID } state;
+            bool lock;
+            struct mp_region region;
+            mpid_t mpid;
+        } node[VMPU_NUM_ENTRIES];
+    } vmpu;
     spinlock_t lock;
 };
 
@@ -40,6 +47,8 @@ static inline bool mem_regions_overlap(struct mp_region* reg1, struct mp_region*
     return range_in_range(reg1->base, reg1->size, reg2->base, reg2->size);
 }
 
+bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool locked);
+
 /**
  * This functions must be defined for the physical MPU. The abstraction provided by the physical
  * MPU layer is minimal. Besides initialization:
@@ -48,7 +57,7 @@ static inline bool mem_regions_overlap(struct mp_region* reg1, struct mp_region*
  * success value.
  */
 void mpu_init(void);
-bool mpu_map(priv_t priv, struct mp_region* mem);
-bool mpu_unmap(priv_t priv, struct mp_region* mem);
+bool mpu_map(struct addr_space* as, struct mp_region* mem, bool locked);
+bool mpu_unmap(struct addr_space* as, struct mp_region* mem);
 
 #endif /* __MEM_PROT_H__ */
