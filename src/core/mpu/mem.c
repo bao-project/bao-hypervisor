@@ -20,7 +20,6 @@ struct shared_region {
 };
 
 void mem_handle_broadcast_region(uint32_t event, uint64_t data);
-bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast);
 bool mem_unmap_range(struct addr_space* as, vaddr_t vaddr, size_t size, bool broadcast);
 
 enum { MEM_INSERT_REGION, MEM_REMOVE_REGION };
@@ -103,26 +102,6 @@ static mpid_t mem_vmpu_get_entry_by_addr(struct addr_space* as, vaddr_t addr)
     }
 
     return mpid;
-}
-
-static inline priv_t as_priv(struct addr_space* as)
-{
-    priv_t priv;
-
-    switch (as->type) {
-        case AS_HYP:
-        /* fallthrough */
-        case AS_HYP_CPY:
-            priv = PRIV_HYP;
-            break;
-        case AS_VM:
-            priv = PRIV_VM;
-            break;
-        default:
-            priv = PRIV_NONE;
-    }
-
-    return priv;
 }
 
 static void as_init_boot_regions(void)
@@ -255,7 +234,7 @@ static bool mem_vmpu_insert_region(struct addr_space* as, mpid_t mpid, struct mp
         return false;
     }
 
-    if (mpu_map(as_priv(as), mpr)) {
+    if (mpu_map(as, mpr)) {
         mem_vmpu_set_entry(as, mpid, mpr);
         if (broadcast) {
             mem_region_broadcast(as, mpr, MEM_INSERT_REGION);
@@ -276,7 +255,7 @@ static bool mem_vmpu_remove_region(struct addr_space* as, mpid_t mpid, bool broa
         if (broadcast) {
             mem_region_broadcast(as, &mpe->region, MEM_REMOVE_REGION);
         }
-        mpu_unmap(as_priv(as), &mpe->region);
+        mpu_unmap(as, &mpe->region);
         mem_vmpu_free_entry(as, mpid);
         removed = true;
     }
@@ -289,7 +268,7 @@ static void mem_handle_broadcast_insert(struct addr_space* as, struct mp_region*
     if (as->type == AS_HYP) {
         mem_map(&cpu()->as, mpr, false);
     } else {
-        mpu_map(as_priv(as), mpr);
+        mpu_map(as, mpr);
     }
 }
 
@@ -298,7 +277,7 @@ static void mem_handle_broadcast_remove(struct addr_space* as, struct mp_region*
     if (as->type == AS_HYP) {
         mem_unmap_range(&cpu()->as, mpr->base, mpr->size, false);
     } else {
-        mpu_unmap(as_priv(as), mpr);
+        mpu_unmap(as, mpr);
     }
 }
 
