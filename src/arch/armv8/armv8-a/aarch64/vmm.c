@@ -7,7 +7,7 @@
 #include <arch/sysregs.h>
 #include <page_table.h>
 
-void vmm_arch_init_tcr()
+void vmm_arch_init_tcr(void)
 {
     /**
      * Check available physical address range which will limit IPA size. Patch 2-stage page table

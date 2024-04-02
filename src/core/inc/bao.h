@@ -22,6 +22,8 @@
     console_printk("BAO ERROR: " __VA_ARGS__); \
     while (true) { };
 
+void init(cpuid_t cpu_id, paddr_t load_addr);
+
 #endif /* __ASSEMBLER__ */
 
 #endif /* __BAO_H__ */

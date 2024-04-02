@@ -25,4 +25,6 @@
 
 #define IPI_CPU_MSG      SOFT_INT_ID
 
+void interrupts_arch_handle(void);
+
 #endif /* __ARCH_INTERRUPTS_H__ */

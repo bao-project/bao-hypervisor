@@ -18,7 +18,7 @@ struct vm_io {
 };
 
 /* Mainly for HW initialization. */
-void io_init();
+void io_init(void);
 
 /* iommu api for vms. */
 bool io_vm_init(struct vm* vm, const struct vm_config* config);

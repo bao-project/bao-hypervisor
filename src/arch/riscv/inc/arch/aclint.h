@@ -19,7 +19,7 @@ struct aclint_sswi_hw {
 
 extern volatile struct aclint_sswi_hw* aclint_sswi;
 
-void aclint_init();
+void aclint_init(void);
 void aclint_send_ipi(cpuid_t hart);
 
 cpuid_t aclint_plat_sswi_index_to_hart_id(cpuid_t sswi_index);

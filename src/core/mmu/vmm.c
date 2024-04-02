@@ -7,7 +7,7 @@
 #include <io.h>
 #include <fences.h>
 
-void vmm_io_init()
+void vmm_io_init(void)
 {
     io_init();
 }

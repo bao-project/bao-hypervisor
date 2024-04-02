@@ -123,5 +123,6 @@ extern struct config {
 } config;
 
 void config_init(paddr_t load_addr);
+void config_mem_prot_init(paddr_t load_addr);
 
 #endif /* __CONFIG_H__ */

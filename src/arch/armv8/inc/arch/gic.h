@@ -393,8 +393,10 @@ struct gicc_state {
 
 extern size_t NUM_LRS;
 
-void gic_init();
-void gic_cpu_init();
+void gic_init(void);
+void gic_cpu_init(void);
+void gic_map_mmio(void);
+void gic_handle(void);
 void gic_send_sgi(cpuid_t cpu_target, irqid_t sgi_num);
 
 void gicc_save_state(struct gicc_state* state);
@@ -432,7 +434,7 @@ void gic_maintenance_handler(irqid_t irq_id);
 extern volatile struct gicd_hw* gicd;
 extern volatile struct gicr_hw* gicr;
 
-size_t gich_num_lrs();
+size_t gich_num_lrs(void);
 
 static inline size_t gic_num_irqs()
 {

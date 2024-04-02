@@ -14,7 +14,8 @@
 
 typedef void (*abort_handler_t)(unsigned long, unsigned long, unsigned long, unsigned long);
 
-void aborts_data_lower(unsigned long iss, unsigned long far, unsigned long il, unsigned long ec)
+static void aborts_data_lower(unsigned long iss, unsigned long far, unsigned long il,
+    unsigned long ec)
 {
     UNUSED_ARG(ec);
 
@@ -52,7 +53,7 @@ void aborts_data_lower(unsigned long iss, unsigned long far, unsigned long il, u
     }
 }
 
-long int standard_service_call(unsigned long _fn_num)
+static long int standard_service_call(unsigned long _fn_num)
 {
     UNUSED_ARG(_fn_num);
 
@@ -99,12 +100,12 @@ static inline void syscall_handler(unsigned long iss, unsigned long far, unsigne
     vcpu_writereg(cpu()->vcpu, 0, (unsigned long)ret);
 }
 
-void hvc_handler(unsigned long iss, unsigned long far, unsigned long il, unsigned long ec)
+static void hvc_handler(unsigned long iss, unsigned long far, unsigned long il, unsigned long ec)
 {
     syscall_handler(iss, far, il, ec);
 }
 
-void smc_handler(unsigned long iss, unsigned long far, unsigned long il, unsigned long ec)
+static void smc_handler(unsigned long iss, unsigned long far, unsigned long il, unsigned long ec)
 {
     UNUSED_ARG(far);
 
@@ -128,7 +129,7 @@ static regaddr_t reg_addr_translate(unsigned long iss)
     }
 }
 
-void sysreg_handler(unsigned long iss, unsigned long far, unsigned long il, unsigned long ec)
+static void sysreg_handler(unsigned long iss, unsigned long far, unsigned long il, unsigned long ec)
 {
     UNUSED_ARG(far);
 
@@ -174,7 +175,7 @@ abort_handler_t abort_handlers[64] = {
     [ESR_EC_HVC64] = hvc_handler,
 };
 
-void aborts_sync_handler()
+void aborts_sync_handler(void)
 {
     unsigned long esr = sysreg_esr_el2_read();
     unsigned long far = sysreg_far_el2_read();

@@ -373,10 +373,10 @@ struct smmu_cntxt_hw {
 
 typedef deviceid_t streamid_t;
 
-void smmu_init();
+void smmu_init(void);
 
-ssize_t smmu_alloc_ctxbnk();
-ssize_t smmu_alloc_sme();
+ssize_t smmu_alloc_ctxbnk(void);
+ssize_t smmu_alloc_sme(void);
 void smmu_write_ctxbnk(size_t ctx_id, paddr_t root_pt, asid_t vm_id);
 void smmu_write_sme(size_t sme, streamid_t mask, streamid_t id, bool group);
 void smmu_write_s2c(size_t sme, size_t ctx_id);

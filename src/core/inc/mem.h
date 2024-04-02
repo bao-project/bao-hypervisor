@@ -75,8 +75,12 @@ vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, vaddr_t vas,
     size_t num_pages);
 bool pp_alloc(struct page_pool* pool, size_t num_pages, bool aligned, struct ppages* ppages);
 
-void mem_prot_init();
-size_t mem_cpu_boot_alloc_size();
+void mem_prot_init(void);
+size_t mem_cpu_boot_alloc_size(void);
+
+void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_region);
+bool pp_alloc_clr(struct page_pool* pool, size_t num_pages, colormap_t colors,
+    struct ppages* ppages);
 
 /* Functions implemented in architecture dependent files */
 

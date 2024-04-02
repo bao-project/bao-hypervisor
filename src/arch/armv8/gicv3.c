@@ -20,7 +20,7 @@ static spinlock_t gicr_lock = SPINLOCK_INITVAL;
 
 size_t NUM_LRS;
 
-size_t gich_num_lrs()
+size_t gich_num_lrs(void)
 {
     return ((sysreg_ich_vtr_el2_read() & ICH_VTR_MSK) >> ICH_VTR_OFF) + 1;
 }
@@ -159,7 +159,7 @@ void gicr_set_pend(irqid_t int_id, bool pend, cpuid_t gicr_id)
     spin_unlock(&gicr_lock);
 }
 
-bool gicr_get_pend(irqid_t int_id, cpuid_t gicr_id)
+static bool gicr_get_pend(irqid_t int_id, cpuid_t gicr_id)
 {
     if (gic_is_priv(int_id)) {
         return !!(gicr[gicr_id].ISPENDR0 & GIC_INT_MASK(int_id));
@@ -181,7 +181,7 @@ void gicr_set_act(irqid_t int_id, bool act, cpuid_t gicr_id)
     spin_unlock(&gicr_lock);
 }
 
-bool gicr_get_act(irqid_t int_id, cpuid_t gicr_id)
+static bool gicr_get_act(irqid_t int_id, cpuid_t gicr_id)
 {
     if (gic_is_priv(int_id)) {
         return !!(gicr[gicr_id].ISACTIVER0 & GIC_INT_MASK(int_id));

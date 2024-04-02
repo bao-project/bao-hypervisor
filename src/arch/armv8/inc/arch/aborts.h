@@ -8,4 +8,7 @@
 
 #include <bao.h>
 
+void aborts_sync_handler(void);
+void internal_abort_handler(unsigned long gprs[]);
+
 #endif /* __ABORTS_H__ */

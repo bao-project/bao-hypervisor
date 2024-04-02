@@ -11,7 +11,7 @@ struct iommu_device {
 };
 
 /* Mainly for HW initialization. */
-void io_init()
+void io_init(void)
 {
     iommu_arch_init();
 }

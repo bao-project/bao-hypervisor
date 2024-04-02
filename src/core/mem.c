@@ -82,7 +82,7 @@ bool pp_alloc(struct page_pool* pool, size_t num_pages, bool aligned, struct ppa
     return ok;
 }
 
-bool mem_are_ppages_reserved_in_pool(struct page_pool* ppool, struct ppages* ppages)
+static bool mem_are_ppages_reserved_in_pool(struct page_pool* ppool, struct ppages* ppages)
 {
     bool reserved = false;
     bool rgn_found = range_in_range(ppages->base, ppages->num_pages * PAGE_SIZE, ppool->base,
@@ -103,7 +103,7 @@ bool mem_are_ppages_reserved_in_pool(struct page_pool* ppool, struct ppages* ppa
     return reserved;
 }
 
-bool mem_are_ppages_reserved(struct ppages* ppages)
+static bool mem_are_ppages_reserved(struct ppages* ppages)
 {
     bool reserved = false;
     list_foreach (page_pool_list, struct page_pool, pool) {
@@ -119,7 +119,7 @@ bool mem_are_ppages_reserved(struct ppages* ppages)
     return reserved;
 }
 
-bool mem_reserve_ppool_ppages(struct page_pool* pool, struct ppages* ppages)
+static bool mem_reserve_ppool_ppages(struct page_pool* pool, struct ppages* ppages)
 {
     bool is_in_rgn = range_in_range(ppages->base, ppages->num_pages * PAGE_SIZE, pool->base,
         pool->size * PAGE_SIZE);
@@ -152,7 +152,7 @@ void* mem_alloc_page(size_t num_pages, enum AS_SEC sec, bool phys_aligned)
     return (void*)vpage;
 }
 
-bool root_pool_set_up_bitmap(paddr_t load_addr, struct page_pool* root_pool)
+static bool root_pool_set_up_bitmap(paddr_t load_addr, struct page_pool* root_pool)
 {
     size_t image_size = (size_t)(&_image_end - &_image_start);
     size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);
@@ -174,7 +174,7 @@ bool root_pool_set_up_bitmap(paddr_t load_addr, struct page_pool* root_pool)
     return mem_reserve_ppool_ppages(root_pool, &bitmap_pp);
 }
 
-bool pp_root_reserve_hyp_mem(paddr_t load_addr, struct page_pool* root_pool)
+static bool pp_root_reserve_hyp_mem(paddr_t load_addr, struct page_pool* root_pool)
 {
     size_t image_load_size = (size_t)(&_image_load_end - &_image_start);
     size_t image_noload_size = (size_t)(&_image_end - &_image_load_end);
@@ -247,7 +247,7 @@ static void pp_init(struct page_pool* pool, paddr_t base, size_t size)
     pool->free = pool->size;
 }
 
-bool mem_vm_img_in_phys_rgn(struct vm_config* vm_config)
+static bool mem_vm_img_in_phys_rgn(struct vm_config* vm_config)
 {
     bool img_in_rgn = false;
 
@@ -267,7 +267,7 @@ bool mem_vm_img_in_phys_rgn(struct vm_config* vm_config)
     return img_in_rgn;
 }
 
-bool mem_reserve_physical_memory(struct page_pool* pool)
+static bool mem_reserve_physical_memory(struct page_pool* pool)
 {
     if (pool == NULL) {
         return false;
@@ -323,7 +323,7 @@ bool mem_reserve_physical_memory(struct page_pool* pool)
     return true;
 }
 
-bool mem_create_ppools(struct mem_region* root_mem_region)
+static bool mem_create_ppools(struct mem_region* root_mem_region)
 {
     for (size_t i = 0; i < platform.region_num; i++) {
         if (&platform.regions[i] != root_mem_region) {
@@ -342,7 +342,7 @@ bool mem_create_ppools(struct mem_region* root_mem_region)
     return true;
 }
 
-struct mem_region* mem_find_root_region(paddr_t load_addr)
+static struct mem_region* mem_find_root_region(paddr_t load_addr)
 {
     size_t image_size = (size_t)(&_image_end - &_image_start);
 
@@ -360,7 +360,7 @@ struct mem_region* mem_find_root_region(paddr_t load_addr)
     return root_mem_region;
 }
 
-bool mem_setup_root_pool(paddr_t load_addr, struct mem_region** root_mem_region)
+static bool mem_setup_root_pool(paddr_t load_addr, struct mem_region** root_mem_region)
 {
     *root_mem_region = mem_find_root_region(load_addr);
     if (*root_mem_region == NULL) {

@@ -116,7 +116,7 @@ static void smmu_check_features()
     }
 }
 
-void smmu_init()
+void smmu_init(void)
 {
     /*
      * Alloc pages for global address space.
@@ -178,7 +178,7 @@ void smmu_init()
     smmu.hw.glbl_rs0->CR0 = cr0;
 }
 
-ssize_t smmu_alloc_ctxbnk()
+ssize_t smmu_alloc_ctxbnk(void)
 {
     spin_lock(&smmu.ctx_lock);
     /* Find a free context bank. */
@@ -243,7 +243,7 @@ void smmu_write_ctxbnk(size_t ctx_id, paddr_t root_pt, asid_t vm_id)
     spin_unlock(&smmu.ctx_lock);
 }
 
-ssize_t smmu_alloc_sme()
+ssize_t smmu_alloc_sme(void)
 {
     spin_lock(&smmu.sme_lock);
     /* Find a free sme. */

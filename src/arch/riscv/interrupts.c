@@ -47,7 +47,7 @@ void interrupts_arch_ipi_send(cpuid_t target_cpu, irqid_t ipi_id)
     }
 }
 
-void interrupts_arch_cpu_enable(bool en)
+static void interrupts_arch_cpu_enable(bool en)
 {
     if (en) {
         csrs_sstatus_set(SSTATUS_SIE_BIT);
@@ -75,7 +75,7 @@ void interrupts_arch_enable(irqid_t int_id, bool en)
     }
 }
 
-void interrupts_arch_handle()
+void interrupts_arch_handle(void)
 {
     unsigned long _scause = csrs_scause_read();
 

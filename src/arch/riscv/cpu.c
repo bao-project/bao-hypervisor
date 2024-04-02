@@ -27,7 +27,7 @@ void cpu_arch_init(cpuid_t cpuid, paddr_t load_addr)
     }
 }
 
-void cpu_arch_idle()
+void cpu_arch_idle(void)
 {
     __asm__ volatile("wfi\n\t" ::: "memory");
     __asm__ volatile("mv sp, %0\n\r"
