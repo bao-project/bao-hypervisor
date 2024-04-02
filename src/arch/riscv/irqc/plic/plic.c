@@ -28,7 +28,7 @@ static size_t plic_scan_max_int()
     return res;
 }
 
-void plic_init()
+void plic_init(void)
 {
     /** Maps PLIC device */
     plic_global = (void*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
@@ -54,14 +54,14 @@ void plic_init()
     }
 }
 
-void plic_cpu_init()
+void plic_cpu_init(void)
 {
     cpu()->arch.plic_cntxt =
         (unsigned)plic_plat_cntxt_to_id((struct plic_cntxt){ cpu()->id, PRIV_S });
     plic_hart[cpu()->arch.plic_cntxt].threshold = 0;
 }
 
-bool plic_cntxt_valid(size_t cntxt_id)
+static bool plic_cntxt_valid(size_t cntxt_id)
 {
     struct plic_cntxt cntxt = plic_plat_id_to_cntxt(cntxt_id);
     return (cntxt_id < PLIC_PLAT_CNTXT_NUM) && (cntxt.mode <= PRIV_S);
@@ -137,7 +137,7 @@ uint32_t plic_get_threshold(unsigned cntxt)
     return threshold;
 }
 
-void plic_handle()
+void plic_handle(void)
 {
     uint32_t id = plic_hart[cpu()->arch.plic_cntxt].claim;
 

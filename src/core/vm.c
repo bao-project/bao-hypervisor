@@ -21,7 +21,7 @@ static void vm_master_init(struct vm* vm, const struct vm_config* config, vmid_t
     vm_mem_prot_init(vm, config);
 }
 
-void vm_cpu_init(struct vm* vm)
+static void vm_cpu_init(struct vm* vm)
 {
     spin_lock(&vm->lock);
     vm->cpus |= (1UL << cpu()->id);
@@ -39,7 +39,7 @@ static vcpuid_t vm_calc_vcpu_id(struct vm* vm)
     return vcpu_id;
 }
 
-void vm_vcpu_init(struct vm* vm, const struct vm_config* config)
+static void vm_vcpu_init(struct vm* vm, const struct vm_config* config)
 {
     vcpuid_t vcpu_id = vm_calc_vcpu_id(vm);
     struct vcpu* vcpu = vm_get_vcpu(vm, vcpu_id);
@@ -53,7 +53,7 @@ void vm_vcpu_init(struct vm* vm, const struct vm_config* config)
     vcpu_arch_reset(vcpu, config->entry);
 }
 
-void vm_map_mem_region(struct vm* vm, struct vm_mem_region* reg)
+static void vm_map_mem_region(struct vm* vm, struct vm_mem_region* reg)
 {
     size_t n = NUM_PAGES(reg->size);
 

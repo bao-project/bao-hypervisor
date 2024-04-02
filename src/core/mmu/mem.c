@@ -53,7 +53,7 @@ struct {
     [AS_VM] = { vm_secs, sizeof(vm_secs) / sizeof(struct section) },
 };
 
-size_t mem_cpu_boot_alloc_size()
+size_t mem_cpu_boot_alloc_size(void)
 {
     size_t size = ALIGN(sizeof(struct cpu), PAGE_SIZE);
     for (size_t i = 0; i < cpu()->as.pt.dscr->lvls; i++) {
@@ -482,7 +482,7 @@ void mem_unmap(struct addr_space* as, vaddr_t at, size_t num_pages, bool free_pp
     spin_unlock(&as->lock);
 }
 
-bool mem_map(struct addr_space* as, vaddr_t va, struct ppages* ppages, size_t num_pages,
+static bool mem_map(struct addr_space* as, vaddr_t va, struct ppages* ppages, size_t num_pages,
     mem_flags_t flags)
 {
     size_t count = 0;
@@ -712,7 +712,7 @@ vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, vaddr_t vas,
     return base_vad;
 }
 
-void* copy_space(void* base, const size_t size, struct ppages* pages)
+static void* copy_space(void* base, const size_t size, struct ppages* pages)
 {
     *pages = mem_alloc_ppages(cpu()->as.colors, NUM_PAGES(size), false);
     vaddr_t va = mem_alloc_vpage(&cpu()->as, SEC_HYP_PRIVATE, INVALID_VA, NUM_PAGES(size));
@@ -921,7 +921,7 @@ void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, pte_t* root_pt
     as_arch_init(as);
 }
 
-void mem_prot_init()
+void mem_prot_init(void)
 {
     pte_t* root_pt = (pte_t*)ALIGN(((vaddr_t)cpu()) + sizeof(struct cpu), PAGE_SIZE);
     as_init(&cpu()->as, AS_HYP, HYP_ASID, root_pt, config.hyp.colors);

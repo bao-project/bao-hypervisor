@@ -45,7 +45,7 @@ static void psci_restore_state()
     gicc_restore_state(&cpu()->arch.profile.psci_off_state.gicc_state);
 }
 
-void psci_wake_from_powerdown()
+static void psci_wake_from_powerdown()
 {
     if (cpu()->vcpu == NULL) {
         ERROR("cpu woke up but theres no vcpu to run");
@@ -56,12 +56,12 @@ void psci_wake_from_powerdown()
     vcpu_run(cpu()->vcpu);
 }
 
-void psci_wake_from_idle()
+static void psci_wake_from_idle()
 {
     cpu_idle_wakeup();
 }
 
-void psci_wake_from_off();
+void psci_wake_from_off(void);
 
 void (*psci_wake_handlers[PSCI_WAKEUP_NUM])(void) = {
     [PSCI_WAKEUP_CPU_OFF] = psci_wake_from_off,

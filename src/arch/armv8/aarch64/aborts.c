@@ -3,7 +3,7 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
-#include <bao.h>
+#include <arch/aborts.h>
 #include <arch/sysregs.h>
 #include <cpu.h>
 

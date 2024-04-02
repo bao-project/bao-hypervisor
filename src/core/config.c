@@ -5,7 +5,7 @@
 
 #include <config.h>
 
-void config_adjust_vm_image_addr(paddr_t load_addr)
+static void config_adjust_vm_image_addr(paddr_t load_addr)
 {
     for (size_t i = 0; i < config.vmlist_size; i++) {
         struct vm_config* vm_config = &config.vmlist[i];

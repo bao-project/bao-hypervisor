@@ -42,7 +42,7 @@ static void cache_calc_colors(struct cache* dscrp, size_t page_size)
     COLOR_NUM = llc_num_colors / COLOR_SIZE;
 }
 
-void cache_enumerate()
+void cache_enumerate(void)
 {
     cache_arch_enumerate(&cache_dscr);
     cache_calc_colors(&cache_dscr, PAGE_SIZE);

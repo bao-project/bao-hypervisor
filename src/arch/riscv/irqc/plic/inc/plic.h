@@ -42,9 +42,9 @@ extern volatile struct plic_global_hw* plic_global;
 extern volatile struct plic_hart_hw* plic_hart;
 extern size_t PLIC_IMPL_INTERRUPTS;
 
-void plic_init();
-void plic_cpu_init();
-void plic_handle();
+void plic_init(void);
+void plic_cpu_init(void);
+void plic_handle(void);
 void plic_set_enbl(size_t cntxt, irqid_t int_id, bool en);
 bool plic_get_enbl(size_t cntxt, irqid_t int_id);
 void plic_set_prio(irqid_t int_id, uint32_t prio);

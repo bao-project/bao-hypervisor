@@ -9,7 +9,7 @@
 #include <mem.h>
 #include <config.h>
 
-bool iommu_arch_init()
+bool iommu_arch_init(void)
 {
     if (cpu_is_master() && platform.arch.smmu.base) {
         smmu_init();

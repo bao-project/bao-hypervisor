@@ -10,7 +10,7 @@
 #include <arch/csrs.h>
 #include <arch/instructions.h>
 
-void internal_exception_handler(unsigned long gprs[])
+static void internal_exception_handler(unsigned long gprs[])
 {
     for (int i = 0; i < 31; i++) {
         console_printk("x%d:\t\t0x%0lx\n", i, gprs[i]);
@@ -78,7 +78,7 @@ static inline bool is_pseudo_ins(uint32_t ins)
     return ins == TINST_PSEUDO_STORE || ins == TINST_PSEUDO_LOAD;
 }
 
-size_t guest_page_fault_handler()
+static size_t guest_page_fault_handler()
 {
     vaddr_t addr = csrs_htval_read() << 2;
 
@@ -134,7 +134,8 @@ sync_handler_t sync_handler_table[] = {
 
 static const size_t sync_handler_table_size = sizeof(sync_handler_table) / sizeof(sync_handler_t);
 
-void sync_exception_handler()
+void sync_exception_handler(void);
+void sync_exception_handler(void)
 {
     size_t pc_step = 0;
     unsigned long _scause = csrs_scause_read();

@@ -8,8 +8,7 @@
 #include <vm.h>
 #include <platform.h>
 
-void cpu_defines() __attribute__((used));
-void cpu_defines()
+__attribute__((used)) static void cpu_defines()
 {
     DEFINE_SIZE(CPU_SIZE, struct cpu);
 
@@ -19,8 +18,7 @@ void cpu_defines()
     DEFINE_OFFSET(CPU_VCPU_OFF, struct cpu, vcpu);
 }
 
-void vcpu_defines() __attribute__((used));
-void vcpu_defines()
+__attribute__((used)) static void vcpu_defines()
 {
     DEFINE_SIZE(VCPU_ARCH_SIZE, struct vcpu_arch);
     DEFINE_OFFSET(VCPU_REGS_OFF, struct vcpu, regs);

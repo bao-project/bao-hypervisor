@@ -33,7 +33,8 @@ struct sbi_hsm {
     unsigned priv;
 };
 
-void sbi_init();
+void sbi_init(void);
+size_t sbi_vs_handler(void);
 
 void sbi_console_putchar(int ch);
 
@@ -70,7 +71,7 @@ struct sbiret sbi_remote_hfence_vvma(const unsigned long hart_mask, unsigned lon
     unsigned long start_addr, unsigned long size);
 
 struct sbiret sbi_hart_start(unsigned long hartid, unsigned long start_addr, unsigned long priv);
-struct sbiret sbi_hart_stop();
+struct sbiret sbi_hart_stop(void);
 struct sbiret sbi_hart_status(unsigned long hartid);
 
 #endif /* __SBI_H__ */

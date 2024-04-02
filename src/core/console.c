@@ -18,7 +18,7 @@ static volatile bao_uart_t* uart;
 static bool console_ready = false;
 static spinlock_t console_lock = SPINLOCK_INITVAL;
 
-void console_init()
+void console_init(void)
 {
     if (cpu_is_master()) {
         if ((platform.console.base & PAGE_OFFSET_MASK) != 0) {

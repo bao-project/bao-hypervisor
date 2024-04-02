@@ -15,5 +15,6 @@ char* strcat(char* dest, char* src);
 size_t strlen(const char* s);
 size_t strnlen(const char* s, size_t n);
 char* strcpy(char* dest, char* src);
+int strcmp(char* str0, char* str1);
 
 #endif /* __STRING_H_ */

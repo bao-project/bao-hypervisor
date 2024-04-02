@@ -76,7 +76,7 @@ bool cpu_get_msg(struct cpu_msg* msg)
     return false;
 }
 
-void cpu_msg_handler()
+void cpu_msg_handler(void)
 {
     cpu()->handling_msgs = true;
     struct cpu_msg msg;
@@ -88,7 +88,7 @@ void cpu_msg_handler()
     cpu()->handling_msgs = false;
 }
 
-void cpu_idle()
+void cpu_idle(void)
 {
     cpu_arch_idle();
 
@@ -99,7 +99,7 @@ void cpu_idle()
     ERROR("Spurious idle wake up");
 }
 
-void cpu_idle_wakeup()
+void cpu_idle_wakeup(void)
 {
     if (interrupts_check(IPI_CPU_MSG)) {
         interrupts_clear(IPI_CPU_MSG);

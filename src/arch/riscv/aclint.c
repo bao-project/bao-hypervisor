@@ -10,7 +10,7 @@
 
 volatile struct aclint_sswi_hw* aclint_sswi;
 
-void aclint_init()
+void aclint_init(void)
 {
     aclint_sswi = (void*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
         platform.arch.aclint_sswi.base, NUM_PAGES(sizeof(struct aclint_sswi_hw)));

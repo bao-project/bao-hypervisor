@@ -29,7 +29,7 @@ uint8_t vgic_int_ptarget_mask(struct vcpu* vcpu, struct vgic_int* interrupt)
     return interrupt->targets;
 }
 
-bool vgicd_set_trgt(struct vcpu* vcpu, struct vgic_int* interrupt, unsigned long targets)
+static bool vgicd_set_trgt(struct vcpu* vcpu, struct vgic_int* interrupt, unsigned long targets)
 {
     if (gic_is_priv(interrupt->id)) {
         return false;
@@ -41,14 +41,14 @@ bool vgicd_set_trgt(struct vcpu* vcpu, struct vgic_int* interrupt, unsigned long
     return prev_targets != targets;
 }
 
-void vgicd_set_trgt_hw(struct vcpu* vcpu, struct vgic_int* interrupt)
+static void vgicd_set_trgt_hw(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
     UNUSED_ARG(vcpu);
 
     gicd_set_trgt(interrupt->id, interrupt->targets);
 }
 
-unsigned long vgicd_get_trgt(struct vcpu* vcpu, struct vgic_int* interrupt)
+static unsigned long vgicd_get_trgt(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
     if (gic_is_priv(interrupt->id)) {
         return (((unsigned long)1) << vcpu->id);
@@ -57,8 +57,8 @@ unsigned long vgicd_get_trgt(struct vcpu* vcpu, struct vgic_int* interrupt)
     }
 }
 
-void vgicd_emul_sgiregs_access(struct emul_access* acc, struct vgic_reg_handler_info* handlers,
-    bool gicr_access, vcpuid_t vgicr_id)
+static void vgicd_emul_sgiregs_access(struct emul_access* acc,
+    struct vgic_reg_handler_info* handlers, bool gicr_access, vcpuid_t vgicr_id)
 {
     UNUSED_ARG(handlers);
     UNUSED_ARG(gicr_access);
