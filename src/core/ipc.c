@@ -62,6 +62,9 @@ static void ipc_handler(uint32_t event, uint64_t data)
         case IPC_NOTIFY:
             ipc_notify(ipc_data.shmem_id, ipc_data.event_id);
             break;
+        default:
+            WARNING("Unknown IPC IPI event");
+            break;
     }
 }
 CPU_MSG_HANDLER(ipc_handler, IPC_CPUMSG_ID)
@@ -116,7 +119,7 @@ static void ipc_alloc_shmem()
     }
 }
 
-void ipc_init()
+void ipc_init(void)
 {
     if (cpu_is_master()) {
         shmem_table_size = config.shmemlist_size;

@@ -107,6 +107,8 @@ static inline void gich_write_lr(size_t i, uint64_t val)
         case 15:
             sysreg_ich_lr15_el2_write(val);
             break;
+        default:
+            break;
     }
 }
 

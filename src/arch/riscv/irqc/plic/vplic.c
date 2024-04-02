@@ -144,6 +144,9 @@ static void vplic_ipi_handler(uint32_t event, uint64_t data)
         case UPDATE_HART_LINE:
             vplic_update_hart_line(cpu()->vcpu, data);
             break;
+        default:
+            WARNING("Unknown VPLIC IPI event");
+            break;
     }
 }
 
@@ -354,6 +357,11 @@ static bool vplic_hart_emul_handler(struct emul_access* acc)
                 vplic_complete(cpu()->vcpu, vcntxt, (irqid_t)vcpu_readreg(cpu()->vcpu, acc->reg));
             } else {
                 vcpu_writereg(cpu()->vcpu, acc->reg, vplic_claim(cpu()->vcpu, vcntxt));
+            }
+            break;
+        default:
+            if (!acc->write) {
+                vcpu_writereg(cpu()->vcpu, acc->reg, 0);
             }
             break;
     }

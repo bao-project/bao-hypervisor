@@ -81,7 +81,7 @@ static void vgicd_emul_sgiregs_access(struct emul_access* acc,
                 case 2:
                     trgtlist = (1U << cpu()->id);
                     break;
-                case 3:
+                default:
                     return;
             }
 
