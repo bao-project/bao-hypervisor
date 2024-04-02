@@ -17,6 +17,12 @@ src_dirs+=$(arch_profile_sub_dir)
 implementation_dir:=$(cpu_arch_dir)/implementation
 src_dirs+=$(implementation_dir)
 
+s32_dir:=$(cpu_arch_dir)/implementation/s32/drivers/s32ze
+src_dirs+=$(s32_dir)
+
+s32I_dir:=$(cpu_arch_dir)/implementation/s32/soc/s32z270
+src_dirs+=$(s32I_dir)
+
 arch-cppflags+=-DGIC_VERSION=$(GIC_VERSION)
 ifeq ($(CC_IS_GCC),y)
 arch-cflags+=-mgeneral-regs-only
