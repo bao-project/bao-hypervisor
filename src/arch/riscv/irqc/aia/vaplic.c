@@ -277,6 +277,9 @@ static void vaplic_ipi_handler(uint32_t event, uint64_t data)
         case UPDATE_HART_LINE:
             vaplic_update_hart(cpu()->vcpu, (size_t)data);
             break;
+        default:
+            WARNING("Unknown VAPLIC IPI event");
+            break;
     }
 }
 

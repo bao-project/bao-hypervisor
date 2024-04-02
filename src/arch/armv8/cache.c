@@ -42,6 +42,9 @@ void cache_arch_enumerate(struct cache* dscrp)
                 case CLIDR_CTYPE_UN:
                     dscrp->type[i] = UNIFIED;
                     break;
+                default:
+                    dscrp->type[i] = UNIFIED;
+                    break;
             }
         } else {
             break;
