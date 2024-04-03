@@ -106,8 +106,6 @@ struct vm_allocation {
     struct vcpu* vcpus;
 };
 
-extern struct vm vm;
-
 struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* config, bool master,
     vmid_t vm_id);
 void vm_start(struct vm* vm, vaddr_t entry);
