@@ -17,7 +17,7 @@ void* memcpy(void* dst, const void* src, size_t count)
             if (i + (WORD_SIZE - 1) > count - 1) {
                 break;
             }
-            *(unsigned long*)dst_tmp = *(unsigned long*)src_tmp;
+            *(unsigned long*)dst_tmp = *(const unsigned long*)src_tmp;
             dst_tmp += WORD_SIZE;
             src_tmp += WORD_SIZE;
         }
