@@ -167,24 +167,6 @@ static mpid_t mpu_entry_allocate()
     return reg_num;
 }
 
-static bool mem_region_get_overlap(struct mp_region* reg1, struct mp_region* reg2,
-    struct mp_region* overlap)
-{
-    bool regions_overlap = mem_regions_overlap(reg1, reg2);
-
-    if (regions_overlap) {
-        vaddr_t reg1_lim = (reg1->base + reg1->size);
-        vaddr_t reg2_lim = (reg2->base + reg2->size);
-        vaddr_t base = reg2->base > reg1->base ? reg2->base : reg1->base;
-        vaddr_t lim = reg2_lim > reg1_lim ? reg1_lim : reg2_lim;
-
-        overlap->base = base;
-        overlap->size = lim - base;
-    }
-
-    return regions_overlap;
-}
-
 bool mpu_map(priv_t priv, struct mp_region* mpr)
 {
     size_t size_left = mpr->size;
