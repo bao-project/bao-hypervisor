@@ -484,10 +484,10 @@ inline bool iommu_arch_vm_add_device(struct vm* vm, deviceid_t dev_id)
  *
  * @returns true on success, false on error.
  */
-bool iommu_arch_vm_init(struct vm* vm, const struct vm_config* config)
+bool iommu_arch_vm_init(struct vm* vm, const struct vm_config* vm_config)
 {
     UNUSED_ARG(vm);
-    UNUSED_ARG(config);
+    UNUSED_ARG(vm_config);
 
     // For now there is no data to initialize
     return true;

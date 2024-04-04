@@ -9,10 +9,10 @@
 #include <string.h>
 #include <config.h>
 
-void vm_arch_init(struct vm* vm, const struct vm_config* config)
+void vm_arch_init(struct vm* vm, const struct vm_config* vm_config)
 {
     if (vm->master == cpu()->id) {
-        vgic_init(vm, &config->platform.arch.gic);
+        vgic_init(vm, &vm_config->platform.arch.gic);
     }
     cpu_sync_and_clear_msgs(&vm->sync);
 }

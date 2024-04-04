@@ -75,7 +75,7 @@ static bool vmm_assign_vcpu(bool* master, vmid_t* vm_id)
     return assigned;
 }
 
-static bool vmm_alloc_vm(struct vm_allocation* vm_alloc, struct vm_config* config)
+static bool vmm_alloc_vm(struct vm_allocation* vm_alloc, struct vm_config* vm_config)
 {
     /**
      * We know that we will allocate a block aligned to the PAGE_SIZE, which is guaranteed to
@@ -86,7 +86,7 @@ static bool vmm_alloc_vm(struct vm_allocation* vm_alloc, struct vm_config* confi
 
     size_t total_size = sizeof(struct vm);
     size_t vcpus_offset = ALIGN(total_size, _Alignof(struct vcpu));
-    total_size = vcpus_offset + (config->platform.cpu_num * sizeof(struct vcpu));
+    total_size = vcpus_offset + (vm_config->platform.cpu_num * sizeof(struct vcpu));
     total_size = ALIGN(total_size, PAGE_SIZE);
 
     void* allocation = mem_alloc_page(NUM_PAGES(total_size), SEC_HYP_VM, false);
