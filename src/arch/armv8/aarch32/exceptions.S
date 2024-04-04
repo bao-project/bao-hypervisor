@@ -6,8 +6,6 @@
 #include <asm_defs.h>
 #include <arch/sysregs.h>
 
-#define ENTRY_SIZE   (0x4)
-
 .text 
 
 .macro SAVE_HYP_GPRS
