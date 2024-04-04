@@ -9,16 +9,16 @@
 #include <cache.h>
 #include <config.h>
 
-static void vm_master_init(struct vm* vm, const struct vm_config* config, vmid_t vm_id)
+static void vm_master_init(struct vm* vm, const struct vm_config* vm_config, vmid_t vm_id)
 {
     vm->master = cpu()->id;
-    vm->config = config;
-    vm->cpu_num = config->platform.cpu_num;
+    vm->config = vm_config;
+    vm->cpu_num = vm_config->platform.cpu_num;
     vm->id = vm_id;
 
     cpu_sync_init(&vm->sync, vm->cpu_num);
 
-    vm_mem_prot_init(vm, config);
+    vm_mem_prot_init(vm, vm_config);
 }
 
 static void vm_cpu_init(struct vm* vm)
@@ -39,7 +39,7 @@ static vcpuid_t vm_calc_vcpu_id(struct vm* vm)
     return vcpu_id;
 }
 
-static void vm_vcpu_init(struct vm* vm, const struct vm_config* config)
+static void vm_vcpu_init(struct vm* vm, const struct vm_config* vm_config)
 {
     vcpuid_t vcpu_id = vm_calc_vcpu_id(vm);
     struct vcpu* vcpu = vm_get_vcpu(vm, vcpu_id);
@@ -50,7 +50,7 @@ static void vm_vcpu_init(struct vm* vm, const struct vm_config* config)
     cpu()->vcpu = vcpu;
 
     vcpu_arch_init(vcpu, vm);
-    vcpu_arch_reset(vcpu, config->entry);
+    vcpu_arch_reset(vcpu, vm_config->entry);
 }
 
 static void vm_map_mem_region(struct vm* vm, struct vm_mem_region* reg)
@@ -73,11 +73,11 @@ static void vm_map_mem_region(struct vm* vm, struct vm_mem_region* reg)
     }
 }
 
-static void vm_map_img_rgn_inplace(struct vm* vm, const struct vm_config* config,
+static void vm_map_img_rgn_inplace(struct vm* vm, const struct vm_config* vm_config,
     struct vm_mem_region* reg)
 {
-    vaddr_t img_base = config->image.base_addr;
-    size_t img_size = config->image.size;
+    vaddr_t img_base = vm_config->image.base_addr;
+    size_t img_size = vm_config->image.size;
     /* mem region pages before the img */
     size_t n_before = NUM_PAGES(img_base - reg->base);
     /* pages after the img */
@@ -86,7 +86,7 @@ static void vm_map_img_rgn_inplace(struct vm* vm, const struct vm_config* config
     size_t n_img = NUM_PAGES(img_size);
 
     /* map img in place */
-    struct ppages pa_img = mem_ppages_get(config->image.load_addr, n_img);
+    struct ppages pa_img = mem_ppages_get(vm_config->image.load_addr, n_img);
 
     mem_alloc_map(&vm->as, SEC_VM_ANY, NULL, (vaddr_t)reg->base, n_before, PTE_VM_FLAGS);
     if (all_clrs(vm->as.colors)) {
@@ -135,36 +135,37 @@ static void vm_install_image(struct vm* vm, struct vm_mem_region* reg)
     mem_unmap(&cpu()->as, dst_va, img_num_pages, false);
 }
 
-static void vm_map_img_rgn(struct vm* vm, const struct vm_config* config, struct vm_mem_region* reg)
+static void vm_map_img_rgn(struct vm* vm, const struct vm_config* vm_config,
+    struct vm_mem_region* reg)
 {
-    if (!reg->place_phys && config->image.inplace) {
-        vm_map_img_rgn_inplace(vm, config, reg);
+    if (!reg->place_phys && vm_config->image.inplace) {
+        vm_map_img_rgn_inplace(vm, vm_config, reg);
     } else {
         vm_map_mem_region(vm, reg);
         vm_install_image(vm, reg);
     }
 }
 
-static void vm_init_mem_regions(struct vm* vm, const struct vm_config* config)
+static void vm_init_mem_regions(struct vm* vm, const struct vm_config* vm_config)
 {
-    for (size_t i = 0; i < config->platform.region_num; i++) {
-        struct vm_mem_region* reg = &config->platform.regions[i];
+    for (size_t i = 0; i < vm_config->platform.region_num; i++) {
+        struct vm_mem_region* reg = &vm_config->platform.regions[i];
         bool img_is_in_rgn =
-            range_in_range(config->image.base_addr, config->image.size, reg->base, reg->size);
+            range_in_range(vm_config->image.base_addr, vm_config->image.size, reg->base, reg->size);
         if (img_is_in_rgn) {
-            vm_map_img_rgn(vm, config, reg);
+            vm_map_img_rgn(vm, vm_config, reg);
         } else {
             vm_map_mem_region(vm, reg);
         }
     }
 }
 
-static void vm_init_ipc(struct vm* vm, const struct vm_config* config)
+static void vm_init_ipc(struct vm* vm, const struct vm_config* vm_config)
 {
-    vm->ipc_num = config->platform.ipc_num;
-    vm->ipcs = config->platform.ipcs;
-    for (size_t i = 0; i < config->platform.ipc_num; i++) {
-        struct ipc* ipc = &config->platform.ipcs[i];
+    vm->ipc_num = vm_config->platform.ipc_num;
+    vm->ipcs = vm_config->platform.ipcs;
+    for (size_t i = 0; i < vm_config->platform.ipc_num; i++) {
+        struct ipc* ipc = &vm_config->platform.ipcs[i];
         struct shmem* shmem = ipc_get_shmem(ipc->shmem_id);
         if (shmem == NULL) {
             WARNING("Invalid shmem id in configuration. Ignored.");
@@ -192,10 +193,10 @@ static void vm_init_ipc(struct vm* vm, const struct vm_config* config)
     }
 }
 
-static void vm_init_dev(struct vm* vm, const struct vm_config* config)
+static void vm_init_dev(struct vm* vm, const struct vm_config* vm_config)
 {
-    for (size_t i = 0; i < config->platform.dev_num; i++) {
-        struct vm_dev_region* dev = &config->platform.devs[i];
+    for (size_t i = 0; i < vm_config->platform.dev_num; i++) {
+        struct vm_dev_region* dev = &vm_config->platform.devs[i];
 
         size_t n = ALIGN(dev->size, PAGE_SIZE) / PAGE_SIZE;
 
@@ -210,9 +211,9 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* config)
         }
     }
 
-    if (io_vm_init(vm, config)) {
-        for (size_t i = 0; i < config->platform.dev_num; i++) {
-            struct vm_dev_region* dev = &config->platform.devs[i];
+    if (io_vm_init(vm, vm_config)) {
+        for (size_t i = 0; i < vm_config->platform.dev_num; i++) {
+            struct vm_dev_region* dev = &vm_config->platform.devs[i];
             if (dev->id) {
                 if (!io_vm_add_device(vm, dev->id)) {
                     ERROR("Failed to add device to iommu");
@@ -229,7 +230,7 @@ static struct vm* vm_allocation_init(struct vm_allocation* vm_alloc)
     return vm;
 }
 
-struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* config, bool master,
+struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* vm_config, bool master,
     vmid_t vm_id)
 {
     struct vm* vm = vm_allocation_init(vm_alloc);
@@ -238,7 +239,7 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* confi
      * Before anything else, initialize vm structure.
      */
     if (master) {
-        vm_master_init(vm, config, vm_id);
+        vm_master_init(vm, vm_config, vm_id);
     }
 
     /*
@@ -251,7 +252,7 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* confi
     /*
      *  Initialize each virtual core.
      */
-    vm_vcpu_init(vm, config);
+    vm_vcpu_init(vm, vm_config);
 
     cpu_sync_barrier(&vm->sync);
 
@@ -259,15 +260,15 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* confi
      * Perform architecture dependent initializations. This includes, for example, setting the page
      * table pointer and other virtualization extensions specifics.
      */
-    vm_arch_init(vm, config);
+    vm_arch_init(vm, vm_config);
 
     /**
      * Create the VM's address space according to configuration and where its image was loaded.
      */
     if (master) {
-        vm_init_mem_regions(vm, config);
-        vm_init_dev(vm, config);
-        vm_init_ipc(vm, config);
+        vm_init_mem_regions(vm, vm_config);
+        vm_init_dev(vm, vm_config);
+        vm_init_ipc(vm, vm_config);
     }
 
     cpu_sync_and_clear_msgs(&vm->sync);

@@ -69,16 +69,16 @@ inline bool iommu_arch_vm_add_device(struct vm* vm, streamid_t id)
     return iommu_vm_arch_add(vm, 0, id);
 }
 
-bool iommu_arch_vm_init(struct vm* vm, const struct vm_config* config)
+bool iommu_arch_vm_init(struct vm* vm, const struct vm_config* vm_config)
 {
     vm->io.prot.mmu.global_mask =
-        config->platform.arch.smmu.global_mask | platform.arch.smmu.global_mask;
+        vm_config->platform.arch.smmu.global_mask | platform.arch.smmu.global_mask;
     vm->io.prot.mmu.ctx_id = -1;
 
     /* This section relates only to arm's iommu so we parse it here. */
-    for (size_t i = 0; i < config->platform.arch.smmu.group_num; i++) {
+    for (size_t i = 0; i < vm_config->platform.arch.smmu.group_num; i++) {
         /* Register each group. */
-        const struct smmu_group* group = &config->platform.arch.smmu.groups[i];
+        const struct smmu_group* group = &vm_config->platform.arch.smmu.groups[i];
         if (!iommu_vm_arch_add(vm, group->mask, group->id)) {
             return false;
         }
