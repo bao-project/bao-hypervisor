@@ -9,19 +9,9 @@
 #include <fences.h>
 
 /** APLIC fields and masks defines */
-#define APLIC_DOMAINCFG_CTRL_MASK      (0x1FF)
-
-#define DOMAINCFG_DM                   (1U << 2)
-
-#define INTP_IDENTITY                  (16)
-#define INTP_IDENTITY_MASK             (0x3FF)
-
-#define APLIC_DISABLE_IDELIVERY        (0)
-#define APLIC_ENABLE_IDELIVERY         (1)
-#define APLIC_DISABLE_IFORCE           (0)
-#define APLIC_ENABLE_IFORCE            (1)
-#define APLIC_IDC_ITHRESHOLD_EN_ALL    (0)
-#define APLIC_IDC_ITHRESHOLD_DISBL_ALL (1)
+#define APLIC_ENABLE_IDELIVERY      (1)
+#define APLIC_DISABLE_IFORCE        (0)
+#define APLIC_IDC_ITHRESHOLD_EN_ALL (0)
 
 /** APLIC public data */
 volatile struct aplic_control_hw* aplic_control;

@@ -13,7 +13,6 @@
 
 #define APLIC_MIN_PRIO             (0xFF)
 #define UPDATE_ALL_HARTS           (~0U)
-#define MASK_INTP_ZERO             (0xFFFFFFFE)
 
 #define SET_INTP_REG(reg, intp_id) (reg[intp_id / 32] = bit32_set(reg[intp_id / 32], intp_id % 32))
 #define GET_INTP_REG(reg, intp_id) ((bit32_get(reg[intp_id / 32], intp_id % 32) != 0) ? 1U : 0U)
