@@ -103,22 +103,6 @@ static bool mem_are_ppages_reserved_in_pool(struct page_pool* ppool, struct ppag
     return reserved;
 }
 
-static bool mem_are_ppages_reserved(struct ppages* ppages)
-{
-    bool reserved = false;
-    list_foreach (page_pool_list, struct page_pool, pool) {
-        bool is_in_rgn = range_in_range(ppages->base, ppages->num_pages * PAGE_SIZE, pool->base,
-            pool->size * PAGE_SIZE);
-
-        if (is_in_rgn) {
-            reserved = mem_are_ppages_reserved_in_pool(pool, ppages);
-            break;
-        }
-    }
-
-    return reserved;
-}
-
 static bool mem_reserve_ppool_ppages(struct page_pool* pool, struct ppages* ppages)
 {
     bool is_in_rgn = range_in_range(ppages->base, ppages->num_pages * PAGE_SIZE, pool->base,

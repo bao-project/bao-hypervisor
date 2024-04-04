@@ -47,15 +47,6 @@ void interrupts_arch_ipi_send(cpuid_t target_cpu, irqid_t ipi_id)
     }
 }
 
-static void interrupts_arch_cpu_enable(bool en)
-{
-    if (en) {
-        csrs_sstatus_set(SSTATUS_SIE_BIT);
-    } else {
-        csrs_sstatus_clear(SSTATUS_SIE_BIT);
-    }
-}
-
 void interrupts_arch_enable(irqid_t int_id, bool en)
 {
     if (int_id == SOFT_INT_ID) {
