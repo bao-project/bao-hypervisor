@@ -87,7 +87,7 @@ struct psci_off_state {
     uint64_t vttbr_el2;
     uint64_t wakeup_reason;
     paddr_t flat_map;
-    struct gicc_state gicc_state;
+    struct gicc_state gicc_state __attribute__((aligned(8)));
 } __attribute__((packed, aligned(8)));
 
 enum wakeup_reason {
