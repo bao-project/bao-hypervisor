@@ -1092,7 +1092,7 @@ void gic_maintenance_handler(irqid_t irq_id)
         vgic_refill_lrs(cpu()->vcpu, !!(misr & GICH_MISR_NP));
     }
 
-    if (misr & GICH_MISR_LRPEN) {
+    if (misr & GICH_MISR_LRENP) {
         uint32_t hcr_el2 = gich_get_hcr();
         while (hcr_el2 & GICH_HCR_EOICount_MASK) {
             vgic_eoir_highest_spilled_active(cpu()->vcpu);
