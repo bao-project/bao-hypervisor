@@ -328,7 +328,7 @@ typedef uint64_t gic_lr_t;
 
 #define GICH_MISR_EOI         (1U << 0)
 #define GICH_MISR_U           (1U << 1)
-#define GICH_MISR_LRPEN       (1U << 2)
+#define GICH_MISR_LRENP       (1U << 2)
 #define GICH_MISR_NP          (1U << 3)
 #define GICH_MISR_VGrp0E      (1U << 4)
 #define GICH_MISR_VGrp0D      (1U << 5)
