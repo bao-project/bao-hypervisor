@@ -381,25 +381,12 @@ unsigned long remote_io_hypercall(unsigned long arg0, unsigned long arg1, unsign
     unsigned long cpu_id = cpu()->vcpu->regs.x[7];
     unsigned long vcpu_id = cpu()->vcpu->regs.x[8];
 
-    unsigned long abs_remote_io_id = 0;
-    bool match = false;
-
-    list_foreach (remote_io_list, struct remote_io, io_device) {
-        if (cpu()->vcpu->vm->id == io_device->instance.backend_vm_id) {
-            if (abs_remote_io_id == virt_remote_io_id) {
-                match = true;
-                break;
-            } else {
-                abs_remote_io_id++;
-            }
-        }
-    }
-
-    if (!match) {
-        WARNING("No matching for Remote I/O ID (%d) within VM (%d)", virt_remote_io_id,
-            cpu()->vcpu->vm->id);
+    if (virt_remote_io_id >= config.vmlist[cpu()->vcpu->vm->id].platform.remote_io_dev_num) {
+        WARNING("Remote I/O ID (%d) is out of range", virt_remote_io_id);
         return -HC_E_FAILURE;
     }
+    unsigned long abs_remote_io_id =
+        config.vmlist[cpu()->vcpu->vm->id].platform.remote_io_devs[virt_remote_io_id].remote_io_id;
 
     switch (op) {
         case IO_WRITE_OP:
