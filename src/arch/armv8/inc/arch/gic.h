@@ -438,7 +438,7 @@ size_t gich_num_lrs();
 static inline size_t gic_num_irqs()
 {
     size_t itlinenumber = bit32_extract(gicd->TYPER, GICD_TYPER_ITLN_OFF, GICD_TYPER_ITLN_LEN);
-    return 32 * itlinenumber + 1;
+    return 32 * (itlinenumber + 1);
 }
 
 static inline bool gic_is_sgi(irqid_t int_id)
