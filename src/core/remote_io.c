@@ -115,16 +115,6 @@ struct io_access_event {
 };
 
 /*!
- * @struct  io_requests
- * @brief   Contains the I/O requests for a specific CPU
- *
- * @note    Each remote_io frontend can run on multiple vCPUs
- */
-struct io_requests {
-    struct io_access io_access[IO_VCPU_NUM]; // I/O requests for each vCPU
-};
-
-/*!
  * @struct  remote_io
  * @brief   Comprises all the information about the Remote I/O infrastructure for each Remote I/O
  * instance
@@ -138,7 +128,7 @@ struct remote_io {
 };
 
 struct list remote_io_list;
-struct io_requests remote_io_requests[IO_CPU_NUM];
+struct io_access remote_io_requests[IO_CPU_NUM][IO_VCPU_NUM];
 
 static void remote_io_handler(uint32_t, uint64_t);
 CPU_MSG_HANDLER(remote_io_handler, REMOTE_IO_CPUMSG_ID);
@@ -216,7 +206,7 @@ void remote_io_init()
 
     for (int cpu_idx = 0; cpu_idx < IO_CPU_NUM; cpu_idx++) {
         for (int vcpu_idx = 0; vcpu_idx < IO_VCPU_NUM; vcpu_idx++) {
-            remote_io_requests[cpu_idx].io_access[vcpu_idx].state = IO_STATE_FREE;
+            remote_io_requests[cpu_idx][vcpu_idx].state = IO_STATE_FREE;
         }
     }
 }
@@ -252,7 +242,7 @@ static bool remote_io_w_r_operation(unsigned long remote_io_id, unsigned long re
     list_foreach (remote_io_list, struct remote_io, io_device) {
         if (io_device->id == remote_io_id) {
             spin_lock(&io_device->lock);
-            struct io_access* node = &remote_io_requests[cpu_id].io_access[vcpu_id];
+            struct io_access* node = &remote_io_requests[cpu_id][vcpu_id];
             spin_unlock(&io_device->lock);
 
             if (node->reg_off != reg_off || node->state != IO_STATE_PROCESSING) {
@@ -285,7 +275,7 @@ static void remote_io_cpu_msg_handler(uint32_t event, uint64_t data)
     list_foreach (remote_io_list, struct remote_io, io_device) {
         if (io_device->id == id) {
             spin_lock(&io_device->lock);
-            struct io_access* node = &remote_io_requests[cpu_id].io_access[vcpu_id];
+            struct io_access* node = &remote_io_requests[cpu_id][vcpu_id];
             spin_unlock(&io_device->lock);
 
             switch (event) {
@@ -414,8 +404,7 @@ unsigned long remote_io_hypercall(unsigned long arg0, unsigned long arg1, unsign
                     }
 
                     spin_lock(&io_device->lock);
-                    struct io_access* request =
-                        &remote_io_requests[node->cpu_id].io_access[node->vcpu_id];
+                    struct io_access* request = &remote_io_requests[node->cpu_id][node->vcpu_id];
                     request->state = IO_STATE_PROCESSING;
                     spin_unlock(&io_device->lock);
 
@@ -491,7 +480,7 @@ bool remote_io_mmio_emul_handler(struct emul_access* acc)
                         msg.event = IO_NOTIFY_BACKEND_POOL;
                     }
                     spin_lock(&io_device->lock);
-                    remote_io_requests[node->cpu_id].io_access[node->vcpu_id] = request;
+                    remote_io_requests[node->cpu_id][node->vcpu_id] = request;
                     spin_unlock(&io_device->lock);
                     list_push(&io_device->requests, (node_t*)node);
                     cpu_send_msg(io_device->instance.backend_cpu_id, &msg);
