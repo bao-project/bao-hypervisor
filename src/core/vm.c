@@ -239,7 +239,6 @@ static void vm_init_remote_io(struct vm* vm, const struct vm_config* vm_config)
     if (vm_config->platform.remote_io_dev_num > 0) {
         vm->remote_io_dev_num = vm_config->platform.remote_io_dev_num;
         vm->remote_io_pooling = vm_config->platform.remote_io_pooling;
-        vm->remote_io_interrupt = vm_config->platform.remote_io_interrupt;
         vm->remote_io_devs = vm_config->platform.remote_io_devs;
 
         for (int i = 0; i < vm_config->platform.remote_io_dev_num; i++) {
@@ -268,7 +267,7 @@ static void vm_init_remote_io(struct vm* vm, const struct vm_config* vm_config)
 
             vm_map_mem_region(vm, &reg);
 
-            if (!remote_io_dev->is_back_end) {
+            if (!remote_io_dev->is_backend) {
                 struct emul_mem* emu = objpool_alloc(&emul_cache);
                 emu->va_base = remote_io_dev->va;
                 emu->size = remote_io_dev->size;

@@ -51,7 +51,6 @@ struct vm_platform {
     /* Remote I/O devices */
     size_t remote_io_dev_num;
     bool remote_io_pooling;
-    size_t remote_io_interrupt;
     struct remote_io_dev* remote_io_devs;
 
     // /**
@@ -95,7 +94,6 @@ struct vm {
     /* Remote I/O devices */
     size_t remote_io_dev_num;
     bool remote_io_pooling;
-    size_t remote_io_interrupt;
     struct remote_io_dev* remote_io_devs;
 };
 
