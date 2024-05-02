@@ -158,14 +158,14 @@ void remote_io_init()
             struct remote_io_dev* dev = &vm_config->platform.remote_io_devs[i];
             if (instances[dev->id][0] != IO_INSTANCE_UNINITIALIZED && dev->is_backend) {
                 ERROR("Failed to link backend to the frontend, more than one backend was "
-                        "atributed to the Remote I/O instance %d",
+                      "atributed to the Remote I/O instance %d",
                     dev->id);
             }
             if (instances[dev->id][1] != IO_INSTANCE_UNINITIALIZED && !dev->is_backend) {
                 ERROR("Failed to link backend to the frontend, more than one frontend was "
-                        "atributed to the Remote I/O instance %d",
+                      "atributed to the Remote I/O instance %d",
                     dev->id);
-            } 
+            }
             if (dev->is_backend) {
                 struct remote_io* node = objpool_alloc(&remote_io_pool);
                 node->id = dev->id;
@@ -435,7 +435,7 @@ bool remote_io_mmio_emul_handler(struct emul_access* acc)
 {
     struct vm* vm = cpu()->vcpu->vm;
     struct remote_io_dev dev = { 0 };
-    volatile int i, j;
+    volatile int i = 0;
 
     for (i = 0; i < vm->remote_io_dev_num; i++) {
         dev = vm->remote_io_devs[i];
@@ -452,7 +452,6 @@ bool remote_io_mmio_emul_handler(struct emul_access* acc)
         if (io_device->id == dev.id) {
             struct io_access_event* node = objpool_alloc(&remote_io_access_event_pool);
             struct io_access request;
-            struct cpu_msg msg = { REMOTE_IO_CPUMSG_ID, IO_INJECT_INTERRUPT_BACKEND, dev.id };
             request.reg_off = acc->addr - dev.va;
             request.addr = acc->addr;
             request.reg = acc->reg;
@@ -469,25 +468,19 @@ bool remote_io_mmio_emul_handler(struct emul_access* acc)
                 request.op = IO_READ_OP;
                 request.value = 0;
             }
-            for (j = 0;
-                 j < config.vmlist[io_device->instance.backend_vm_id].platform.remote_io_dev_num;
-                 j++) {
-                if (config.vmlist[io_device->instance.backend_vm_id].platform.remote_io_devs[j].id ==
-                    dev.id) {
-                    spin_lock(&io_device->lock);
-                    remote_io_requests[node->cpu_id][node->vcpu_id] = request;
-                    spin_unlock(&io_device->lock);
-                    list_push(&io_device->requests, (node_t*)node);
-                    if (!config.vmlist[io_device->instance.backend_vm_id].platform.remote_io_pooling) {
-                        cpu_send_msg(io_device->instance.backend_cpu_id, &msg);
-                    }
-                    vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + 4);
-                    cpu()->vcpu->active = false;
-                    cpu_idle();
-                    return true;
-                }
+
+            spin_lock(&io_device->lock);
+            remote_io_requests[node->cpu_id][node->vcpu_id] = request;
+            spin_unlock(&io_device->lock);
+            list_push(&io_device->requests, (node_t*)node);
+            if (!config.vmlist[io_device->instance.backend_vm_id].platform.remote_io_pooling) {
+                struct cpu_msg msg = { REMOTE_IO_CPUMSG_ID, IO_INJECT_INTERRUPT_BACKEND, dev.id };
+                cpu_send_msg(io_device->instance.backend_cpu_id, &msg);
             }
-            break;
+            vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + 4);
+            cpu()->vcpu->active = false;
+            cpu_idle();
+            return true;
         }
     }
     return false;
