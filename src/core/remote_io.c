@@ -136,8 +136,8 @@ OBJPOOL_ALLOC(remote_io_access_event_pool, struct io_access_event, sizeof(struct
 
 void remote_io_init()
 {
-    int i, vm_id, frontend_id = 0, backend_id = 0;
-    int backend_devices[IO_INSTANCES_NUM_MAX];
+    int i, vm_id, frontend_cnt = 0, backend_cnt = 0;
+    int instances[IO_INSTANCES_NUM_MAX][2];
 
     if (!cpu_is_master()) {
         return;
@@ -148,35 +148,40 @@ void remote_io_init()
     list_init(&remote_io_list);
 
     for (i = 0; i < IO_INSTANCES_NUM_MAX; i++) {
-        backend_devices[i] = IO_INSTANCE_UNINITIALIZED;
+        instances[i][0] = IO_INSTANCE_UNINITIALIZED;
+        instances[i][1] = IO_INSTANCE_UNINITIALIZED;
     }
 
     for (vm_id = 0; vm_id < config.vmlist_size; vm_id++) {
         struct vm_config* vm_config = &config.vmlist[vm_id];
         for (i = 0; i < vm_config->platform.remote_io_dev_num; i++) {
             struct remote_io_dev* dev = &vm_config->platform.remote_io_devs[i];
+            if (instances[dev->id][0] != IO_INSTANCE_UNINITIALIZED && dev->is_backend) {
+                ERROR("Failed to link backend to the frontend, more than one backend was "
+                        "atributed to the Remote I/O instance %d",
+                    dev->id);
+            }
+            if (instances[dev->id][1] != IO_INSTANCE_UNINITIALIZED && !dev->is_backend) {
+                ERROR("Failed to link backend to the frontend, more than one frontend was "
+                        "atributed to the Remote I/O instance %d",
+                    dev->id);
+            } 
             if (dev->is_backend) {
                 struct remote_io* node = objpool_alloc(&remote_io_pool);
                 node->id = dev->id;
                 node->lock = SPINLOCK_INITVAL;
                 list_init(&node->requests);
                 list_push(&remote_io_list, (node_t*)node);
-
-                if (backend_devices[dev->id] != IO_INSTANCE_UNINITIALIZED) {
-                    ERROR("Failed to link backend to the frontend, more than one back-end was "
-                          "atributed to the Remote I/O instance %d",
-                        dev->id);
-                } else {
-                    backend_id++;
-                    backend_devices[dev->id] = vm_id;
-                }
+                backend_cnt++;
+                instances[dev->id][0] = vm_id;
             } else {
-                frontend_id++;
+                frontend_cnt++;
+                instances[dev->id][1] = vm_id;
             }
         }
     }
 
-    if (backend_id != frontend_id) {
+    if (backend_cnt != frontend_cnt) {
         ERROR("There is no 1-to-1 mapping between a Remote I/O backend and Remote I/O frontend");
     }
 
