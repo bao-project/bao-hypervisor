@@ -89,7 +89,6 @@ enum IO_STATE {
  * @brief   Contains the specific parameters of a I/O device access
  */
 struct io_access {
-    unsigned long reg_off;      // Offset of the accessed MMIO Register
     vaddr_t addr;               // Address of the accessed MMIO Register
     unsigned long access_width; // Access width
     unsigned long op;           // Operation
@@ -227,13 +226,13 @@ void remote_io_assign_cpus(struct vm* vm)
  * @fn                  remote_io_w_r_operation
  * @brief               Performs the write or read operation by updating the value
  * @param id     Contains the Remote I/O
- * @param reg_off       Contains the MMIO register offset
+ * @param addr       Contains the MMIO register address
  * @param value         Contains the register value
  * @param cpu_id        Contains the frontend CPU ID of the I/O request
  * @param vcpu_id       Contains the frontend vCPU ID of the I/O request
  * @return              true if the operation was successful, false otherwise
  */
-static bool remote_io_w_r_operation(unsigned long id, unsigned long reg_off, unsigned long value,
+static bool remote_io_w_r_operation(unsigned long id, unsigned long addr, unsigned long value,
     unsigned long cpu_id, unsigned long vcpu_id)
 {
     list_foreach (remote_io_list, struct remote_io, io_device) {
@@ -242,7 +241,7 @@ static bool remote_io_w_r_operation(unsigned long id, unsigned long reg_off, uns
             struct io_access* node = &remote_io_requests[cpu_id][vcpu_id];
             spin_unlock(&io_device->lock);
 
-            if (node->reg_off != reg_off || node->state != IO_STATE_PROCESSING) {
+            if (node->addr != addr || node->state != IO_STATE_PROCESSING) {
                 break;
             }
 
@@ -361,12 +360,11 @@ unsigned long remote_io_hypercall(unsigned long arg0, unsigned long arg1, unsign
 {
     unsigned long ret = -HC_E_SUCCESS;
     unsigned long virt_remote_io_id = cpu()->vcpu->regs.x[2];
-    unsigned long reg_off = cpu()->vcpu->regs.x[3];
-    // unsigned long addr = cpu()->vcpu->regs.x[4];
-    unsigned long op = cpu()->vcpu->regs.x[5];
-    unsigned long value = cpu()->vcpu->regs.x[6];
-    unsigned long cpu_id = cpu()->vcpu->regs.x[7];
-    unsigned long vcpu_id = cpu()->vcpu->regs.x[8];
+    unsigned long addr = cpu()->vcpu->regs.x[3];
+    unsigned long op = cpu()->vcpu->regs.x[4];
+    unsigned long value = cpu()->vcpu->regs.x[5];
+    unsigned long cpu_id = cpu()->vcpu->regs.x[6];
+    unsigned long vcpu_id = cpu()->vcpu->regs.x[7];
 
     if (virt_remote_io_id >= config.vmlist[cpu()->vcpu->vm->id].platform.remote_io_dev_num) {
         WARNING("Remote I/O ID (%d) is out of range", virt_remote_io_id);
@@ -378,7 +376,7 @@ unsigned long remote_io_hypercall(unsigned long arg0, unsigned long arg1, unsign
     switch (op) {
         case IO_WRITE_OP:
         case IO_READ_OP:
-            if (!remote_io_w_r_operation(abs_remote_io_id, reg_off, value, cpu_id, vcpu_id)) {
+            if (!remote_io_w_r_operation(abs_remote_io_id, addr, value, cpu_id, vcpu_id)) {
                 ret = -HC_E_FAILURE;
             } else {
                 remote_io_cpu_send_msg(abs_remote_io_id, op, cpu_id, vcpu_id);
@@ -386,7 +384,7 @@ unsigned long remote_io_hypercall(unsigned long arg0, unsigned long arg1, unsign
             break;
         case IO_ASK_OP:
             ret = -HC_E_FAILURE;
-            if (reg_off != 0 || value != 0) {
+            if (addr != 0 || value != 0) {
                 break;
             }
             list_foreach (remote_io_list, struct remote_io, io_device) {
@@ -406,13 +404,12 @@ unsigned long remote_io_hypercall(unsigned long arg0, unsigned long arg1, unsign
                     spin_unlock(&io_device->lock);
 
                     vcpu_writereg(cpu()->vcpu, 1, virt_remote_io_id);
-                    vcpu_writereg(cpu()->vcpu, 2, request->reg_off);
-                    vcpu_writereg(cpu()->vcpu, 3, request->addr);
-                    vcpu_writereg(cpu()->vcpu, 4, request->op);
-                    vcpu_writereg(cpu()->vcpu, 5, request->value);
-                    vcpu_writereg(cpu()->vcpu, 6, request->access_width);
-                    vcpu_writereg(cpu()->vcpu, 7, node->cpu_id);
-                    vcpu_writereg(cpu()->vcpu, 8, node->vcpu_id);
+                    vcpu_writereg(cpu()->vcpu, 2, request->addr);
+                    vcpu_writereg(cpu()->vcpu, 3, request->op);
+                    vcpu_writereg(cpu()->vcpu, 4, request->value);
+                    vcpu_writereg(cpu()->vcpu, 5, request->access_width);
+                    vcpu_writereg(cpu()->vcpu, 6, node->cpu_id);
+                    vcpu_writereg(cpu()->vcpu, 7, node->vcpu_id);
 
                     objpool_free(&remote_io_access_event_pool, node);
 
@@ -452,7 +449,6 @@ bool remote_io_mmio_emul_handler(struct emul_access* acc)
         if (io_device->id == dev.id) {
             struct io_access_event* node = objpool_alloc(&remote_io_access_event_pool);
             struct io_access request;
-            request.reg_off = acc->addr - dev.va;
             request.addr = acc->addr;
             request.reg = acc->reg;
             request.access_width = acc->width;
