@@ -118,6 +118,24 @@ static inline bool list_rm(struct list* list, node_t* node)
     return true;
 }
 
+static inline size_t list_size(struct list* list)
+{
+    size_t size = 0;
+    if (list != NULL) {
+        spin_lock(&list->lock);
+
+        node_t* temp = list->head;
+        while (temp != NULL) {
+            size++;
+            temp = *temp;
+        }
+
+        spin_unlock(&list->lock);
+    }
+
+    return size;
+}
+
 typedef int (*node_cmp_t)(node_t*, node_t*);
 
 static inline void list_insert_ordered(struct list* list, node_t* node, node_cmp_t cmp)
