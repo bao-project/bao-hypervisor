@@ -368,6 +368,8 @@ unsigned long remote_io_hypercall(unsigned long arg0, unsigned long arg1, unsign
                 break;
             }
 
+            ret = list_size(&remote_io->requests);
+
             spin_lock(&remote_io->lock);
             struct remote_io_access* request = &remote_io_requests[node->cpu_id][node->vcpu_id];
             request->state = REMOTE_IO_STATE_PROCESSING;
