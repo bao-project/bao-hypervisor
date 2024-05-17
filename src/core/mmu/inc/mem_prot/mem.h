@@ -19,7 +19,6 @@ struct addr_space {
     asid_t id;
     spinlock_t lock;
 };
-enum AS_SEC;
 
 typedef pte_t mem_flags_t;
 
