@@ -8,6 +8,10 @@
 
 #include <bao.h>
 
+#define PLIC  (1)
+#define APLIC (2)
+#define AIA   (3)
+
 // Arch-specific platform data
 struct arch_platform {
     union irqc_dscrp {
@@ -18,6 +22,9 @@ struct arch_platform {
             struct {
                 paddr_t base;
             } aplic;
+            struct {
+                paddr_t base;
+            } imsic;
         } aia;
     } irqc;
 
