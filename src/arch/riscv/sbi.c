@@ -107,7 +107,12 @@ struct sbiret sbi_send_ipi(const unsigned long hart_mask, unsigned long hart_mas
 
 struct sbiret sbi_set_timer(uint64_t stime_value)
 {
-    return sbi_ecall(SBI_EXTID_TIME, SBI_SET_TIMER_FID, stime_value, 0, 0, 0, 0, 0);
+    unsigned long a0 = (unsigned long)stime_value;
+    unsigned long a1 = 0;
+    if (RV32) {
+        a1 = (unsigned long)(stime_value >> 32);
+    }
+    return sbi_ecall(SBI_EXTID_TIME, SBI_SET_TIMER_FID, a0, a1, 0, 0, 0, 0);
 }
 
 struct sbiret sbi_remote_fence_i(const unsigned long hart_mask, unsigned long hart_mask_base)
@@ -205,6 +210,10 @@ static struct sbiret sbi_time_handler(unsigned long fid)
     }
 
     uint64_t stime_value = vcpu_readreg(cpu()->vcpu, REG_A0);
+    if (RV32) {
+        stime_value |= ((uint64_t)vcpu_readreg(cpu()->vcpu, REG_A1)) << 32;
+    }
+
     if (CPU_HAS_EXTENSION(CPU_EXT_SSTC)) {
         csrs_vstimecmp_write(stime_value);
     } else {
