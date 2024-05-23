@@ -31,9 +31,9 @@
 // are assuming, for now that all available physical memory resides in 0x0 - 0xefffffff of virtual
 // memory. Otherwise we need to implement a "highmem"-like mechanism.
 #define BAO_VAS_BASE (0xc0000000)
-#define BAO_CPU_BASE (0xc0400000)
-#define BAO_VM_BASE  (0xc0800000)
-#define BAO_VAS_TOP  (0xc0c00000)
+#define BAO_CPU_BASE (0xcf400000)
+#define BAO_VM_BASE  (0xcf800000)
+#define BAO_VAS_TOP  (0xcfc00000)
 #endif
 
 #define PAGE_SIZE        (0x1000)
