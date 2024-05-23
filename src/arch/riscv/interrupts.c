@@ -43,7 +43,7 @@ void interrupts_arch_ipi_send(cpuid_t target_cpu, irqid_t ipi_id)
     if (ACLINT_PRESENT()) {
         aclint_send_ipi(target_cpu);
     } else {
-        sbi_send_ipi(1ULL << target_cpu, 0);
+        sbi_send_ipi(1UL << target_cpu, 0);
     }
 }
 
