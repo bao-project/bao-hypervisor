@@ -62,7 +62,7 @@ bool mem_translate(struct addr_space* as, vaddr_t va, paddr_t* pa)
     }
     if (pte && pte_valid(pte)) {
         *pa = pte_addr(pte);
-        paddr_t mask = (1ULL << as->pt.dscr->lvl_off[lvl]) - 1;
+        paddr_t mask = (paddr_t)(1UL << as->pt.dscr->lvl_off[lvl]) - 1;
         *pa = (*pa & ~mask) | ((paddr_t)va & mask);
         return true;
     } else {
