@@ -10,8 +10,13 @@
 #include <platform_defs.h>
 
 #define PT_SIZE PAGE_SIZE
+#if RV64
 #define PT_LVLS 3
 #define PTE_INDEX_SHIFT(LEVEL) ((9 * (PT_LVLS - 1 - (LEVEL))) + 12)
+#else
+#define PT_LVLS 2
+#define PTE_INDEX_SHIFT(LEVEL) ((10 * (PT_LVLS - 1 - (LEVEL))) + 12)
+#endif 
 
 /**
  * Calculates the index or offset of a page table entry for given virtual address(addr) at a given
@@ -19,9 +24,10 @@
  */
 .macro PTE_INDEX_ASM	index, addr, level
 	srl \index, \addr, PTE_INDEX_SHIFT(\level) 
-    li  s0, ((PAGE_SIZE/8)-1)
+    li  s0, ((PAGE_SIZE/REGLEN)-1)
 	and \index, \index, s0
-	sll \index, \index, 3
+    li  s0, REGLEN
+	mul \index, \index, s0
 .endm
 
 /**
@@ -56,6 +62,7 @@ _dmem_beg_sym: .8byte _dmem_beg
 _enter_vas_sym: .8byte _enter_vas
 _bss_start_sym: .8byte _bss_start
 _bss_end_sym: .8byte _bss_end
+_extra_allocated_phys_mem_sym: .8byte extra_allocated_phys_mem
 
 .data 
 .align 3
@@ -90,7 +97,7 @@ _reset_handler:
 
     mv      a2, a1
     la      a1, _image_start
-    la      s6, extra_allocated_phys_mem
+    LD_SYM  s6, _extra_allocated_phys_mem_sym
 
     /**
      * Setup stvec early. In case of we cause an exception in this boot code we end up at a known
@@ -118,7 +125,7 @@ _reset_handler:
  */
     la      t0, CPU_MASTER
     li      t1, CPU_MASTER_FIXED
-    sd      t1, 0(t0)
+    STORE   t1, 0(t0)
 #else
 /**
  * The first hart to grab the lock is CPU_MASTER.
@@ -135,11 +142,11 @@ _boot_lock:
     sc.w    t2, t1, (t0)   
     bnez    t2, 1b 
     la      t0, CPU_MASTER
-    sd      a0, 0(t0)
+    STORE      a0, 0(t0)
 2:
 #endif
 
-    /* Setup bootstrap page tables. Assuming sv39 support. */ 
+    /* Setup bootstrap page tables. Assuming sv39 or sv32 support. */ 
 
  	/* Skip initialy global page tables setup if not hart */
     LD_SYM  t0, CPU_MASTER
@@ -151,36 +158,41 @@ _boot_lock:
     add     a4, a4, s6
 	call	clear		 
 
+
     la          t0, root_l1_pt
     add         t0, t0, s6
+#if RV64
     la          t1, root_l2_pt
     add         t1, t1, s6
     PTE_FILL    t1, t1, PTE_TABLE
     li          t2, BAO_VAS_BASE
     PTE_PTR     t2, t0, 1, t2
     STORE       t1, 0(t2)
-
-
     la          t0, root_l2_pt
     add         t0, t0, s6
+#endif
     LD_SYM      t1, _image_start_sym
-    PTE_PTR     t1, t0, 2, t1
+    PTE_PTR     t1, t0, (PT_LVLS - 1), t1
     LD_SYM      t2, _image_load_end_sym
-    PTE_PTR     t2, t0, 2, t2
+    PTE_PTR     t2, t0, (PT_LVLS - 1), t2
 
     la          t0, _image_start
     PTE_FILL    t0, t0, PTE_HYP_FLAGS | PTE_PAGE
 1:
     bge     t1, t2, 2f
     STORE   t0, 0(t1)
-    add     t1, t1, 8
-    add     t0, t0, 0x400
+    add     t1, t1, REGLEN
+    add     t0, t0, (PAGE_SIZE >> 2)
     j       1b
 2:
+#if RV64
     la          t0, root_l2_pt
+#else
+    la          t0, root_l1_pt
+#endif
     add         t0, t0, s6
     LD_SYM      t2, _image_end_sym
-    PTE_PTR     t2, t0, 2, t2
+    PTE_PTR     t2, t0, (PT_LVLS - 1), t2
     bge         t1, t2, 3f
     la          t0, _image_noload_start
     PTE_FILL    t0, t0, PTE_HYP_FLAGS | PTE_PAGE
@@ -213,13 +225,6 @@ map_cpu:
     li      t2, CPU_SIZE
     add     t1, t0, t2
 
-    /* Flat mapping to switch to VAS. */
-    PTE_PTR     t2, t1, 0, a1
-    li          t3, ~((1 << 30) -1)
-    and         t3, a1, t3          //align a1 to 1GB (levle 0 superpage)  
-    PTE_FILL    t3, t3, PTE_HYP_FLAGS | PTE_PAGE | PTE_SUPERPAGE
-    STORE       t3, 0(t2)
-
     /* Add root l1 page table pointer to root page table */
     la          t2, root_l1_pt
     add         t2, t2, s6
@@ -236,13 +241,14 @@ map_cpu:
     PTE_PTR     t3, t1, 0, t3
     STORE       t2, 0(t3)
 
+#if RV64
     add         t1, t1, t4
     add         t2, t1, t4
     PTE_FILL    t2, t2, PTE_TABLE
     li          t3, BAO_CPU_BASE
     PTE_PTR     t3, t1, 1, t3
     STORE       t2, 0(t3)
-
+#endif
 
     add         t1, t1, t4
     li          t2, BAO_CPU_BASE
@@ -252,8 +258,8 @@ map_cpu:
 1:
     blez    t3, setup_cpu
     STORE   t2, 0(t1)
-    add     t1, t1, 8
-    add     t2, t2, 0x400
+    add     t1, t1, REGLEN
+    add     t2, t2, (PAGE_SIZE >> 2)
     sub     t3, t3, t4
     j       1b
     
@@ -268,8 +274,10 @@ setup_cpu:
     li      t2, SATP_MODE_DFLT
     or      t0, t0, t2
 
-    la      t2, _enter_vas_sym
-    LOAD    t2, 0(t2)
+    LD_SYM      t2, _enter_vas_sym
+    and     t3, t2, ~STVEC_MODE_MSK
+    or      t3, t3, STVEC_MODE_DIRECT
+    csrw    stvec, t3
 
     sfence.vma
     csrw   satp, t0

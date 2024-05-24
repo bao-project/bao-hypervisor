@@ -38,7 +38,10 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
 
     csrs_sscratch_write((uintptr_t)&vcpu->regs);
 
-    vcpu->regs.hstatus = HSTATUS_SPV | HSTATUS_VSXL_64;
+    vcpu->regs.hstatus = HSTATUS_SPV;
+    if (RV64) {
+        vcpu->regs.hstatus |= HSTATUS_VSXL_64;
+    }
     vcpu->regs.sstatus = SSTATUS_SPP_BIT | SSTATUS_FS_DIRTY | SSTATUS_XS_DIRTY;
     vcpu->regs.sepc = entry;
     vcpu->regs.a0 = vcpu->arch.hart_id = vcpu->id;
@@ -46,6 +49,9 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
 
     if (CPU_HAS_EXTENSION(CPU_EXT_SSTC)) {
         csrs_stimecmp_write(~0U);
+        csrs_henvcfg_set(HENVCFG_STCE);
+    } else {
+        csrs_henvcfg_clear(HENVCFG_STCE);
     }
 
     csrs_hcounteren_write(HCOUNTEREN_TM);

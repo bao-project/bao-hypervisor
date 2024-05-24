@@ -142,7 +142,7 @@ static void vplic_ipi_handler(uint32_t event, uint64_t data)
 {
     switch (event) {
         case UPDATE_HART_LINE:
-            vplic_update_hart_line(cpu()->vcpu, data);
+            vplic_update_hart_line(cpu()->vcpu, (size_t)data);
             break;
         default:
             WARNING("Unknown VPLIC IPI event");
