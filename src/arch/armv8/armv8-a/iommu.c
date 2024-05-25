@@ -3,86 +3,81 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
-#include <arch/iommu.h>
-#include <vm.h>
-#include <cpu.h>
-#include <mem.h>
+#include <io.h>
+#include <arch/smmuv3.h>
 #include <config.h>
 
-bool iommu_arch_init(void)
+/**
+ * IOMMU HW Initialization.
+ *
+ * @returns true on success, false on error.
+ */
+// TODO: We need a mechanism to select between both SMMU versions
+bool iommu_arch_init()
 {
-    if (cpu_is_master() && platform.arch.smmu.base) {
-        smmu_init();
+    // By checking platform.arch.iommu.base we verify if an IOMMU is present in the platform
+    if (cpu()->id == CPU_MASTER && platform.arch.iommu.base) {
+        smmuv3_init();
         return true;
     }
 
     return false;
 }
 
-static ssize_t iommu_vm_arch_init_ctx(struct vm* vm)
+/**
+ * Initialize the STE indexed by the StreamID for the given VM
+ * Configure corresponding STE with root PT base addr, VMID and device config
+ *
+ * @vm:     VM struct to which the device will be assigned.
+ * @sid:    StreamID of the device to be added.
+ *
+ * @returns true on success, false on error.
+ */
+static bool iommu_vm_arch_add(struct vm* vm, streamid_t sid)
 {
-    ssize_t ctx_id = (ssize_t)vm->io.prot.mmu.ctx_id;
-    if (ctx_id < 0) {
-        /* Set up ctx bank to vm address space in an available ctx. */
-        ctx_id = smmu_alloc_ctxbnk();
-        if (ctx_id >= 0) {
+    if (sid > 0) {
+        // Check if device was already added to a VM
+        if (smmuv3_alloc_ste(sid)) {
             paddr_t rootpt;
+            // Translate root PT base address
             mem_translate(&cpu()->as, (vaddr_t)vm->as.pt.root, &rootpt);
-            smmu_write_ctxbnk((size_t)ctx_id, rootpt, vm->id);
-            vm->io.prot.mmu.ctx_id = ctx_id;
+            // Set DDT entry with root PT base address, VMID and configuration
+            smmuv3_write_ste(sid, vm, rootpt);
         } else {
-            INFO("iommu: smmuv2 could not allocate ctx for vm: %d", vm->id);
-        }
-    }
-
-    /* Ctx is valid when we get here. */
-    return ctx_id;
-}
-
-static bool iommu_vm_arch_add(struct vm* vm, streamid_t mask, streamid_t id)
-{
-    ssize_t vm_ctx = iommu_vm_arch_init_ctx(vm);
-    streamid_t glbl_mask = vm->io.prot.mmu.global_mask;
-    streamid_t prep_mask = (mask & SMMU_ID_MSK) | glbl_mask;
-    streamid_t prep_id = (id & SMMU_ID_MSK);
-    bool group = (bool)mask;
-
-    if (vm_ctx < 0) {
-        return false;
-    }
-
-    if (!smmu_compatible_sme_exists(prep_mask, prep_id, (size_t)vm_ctx, group)) {
-        ssize_t sme = smmu_alloc_sme();
-        if (sme < 0) {
-            INFO("iommu: smmuv2 no more free sme available.");
+            INFO("SMMUv3: Cannot add the same StreamID (%d) twice", sid);
             return false;
         }
-        smmu_write_sme((size_t)sme, prep_mask, prep_id, group);
-        smmu_write_s2c((size_t)sme, (size_t)vm_ctx);
+    } else {
+        INFO("SMMUv3: Invalid StreamID: %d", sid);
+        return false;
     }
 
     return true;
 }
 
-inline bool iommu_arch_vm_add_device(struct vm* vm, streamid_t id)
+/**
+ * Add device to the VM specified.
+ *
+ * @vm:     VM struct to which the device will be assigned.
+ * @sid:    StreamID of the device to be added.
+ *
+ * @returns true on success, false on error.
+ */
+inline bool iommu_arch_vm_add_device(struct vm* vm, streamid_t sid)
 {
-    return iommu_vm_arch_add(vm, 0, id);
+    return iommu_vm_arch_add(vm, sid);
 }
 
-bool iommu_arch_vm_init(struct vm* vm, const struct vm_config* vm_config)
+/**
+ * Initialize VM-specific, arch-specific IOMMU data.
+ *
+ * @vm:     VM under consideration.
+ * @config: VM config.
+ *
+ * @returns true on success, false on error.
+ */
+bool iommu_arch_vm_init(struct vm* vm, const struct vm_config* config)
 {
-    vm->io.prot.mmu.global_mask =
-        vm_config->platform.arch.smmu.global_mask | platform.arch.smmu.global_mask;
-    vm->io.prot.mmu.ctx_id = -1;
-
-    /* This section relates only to arm's iommu so we parse it here. */
-    for (size_t i = 0; i < vm_config->platform.arch.smmu.group_num; i++) {
-        /* Register each group. */
-        const struct smmu_group* group = &vm_config->platform.arch.smmu.groups[i];
-        if (!iommu_vm_arch_add(vm, group->mask, group->id)) {
-            return false;
-        }
-    }
-
+    // For now there is no data to initialize
     return true;
 }
