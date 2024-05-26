@@ -9,20 +9,20 @@
 /* UTILITY MACROS */
 
 /* align VAL to TO which must be power a two */
-#define ALIGN(VAL, TO)       ((((VAL) + (TO)-1) / (TO)) * TO)
+#define ALIGN(VAL, TO)       ((((VAL) + (TO) - 1) / (TO)) * TO)
 #define IS_ALIGNED(VAL, TO)  (!((VAL) % (TO)))
-#define ALIGN_FLOOR(VAL, TO) ((VAL) & ~((TO)-1))
+#define ALIGN_FLOOR(VAL, TO) ((VAL) & ~((TO) - 1))
 #define NUM_PAGES(SZ)        (ALIGN(SZ, PAGE_SIZE) / PAGE_SIZE)
-#define PAGE_OFFSET_MASK     ((PAGE_SIZE)-1)
+#define PAGE_OFFSET_MASK     ((PAGE_SIZE) - 1)
 #define PAGE_FRAME_MASK      (~(PAGE_OFFSET_MASK))
 
 #define SR_OR(VAL, SHIFT)    (((VAL) >> (SHIFT)) | VAL)
 /* Next Power Of Two */
-#define NPOT(VAL)                                                        \
-    ((SR_OR(((VAL)-1), 1) | SR_OR(SR_OR(((VAL)-1), 1), 2) |              \
-         SR_OR(SR_OR(SR_OR(((VAL)-1), 1), 2), 4) |                       \
-         SR_OR(SR_OR(SR_OR(SR_OR(((VAL)-1), 1), 2), 4), 8) |             \
-         SR_OR(SR_OR(SR_OR(SR_OR(SR_OR(((VAL)-1), 1), 2), 4), 8), 16)) + \
+#define NPOT(VAL)                                                          \
+    ((SR_OR(((VAL) - 1), 1) | SR_OR(SR_OR(((VAL) - 1), 1), 2) |            \
+         SR_OR(SR_OR(SR_OR(((VAL) - 1), 1), 2), 4) |                       \
+         SR_OR(SR_OR(SR_OR(SR_OR(((VAL) - 1), 1), 2), 4), 8) |             \
+         SR_OR(SR_OR(SR_OR(SR_OR(SR_OR(((VAL) - 1), 1), 2), 4), 8), 16)) + \
         1)
 
 /* Previous Power Of Two */

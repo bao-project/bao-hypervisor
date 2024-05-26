@@ -48,9 +48,9 @@ void cpu_send_msg(cpuid_t cpu, struct cpu_msg* msg);
 
 typedef void (*cpu_msg_handler_t)(uint32_t event, uint64_t data);
 
-#define CPU_MSG_HANDLER(handler, handler_id)                \
-    __attribute__((section(".ipi_cpumsg_handlers"), used))  \
-    cpu_msg_handler_t __cpumsg_handler_##handler = handler; \
+#define CPU_MSG_HANDLER(handler, handler_id)                           \
+    __attribute__((section(".ipi_cpumsg_handlers"),                    \
+        used)) cpu_msg_handler_t __cpumsg_handler_##handler = handler; \
     __attribute__((section(".ipi_cpumsg_handlers_id"), used)) volatile const size_t handler_id;
 
 struct cpu_synctoken {
