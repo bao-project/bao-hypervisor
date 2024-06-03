@@ -1,0 +1,32 @@
+diff --git a/setup.mk b/setup.mk
+index 3a230aa..2edf9ee 100644
+--- a/setup.mk
++++ b/setup.mk
+@@ -29,6 +29,14 @@ src_dirs+=$(src_dir) $(core_dir) $(platform_dir)
+ SRC_DIRS+=$(src_dirs)
+ INC_DIRS+=$(addsuffix /inc, $(src_dirs))
+ 
++# Test framework setup
++include $(TESTF_REPO_DIR)/src/bao-test.mk
++SRC_DIRS+=$(TESTF_SRC_DIR) $(TESTF_TESTS_DIR)
++C_SRC+=$(TESTF_SRCS)
++INC_DIRS+=$(TESTF_INC_DIR)
++CFLAGS+=$(TESTF_FLAGS)
++# End of test framework setup
++
+ ifeq ($(wildcard $(platform_dir)),)
+ $(error unsupported platform $(PLATFORM))
+ endif
+diff --git a/src/main.c b/src/main.c
+index 9a9e972..69cfa6f 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -54,6 +54,8 @@ void main(void){
+         printf("Bao bare-metal test guest\n");
+         spin_unlock(&print_lock);
+ 
++        testf_entry();
++        
+         irq_set_handler(UART_IRQ_ID, uart_rx_handler);
+         irq_set_handler(TIMER_IRQ_ID, timer_handler);
+         irq_set_handler(IPI_IRQ_ID, ipi_handler);
