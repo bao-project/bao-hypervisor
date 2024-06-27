@@ -87,6 +87,11 @@ struct vm_config {
      */
     colormap_t colors;
 
+    struct {
+        uint64_t budget;
+        uint64_t period_us;
+    } mem_throth;
+
     /**
      * A description of the virtual platform available to the guest, i.e., the virtual machine
      * itself.
