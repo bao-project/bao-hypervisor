@@ -92,15 +92,16 @@ void gic_init()
 void gic_handle()
 {
     uint32_t ack = gicc_iar();
+    cpu()->is_handling_irq = 1;
+    cpu()->handling_irq_id = ack;
     irqid_t id = bit32_extract(ack, GICC_IAR_ID_OFF, GICC_IAR_ID_LEN);
 
     if (id < GIC_FIRST_SPECIAL_INTID) {
         enum irq_res res = interrupts_handle(id);
         gicc_eoir(ack);
-        if (res == HANDLED_BY_HYP) {
-            gicc_dir(ack);
-        }
+        if (res == HANDLED_BY_HYP) gicc_dir(ack);
     }
+    cpu()->is_handling_irq = 0;
 }
 
 uint8_t gicd_get_prio(irqid_t int_id)
