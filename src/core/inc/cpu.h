@@ -35,6 +35,10 @@ struct cpu {
 
     struct cpu_arch arch;
 
+    uint64_t is_handling_irq;
+
+    uint64_t handling_irq_id;
+
     BITMAP_ALLOC(events_bitmap, EVENTS_CNTR_MAX_NUM);
 
     irq_handler_t array_interrupt_functions[EVENTS_CNTR_MAX_NUM];
@@ -76,10 +80,13 @@ bool cpu_get_msg(struct cpu_msg* msg);
 void cpu_msg_handler(void);
 void cpu_msg_set_handler(cpuid_t id, cpu_msg_handler_t handler);
 void cpu_idle(void);
+void cpu_standby();
 void cpu_idle_wakeup(void);
 
 void cpu_arch_init(cpuid_t cpu_id, paddr_t load_addr);
 void cpu_arch_idle(void);
+void cpu_arch_interrupt_finish();
+void cpu_arch_standby();
 
 extern struct cpuif cpu_interfaces[];
 static inline struct cpuif* cpu_if(cpuid_t cpu_id)

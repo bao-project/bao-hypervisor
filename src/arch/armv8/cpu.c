@@ -8,6 +8,16 @@
 #include <platform.h>
 #include <arch/sysregs.h>
 
+#include <arch/gic.h>
+
+#if (GIC_VERSION == GICV2)
+#include <arch/gicv2.h>
+#elif (GIC_VERSION == GICV3)
+#include <arch/gicv3.h>
+#else 
+#error "unknown GIV version " GIC_VERSION
+#endif
+
 cpuid_t CPU_MASTER __attribute__((section(".data")));
 
 /* Perform architecture dependent cpu cores initializations */
@@ -27,12 +37,39 @@ void cpu_arch_idle()
     cpu_arch_profile_idle();
 
     /*
-     * In case the profile implementation does not jump to a predefined wake-up point and just
-     * returns from the profile, manually rewind stack and jump to idle wake up. Therefore, we
-     * should not return after this point.
+     * In case the profile implementation does not jump to a predefined wake-up
+     * point and just returns from the profile, manually rewind stack and jump 
+     * to idle wake up. Therefore, we should not return after this point.
      */
-    __asm__ volatile("mov sp, %0\n\r"
-                     "b cpu_idle_wakeup\n\r" ::"r"(&cpu()->stack[STACK_SIZE]));
+    asm volatile(
+        "mov sp, %0\n\r"
+        "b cpu_idle_wakeup\n\r"
+        ::"r"(&cpu()->stack[STACK_SIZE]));
 
     ERROR("returned from idle wake up");
+}
+
+void cpu_arch_interrupt_finish()
+{
+    if(cpu()->is_handling_irq)
+    {
+        gicc_eoir(cpu()->handling_irq_id);
+        gicc_dir(cpu()->handling_irq_id);
+        cpu()->is_handling_irq = 0;
+    }
+}
+
+void cpu_arch_standby() {
+    /**
+     * Wait for an interrupt
+     */
+    asm volatile("wfi");
+
+    asm volatile(
+        "mov sp, %0\n\r"
+        "b cpu_idle_wakeup\n\r"
+        ::"r"(&cpu()->stack[STACK_SIZE]));
+
+    ERROR("returned from idle wake up");
+
 }

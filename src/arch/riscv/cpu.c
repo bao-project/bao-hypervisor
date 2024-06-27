@@ -27,10 +27,23 @@ void cpu_arch_init(cpuid_t cpuid, paddr_t load_addr)
     }
 }
 
-void cpu_arch_idle(void)
+void cpu_arch_idle()
 {
-    __asm__ volatile("wfi\n\t" ::: "memory");
-    __asm__ volatile("mv sp, %0\n\r"
-                     "j cpu_idle_wakeup\n\r" ::"r"(&cpu()->stack[STACK_SIZE]));
+    asm volatile("wfi\n\t" ::: "memory");
+    asm volatile("mv sp, %0\n\r"
+                 "j cpu_idle_wakeup\n\r" ::"r"(&cpu()->stack[STACK_SIZE]));
     ERROR("returned from idle wake up");
+}
+
+void cpu_arch_interrupt_finish()
+{
+    if(cpu()->is_handling_irq)
+    {
+        plic_hart[cpu()->arch.plic_cntxt].complete = cpu()->handling_irq_id;
+        cpu()->is_handling_irq = 0;
+    }
+}
+
+void cpu_arch_standby() {
+    cpu_arch_idle();
 }
