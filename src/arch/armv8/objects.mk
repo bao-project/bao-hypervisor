@@ -11,6 +11,7 @@ cpu-objs-y+=gic.o
 cpu-objs-y+=vgic.o
 cpu-objs-y+=vmm.o
 cpu-objs-y+=timer.o
+cpu-objs-y+=pmu.o
 cpu-objs-y+=psci.o
 
 ifeq ($(GIC_VERSION), GICV2)

@@ -124,6 +124,15 @@ SYSREG_GEN_ACCESSORS(ich_lr14_el2)
 SYSREG_GEN_ACCESSORS(ich_lr15_el2)
 SYSREG_GEN_ACCESSORS(cnthp_ctl_el2);
 SYSREG_GEN_ACCESSORS(cnthp_tval_el2);
+SYSREG_GEN_ACCESSORS(mdcr_el2);
+SYSREG_GEN_ACCESSORS(pmcntenclr_el0);
+SYSREG_GEN_ACCESSORS(pmcntenset_el0);
+SYSREG_GEN_ACCESSORS(pmselr_el0);
+SYSREG_GEN_ACCESSORS(pmxevcntr_el0);
+SYSREG_GEN_ACCESSORS(pmxevtyper_el0);
+SYSREG_GEN_ACCESSORS(pmintenset_el1);
+SYSREG_GEN_ACCESSORS(pmintenclr_el1);
+SYSREG_GEN_ACCESSORS(pmovsclr_el0);
 
 static inline void arm_dc_civac(vaddr_t cache_addr)
 {

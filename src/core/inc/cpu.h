@@ -12,6 +12,8 @@
 #include <spinlock.h>
 #include <mem.h>
 #include <list.h>
+#include <bitmap.h>
+#include <events.h>
 
 #ifndef __ASSEMBLER__
 
@@ -32,6 +34,12 @@ struct cpu {
     struct vcpu* vcpu;
 
     struct cpu_arch arch;
+
+    BITMAP_ALLOC(events_bitmap, EVENTS_CNTR_MAX_NUM);
+
+    irq_handler_t array_interrupt_functions[EVENTS_CNTR_MAX_NUM];
+
+    uint64_t implemented_event_counters;
 
     struct cpuif* interface;
 
