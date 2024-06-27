@@ -122,6 +122,8 @@ SYSREG_GEN_ACCESSORS(ich_lr12_el2)
 SYSREG_GEN_ACCESSORS(ich_lr13_el2)
 SYSREG_GEN_ACCESSORS(ich_lr14_el2)
 SYSREG_GEN_ACCESSORS(ich_lr15_el2)
+SYSREG_GEN_ACCESSORS(cnthp_ctl_el2);
+SYSREG_GEN_ACCESSORS(cnthp_tval_el2);
 
 static inline void arm_dc_civac(vaddr_t cache_addr)
 {
