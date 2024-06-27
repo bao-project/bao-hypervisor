@@ -14,6 +14,7 @@
 #include <list.h>
 #include <bitmap.h>
 #include <events.h>
+#include <mem_throt.h>
 
 #ifndef __ASSEMBLER__
 
@@ -38,6 +39,8 @@ struct cpu {
     uint64_t is_handling_irq;
 
     uint64_t handling_irq_id;
+
+    mem_throt_t mem_throt;
 
     BITMAP_ALLOC(events_bitmap, EVENTS_CNTR_MAX_NUM);
 
