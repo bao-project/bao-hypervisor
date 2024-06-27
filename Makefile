@@ -47,7 +47,7 @@ scripts_dir:=$(cur_dir)/scripts
 ci_dir:=$(cur_dir)/ci
 src_dirs:=
 
-include $(ci_dir)/ci.mk
+-include $(ci_dir)/ci.mk
 
 targets:=$(MAKECMDGOALS)
 ifeq ($(targets),)
