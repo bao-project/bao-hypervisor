@@ -146,6 +146,7 @@ platform_defs:=$(platform_build_dir)/platform_defs_gen.h
 platform_description:=$(platform_dir)/$(platform_description)
 gens+=$(platform_defs) $(platform_def_generator)
 inc_dirs+=$(platform_build_dir)
+inc_dirs+=$(CONFIG_REPO)/inc/$(PLATFORM)
 
 # Setup list of objects for compilation
 -include $(addsuffix /objects.mk, $(src_dirs))
