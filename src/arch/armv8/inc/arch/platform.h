@@ -35,6 +35,10 @@ struct arch_platform {
         uint64_t timer_id;
     } generic_timer;
 
+    struct {
+        uint64_t events_irq_offset;
+    } events;
+
     struct clusters {
         size_t num;
         size_t* core_num;
