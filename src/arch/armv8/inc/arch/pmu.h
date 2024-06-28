@@ -30,6 +30,7 @@
 #define PMEVTYPER_SH			24
 
 #define PMU_N_CNTR_GIVEN    1
+#define PMU_N_CNTR         6
 #define ERROR_NO_MORE_EVENT_COUNTERS    -10
 
 

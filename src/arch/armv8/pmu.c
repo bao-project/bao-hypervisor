@@ -26,14 +26,17 @@ void pmu_cntr_free(uint64_t counter)
 void pmu_interrupt_handler(irqid_t int_id)
 {
     uint64_t pmovsclr = sysreg_pmovsclr_el0_read(); // MRS(PMOVSCLR_EL0);
-
-    for (uint32_t index = PMU_N_CNTR_GIVEN; index < (cpu()->implemented_event_counters - 1); index++)
+    
+    for(uint32_t index = 0; index < PMU_N_CNTR; index++)
     {
         if(bit_get(pmovsclr, index))
         {
-            cpu()->array_interrupt_functions[index](int_id);
+            (index >= PMU_N_CNTR_GIVEN && index < cpu()->implemented_event_counters - PMU_N_CNTR_GIVEN) ? 
+                cpu()->array_interrupt_functions[index](int_id) : 
+                (pmovsclr = bit_set(pmovsclr, index)); //Clear overflows created by guests
         }
     }
+    sysreg_pmovsclr_el0_write(pmovsclr);
 }
 
 /* Enable the pmu in the EL2*/

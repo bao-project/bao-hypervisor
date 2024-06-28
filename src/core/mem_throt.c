@@ -22,6 +22,8 @@ void mem_throt_period_timer_callback(irqid_t int_id) {
     timer_enable();
 }
 
+
+
 void mem_throt_event_overflow_callback(irqid_t int_id) {
 
     events_clear_cntr_ovs(cpu()->mem_throt.counter_id);
@@ -36,6 +38,7 @@ void mem_throt_timer_init(irq_handler_t handler) {
     timer_define_irq_callback(handler);
     cpu()->mem_throt.period_counts = timer_init(cpu()->mem_throt.period_us);
 }
+
 
 void mem_throt_events_init(events_enum event, unsigned long budget, irq_handler_t handler) {
 
