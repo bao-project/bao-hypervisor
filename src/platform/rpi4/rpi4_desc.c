@@ -34,7 +34,16 @@ struct platform platform = {
             .gicc_addr = 0xff842000,
             .gich_addr = 0xff844000,
             .gicv_addr = 0xff846000,
-            .maintenance_id = 25,
+            .maintenance_id = 25
         },
-    },
+
+        .generic_timer = {
+            .base_addr = 0xff840000,
+            .timer_id = 26
+        },
+
+        .events = {
+            .events_irq_offset = 48
+        }
+    }
 };
