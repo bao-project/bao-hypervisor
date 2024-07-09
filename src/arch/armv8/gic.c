@@ -92,6 +92,8 @@ void gic_init()
 void gic_handle()
 {
     uint32_t ack = gicc_iar();
+    cpu()->is_handling_irq = true;
+    cpu()->arch.handling_irq_ack = ack;
     irqid_t id = bit32_extract(ack, GICC_IAR_ID_OFF, GICC_IAR_ID_LEN);
 
     if (id < GIC_FIRST_SPECIAL_INTID) {
@@ -101,6 +103,7 @@ void gic_handle()
             gicc_dir(ack);
         }
     }
+    cpu()->is_handling_irq = false;
 }
 
 uint8_t gicd_get_prio(irqid_t int_id)

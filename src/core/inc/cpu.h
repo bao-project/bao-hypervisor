@@ -27,6 +27,8 @@ struct cpu {
 
     bool handling_msgs;
 
+    bool is_handling_irq;
+
     struct addr_space as;
 
     struct vcpu* vcpu;
