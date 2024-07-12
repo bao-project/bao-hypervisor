@@ -62,7 +62,7 @@ static inline void tlb_vm_inv_all(asid_t vmid)
 
     if (switch_vmid) {
         DSB(ish);
-        sysreg_vttbr_el2_write(((uint64_t)vmid << VTTBR_VMID_OFF) & VTTBR_VMID_MSK);
+        sysreg_vttbr_el2_write(vttbr);
     }
 }
 
