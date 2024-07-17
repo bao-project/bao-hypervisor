@@ -37,16 +37,20 @@
 #define VM_IMAGE_SIZE(img_name)   ((size_t)0)
 #endif
 
-#define VM_IMAGE_BUILTIN(img_name, image_base_addr)                           \
-    {                                                                         \
-        .base_addr = image_base_addr, .load_addr = VM_IMAGE_OFFSET(img_name), \
-        .size = VM_IMAGE_SIZE(img_name), .separately_loaded = false,          \
+#define VM_IMAGE_BUILTIN(img_name, image_base_addr) \
+    {                                               \
+        .base_addr = image_base_addr,               \
+        .load_addr = VM_IMAGE_OFFSET(img_name),     \
+        .size = VM_IMAGE_SIZE(img_name),            \
+        .separately_loaded = false,                 \
     }
 
-#define VM_IMAGE_LOADED(image_base_addr, image_load_addr, image_size)                   \
-    {                                                                                   \
-        .base_addr = image_base_addr, .load_addr = image_load_addr, .size = image_size, \
-        .separately_loaded = true,                                                      \
+#define VM_IMAGE_LOADED(image_base_addr, image_load_addr, image_size) \
+    {                                                                 \
+        .base_addr = image_base_addr,                                 \
+        .load_addr = image_load_addr,                                 \
+        .size = image_size,                                           \
+        .separately_loaded = true,                                    \
     }
 
 /* CONFIG_HEADER is just defined for compatibility with older configs */
