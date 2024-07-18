@@ -117,6 +117,7 @@ void vcpu_init(struct vcpu* vcpu, struct vm* vm, vaddr_t entry);
 void vm_msg_broadcast(struct vm* vm, struct cpu_msg* msg);
 cpumap_t vm_translate_to_pcpu_mask(struct vm* vm, cpumap_t mask, size_t len);
 cpumap_t vm_translate_to_vcpu_mask(struct vm* vm, cpumap_t mask, size_t len);
+bool vm_reset(struct vm* vm);
 
 static inline struct vcpu* vm_get_vcpu(struct vm* vm, vcpuid_t vcpuid)
 {
@@ -176,5 +177,6 @@ unsigned long vcpu_readpc(struct vcpu* vcpu);
 void vcpu_writepc(struct vcpu* vcpu, unsigned long pc);
 void vcpu_arch_run(struct vcpu* vcpu);
 void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry);
+void vm_arch_reset(struct vm* vm);
 
 #endif /* __VM_H__ */

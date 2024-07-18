@@ -45,12 +45,15 @@ static unsigned long vm_cpuid_to_mpidr(struct vm* vm, vcpuid_t cpuid)
     return mpidr;
 }
 
+void vm_arch_reset(struct vm* vm)
+{
+    vgic_reset(vm);
+}
+
 void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm)
 {
     vcpu->arch.vmpidr = vm_cpuid_to_mpidr(vm, vcpu->id);
     sysreg_vmpidr_el2_write(vcpu->arch.vmpidr);
-
-    vcpu->arch.psci_ctx.state = vcpu->id == 0 ? ON : OFF;
 
     vcpu_arch_profile_init(vcpu, vm);
 
@@ -78,6 +81,10 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
      *  TODO: ARMv8-A ARM mentions another implementation optional registers that reset to a known
      * value.
      */
+
+    vcpu->arch.psci_ctx.state = vcpu->id == 0 ? ON : OFF;
+
+    vgic_cpu_reset(vcpu);
 }
 
 static inline bool vcpu_psci_state_on(struct vcpu* vcpu)

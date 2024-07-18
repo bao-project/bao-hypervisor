@@ -35,6 +35,7 @@ void cpu_init(cpuid_t cpu_id, paddr_t load_addr)
 {
     cpu()->id = cpu_id;
     cpu()->handling_msgs = false;
+    cpu()->is_handling_irq = false;
     cpu()->interface = cpu_if(cpu()->id);
 
     cpu_arch_init(cpu_id, load_addr);
@@ -90,6 +91,8 @@ void cpu_msg_handler(void)
 
 void cpu_idle(void)
 {
+    interrupts_arch_finish();
+
     cpu_arch_idle();
 
     /**

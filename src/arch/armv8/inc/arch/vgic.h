@@ -126,4 +126,7 @@ bool vgic_int_has_other_target(struct vcpu* vcpu, struct vgic_int* interrupt);
 uint8_t vgic_int_ptarget_mask(struct vcpu* vcpu, struct vgic_int* interrupt);
 void vgic_inject_sgi(struct vcpu* vcpu, struct vgic_int* interrupt, vcpuid_t source);
 
+void vgic_reset(struct vm* vm);
+void vgic_cpu_reset(struct vcpu* vcpu);
+
 #endif /* __VGIC_H__ */

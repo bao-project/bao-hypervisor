@@ -70,6 +70,9 @@ void interrupts_arch_handle(void)
 {
     unsigned long _scause = csrs_scause_read();
 
+    cpu()->is_handling_irq = true;
+    cpu()->arch.handling_irq.cause = _scause;
+
     switch (_scause) {
         case SCAUSE_CODE_SSI:
             csrs_sip_clear(SIP_SSIP);
@@ -92,6 +95,8 @@ void interrupts_arch_handle(void)
             // WARNING("unkown interrupt");
             break;
     }
+
+    cpu()->is_handling_irq = false;
 }
 
 bool interrupts_arch_check(irqid_t int_id)
@@ -127,4 +132,30 @@ inline bool interrupts_arch_conflict(bitmap_t* interrupt_bitmap, irqid_t int_id)
 void interrupts_arch_vm_assign(struct vm* vm, irqid_t id)
 {
     virqc_set_hw(vm, id);
+}
+
+void interrupts_arch_finish()
+{
+    if (cpu()->is_handling_irq) {
+        switch (cpu()->arch.handling_irq.cause) {
+            case SCAUSE_CODE_SSI:
+                csrs_sip_clear(SIP_SSIP);
+                break;
+            case SCAUSE_CODE_STI:
+                /**
+                 * Clearing the timer pending bit actually has no effect. We could re-program the
+                 * timer to "infinity" but we don't know if the handler itself re-programed the
+                 * timer with a new event. Therefore, at this point, we must trust the handler
+                 * either correctly re-programms the timer or disables the interrupt so the cpu is
+                 * not starved by continously triggering the timer interrupt (spoiler alert, it
+                 * does!)
+                 */
+                break;
+            case SCAUSE_CODE_SEI:
+                irqc_finish_interrupt((irqid_t)cpu()->arch.handling_irq.external_id);
+                break;
+            default:
+                break;
+        }
+    }
 }

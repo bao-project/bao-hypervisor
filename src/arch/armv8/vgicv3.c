@@ -6,6 +6,8 @@
 #include <arch/vgic.h>
 #include <arch/vgicv3.h>
 
+#include <arch/gicv3.h>
+
 #include <bit.h>
 #include <spinlock.h>
 #include <cpu.h>
@@ -318,10 +320,75 @@ static bool vgic_icc_sre_handler(struct emul_access* acc)
     return true;
 }
 
+void vgic_cpu_reset(struct vcpu* vcpu)
+{
+    for (irqid_t i = 0; i < GIC_CPU_PRIV; i++) {
+        vcpu->arch.vgic_priv.interrupts[i].owner = NULL;
+        vcpu->arch.vgic_priv.interrupts[i].lock = SPINLOCK_INITVAL;
+        vcpu->arch.vgic_priv.interrupts[i].state = INV;
+        vcpu->arch.vgic_priv.interrupts[i].prio = GIC_LOWEST_PRIO;
+        vcpu->arch.vgic_priv.interrupts[i].cfg = 0;
+        vcpu->arch.vgic_priv.interrupts[i].route = GICD_IROUTER_INV;
+        vcpu->arch.vgic_priv.interrupts[i].phys.redist = vcpu->phys_id;
+        vcpu->arch.vgic_priv.interrupts[i].in_lr = false;
+        vcpu->arch.vgic_priv.interrupts[i].enabled = false;
+
+        if (vcpu->arch.vgic_priv.interrupts[i].hw) {
+            gic_set_enable(i, false);
+            gic_set_prio(i, GIC_LOWEST_PRIO);
+            gic_set_act(i, false);
+            gic_set_pend(i, false);
+            // gicd_set_route(i, GICD_IROUTER_INV);
+        }
+    }
+
+    for (irqid_t i = 0; i < GIC_MAX_SGIS; i++) {
+        vcpu->arch.vgic_priv.interrupts[i].cfg = 0x2;
+    }
+
+    for (size_t i = 0; i < gich_num_lrs(); i++) {
+        gich_write_lr(i, 0);
+    }
+
+    // gich_set_hcr(0);
+    gich_set_vmcr(0);
+    // TODO: reset gich apr registers
+
+    list_init(&vcpu->arch.vgic_spilled);
+}
+
+void vgic_reset(struct vm* vm)
+{
+    for (irqid_t i = 0; i < vm->arch.vgicd.int_num; i++) {
+        vm->arch.vgicd.interrupts[i].owner = NULL;
+        vm->arch.vgicd.interrupts[i].lock = SPINLOCK_INITVAL;
+        vm->arch.vgicd.interrupts[i].state = INV;
+        vm->arch.vgicd.interrupts[i].prio = GIC_LOWEST_PRIO;
+        vm->arch.vgicd.interrupts[i].cfg = 0;
+        vm->arch.vgicd.interrupts[i].route = GICD_IROUTER_INV;
+        vm->arch.vgicd.interrupts[i].phys.route = GICD_IROUTER_INV;
+        vm->arch.vgicd.interrupts[i].in_lr = false;
+        vm->arch.vgicd.interrupts[i].enabled = false;
+
+        if (vm->arch.vgicd.interrupts[i].hw) {
+            irqid_t id = i + GIC_CPU_PRIV;
+            gic_set_enable(id, false);
+            gic_set_prio(id, GIC_LOWEST_PRIO);
+            gic_set_act(id, false);
+            gic_set_pend(id, false);
+            gicd_set_route(id, GICD_IROUTER_INV);
+        }
+    }
+
+    vm->arch.vgicd.CTLR = 0;
+
+    list_init(&vm->arch.vgic_spilled);
+    vm->arch.vgic_spilled_lock = SPINLOCK_INITVAL;
+}
+
 void vgic_init(struct vm* vm, const struct vgic_dscrp* vgic_dscrp)
 {
     vm->arch.vgicr_addr = vgic_dscrp->gicr_addr;
-    vm->arch.vgicd.CTLR = 0;
     size_t vtyper_itln = vgic_get_itln(vgic_dscrp);
     vm->arch.vgicd.int_num = 32 * (vtyper_itln + 1);
     vm->arch.vgicd.TYPER = ((vtyper_itln << GICD_TYPER_ITLN_OFF) & GICD_TYPER_ITLN_MSK) |
@@ -336,17 +403,8 @@ void vgic_init(struct vm* vm, const struct vgic_dscrp* vgic_dscrp)
     }
 
     for (irqid_t i = 0; i < vm->arch.vgicd.int_num; i++) {
-        vm->arch.vgicd.interrupts[i].owner = NULL;
-        vm->arch.vgicd.interrupts[i].lock = SPINLOCK_INITVAL;
         vm->arch.vgicd.interrupts[i].id = i + GIC_CPU_PRIV;
-        vm->arch.vgicd.interrupts[i].state = INV;
-        vm->arch.vgicd.interrupts[i].prio = GIC_LOWEST_PRIO;
-        vm->arch.vgicd.interrupts[i].cfg = 0;
-        vm->arch.vgicd.interrupts[i].route = GICD_IROUTER_INV;
-        vm->arch.vgicd.interrupts[i].phys.route = GICD_IROUTER_INV;
         vm->arch.vgicd.interrupts[i].hw = false;
-        vm->arch.vgicd.interrupts[i].in_lr = false;
-        vm->arch.vgicd.interrupts[i].enabled = false;
     }
 
     vm->arch.vgicd_emul = (struct emul_mem){ .va_base = vgic_dscrp->gicd_addr,
@@ -377,29 +435,14 @@ void vgic_init(struct vm* vm, const struct vgic_dscrp* vgic_dscrp)
         .handler = vgic_icc_sre_handler };
     vm_emul_add_reg(vm, &vm->arch.icc_sre_emul);
 
-    list_init(&vm->arch.vgic_spilled);
-    vm->arch.vgic_spilled_lock = SPINLOCK_INITVAL;
+    vgic_reset(vm);
 }
 
 void vgic_cpu_init(struct vcpu* vcpu)
 {
     for (irqid_t i = 0; i < GIC_CPU_PRIV; i++) {
-        vcpu->arch.vgic_priv.interrupts[i].owner = NULL;
-        vcpu->arch.vgic_priv.interrupts[i].lock = SPINLOCK_INITVAL;
         vcpu->arch.vgic_priv.interrupts[i].id = i;
-        vcpu->arch.vgic_priv.interrupts[i].state = INV;
-        vcpu->arch.vgic_priv.interrupts[i].prio = GIC_LOWEST_PRIO;
-        vcpu->arch.vgic_priv.interrupts[i].cfg = 0;
-        vcpu->arch.vgic_priv.interrupts[i].route = GICD_IROUTER_INV;
-        vcpu->arch.vgic_priv.interrupts[i].phys.redist = vcpu->phys_id;
-        vcpu->arch.vgic_priv.interrupts[i].hw = false;
-        vcpu->arch.vgic_priv.interrupts[i].in_lr = false;
-        vcpu->arch.vgic_priv.interrupts[i].enabled = false;
     }
 
-    for (irqid_t i = 0; i < GIC_MAX_SGIS; i++) {
-        vcpu->arch.vgic_priv.interrupts[i].cfg = 0x2;
-    }
-
-    list_init(&vcpu->arch.vgic_spilled);
+    vgic_cpu_reset(vcpu);
 }

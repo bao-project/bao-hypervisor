@@ -349,6 +349,73 @@ __attribute__((weak)) cpumap_t vm_translate_to_vcpu_mask(struct vm* vm, cpumap_t
 
 void vcpu_run(struct vcpu* vcpu)
 {
-    cpu()->vcpu->active = true;
     vcpu_arch_run(vcpu);
+}
+
+static void vm_vcpu_reset(struct vm* vm)
+{
+    struct vcpu* vcpu = cpu()->vcpu;
+
+    if (vcpu->vm->id != vm->id) {
+        ERROR("Trying to reset vm not hosted in this cpu");
+    }
+
+    cpu_sync_and_clear_msgs(&vm->sync);
+
+    if (vm->master == cpu()->id) {
+        vm_arch_reset(vm);
+        for (size_t i = 0; i < vm->config->platform.region_num; i++) {
+            struct vm_mem_region* reg = &vm->config->platform.regions[i];
+            bool img_is_in_rgn = range_in_range(vm->config->image.base_addr, vm->config->image.size,
+                reg->base, reg->size);
+            if (img_is_in_rgn) {
+                vm_install_image(vm, reg);
+                break;
+            }
+        }
+    }
+
+    cpu_sync_barrier(&vcpu->vm->sync);
+
+    vcpu_arch_reset(vcpu, vm->config->entry);
+
+    vcpu_arch_run(vcpu);
+}
+
+enum VM_EVENTS { VM_RESET };
+
+static void vm_msg_handler(uint32_t event, uint64_t data)
+{
+    UNUSED_ARG(data);
+
+    switch (event) {
+        case VM_RESET:
+            vm_vcpu_reset(cpu()->vcpu->vm);
+            break;
+        default:
+            break;
+    }
+}
+
+CPU_MSG_HANDLER(vm_msg_handler, VM_IPI_ID)
+
+bool vm_reset(struct vm* vm)
+{
+    bool res;
+
+    if (vm->config->image.inplace) {
+        res = false;
+    } else {
+        struct cpu_msg msg;
+        msg.handler = (uint32_t)VM_IPI_ID;
+        msg.event = VM_RESET;
+
+        vm_msg_broadcast(vm, &msg);
+
+        vm_vcpu_reset(vm);
+
+        res = true;
+    }
+
+    return res;
 }

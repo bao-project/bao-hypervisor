@@ -86,4 +86,16 @@ static inline void virqc_inject(vcpu_t* vcpu, irqid_t id)
     vaplic_inject(vcpu, id);
 }
 
+/**
+ * @brief Resets the state of the virtual aplic
+ *
+ * @param vm Virtual Machine of the target vaplic
+ */
+void vaplic_reset(struct vm* vm);
+
+static inline void virqc_reset(struct vm* vm)
+{
+    vaplic_reset(vm);
+}
+
 #endif // VAPLIC_H

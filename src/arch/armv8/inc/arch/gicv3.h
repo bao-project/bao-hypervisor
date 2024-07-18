@@ -137,6 +137,16 @@ static inline uint64_t gich_get_elrsr()
     return sysreg_ich_elrsr_el2_read();
 }
 
+static inline uint32_t gich_get_vmcr()
+{
+    return (uint32_t)sysreg_ich_vmcr_el2_read();
+}
+
+static inline void gich_set_vmcr(uint32_t vmcr)
+{
+    sysreg_ich_vmcr_el2_write(vmcr);
+}
+
 static inline uint32_t gicc_iar()
 {
     return (uint32_t)sysreg_icc_iar1_el1_read();

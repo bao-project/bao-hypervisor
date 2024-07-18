@@ -15,6 +15,10 @@ extern cpuid_t CPU_MASTER;
 struct cpu_arch {
     unsigned hart_id;
     unsigned plic_cntxt;
+    struct {
+        unsigned long cause;
+        unsigned long external_id;
+    } handling_irq;
 };
 
 static inline struct cpu* cpu()

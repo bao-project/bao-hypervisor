@@ -59,6 +59,16 @@ static inline uint64_t gich_get_elrsr()
     return elsr;
 }
 
+static inline uint32_t gich_get_vmcr()
+{
+    return gich->VMCR;
+}
+
+static inline void gich_set_vmcr(uint32_t vmcr)
+{
+    gich->VMCR = vmcr;
+}
+
 static inline uint32_t gicc_iar()
 {
     return gicc->IAR;

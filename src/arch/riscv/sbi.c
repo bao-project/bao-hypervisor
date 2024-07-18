@@ -40,6 +40,10 @@
 #define SBI_REMOTE_HFENCE_VVMA_FID      (5)
 #define SBI_REMOTE_HFENCE_VVMA_ASID_FID (6)
 
+#define SBI_EXTID_SRST                  (0x53525354)
+#define SBI_SYSTEM_RESET_FID            (0)
+#define SBI_RST_TYPE_COLD_REBOOT        (0x00000001)
+
 /**
  * For now we're defining bao specific ecalls, ie, hypercall, under the experimental extension id
  * space.
@@ -166,7 +170,7 @@ struct sbiret sbi_hart_status(unsigned long hartid)
 }
 
 static unsigned long ext_table[] = { SBI_EXTID_BASE, SBI_EXTID_TIME, SBI_EXTID_IPI, SBI_EXTID_RFNC,
-    SBI_EXTID_HSM };
+    SBI_EXTID_HSM, SBI_EXTID_SRST };
 
 static const size_t NUM_EXT = sizeof(ext_table) / sizeof(unsigned long);
 
@@ -256,7 +260,7 @@ static struct sbiret sbi_base_handler(unsigned long fid)
 
     switch (fid) {
         case SBI_GET_SBI_SPEC_VERSION_FID:
-            ret.value = 2;
+            ret.value = 3;
             break;
         case SBI_PROBE_EXTENSION_FID:
             ret.value = 0;
@@ -391,6 +395,32 @@ static struct sbiret sbi_hsm_handler(unsigned long fid)
     return ret;
 }
 
+static struct sbiret sbi_srst_handler(unsigned long fid)
+{
+    struct sbiret ret;
+
+    uint32_t reset_type = (uint32_t)vcpu_readreg(cpu()->vcpu, REG_A0);
+
+    switch (fid) {
+        case SBI_SYSTEM_RESET_FID:
+            if (reset_type == SBI_RST_TYPE_COLD_REBOOT) {
+                if (vm_reset(cpu()->vcpu->vm)) {
+                    ret.error = SBI_SUCCESS;
+                } else {
+                    ret.error = SBI_ERR_FAILURE;
+                }
+            } else {
+                ret.error = SBI_ERR_INVALID_PARAM;
+            }
+            break;
+        default:
+            ret.error = SBI_ERR_NOT_SUPPORTED;
+            break;
+    }
+
+    return ret;
+}
+
 static struct sbiret sbi_bao_handler(unsigned long fid)
 {
     struct sbiret ret;
@@ -421,6 +451,9 @@ size_t sbi_vs_handler()
             break;
         case SBI_EXTID_HSM:
             ret = sbi_hsm_handler(fid);
+            break;
+        case SBI_EXTID_SRST:
+            ret = sbi_srst_handler(fid);
             break;
         case SBI_EXTID_BAO:
             ret = sbi_bao_handler(fid);

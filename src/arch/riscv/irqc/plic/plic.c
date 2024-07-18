@@ -142,6 +142,7 @@ void plic_handle(void)
     uint32_t id = plic_hart[cpu()->arch.plic_cntxt].claim;
 
     if (id != 0) {
+        cpu()->arch.handling_irq.external_id = id;
         enum irq_res res = interrupts_handle(id);
         if (res == HANDLED_BY_HYP) {
             plic_hart[cpu()->arch.plic_cntxt].complete = id;
