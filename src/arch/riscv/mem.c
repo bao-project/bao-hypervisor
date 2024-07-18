@@ -26,6 +26,10 @@ static inline void as_map_physical_identity(struct addr_space* as)
         paddr_t top = ALIGN((reg->base + reg->size), lvl_size) & lvl_mask;
         size_t num_entries = ((top - base - 1) / lvl_size) + 1;
 
+        if ((RV32) && ((reg->base + reg->size - 1) >= BAO_VAS_BASE)) {
+            ERROR("Physical memory layout not supported for RV32. FIXME!");
+        }
+
         paddr_t addr = base;
         for (unsigned int j = 0; j < num_entries; j++) {
             size_t index = pt_getpteindex_by_va(&as->pt, (vaddr_t)addr, lvl);
@@ -58,7 +62,7 @@ bool mem_translate(struct addr_space* as, vaddr_t va, paddr_t* pa)
     }
     if (pte && pte_valid(pte)) {
         *pa = pte_addr(pte);
-        paddr_t mask = (1ULL << as->pt.dscr->lvl_off[lvl]) - 1;
+        paddr_t mask = (paddr_t)(1UL << as->pt.dscr->lvl_off[lvl]) - 1;
         *pa = (*pa & ~mask) | ((paddr_t)va & mask);
         return true;
     } else {
