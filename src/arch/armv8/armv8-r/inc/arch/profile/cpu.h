@@ -38,7 +38,7 @@ struct cpu_arch_profile {
     } mpu;
 };
 
-static inline struct cpu* cpu()
+static inline struct cpu* cpu(void)
 {
     return (struct cpu*)sysreg_tpidr_el2_read();
 }

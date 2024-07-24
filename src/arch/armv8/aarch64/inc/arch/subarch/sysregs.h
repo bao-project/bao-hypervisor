@@ -47,7 +47,7 @@
 #ifndef __ASSEMBLER__
 
 #define SYSREG_GEN_ACCESSORS_NAME(reg, name)                          \
-    static inline unsigned long sysreg##reg##read()                   \
+    static inline unsigned long sysreg##reg##read(void)               \
     {                                                                 \
         unsigned long _temp;                                          \
         __asm__ volatile("mrs %0, " XSTR(name) "\n\r" : "=r"(_temp)); \
@@ -138,12 +138,12 @@ static inline void arm_at_s12e1w(vaddr_t vaddr)
     __asm__ volatile("at s12e1w, %0" ::"r"(vaddr));
 }
 
-static inline void arm_tlbi_alle2is()
+static inline void arm_tlbi_alle2is(void)
 {
     __asm__ volatile("tlbi alle2is");
 }
 
-static inline void arm_tlbi_vmalls12e1is()
+static inline void arm_tlbi_vmalls12e1is(void)
 {
     __asm__ volatile("tlbi vmalls12e1is");
 }

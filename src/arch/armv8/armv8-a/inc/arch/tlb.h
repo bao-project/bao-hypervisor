@@ -18,7 +18,7 @@ static inline void tlb_hyp_inv_va(vaddr_t va)
     ISB();
 }
 
-static inline void tlb_hyp_inv_all()
+static inline void tlb_hyp_inv_all(void)
 {
     DSB(ish);
     arm_tlbi_alle2is();

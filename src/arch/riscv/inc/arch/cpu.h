@@ -17,7 +17,7 @@ struct cpu_arch {
     unsigned plic_cntxt;
 };
 
-static inline struct cpu* cpu()
+static inline struct cpu* cpu(void)
 {
     return (struct cpu*)BAO_CPU_BASE;
 }

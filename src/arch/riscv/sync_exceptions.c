@@ -41,9 +41,9 @@ static uint32_t read_ins(uintptr_t ins_addr)
     return ins;
 }
 
-typedef size_t (*sync_handler_t)();
+typedef size_t (*sync_handler_t)(void);
 
-extern size_t sbi_vs_handler();
+extern size_t sbi_vs_handler(void);
 
 static inline bool ins_ldst_decode(vaddr_t ins, struct emul_access* emul)
 {
@@ -78,7 +78,7 @@ static inline bool is_pseudo_ins(uint32_t ins)
     return ins == TINST_PSEUDO_STORE || ins == TINST_PSEUDO_LOAD;
 }
 
-static size_t guest_page_fault_handler()
+static size_t guest_page_fault_handler(void)
 {
     vaddr_t addr = csrs_htval_read() << 2;
 
