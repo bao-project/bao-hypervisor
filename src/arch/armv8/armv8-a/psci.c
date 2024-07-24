@@ -36,7 +36,7 @@ static void psci_save_state(enum wakeup_reason wakeup_reason)
     gicc_save_state(&cpu()->arch.profile.psci_off_state.gicc_state);
 }
 
-static void psci_restore_state()
+static void psci_restore_state(void)
 {
     /**
      * The majority of the state is already restored in assembly routine psci_boot_entry.
@@ -45,7 +45,7 @@ static void psci_restore_state()
     gicc_restore_state(&cpu()->arch.profile.psci_off_state.gicc_state);
 }
 
-static void psci_wake_from_powerdown()
+static void psci_wake_from_powerdown(void)
 {
     if (cpu()->vcpu == NULL) {
         ERROR("cpu woke up but theres no vcpu to run");
@@ -56,7 +56,7 @@ static void psci_wake_from_powerdown()
     vcpu_run(cpu()->vcpu);
 }
 
-static void psci_wake_from_idle()
+static void psci_wake_from_idle(void)
 {
     cpu_idle_wakeup();
 }

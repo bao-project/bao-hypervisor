@@ -72,7 +72,7 @@ inline streamid_t smmu_sme_get_mask(size_t sme)
     return SMMU_SMR_MASK(smmu.hw.glbl_rs0->SMR[sme]);
 }
 
-static void smmu_check_features()
+static void smmu_check_features(void)
 {
     unsigned version =
         bit32_extract(smmu.hw.glbl_rs0->IDR7, SMMUV2_IDR7_MAJOR_OFF, SMMUV2_IDR7_MAJOR_LEN);

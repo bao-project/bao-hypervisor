@@ -36,7 +36,7 @@ inline void interrupts_clear(irqid_t int_id)
     interrupts_arch_clear(int_id);
 }
 
-inline void interrupts_init()
+inline void interrupts_init(void)
 {
     interrupts_arch_init();
 

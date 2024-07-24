@@ -52,7 +52,7 @@ typedef union {
 
 #define MPU_ARCH_MAX_NUM_ENTRIES (64)
 
-static inline size_t mpu_granularity()
+static inline size_t mpu_granularity(void)
 {
     return (size_t)PAGE_SIZE;
 }

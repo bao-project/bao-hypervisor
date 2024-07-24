@@ -8,7 +8,7 @@
 #include <arch/sysregs.h>
 #include <arch/fences.h>
 
-static inline size_t mpu_num_entries()
+static inline size_t mpu_num_entries(void)
 {
     return (size_t)MPUIR_REGION(sysreg_mpuir_el2_read());
 }
@@ -154,7 +154,7 @@ static inline mem_attrs_t mpu_entry_attrs(struct mp_region* mpr)
     return (mem_attrs_t)flags.raw;
 }
 
-static mpid_t mpu_entry_allocate()
+static mpid_t mpu_entry_allocate(void)
 {
     mpid_t reg_num = INVALID_MPID;
     for (mpid_t i = 0; i < (mpid_t)mpu_num_entries(); i++) {
