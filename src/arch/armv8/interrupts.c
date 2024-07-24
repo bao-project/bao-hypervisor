@@ -46,7 +46,7 @@ bool interrupts_arch_check(irqid_t int_id)
     return gic_get_pend(int_id);
 }
 
-inline bool interrupts_arch_conflict(bitmap_t* interrupt_bitmap, irqid_t int_id)
+bool interrupts_arch_conflict(bitmap_t* interrupt_bitmap, irqid_t int_id)
 {
     return (bitmap_get(interrupt_bitmap, int_id) && int_id > GIC_CPU_PRIV);
 }

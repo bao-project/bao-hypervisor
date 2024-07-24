@@ -16,27 +16,27 @@ spinlock_t irq_reserve_lock = SPINLOCK_INITVAL;
 
 irq_handler_t interrupt_handlers[MAX_INTERRUPTS];
 
-inline void interrupts_cpu_sendipi(cpuid_t target_cpu, irqid_t ipi_id)
+void interrupts_cpu_sendipi(cpuid_t target_cpu, irqid_t ipi_id)
 {
     interrupts_arch_ipi_send(target_cpu, ipi_id);
 }
 
-inline void interrupts_cpu_enable(irqid_t int_id, bool en)
+void interrupts_cpu_enable(irqid_t int_id, bool en)
 {
     interrupts_arch_enable(int_id, en);
 }
 
-inline bool interrupts_check(irqid_t int_id)
+bool interrupts_check(irqid_t int_id)
 {
     return interrupts_arch_check(int_id);
 }
 
-inline void interrupts_clear(irqid_t int_id)
+void interrupts_clear(irqid_t int_id)
 {
     interrupts_arch_clear(int_id);
 }
 
-inline void interrupts_init(void)
+void interrupts_init(void)
 {
     interrupts_arch_init();
 

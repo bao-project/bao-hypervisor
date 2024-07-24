@@ -427,7 +427,7 @@ static bool iommu_vm_arch_add(struct vm* vm, deviceid_t dev_id)
  *
  * @returns true on success, false on error.
  */
-inline bool iommu_arch_vm_add_device(struct vm* vm, deviceid_t dev_id)
+bool iommu_arch_vm_add_device(struct vm* vm, deviceid_t dev_id)
 {
     return iommu_vm_arch_add(vm, dev_id);
 }
