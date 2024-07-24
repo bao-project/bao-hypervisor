@@ -64,7 +64,7 @@ static bool iommu_vm_arch_add(struct vm* vm, streamid_t mask, streamid_t id)
     return true;
 }
 
-inline bool iommu_arch_vm_add_device(struct vm* vm, streamid_t id)
+bool iommu_arch_vm_add_device(struct vm* vm, streamid_t id)
 {
     return iommu_vm_arch_add(vm, 0, id);
 }

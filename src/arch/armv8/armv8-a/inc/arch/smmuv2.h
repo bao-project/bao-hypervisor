@@ -380,10 +380,6 @@ ssize_t smmu_alloc_sme(void);
 void smmu_write_ctxbnk(size_t ctx_id, paddr_t root_pt, asid_t vm_id);
 void smmu_write_sme(size_t sme, streamid_t mask, streamid_t id, bool group);
 void smmu_write_s2c(size_t sme, size_t ctx_id);
-size_t smmu_sme_get_ctx(size_t sme);
-streamid_t smmu_sme_get_id(size_t sme);
-streamid_t smmu_sme_get_mask(size_t sme);
-bool smmu_sme_is_group(size_t sme);
 bool smmu_compatible_sme_exists(streamid_t mask, streamid_t id, size_t ctx, bool group);
 
 #endif
