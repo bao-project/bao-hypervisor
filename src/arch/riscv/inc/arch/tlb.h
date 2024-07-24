@@ -19,7 +19,7 @@ static inline void tlb_hyp_inv_va(vaddr_t va)
     sbi_remote_sfence_vma((1U << platform.cpu_num) - 1, 0, (unsigned long)va, PAGE_SIZE);
 }
 
-static inline void tlb_hyp_inv_all()
+static inline void tlb_hyp_inv_all(void)
 {
     sbi_remote_sfence_vma((1U << platform.cpu_num) - 1, 0, 0, 0);
 }

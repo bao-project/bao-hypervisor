@@ -22,7 +22,7 @@
 volatile struct gicd_hw* gicd;
 spinlock_t gicd_lock;
 
-static void gicd_init()
+static void gicd_init(void)
 {
     size_t int_num = gic_num_irqs();
 
@@ -69,9 +69,9 @@ static void gicd_init()
     }
 }
 
-void gic_map_mmio();
+void gic_map_mmio(void);
 
-void gic_init()
+void gic_init(void)
 {
     if (GIC_VERSION == GICV3) {
         sysreg_icc_sre_el2_write(ICC_SRE_SRE_BIT | ICC_SRE_ENB_BIT);

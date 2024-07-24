@@ -216,7 +216,7 @@ static struct sbiret sbi_time_handler(unsigned long fid)
     return (struct sbiret){ SBI_SUCCESS };
 }
 
-static void sbi_timer_irq_handler()
+static void sbi_timer_irq_handler(void)
 {
     csrs_hvip_set(HIP_VSTIP);
     csrs_sie_clear(SIE_STIE);
@@ -315,7 +315,7 @@ static struct sbiret sbi_rfence_handler(unsigned long fid)
     return ret;
 }
 
-static struct sbiret sbi_hsm_start_handler()
+static struct sbiret sbi_hsm_start_handler(void)
 {
     struct sbiret ret;
     vcpuid_t vhart_id = vcpu_readreg(cpu()->vcpu, REG_A0);
@@ -357,7 +357,7 @@ static struct sbiret sbi_hsm_start_handler()
     return ret;
 }
 
-static struct sbiret sbi_hsm_status_handler()
+static struct sbiret sbi_hsm_status_handler(void)
 {
     struct sbiret ret;
     vcpuid_t vhart_id = vcpu_readreg(cpu()->vcpu, REG_A0);
@@ -453,7 +453,7 @@ void sbi_init()
         }
     }
 
-    if (!interrupts_reserve(TIMR_INT_ID, sbi_timer_irq_handler)) {
+    if (!interrupts_reserve(TIMR_INT_ID, (irq_handler_t)sbi_timer_irq_handler)) {
         ERROR("Failed to reserve SBI TIMR_INT_ID interrupt");
     }
 }
