@@ -436,7 +436,7 @@ extern volatile struct gicr_hw* gicr;
 
 size_t gich_num_lrs(void);
 
-static inline size_t gic_num_irqs()
+static inline size_t gic_num_irqs(void)
 {
     size_t itlinenumber = bit32_extract(gicd->TYPER, GICD_TYPER_ITLN_OFF, GICD_TYPER_ITLN_LEN);
     return 32 * (itlinenumber + 1);

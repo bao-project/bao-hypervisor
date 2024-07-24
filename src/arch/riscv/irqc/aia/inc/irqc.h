@@ -19,12 +19,12 @@
 #define HYP_IRQ_SM_INACTIVE  APLIC_SOURCECFG_SM_INACTIVE
 #define HYP_IRQ_PRIO         APLIC_TARGET_MAX_PRIO
 
-static inline void irqc_init()
+static inline void irqc_init(void)
 {
     aplic_init();
 }
 
-static inline void irqc_cpu_init()
+static inline void irqc_cpu_init(void)
 {
     aplic_idc_init();
 }
@@ -41,7 +41,7 @@ static inline void irqc_config_irq(irqid_t int_id, bool en)
     }
 }
 
-static inline void irqc_handle()
+static inline void irqc_handle(void)
 {
     aplic_handle();
 }

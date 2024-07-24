@@ -9,7 +9,7 @@
 static size_t shmem_table_size;
 static struct shmem* shmem_table;
 
-static void shmem_alloc()
+static void shmem_alloc(void)
 {
     for (size_t i = 0; i < shmem_table_size; i++) {
         struct shmem* shmem = &shmem_table[i];

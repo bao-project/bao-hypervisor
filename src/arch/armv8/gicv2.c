@@ -28,7 +28,7 @@ size_t gich_num_lrs()
     return ((gich->VTR & GICH_VTR_MSK) >> GICH_VTR_OFF) + 1;
 }
 
-static inline void gicc_init()
+static inline void gicc_init(void)
 {
     for (size_t i = 0; i < gich_num_lrs(); i++) {
         gich->LR[i] = 0;

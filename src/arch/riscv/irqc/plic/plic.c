@@ -14,7 +14,7 @@ volatile struct plic_global_hw* plic_global;
 
 volatile struct plic_hart_hw* plic_hart;
 
-static size_t plic_scan_max_int()
+static size_t plic_scan_max_int(void)
 {
     size_t res = 0;
     for (size_t i = 1; i < PLIC_MAX_INTERRUPTS; i++) {

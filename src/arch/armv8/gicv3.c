@@ -25,7 +25,7 @@ size_t gich_num_lrs(void)
     return ((sysreg_ich_vtr_el2_read() & ICH_VTR_MSK) >> ICH_VTR_OFF) + 1;
 }
 
-static inline void gicc_init()
+static inline void gicc_init(void)
 {
     for (size_t i = 0; i < gich_num_lrs(); i++) {
         gich_write_lr(i, 0);
@@ -38,7 +38,7 @@ static inline void gicc_init()
     sysreg_icc_igrpen1_el1_write(ICC_IGRPEN_EL1_ENB_BIT);
 }
 
-static inline void gicr_init()
+static inline void gicr_init(void)
 {
     gicr[cpu()->id].WAKER &= ~GICR_WAKER_ProcessorSleep_BIT;
     while (gicr[cpu()->id].WAKER & GICR_WAKER_ChildrenASleep_BIT) { }

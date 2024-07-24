@@ -5,32 +5,32 @@
 #ifndef __FENCES_ARCH_H__
 #define __FENCES_ARCH_H__
 
-static inline void fence_ord_write()
+static inline void fence_ord_write(void)
 {
     __asm__ volatile("fence w, rw\n\t" ::: "memory");
 }
 
-static inline void fence_ord_read()
+static inline void fence_ord_read(void)
 {
     __asm__ volatile("fence r, rw\n\t" ::: "memory");
 }
 
-static inline void fence_ord()
+static inline void fence_ord(void)
 {
     __asm__ volatile("fence rw, rw\n\t" ::: "memory");
 }
 
-static inline void fence_sync_write()
+static inline void fence_sync_write(void)
 {
     __asm__ volatile("fence ow, iorw\n\t" ::: "memory");
 }
 
-static inline void fence_sync_read()
+static inline void fence_sync_read(void)
 {
     __asm__ volatile("fence ir, iorw\n\t" ::: "memory");
 }
 
-static inline void fence_sync()
+static inline void fence_sync(void)
 {
     __asm__ volatile("fence iorw, iorw\n\t" ::: "memory");
 }

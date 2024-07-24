@@ -14,32 +14,32 @@
 
 #define ISB()      __asm__ volatile("isb\n\t" ::: "memory")
 
-static inline void fence_ord_write()
+static inline void fence_ord_write(void)
 {
     DMB(ishst);
 }
 
-static inline void fence_ord_read()
+static inline void fence_ord_read(void)
 {
     DMB(ishld);
 }
 
-static inline void fence_ord()
+static inline void fence_ord(void)
 {
     DMB(ish);
 }
 
-static inline void fence_sync_write()
+static inline void fence_sync_write(void)
 {
     DSB(ishst);
 }
 
-static inline void fence_sync_read()
+static inline void fence_sync_read(void)
 {
     DSB(ishld);
 }
 
-static inline void fence_sync()
+static inline void fence_sync(void)
 {
     DSB(ish);
 }
