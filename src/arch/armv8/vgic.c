@@ -331,7 +331,7 @@ bool vgic_add_lr(struct vcpu* vcpu, struct vgic_int* interrupt)
     if (lr_ind < 0) {
         unsigned min_prio_pend = interrupt->prio, min_prio_act = interrupt->prio;
         unsigned min_id_act = interrupt->id, min_id_pend = interrupt->id;
-        size_t pend_found = 0, act_found = 0;
+        size_t pend_found = 0;
         ssize_t pend_ind = -1, act_ind = -1;
 
         for (size_t i = 0; i < NUM_LRS; i++) {
@@ -349,7 +349,6 @@ bool vgic_add_lr(struct vcpu* vcpu, struct vgic_int* interrupt)
                     min_prio_act = lr_prio;
                     act_ind = (ssize_t)i;
                 }
-                act_found++;
             } else if (lr_state & GICH_LR_STATE_PND) {
                 if (lr_prio > min_prio_pend || (lr_prio == min_prio_pend && lr_id > min_id_pend)) {
                     min_id_pend = lr_id;
