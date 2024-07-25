@@ -24,27 +24,27 @@ boot_arch_profile_init:
     ldr x18, =extra_allocated_phys_mem
 
 	/* Disable caches and MMU */
-	mrs x3, SCTLR_EL2 
-	bic x3, x3, #0x7	
-	msr SCTLR_EL2, x3 
-        
+	mrs x3, SCTLR_EL2
+	bic x3, x3, #0x7
+	msr SCTLR_EL2, x3
+
 	/* Skip initialy global page tables setup if not bsp (boot cpu) */
 	cbnz	x9, wait_for_bsp
 
-	adr	x16, _page_tables_start	
-	adr	x17, _page_tables_end	
+	adr	x16, _page_tables_start
+	adr	x17, _page_tables_end
 	add x16, x16, x18
 	add x17, x17, x18
-	bl	boot_clear		
+	bl	boot_clear
 
 	/* Set temporary flat mapping to switch to VAS. */
 
 	adr x4, root_l1_flat_pt
 	add x4, x4, x18
-	PTE_INDEX_ASM x5, x1, 1 
+	PTE_INDEX_ASM x5, x1, 1
 	add x6, x1, #(PTE_HYP_FLAGS | PTE_SUPERPAGE)
 	str x6, [x4, x5]
-	
+
 	/* Set global root mappings for hypervisor image */
 
 	adr x4, root_l1_pt
@@ -96,7 +96,7 @@ boot_arch_profile_init:
 	sev
 	b 	map_cpu
 
-wait_for_bsp:	
+wait_for_bsp:
 /* wait fot the bsp to finish up global mappings */
 	wfe
 	ldr x4, _boot_barrier
@@ -110,15 +110,15 @@ map_cpu:
 	 *    x5 -> pte index
 	 *    x6 -> phys addr
 	 *    x7 -> virt addr
-	 *    x8 -> aux 
+	 *    x8 -> aux
 	 */
 
 	/* get cpu root pt */
     adrp x3, _dmem_phys_beg
 	mov x8, #(CPU_SIZE + (PT_SIZE*PT_LVLS))
 	madd x3, x0, x8, x3
-	
-	mov	x16, x3	
+
+	mov	x16, x3
 	add	x17, x3, x8
 	bl	boot_clear
 
@@ -126,12 +126,12 @@ map_cpu:
 	add x4, x3, #CPU_SIZE
 
 	/* map original bootstrap flat mappings */
-	PTE_INDEX_ASM x5, x1, 0 
+	PTE_INDEX_ASM x5, x1, 0
 	adr x6, root_l1_flat_pt
 	add x6, x6, x18
 	add x6, x6, #(PTE_HYP_FLAGS | PTE_TABLE)
 	str x6, [x4, x5]
-	
+
 	ldr x5, =(PTE_INDEX(0, BAO_VAS_BASE)*8)
 	adr x6, root_l1_pt
 	add x6, x6, x18
@@ -174,7 +174,7 @@ setup_cpu:
 	/**
 	 * The operation is purposely commented out.  We are assuming monitor code already enabled smp
 	 * coherency.
-	 */ 
+	 */
 
 	/* setup translation configurations */
 	ldr x3, =TCR_EL2_DFLT
@@ -194,7 +194,7 @@ setup_cpu:
 	add x3, x3, #CPU_SIZE
 	msr TTBR0_EL2, x3
 
-	/**	
+	/**
 	 * TODO: set implementation defined registers such as ACTLR or AMAIR. Maybe define a macro for
 	 * this in a implementation oriented directory inside arch.
 	 */
@@ -208,11 +208,11 @@ setup_cpu:
 	/* Enable MMU and caches */
 	ldr x4, =(SCTLR_RES1 | SCTLR_M | SCTLR_C | SCTLR_I)
 	msr	SCTLR_EL2, x4
-	
+
 	tlbi	alle2
 	dsb	nsh
 	isb
-	
+
 	br  x5
 
 _enter_vas:
@@ -224,7 +224,7 @@ _enter_vas:
 	/* Remove temporary mapping - the L1 page holding it leaks */
 	ldr x4, =BAO_CPU_BASE
 	add x4, x4, #CPU_SIZE
-	PTE_INDEX_ASM x5, x1, 0 
+	PTE_INDEX_ASM x5, x1, 0
 	str xzr, [x4, x5]
 
     tlbi	alle2
@@ -237,7 +237,6 @@ _enter_vas:
     ret
 
 .global psci_boot_entry
-.func psci_boot_entry
 psci_boot_entry:
 warm_boot:
 
@@ -272,7 +271,7 @@ warm_boot:
 	/* map original bootstrap flat mappings */
 	mrs x3, TTBR0_EL2
 	adrp x1, _image_start
-	PTE_INDEX_ASM x1, x1, 0 
+	PTE_INDEX_ASM x1, x1, 0
 	add x3, x3, x1
 	dc civac, x3  //we invalidated l1$, but make sure the pte is not in l2$
 	add x5, x5, #(PTE_HYP_FLAGS | PTE_TABLE)
@@ -282,7 +281,7 @@ warm_boot:
 	ldr	x3, =_hyp_vector_table
 	msr	VBAR_EL2, x3
 
-    tlbi	alle2 
+    tlbi	alle2
 	dsb	nsh
 	isb
 
@@ -292,9 +291,9 @@ warm_boot:
 
 	dsb	nsh
 	isb
-	
+
 	ldr x5, =_enter_vas_warm
-	br  x5		
+	br  x5
 
 _enter_vas_warm:
 	/* Unmap bootstrat flat mappings */
@@ -302,7 +301,7 @@ _enter_vas_warm:
 	add x3, x4, #(CPU_STACK_OFF+CPU_STACK_SIZE)
 
 	add x4, x4, #CPU_SIZE
-	PTE_INDEX_ASM x5, x1, 0 
+	PTE_INDEX_ASM x5, x1, 0
 	str xzr, [x4, x5]
     tlbi	alle2
 	dsb	nsh
@@ -314,4 +313,3 @@ _enter_vas_warm:
 	bl	psci_wake
 	b 	.
 
-.endfunc
