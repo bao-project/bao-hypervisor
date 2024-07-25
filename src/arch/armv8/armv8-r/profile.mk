@@ -2,7 +2,7 @@
 ## Copyright (c) Bao Project and Contributors. All rights reserved.
 
 arch-cppflags+= 
-arch-cflags+=-march=armv8-r -mgeneral-regs-only
+arch-cflags+=-march=armv8-r
 arch-asflags+=
 arch-ldflags+=
 

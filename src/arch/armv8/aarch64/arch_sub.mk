@@ -7,3 +7,5 @@ arch-cppflags+=-DAARCH64
 arch-cflags+= -mcmodel=large -mstrict-align
 arch-asflags+=
 arch-ldflags+=
+
+clang_arch_target:=aarch64

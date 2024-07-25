@@ -15,6 +15,8 @@ arch_profile_sub_dir:=$(arch_profile_dir)/$(ARCH_SUB)
 src_dirs+=$(arch_profile_sub_dir)
 
 arch-cppflags+=-DGIC_VERSION=$(GIC_VERSION)
+ifeq ($(CC_IS_GCC),y)
 arch-cflags+=-mgeneral-regs-only
+endif
 arch-asflags+=
 arch-ldflags+=
