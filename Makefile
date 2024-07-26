@@ -235,7 +235,8 @@ ifeq ($(CC_IS_GCC),y)
 		-Wconversion -Wsign-conversion \
 		-Wmissing-prototypes -Wmissing-declarations  \
 		-Wswitch-default -Wshadow -Wshadow=global \
-		-Wcast-qual -Wunused-macros
+		-Wcast-qual -Wunused-macros \
+		-Wstrict-prototypes -Wunused-but-set-variable
 
 	override CFLAGS+=-Wno-unused-command-line-argument \
 		-pedantic -pedantic-errors
