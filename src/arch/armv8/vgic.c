@@ -360,7 +360,7 @@ bool vgic_add_lr(struct vcpu* vcpu, struct vgic_int* interrupt)
             }
         }
 
-        if (pend_found > 1) {
+        if (pend_found >= 1) {
             lr_ind = pend_ind;
         } else {
             lr_ind = act_ind;
