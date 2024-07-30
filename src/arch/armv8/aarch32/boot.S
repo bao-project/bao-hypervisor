@@ -184,7 +184,9 @@ _set_master_cpu:
 /*****  Helper functions for boot code. ******/
 
 .global boot_clear
+#ifdef CC_IS_GCC
 .func boot_clear
+#endif
 boot_clear:
 2:
     mov r8, #0
@@ -195,7 +197,9 @@ boot_clear:
 	b 2b
 1:
 	bx lr
+#ifdef CC_IS_GCC
 .endfunc
+#endif
 
 /*
  * Code adapted from "Application Note Bare-metal Boot Code for ARMv8-A Processors - Version 1.0"
@@ -203,7 +207,9 @@ boot_clear:
  * r0 - cache level to be invalidated (0 - dl1$, 1 - il1$)
  */
 .global boot_cache_invalidate
+#ifdef CC_IS_GCC
 .func boot_cache_invalidate
+#endif
 boot_cache_invalidate:
     mcr p15, 2, r0, c0, c0, 0 // write CSSELR (cache size selection)
     mrc p15, 1, r4, c0, c0, 0 // read CCSIDR (cache size id)
@@ -230,5 +236,7 @@ set_loop:
     cmp r5, r3 // last way reached yet?
     ble way_loop // if not, iterate way_loop
     bx lr
+#ifdef CC_IS_GCC
 .endfunc
+#endif
 

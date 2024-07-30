@@ -16,12 +16,12 @@
 #define HART_REG_OFF        PLIC_THRESHOLD_OFF
 #define IRQC_HART_INST      PLIC_PLAT_CNTXT_NUM
 
-static inline void irqc_init()
+static inline void irqc_init(void)
 {
     plic_init();
 }
 
-static inline void irqc_cpu_init()
+static inline void irqc_cpu_init(void)
 {
     plic_cpu_init();
 }
@@ -32,7 +32,7 @@ static inline void irqc_config_irq(irqid_t int_id, bool en)
     plic_set_prio(int_id, 0xFE);
 }
 
-static inline void irqc_handle()
+static inline void irqc_handle(void)
 {
     plic_handle();
 }

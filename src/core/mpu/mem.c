@@ -125,7 +125,7 @@ static inline priv_t as_priv(struct addr_space* as)
     return priv;
 }
 
-static void as_init_boot_regions()
+static void as_init_boot_regions(void)
 {
     /**
      * Add hypervisor mpu entries set up during boot to the vmpu:

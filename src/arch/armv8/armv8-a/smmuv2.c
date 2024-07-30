@@ -52,27 +52,27 @@ struct smmu_priv smmu;
 /**
  * Accessors inline functions.
  */
-inline bool smmu_sme_is_group(size_t sme)
+static inline bool smmu_sme_is_group(size_t sme)
 {
     return bitmap_get(smmu.grp_bitmap, sme);
 }
 
-inline size_t smmu_sme_get_ctx(size_t sme)
+static inline size_t smmu_sme_get_ctx(size_t sme)
 {
     return S2CR_CBNDX(smmu.hw.glbl_rs0->S2CR[sme]);
 }
 
-inline streamid_t smmu_sme_get_id(size_t sme)
+static inline streamid_t smmu_sme_get_id(size_t sme)
 {
     return SMMU_SMR_ID(smmu.hw.glbl_rs0->SMR[sme]);
 }
 
-inline streamid_t smmu_sme_get_mask(size_t sme)
+static inline streamid_t smmu_sme_get_mask(size_t sme)
 {
     return SMMU_SMR_MASK(smmu.hw.glbl_rs0->SMR[sme]);
 }
 
-static void smmu_check_features()
+static void smmu_check_features(void)
 {
     unsigned version =
         bit32_extract(smmu.hw.glbl_rs0->IDR7, SMMUV2_IDR7_MAJOR_OFF, SMMUV2_IDR7_MAJOR_LEN);

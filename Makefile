@@ -11,7 +11,27 @@ define current_directory
 $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
 endef
 
+#Makefile arguments and default values
+DEBUG:=y
+OPTIMIZATIONS:=2
+CONFIG=
+PLATFORM=
+LLVM?=
+
 # Setup toolchain macros
+
+ifneq ($(LLVM),)
+cpp=		$(LLVM)clang-cpp
+sstrip= 	$(LLVM)llvm-strip
+cc=			$(LLVM)clang
+ld = 		$(LLVM)ld.lld
+as=			$(LLVM)llvm-as
+objcopy=	$(LLVM)llvm-objcopy
+objdump=	$(LLVM)llvm-objdump
+readelf=	$(LLVM)llvm-readelf
+size=		$(LLVM)llvm-size
+CC_IS_CLANG =	y
+else
 cpp=		$(CROSS_COMPILE)cpp
 sstrip= 	$(CROSS_COMPILE)strip
 cc=			$(CROSS_COMPILE)gcc
@@ -21,14 +41,12 @@ objcopy=	$(CROSS_COMPILE)objcopy
 objdump=	$(CROSS_COMPILE)objdump
 readelf=	$(CROSS_COMPILE)readelf
 size=		$(CROSS_COMPILE)size
+CC_IS_GCC =	y
+endif
 
 HOST_CC:=gcc
 
-#Makefile arguments and default values
-DEBUG:=n
-OPTIMIZATIONS:=2
-CONFIG=
-PLATFORM=
+
 
 # Setup version
 
@@ -76,6 +94,12 @@ cpu_arch_dir=$(src_dir)/arch/$(ARCH)
 -include $(cpu_arch_dir)/arch.mk
 ifneq ($(MAKECMDGOALS), clean)
  core_mem_prot_dir:=$(core_dir)/$(arch_mem_prot)
+endif
+
+# Parse CLANG target
+ifeq ($(CC_IS_CLANG),y)
+ARCH_TARGET?=$(CROSS_COMPILE)
+CLANG_ARCH_TARGET := $(patsubst %-,%,$(lastword $(subst /, ,$(ARCH_TARGET))))
 endif
 
 # Check configuration exists and set configurtion sources based on it
@@ -174,36 +198,57 @@ objs-y+=$(config_obj)
 
 build_macros:=
 ifeq ($(arch_mem_prot),mmu)
-build_macros+=-DMEM_PROT_MMU
+	build_macros+=-DMEM_PROT_MMU
 endif
 ifeq ($(arch_mem_prot),mpu)
-build_macros+=-DMEM_PROT_MPU
+	build_macros+=-DMEM_PROT_MPU
+endif
+
+ifeq ($(CC_IS_GCC),y)
+	build_macros+=-DCC_IS_GCC
+else ifeq ($(CC_IS_CLANG),y)
+	build_macros+=-DCC_IS_CLANG
 endif
 
 override CPPFLAGS+=$(addprefix -I, $(inc_dirs)) $(arch-cppflags) \
 	$(platform-cppflags) $(build_macros)
 vpath:.=CPPFLAGS
 
+HOST_CPPFLAGS+=$(addprefix -I, $(inc_dirs)) $(arch-cppflags) \
+	$(platform-cppflags) $(build_macros)
+
 ifeq ($(DEBUG), y)
 	debug_flags:=-g
 	OPTIMIZATIONS:=g
 endif
 
-cflags_warns:= \
-	-Warith-conversion -Wbuiltin-declaration-mismatch \
-	-Wcomments  -Wdiscarded-qualifiers \
-	-Wimplicit-fallthrough \
-	-Wswitch-unreachable -Wreturn-local-addr  \
-	-Wshift-count-negative  -Wuninitialized \
-	-Wunused -Wunused-local-typedefs  -Wunused-parameter \
-	-Wunused-result -Wvla \
-	-Wconversion -Wsign-conversion \
-	-Wmissing-prototypes -Wmissing-declarations  \
-	-Wswitch-default -Wshadow -Wshadow=global \
-	-Wcast-qual -Wunused-macros
+
+ifeq ($(CC_IS_GCC),y)
+	cflags_warns:= \
+		-Warith-conversion -Wbuiltin-declaration-mismatch \
+		-Wcomments  -Wdiscarded-qualifiers \
+		-Wimplicit-fallthrough \
+		-Wswitch-unreachable -Wreturn-local-addr  \
+		-Wshift-count-negative  -Wuninitialized \
+		-Wunused -Wunused-local-typedefs  -Wunused-parameter \
+		-Wunused-result -Wvla \
+		-Wconversion -Wsign-conversion \
+		-Wmissing-prototypes -Wmissing-declarations  \
+		-Wswitch-default -Wshadow -Wshadow=global \
+		-Wcast-qual -Wunused-macros \
+		-Wstrict-prototypes -Wunused-but-set-variable
+
+	override CFLAGS+=-Wno-unused-command-line-argument \
+		-pedantic -pedantic-errors
+	override LDFLAGS+=--no-check-sections
+else ifeq ($(CC_IS_CLANG), y)
+	override CFLAGS+=-Wno-unused-command-line-argument --target=$(CLANG_ARCH_TARGET)
+	override CPPFLAGS+=--target=$(CLANG_ARCH_TARGET) -ffreestanding
+	override LDFLAGS+=--no-check-sections
+endif
 
 override CFLAGS+=-O$(OPTIMIZATIONS) -Wall -Werror -Wextra $(cflags_warns) \
-	-ffreestanding -std=c11 -pedantic -pedantic-errors -fno-pic \
+	-ffreestanding -std=c11 -fno-pic \
 	$(arch-cflags) $(platform-cflags) $(CPPFLAGS) $(debug_flags)
 
 override ASFLAGS+=$(CFLAGS) $(arch-asflags) $(platform-asflags)
@@ -264,7 +309,7 @@ ifneq ($(wildcard $(asm_defs_src)),)
 $(asm_defs_hdr): $(asm_defs_src)
 	@echo "Generating header	$(patsubst $(cur_dir)/%, %, $@)"
 	@$(cc) -S $(CFLAGS) -DGENERATING_DEFS $< -o - \
-		| awk '($$1 == "->") \
+		| awk '($$1 == "//#" || $$1 == "##" || $$1 == "@#")   \
 			{ gsub("#", "", $$3); print "#define " $$2 " " $$3 }' > $@
 
 $(asm_defs_hdr).d: $(asm_defs_src)
@@ -282,7 +327,7 @@ $(config_dep): $(config_src)
 
 $(config_def_generator): $(config_def_generator_src) $(config_src)
 	@echo "Compiling generator	$(patsubst $(cur_dir)/%, %, $@)"
-	@$(HOST_CC) $^ $(build_macros) $(CPPFLAGS) -DGENERATING_DEFS \
+	@$(HOST_CC) $^ $(build_macros) $(HOST_CPPFLAGS) -DGENERATING_DEFS \
 		$(addprefix -I, $(inc_dirs)) -o $@
 
 $(config_defs): $(config_def_generator)
@@ -291,7 +336,7 @@ $(config_defs): $(config_def_generator)
 
 $(platform_def_generator): $(platform_def_generator_src) $(platform_description)
 	@echo "Compiling generator	$(patsubst $(cur_dir)/%, %, $@)"
-	@$(HOST_CC) $^ $(build_macros) $(CPPFLAGS) -DGENERATING_DEFS -D$(ARCH) \
+	@$(HOST_CC) $^ $(build_macros) $(HOST_CPPFLAGS) -DGENERATING_DEFS -D$(ARCH) \
 		$(addprefix -I, $(inc_dirs)) -o $@
 
 $(platform_defs): $(platform_def_generator)

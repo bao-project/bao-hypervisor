@@ -54,7 +54,7 @@ struct vcpu_arch {
 };
 
 struct vcpu* vm_get_vcpu_by_mpidr(struct vm* vm, unsigned long mpidr);
-void vcpu_arch_entry();
+void vcpu_arch_entry(void);
 
 bool vcpu_arch_profile_on(struct vcpu* vcpu);
 void vcpu_arch_profile_init(struct vcpu* vcpu, struct vm* vm);
