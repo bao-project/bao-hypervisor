@@ -248,8 +248,8 @@ $(build_dir)/%.d : $(src_dir)/%.[c,S]
 	@$(cc) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $< > $@
 
 $(objs-y):
-	@echo "Compiling source	$(patsubst $(cur_dir)/%, %, $<)"
-	@$(cc) $(CFLAGS) -c $< -o $@
+	echo "Compiling source	$(patsubst $(cur_dir)/%, %, $<)"
+	$(cc) $(ASFLAGS) $(CFLAGS) -c $< -o $@
 
 %.bin: %.elf
 	@echo "Generating binary	$(patsubst $(cur_dir)/%, %, $@)"

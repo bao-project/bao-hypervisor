@@ -187,7 +187,7 @@ _set_master_cpu:
 .func boot_clear
 boot_clear:
 2:
-    mov r8, #0
+        mov r8, #0
 	cmp r11, r12
 	bge 1f
 	str r8, [r11]
