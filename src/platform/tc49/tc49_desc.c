@@ -20,8 +20,13 @@ struct platform platform = {
         }
     },
 
+    .ir = {
+        .src_base = 0xF0032000,
+        .int_base = 0xF0030000
+    },
+
     .console = {
-        .base = 0x9C090000,  // UART0 (PL011)
+        .base = 0x9C090000,  
     },
 
 

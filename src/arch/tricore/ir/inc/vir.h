@@ -21,7 +21,7 @@ struct vir {
     uint32_t prio[IR_MAX_INTERRUPTS];
     BITMAP_ALLOC_ARRAY(enbl, IR_MAX_INTERRUPTS, IR_PLAT_CNTXT_NUM);
     uint32_t threshold[IR_PLAT_CNTXT_NUM];
-    struct emul_mem ir_global_emul;
+    struct emul_mem ir_src_emul;
     struct emul_mem ir_threshold_emul;
 };
 
