@@ -8,18 +8,9 @@
 
 #include <bao.h>
 
-#define IRQC_MAX_INTERRUPTS 10
+#define MAX_INTERRUPTS PLAT_IR_MAX_INTERUPTS
 
-/**
- * In riscv, the ipi (software interrupt) and timer interrupts dont actually have an ID as their
- * are treated differently from external interrupts routed by the external interrupt controller,
- * the PLIC. Will define their ids as the ids after the maximum possible in the PLIC.
- */
-#define SOFT_INT_ID      (IRQC_MAX_INTERRUPTS + 1)
-#define TIMR_INT_ID      (IRQC_MAX_INTERRUPTS + 2)
-#define MAX_INTERRUPTS   (TIMR_INT_ID + 1)
-
-#define IPI_CPU_MSG      SOFT_INT_ID
+#define IPI_CPU_MSG      1332 /* TODO this is the first GPSR in TC49 */
 
 void interrupts_arch_handle(void);
 

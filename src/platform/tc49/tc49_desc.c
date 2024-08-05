@@ -21,13 +21,11 @@ struct platform platform = {
     },
 
     .ir = {
+        .int_base = 0xF0030000,
         .src_base = 0xF0032000,
-        .int_base = 0xF0030000
     },
 
     .console = {
-        .base = 0x9C090000,  
+        .base = 0x9C090000,
     },
-
-
 };

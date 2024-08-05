@@ -11,7 +11,8 @@
 // Arch-specific platform data
 struct arch_platform {
     union ir_dscrp {
-        paddr_t base;
+        paddr_t base_src;
+        paddr_t base_int;
     } ir;
 
 };
