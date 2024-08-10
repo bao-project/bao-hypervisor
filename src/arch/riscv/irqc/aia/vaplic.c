@@ -10,8 +10,10 @@
 #include <mem.h>
 #include <interrupts.h>
 #include <arch/csrs.h>
+#if (IRQC == AIA)
+#include <imsic.h>
+#endif
 
-#define APLIC_MIN_PRIO             (0xFF)
 #define UPDATE_ALL_HARTS           (~0U)
 
 #define SET_INTP_REG(reg, intp_id) (reg[intp_id / 32] = bit32_set(reg[intp_id / 32], intp_id % 32))
@@ -44,9 +46,13 @@ static inline cpuid_t vaplic_vcpuid_to_pcpuid(struct vcpu* vcpu, vcpuid_t vhart)
 
 static uint32_t vaplic_get_domaincfg(struct vcpu* vcpu);
 static uint32_t vaplic_get_target(struct vcpu* vcpu, irqid_t intp_id);
+#if (IRQC == APLIC)
+#define APLIC_MIN_PRIO (0xFF)
+
 static uint32_t vaplic_get_idelivery(struct vcpu* vcpu, idcid_t idc_id);
 static uint32_t vaplic_get_iforce(struct vcpu* vcpu, idcid_t idc_id);
 static uint32_t vaplic_get_ithreshold(struct vcpu* vcpu, idcid_t idc_id);
+#endif
 
 void vaplic_set_hw(struct vm* vm, irqid_t intp_id)
 {
@@ -54,6 +60,21 @@ void vaplic_set_hw(struct vm* vm, irqid_t intp_id)
         bitmap_set(vm->arch.vaplic.hw, intp_id);
     }
 }
+
+#if (IRQC == AIA)
+/**
+ * @brief Returns the target guest index of a given interrupt
+ *
+ * @param vcpu virtual cpu
+ * @param intp_id interrupt ID
+ * @return uint8_t guest hart index of the given interrupt
+ */
+static inline uint8_t vaplic_get_target_guest(struct vcpu* vcpu, irqid_t intp_id)
+{
+    return (vaplic_get_target(vcpu, intp_id) >> APLIC_TARGET_GUEST_IDX_SHIFT) &
+        APLIC_TARGET_GUEST_INDEX_MASK;
+}
+#endif
 
 /**
  * @brief Returns the target hart index of a given interrupt
@@ -163,6 +184,11 @@ static bool vaplic_set_pend(struct vcpu* vcpu, irqid_t intp_id)
     return ret;
 }
 
+enum { UPDATE_HART_LINE };
+static void vaplic_ipi_handler(uint32_t event, uint64_t data);
+CPU_MSG_HANDLER(vaplic_ipi_handler, VPLIC_IPI_ID)
+
+#if (IRQC == APLIC)
 /**
  * @brief Updates the topi register with with the highest pend & en interrupt id
  *
@@ -213,10 +239,6 @@ static bool vaplic_update_topi(struct vcpu* vcpu)
     return ret;
 }
 
-enum { UPDATE_HART_LINE };
-static void vaplic_ipi_handler(uint32_t event, uint64_t data);
-CPU_MSG_HANDLER(vaplic_ipi_handler, VPLIC_IPI_ID)
-
 /**
  * @brief Updates the interrupt line for a single hart
  *
@@ -243,6 +265,30 @@ static void vaplic_update_hart_line(struct vcpu* vcpu, vcpuid_t vhart_index)
     }
 }
 
+#elif (IRQC == AIA)
+static void vaplic_update_hart_imsic(struct vcpu* vcpu, vcpuid_t vhart_index)
+{
+    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
+    cpuid_t pcpu_id = vaplic_vcpuid_to_pcpuid(vcpu, vhart_index);
+    bool domain_enbl = !!(vaplic_get_domaincfg(vcpu) & APLIC_DOMAINCFG_IE);
+    size_t target_guest = 0;
+
+    if (pcpu_id == cpu()->id) {
+        for (irqid_t i = 1; i < APLIC_MAX_INTERRUPTS; i++) {
+            if ((vaplic_get_hart_index(vcpu, i) == vcpu->id) && vaplic_get_pend(vcpu, i) &&
+                vaplic_get_enbl(vcpu, i) && domain_enbl) {
+                target_guest = vaplic_get_target_guest(vcpu, i);
+                imsic_inject_pend(target_guest, i);
+                CLR_INTP_REG(vaplic->ip, i);
+            }
+        }
+    } else {
+        struct cpu_msg msg = { (uint32_t)VPLIC_IPI_ID, UPDATE_HART_LINE, vhart_index };
+        cpu_send_msg(pcpu_id, &msg);
+    }
+}
+#endif
+
 /**
  * @brief Triggers the hart/harts interrupt line update.
  *
@@ -257,10 +303,18 @@ static void vaplic_update_hart(struct vcpu* vcpu, size_t vhart_index)
 
     if (vhart_index == UPDATE_ALL_HARTS) {
         for (size_t i = 0; i < vaplic->idc_num; i++) {
+#if (IRQC == APLIC)
             vaplic_update_hart_line(vcpu, (vcpuid_t)i);
+#elif (IRQC == AIA)
+            vaplic_update_hart_imsic(vcpu, (vcpuid_t)i);
+#endif
         }
     } else if ((uint16_t)vhart_index < vaplic->idc_num) {
+#if (IRQC == APLIC)
         vaplic_update_hart_line(vcpu, (vcpuid_t)vhart_index);
+#elif (IRQC == AIA)
+        vaplic_update_hart_imsic(vcpu, (vcpuid_t)vhart_index);
+#endif
     }
 }
 
@@ -295,7 +349,11 @@ static void vaplic_set_domaincfg(struct vcpu* vcpu, uint32_t new_val)
     /** Update only the virtual domaincfg */
     /** Only Interrupt Enable is configurable */
     new_val &= APLIC_DOMAINCFG_IE;
+#if (IRQC == APLIC)
     new_val &= ~APLIC_DOMAINCFG_DM;
+#elif (IRQC == AIA)
+    new_val |= APLIC_DOMAINCFG_DM;
+#endif
     vaplic->domaincfg = new_val | APLIC_DOMAINCFG_RO80;
     vaplic_update_hart(vcpu, UPDATE_ALL_HARTS);
     spin_unlock(&vaplic->lock);
@@ -645,7 +703,12 @@ static void vaplic_set_target(struct vcpu* vcpu, irqid_t intp_id, uint32_t new_v
 {
     struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
     vcpuid_t hart_index = (new_val >> APLIC_TARGET_HART_IDX_SHIFT) & APLIC_TARGET_HART_IDX_MASK;
+#if (IRQC == APLIC)
     uint8_t priority = (uint8_t)(new_val & APLIC_IPRIO_MASK);
+#elif (IRQC == AIA)
+    uint8_t guest_index = (new_val >> APLIC_TARGET_GUEST_IDX_SHIFT) & APLIC_TARGET_GUEST_INDEX_MASK;
+    irqid_t eiid = new_val & APLIC_TARGET_EEID_MASK;
+#endif
     cpuid_t pcpu_id = vm_translate_to_pcpuid(vcpu->vm, hart_index);
     vcpuid_t prev_hart_index = 0;
 
@@ -657,20 +720,37 @@ static void vaplic_set_target(struct vcpu* vcpu, irqid_t intp_id, uint32_t new_v
         pcpu_id = vm_translate_to_pcpuid(vcpu->vm, hart_index);
     }
 
+#if (IRQC == APLIC)
     new_val &= APLIC_TARGET_DIRECT_MASK;
     if (priority == 0) {
         new_val |= APLIC_TARGET_MAX_PRIO;
         priority = APLIC_TARGET_MAX_PRIO;
     }
+#elif (IRQC == AIA)
+    new_val &= APLIC_TARGET_MSI_MASK;
+#endif
+
     if (vaplic_get_active(vcpu, intp_id) && vaplic_get_target(vcpu, intp_id) != new_val) {
         prev_hart_index = vaplic_get_hart_index(vcpu, intp_id);
         if (vaplic_get_hw(vcpu, intp_id)) {
             aplic_set_target_hart(intp_id, pcpu_id);
+#if (IRQC == APLIC)
             aplic_set_target_prio(intp_id, priority);
             priority = aplic_get_target_prio(intp_id);
+#elif (IRQC == AIA)
+            aplic_set_target_guest(intp_id, 1);
+            aplic_set_target_eiid(intp_id, eiid);
+            eiid = aplic_get_target_eiid(intp_id);
+#endif
         }
-        vaplic->target[intp_id] =
-            (uint32_t)((hart_index << APLIC_TARGET_HART_IDX_SHIFT) | priority);
+
+#if (IRQC == APLIC)
+        vaplic->target[intp_id] = (uint32_t)(hart_index << APLIC_TARGET_HART_IDX_SHIFT) | priority;
+#elif (IRQC == AIA)
+        vaplic->target[intp_id] = (uint32_t)(hart_index << APLIC_TARGET_HART_IDX_SHIFT) |
+            (uint32_t)(guest_index << APLIC_TARGET_GUEST_IDX_SHIFT) | eiid;
+#endif
+
         if (prev_hart_index != hart_index) {
             vaplic_update_hart(vcpu, prev_hart_index);
         }
@@ -697,6 +777,7 @@ static uint32_t vaplic_get_target(struct vcpu* vcpu, irqid_t intp_id)
     return ret;
 }
 
+#if (IRQC == APLIC)
 /**
  * @brief Set idelivery register for a given idc.
  *
@@ -854,6 +935,7 @@ static uint32_t vaplic_get_claimi(struct vcpu* vcpu, idcid_t idc_id)
     spin_unlock(&vaplic->lock);
     return ret;
 }
+#endif
 
 /**
  * @brief domaincfg register access emulation function
@@ -1028,6 +1110,7 @@ static void vaplic_emul_target_access(struct emul_access* acc)
     }
 }
 
+#if (IRQC == APLIC)
 /**
  * @brief idelivery register access emulation function
  *
@@ -1103,6 +1186,7 @@ static void vaplic_emul_claimi_access(struct emul_access* acc, idcid_t idc_id)
         vcpu_writereg(cpu()->vcpu, acc->reg, vaplic_get_claimi(cpu()->vcpu, idc_id));
     }
 }
+#endif
 
 /**
  * @brief Injects a given interrupt into a given vcpu
@@ -1239,6 +1323,7 @@ static bool vaplic_domain_emul_handler(struct emul_access* acc)
     return true;
 }
 
+#if (IRQC == APLIC)
 /**
  * @brief Function to handle writes (or reads) to (from) IDC structure.
  *
@@ -1281,6 +1366,7 @@ static bool vaplic_idc_emul_handler(struct emul_access* acc)
     }
     return true;
 }
+#endif
 
 void vaplic_init(struct vm* vm, const union vm_irqc_dscrp* vm_irqc_dscrp)
 {
@@ -1295,11 +1381,13 @@ void vaplic_init(struct vm* vm, const union vm_irqc_dscrp* vm_irqc_dscrp)
 
         vm_emul_add_mem(vm, &vm->arch.vaplic.aplic_domain_emul);
 
+#if (IRQC == APLIC)
         vm->arch.vaplic.aplic_idc_emul =
             (struct emul_mem){ .va_base = vm_irqc_dscrp->aia.aplic.base + APLIC_IDC_OFF,
                 .size = sizeof(struct aplic_idc_hw) * vm->arch.vaplic.idc_num,
                 .handler = vaplic_idc_emul_handler };
 
         vm_emul_add_mem(vm, &vm->arch.vaplic.aplic_idc_emul);
+#endif
     }
 }

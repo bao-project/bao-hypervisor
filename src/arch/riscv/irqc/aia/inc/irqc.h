@@ -14,6 +14,7 @@
 #include <arch/sbi.h>
 #elif (IRQC == AIA)
 #include <imsic.h>
+#include <vimsic.h>
 #endif
 
 #define IRQC_TIMR_INT_ID         (APLIC_MAX_INTERRUPTS + 1)
