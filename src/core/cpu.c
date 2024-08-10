@@ -63,7 +63,7 @@ void cpu_send_msg(cpuid_t trgtcpu, struct cpu_msg* msg)
     node->msg = *msg;
     list_push(&cpu_if(trgtcpu)->event_list, (node_t*)node);
     fence_sync_write();
-    interrupts_cpu_sendipi(trgtcpu, IPI_CPU_MSG);
+    interrupts_cpu_sendipi(trgtcpu, interrupts_ipi_id);
 }
 
 bool cpu_get_msg(struct cpu_msg* msg)
@@ -102,8 +102,8 @@ void cpu_idle(void)
 
 void cpu_idle_wakeup(void)
 {
-    if (interrupts_check(IPI_CPU_MSG)) {
-        interrupts_clear(IPI_CPU_MSG);
+    if (interrupts_check(interrupts_ipi_id)) {
+        interrupts_clear(interrupts_ipi_id);
         cpu_msg_handler();
     }
 

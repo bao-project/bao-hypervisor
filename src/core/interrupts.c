@@ -10,11 +10,12 @@
 #include <bitmap.h>
 #include <string.h>
 
-BITMAP_ALLOC(hyp_interrupt_bitmap, MAX_INTERRUPTS);
-BITMAP_ALLOC(global_interrupt_bitmap, MAX_INTERRUPTS);
+BITMAP_ALLOC(global_interrupt_bitmap, MAX_INTERRUPT_LINES);
 spinlock_t irq_reserve_lock = SPINLOCK_INITVAL;
 
-irq_handler_t interrupt_handlers[MAX_INTERRUPTS];
+irq_handler_t interrupt_handlers[MAX_INTERRUPT_HANDLERS];
+
+irqid_t interrupts_ipi_id;
 
 void interrupts_cpu_sendipi(cpuid_t target_cpu, irqid_t ipi_id)
 {
@@ -41,17 +42,20 @@ void interrupts_init(void)
     interrupts_arch_init();
 
     if (cpu_is_master()) {
-        if (!interrupts_reserve(IPI_CPU_MSG, (irq_handler_t)cpu_msg_handler)) {
+        interrupts_ipi_id = interrupts_reserve(IPI_CPU_MSG, (irq_handler_t)cpu_msg_handler);
+        if (interrupts_ipi_id == INVALID_IRQID) {
             ERROR("Failed to reserve IPI_CPU_MSG interrupt");
         }
     }
 
-    interrupts_cpu_enable(IPI_CPU_MSG, true);
+    cpu_sync_barrier(&cpu_glb_sync);
+
+    interrupts_cpu_enable(interrupts_ipi_id, true);
 }
 
 static inline bool interrupt_assigned_to_hyp(irqid_t int_id)
 {
-    return bitmap_get(hyp_interrupt_bitmap, int_id);
+    return (int_id < MAX_INTERRUPT_HANDLERS) && (interrupt_handlers[int_id] != NULL);
 }
 
 /**
@@ -101,18 +105,21 @@ bool interrupts_vm_assign(struct vm* vm, irqid_t id)
     return ret;
 }
 
-bool interrupts_reserve(irqid_t int_id, irq_handler_t handler)
+irqid_t interrupts_reserve(irqid_t pint_id, irq_handler_t handler)
 {
-    bool ret = false;
+    irqid_t int_id = INVALID_IRQID;
 
     spin_lock(&irq_reserve_lock);
-    if ((int_id < MAX_INTERRUPTS) && !interrupt_assigned(int_id)) {
-        ret = true;
-        interrupt_handlers[int_id] = handler;
-        bitmap_set(hyp_interrupt_bitmap, int_id);
-        bitmap_set(global_interrupt_bitmap, int_id);
+    if ((pint_id < MAX_INTERRUPT_LINES) && !interrupt_assigned(pint_id)) {
+        bitmap_set(global_interrupt_bitmap, pint_id);
+
+        irqid_t tmp_id = interrupts_arch_reserve(pint_id);
+        if ((tmp_id != INVALID_IRQID) && (tmp_id < MAX_INTERRUPT_HANDLERS)) {
+            int_id = tmp_id;
+            interrupt_handlers[int_id] = handler;
+        }
     }
     spin_unlock(&irq_reserve_lock);
 
-    return ret;
+    return int_id;
 }

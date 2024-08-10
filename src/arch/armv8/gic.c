@@ -22,6 +22,8 @@
 volatile struct gicd_hw* gicd;
 spinlock_t gicd_lock;
 
+static irqid_t gic_maintenance_id;
+
 static void gicd_init(void)
 {
     size_t int_num = gic_num_irqs();
@@ -64,7 +66,9 @@ static void gicd_init(void)
 
     /* No need to setup gicd->NSACR as all interrupts are  setup to group 1 */
 
-    if (!interrupts_reserve(platform.arch.gic.maintenance_id, gic_maintenance_handler)) {
+    gic_maintenance_id =
+        interrupts_reserve(platform.arch.gic.maintenance_id, gic_maintenance_handler);
+    if (gic_maintenance_id == INVALID_IRQID) {
         ERROR("Failed to reserve GIC maintenance interrupt");
     }
 }
@@ -87,6 +91,8 @@ void gic_init(void)
     cpu_sync_and_clear_msgs(&cpu_glb_sync);
 
     gic_cpu_init();
+
+    interrupts_cpu_enable(gic_maintenance_id, true);
 }
 
 void gic_handle()

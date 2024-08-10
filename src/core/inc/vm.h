@@ -80,7 +80,7 @@ struct vm {
 
     struct vm_io io;
 
-    BITMAP_ALLOC(interrupt_bitmap, MAX_INTERRUPTS);
+    BITMAP_ALLOC(interrupt_bitmap, MAX_GUEST_INTERRUPTS);
 
     size_t ipc_num;
     struct ipc* ipcs;

@@ -16,6 +16,8 @@
 #include <fences.h>
 #include <arch/aclint.h>
 
+irqid_t irqc_timer_int_id;
+
 void interrupts_arch_init()
 {
     if (cpu_is_master()) {
@@ -47,15 +49,20 @@ void interrupts_arch_ipi_send(cpuid_t target_cpu, irqid_t ipi_id)
     }
 }
 
+inline irqid_t interrupts_arch_reserve(irqid_t pint_id)
+{
+    return irqc_reserve(pint_id);
+}
+
 void interrupts_arch_enable(irqid_t int_id, bool en)
 {
-    if (int_id == SOFT_INT_ID) {
+    if (int_id == interrupts_ipi_id) {
         if (en) {
             csrs_sie_set(SIE_SSIE);
         } else {
             csrs_sie_clear(SIE_SSIE);
         }
-    } else if (int_id == TIMR_INT_ID) {
+    } else if (int_id == irqc_timer_int_id) {
         if (en) {
             csrs_sie_set(SIE_STIE);
         } else {
@@ -73,10 +80,10 @@ void interrupts_arch_handle(void)
     switch (_scause) {
         case SCAUSE_CODE_SSI:
             csrs_sip_clear(SIP_SSIP);
-            interrupts_handle(SOFT_INT_ID);
+            interrupts_handle(interrupts_ipi_id);
             break;
         case SCAUSE_CODE_STI:
-            interrupts_handle(TIMR_INT_ID);
+            interrupts_handle(irqc_timer_int_id);
             /**
              * Clearing the timer pending bit actually has no effect. We could re-program the timer
              * to "infinity" but we don't know if the handler itself re-programed the timer with a
@@ -96,9 +103,9 @@ void interrupts_arch_handle(void)
 
 bool interrupts_arch_check(irqid_t int_id)
 {
-    if (int_id == SOFT_INT_ID) {
+    if (int_id == interrupts_ipi_id) {
         return csrs_sip_read() & SIP_SSIP;
-    } else if (int_id == TIMR_INT_ID) {
+    } else if (int_id == irqc_timer_int_id) {
         return csrs_sip_read() & SIP_STIP;
     } else {
         return irqc_get_pend(int_id);
@@ -107,9 +114,9 @@ bool interrupts_arch_check(irqid_t int_id)
 
 void interrupts_arch_clear(irqid_t int_id)
 {
-    if (int_id == SOFT_INT_ID) {
+    if (int_id == interrupts_ipi_id) {
         csrs_sip_clear(SIP_SSIP);
-    } else if (int_id == TIMR_INT_ID) {
+    } else if (int_id == irqc_timer_int_id) {
         /**
          * It is not actually possible to clear timer by software.
          */

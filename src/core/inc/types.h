@@ -44,6 +44,7 @@ typedef unsigned long cpumap_t;
 #define INVALID_CPUID ((cpuid_t)~0UL)
 
 typedef unsigned irqid_t;
+#define INVALID_IRQID ((irqid_t)~0U)
 
 typedef unsigned deviceid_t;
 
