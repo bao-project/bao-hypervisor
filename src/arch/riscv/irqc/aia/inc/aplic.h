@@ -161,7 +161,7 @@ bool aplic_get_pend(irqid_t intp_id);
 uint32_t aplic_get_pend_reg(size_t reg_indx);
 
 /**
- * @brief Clear a pending bit from a inetrrupt writting to in_clripnum.
+ * @brief Clear a pending bit from a interrupt writting to in_clripnum.
  *
  * @param intp_id interrupt to clear the pending bit from
  */
@@ -232,12 +232,28 @@ void aplic_clr_enbl_reg(size_t reg_indx, uint32_t reg_val);
 void aplic_set_target_prio(irqid_t intp_id, uint8_t prio);
 
 /**
+ * @brief Write the eiid of a given interrupt
+ *
+ * @param intp_id interrupt ID
+ * @param eiid external interrupt ID
+ */
+void aplic_set_target_eiid(irqid_t intp_id, irqid_t eiid);
+
+/**
  * @brief Write the target hart of an interrupt to a given interrupt
  *
  * @param intp_id interrupt ID
  * @param hart hart index
  */
 void aplic_set_target_hart(irqid_t intp_id, cpuid_t hart);
+
+/**
+ * @brief Write the target guest of a given interrupt
+ *
+ * @param intp_id interrupt ID
+ * @param guest the guest index
+ */
+void aplic_set_target_guest(irqid_t intp_id, uint8_t guest);
 
 /**
  * @brief Return the priority of a given interrupt
@@ -248,12 +264,28 @@ void aplic_set_target_hart(irqid_t intp_id, cpuid_t hart);
 uint8_t aplic_get_target_prio(irqid_t intp_id);
 
 /**
+ * @brief Return the External Interrupt ID (EIID) of a given interrupt
+ *
+ * @param intp_id interrupt ID
+ * @return irqid_t the External Interrupt ID
+ */
+irqid_t aplic_get_target_eiid(irqid_t intp_id);
+
+/**
  * @brief Return the target hart of a given interrupt
  *
  * @param intp_id interrupt ID
  * @return cpuid_t the interrupt hart index
  */
 cpuid_t aplic_get_target_hart(irqid_t intp_id);
+
+/**
+ * @brief Return the guest index of a given interrupt
+ *
+ * @param intp_id interrupt ID
+ * @return uint8_t the guest index
+ */
+uint8_t aplic_get_target_guest(irqid_t intp_id);
 
 /**
  * @brief Returns the highest pending and enabled interrupt id.
@@ -271,5 +303,21 @@ irqid_t aplic_idc_get_claimi_intpid(idcid_t idc_id);
  *
  */
 void aplic_handle(void);
+
+/**
+ * @brief Returns the physical interrupt ID given a MSI ID
+ *
+ * @param msi_id MSI ID
+ * @return irqid_t returns the physical ID
+ */
+irqid_t aplic_get_pintp_id_from_msi_id(irqid_t msi_id);
+
+/**
+ * @brief Given a MSI ID and a physical interrupt link them
+ *
+ * @param msi_id MSI ID
+ * @param pintp_id Physical interrupt ID
+ */
+void aplic_link_msi_id_to_pintp(irqid_t msi_id, irqid_t pintp_id);
 
 #endif // APLIC_H

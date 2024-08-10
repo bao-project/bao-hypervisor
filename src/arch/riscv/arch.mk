@@ -22,6 +22,8 @@ ifeq ($(IRQC), PLIC)
 IRQC_DIR?=plic
 else ifeq ($(IRQC), APLIC)
 IRQC_DIR?=aia
+else ifeq ($(IRQC), AIA)
+IRQC_DIR?=aia
 else ifeq ($(IRQC),)
 $(error Platform must define IRQC)
 else
