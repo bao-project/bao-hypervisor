@@ -64,17 +64,6 @@ void vaplic_inject(struct vcpu* vcpu, irqid_t id);
 void vaplic_set_hw(struct vm* vm, irqid_t id);
 
 /**
- * @brief Wrapper for the virtual irqc initialization function
- *
- * @param vm Virtual Machine
- * @param vm_irqc_dscrp virtual irqc platform configuration
- */
-static inline void virqc_init(struct vm* vm, const union vm_irqc_dscrp* vm_irqc_dscrp)
-{
-    vaplic_init(vm, vm_irqc_dscrp);
-}
-
-/**
  * @brief Injects a given interrupt into a virtual cpu
  *
  * @param vcpu target virtual cpu
