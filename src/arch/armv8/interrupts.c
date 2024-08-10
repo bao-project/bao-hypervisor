@@ -20,7 +20,6 @@
 void interrupts_arch_init()
 {
     gic_init();
-    interrupts_cpu_enable(platform.arch.gic.maintenance_id, true);
 }
 
 void interrupts_arch_ipi_send(cpuid_t target_cpu, irqid_t ipi_id)
@@ -28,6 +27,11 @@ void interrupts_arch_ipi_send(cpuid_t target_cpu, irqid_t ipi_id)
     if (ipi_id < GIC_MAX_SGIS) {
         gic_send_sgi(target_cpu, ipi_id);
     }
+}
+
+inline irqid_t interrupts_arch_reserve(irqid_t pint_id)
+{
+    return pint_id;
 }
 
 void interrupts_arch_enable(irqid_t int_id, bool en)

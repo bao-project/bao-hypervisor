@@ -11,13 +11,17 @@
 #include <cpu.h>
 #include <vaplic.h>
 
-#define IRQC_MAX_INTERRUPTS  (APLIC_MAX_INTERRUPTS)
+#define IRQC_TIMR_INT_ID            (APLIC_MAX_INTERRUPTS + 1)
+#define IRQC_SOFT_INT_ID            (APLIC_MAX_INTERRUPTS + 2)
+#define IRQC_MAX_INTERRUPT_LINES    (IRQC_SOFT_INT_ID + 1)
+#define IRQC_MAX_INTERRUPT_HANDLERS IRQC_MAX_INTERRUPT_LINES
+#define IRQC_MAX_GUEST_INTERRUPTS   APLIC_MAX_INTERRUPTS
 
-#define HART_REG_OFF         APLIC_IDC_OFF
-#define IRQC_HART_INST       APLIC_DOMAIN_NUM_HARTS
-#define HYP_IRQ_SM_EDGE_RISE APLIC_SOURCECFG_SM_EDGE_RISE
-#define HYP_IRQ_SM_INACTIVE  APLIC_SOURCECFG_SM_INACTIVE
-#define HYP_IRQ_PRIO         APLIC_TARGET_MAX_PRIO
+#define HART_REG_OFF                APLIC_IDC_OFF
+#define IRQC_HART_INST              APLIC_DOMAIN_NUM_HARTS
+#define HYP_IRQ_SM_EDGE_RISE        APLIC_SOURCECFG_SM_EDGE_RISE
+#define HYP_IRQ_SM_INACTIVE         APLIC_SOURCECFG_SM_INACTIVE
+#define HYP_IRQ_PRIO                APLIC_TARGET_MAX_PRIO
 
 static inline void irqc_init(void)
 {
@@ -27,6 +31,11 @@ static inline void irqc_init(void)
 static inline void irqc_cpu_init(void)
 {
     aplic_idc_init();
+}
+
+static inline irqid_t irqc_reserve(irqid_t pintp_id)
+{
+    return pintp_id;
 }
 
 static inline void irqc_config_irq(irqid_t int_id, bool en)
