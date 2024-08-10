@@ -12,4 +12,8 @@ void arch_platform_defs() {
         printf("#define ACLINT_SSWI 1\n");
     }
 
+    if (IRQC == AIA) {
+        printf("#define PLAT_IMSIC_MAX_INTERRUPTS %ld\n", platform.arch.irqc.aia.imsic.num_msis);
+    }
+
 }

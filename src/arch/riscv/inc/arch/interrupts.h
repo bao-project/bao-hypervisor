@@ -9,9 +9,6 @@
 #include <bao.h>
 #include <irqc.h>
 
-#define PLIC                   (1)
-#define APLIC                  (2)
-
 #define ACLINT_PRESENT()       DEFINED(ACLINT_SSWI)
 
 #define SOFT_INT_ID            (IRQC_SOFT_INT_ID)
