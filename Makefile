@@ -47,7 +47,7 @@ scripts_dir:=$(cur_dir)/scripts
 ci_dir:=$(cur_dir)/ci
 src_dirs:=
 
-include $(ci_dir)/ci.mk
+-include $(ci_dir)/ci.mk
 
 targets:=$(MAKECMDGOALS)
 ifeq ($(targets),)
@@ -327,6 +327,8 @@ clean:
 
 # Instantiate CI rules
 
+ifneq ($(wildcard $(ci_dir)/ci.mk),)
+
 all_files= $(realpath \
 	$(cur_dir)/Makefile \
 	$(call list_dir_files_recursive, $(src_dir), *) \
@@ -342,3 +344,5 @@ $(call ci, format, $(all_c_files))
 
 .PHONY: ci
 ci: license-check format-check
+
+endif
