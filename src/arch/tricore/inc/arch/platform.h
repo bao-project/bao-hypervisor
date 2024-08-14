@@ -10,11 +10,10 @@
 
 // Arch-specific platform data
 struct arch_platform {
-    union ir_dscrp {
-        paddr_t base_src;
-        paddr_t base_int;
+    struct {
+        paddr_t src_base;
+        paddr_t int_base;
     } ir;
-
 };
 
 #endif /* __ARCH_PLATFORM_H__ */

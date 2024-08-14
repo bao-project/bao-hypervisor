@@ -52,34 +52,41 @@
 #define IR_SRC_VM_POS   8
 #define IR_SRC_SRPN_POS 0
 
-// DefinIR_SRC_e masks for each field
+// Define IR_SRC masks for each field
 #define IR_SRC_IOVCLR_MASK (0x1 << IR_SRC_IOVCLR_POS)
-#define IR_SRC_IOV_MASK  (0x1 << IR_SRC_IOV_POS)
-#define IR_SRC_SETR_MASK (0x1 << IR_SRC_SETR_POS)
-#define IR_SRC_CLRR_MASK (0x1 << IR_SRC_CLRR_POS)
-#define IR_SRC_SRR_MASK  (0x1 << IR_SRC_SRR_POS)
-#define IR_SRC_SRE_MASK  (0x1 << IR_SRC_SRE_POS)
-#define IR_SRC_TOS_MASK  (0xF << IR_SRC_TOS_POS)
-#define IR_SRC_CS_MASK   (0x1 << IR_SRC_CS_POS)
-#define IR_SRC_VM_MASK   (0x7 << IR_SRC_VM_POS)
-#define IR_SRC_SRPN_MASK (0xFF << IR_SRC_SRPN_POS)
+#define IR_SRC_IOV_MASK    (0x1 << IR_SRC_IOV_POS)
+#define IR_SRC_SETR_MASK   (0x1 << IR_SRC_SETR_POS)
+#define IR_SRC_CLRR_MASK   (0x1 << IR_SRC_CLRR_POS)
+#define IR_SRC_SRR_MASK    (0x1 << IR_SRC_SRR_POS)
+#define IR_SRC_SRE_MASK    (0x1 << IR_SRC_SRE_POS)
+#define IR_SRC_TOS_MASK    (0xF << IR_SRC_TOS_POS)
+#define IR_SRC_CS_MASK     (0x1 << IR_SRC_CS_POS)
+#define IR_SRC_VM_MASK     (0x7 << IR_SRC_VM_POS)
+#define IR_SRC_SRPN_MASK   (0xFF << IR_SRC_SRPN_POS)
 
 // Macros to read the fields from the register value
-#define IR_SRC_GET_IOV(reg)  (((reg) & IR_SRC_IOV_MASK) >> IR_SRC_IOV_POS)
-#define IR_SRC_GET_SRE(reg)  (((reg) & IR_SRC_SRE_MASK) >> IR_SRC_SRE_POS)
-#define IR_SRC_GET_TOS(reg)  (((reg) & IR_SRC_TOS_MASK) >> IR_SRC_TOS_POS)
-#define IR_SRC_GET_CS(reg)   (((reg) & IR_SRC_CS_MASK) >> IR_SRC_CS_POS)
-#define IR_SRC_GET_VM(reg)   (((reg) & IR_SRC_VM_MASK) >> IR_SRC_VM_POS)
-#define IR_SRC_GET_SRPN(reg) (((reg) & IR_SRC_SRPN_MASK) >> IR_SRC_SRPN_POS)
+#define IR_SRC_GET_IOVCLR(reg)  (((reg) & IR_SRC_IOVCLR_MASK) >> IR_SRC_IOVCLR_POS)
+#define IR_SRC_GET_IOV(reg)     (((reg) & IR_SRC_IOV_MASK) >> IR_SRC_IOV_POS)
+#define IR_SRC_GET_SETR(reg)    (((reg) & IR_SRC_SETR_MASK) >> IR_SRC_SETR_POS)
+#define IR_SRC_GET_CLRR(reg)    (((reg) & IR_SRC_CLRR_MASK) >> IR_SRC_CLRR_POS)
+#define IR_SRC_GET_SRR(reg)     (((reg) & IR_SRC_SRR_MASK) >> IR_SRC_SRR_POS)
+#define IR_SRC_GET_SRE(reg)     (((reg) & IR_SRC_SRE_MASK) >> IR_SRC_SRE_POS)
+#define IR_SRC_GET_TOS(reg)     (((reg) & IR_SRC_TOS_MASK) >> IR_SRC_TOS_POS)
+#define IR_SRC_GET_CS(reg)      (((reg) & IR_SRC_CS_MASK) >> IR_SRC_CS_POS)
+#define IR_SRC_GET_VM(reg)      (((reg) & IR_SRC_VM_MASK) >> IR_SRC_VM_POS)
+#define IR_SRC_GET_SRPN(reg)    (((reg) & IR_SRC_SRPN_MASK) >> IR_SRC_SRPN_POS)
 
-#define IR_SRC_SET_IOVCLR(reg, val) ((reg) = ((reg) & ~IR_SRC_IOVCLR_MASK) | (((val) << IR_SRC_IOVCLR_POS) & IR_SRC_IOVCLR_MASK))
-#define IR_SRC_SET_SETR(reg, val) ((reg) = ((reg) & ~IR_SRC_SETR_MASK) | (((val) << SETR_POS) & IR_SRC_SETR_MASK))
-#define IR_SRC_SET_CLRR(reg, val)  ((reg) = ((reg) & ~IR_SRC_CLRR_MASK) | (((val) << CLRR_POS) & IR_SRC_CLRR_MASK))
-#define IR_SRC_SET_SRE(reg, val)  ((reg) = ((reg) & ~IR_SRC_RE_MASK) | (((val) << IR_SRC_SRE_POS) & IR_SRC_SRE_MASK))
-#define IR_SRC_SET_TOS(reg, val)  ((reg) = ((reg) & ~IR_SRC_OS_MASK) | (((val) << IR_SRC_TOS_POS) & IR_SRC_TOS_MASK))
-#define IR_SRC_SET_CS(reg, val)   ((reg) = ((reg) & ~IR_SRC_S_MASK) | (((val) << IR_SRC_CS_POS) & IR_SRC_CS_MASK))
-#define IR_SRC_SET_VM(reg, val)   ((reg) = ((reg) & ~IR_SRC_M_MASK) | (((val) << IR_SRC_VM_POS) & IR_SRC_VM_MASK))
-#define IR_SRC_SET_SRPN(reg, val) ((reg) = ((reg) & ~IR_SRC_RPN_MASK) | (((val) << IR_SRC_SRPN_POS) & IR_SRC_SRPN_MASK))
+// Macros to set the fields in the register value
+#define IR_SRC_SET_IOVCLR(reg, val)  ((reg) = ((reg) & ~IR_SRC_IOVCLR_MASK) | (((val) << IR_SRC_IOVCLR_POS) & IR_SRC_IOVCLR_MASK))
+#define IR_SRC_SET_IOV(reg, val)     ((reg) = ((reg) & ~IR_SRC_IOV_MASK) | (((val) << IR_SRC_IOV_POS) & IR_SRC_IOV_MASK))
+#define IR_SRC_SET_SETR(reg, val)    ((reg) = ((reg) & ~IR_SRC_SETR_MASK) | (((val) << IR_SRC_SETR_POS) & IR_SRC_SETR_MASK))
+#define IR_SRC_SET_CLRR(reg, val)    ((reg) = ((reg) & ~IR_SRC_CLRR_MASK) | (((val) << IR_SRC_CLRR_POS) & IR_SRC_CLRR_MASK))
+#define IR_SRC_SET_SRR(reg, val)     ((reg) = ((reg) & ~IR_SRC_SRR_MASK) | (((val) << IR_SRC_SRR_POS) & IR_SRC_SRR_MASK))
+#define IR_SRC_SET_SRE(reg, val)     ((reg) = ((reg) & ~IR_SRC_SRE_MASK) | (((val) << IR_SRC_SRE_POS) & IR_SRC_SRE_MASK))
+#define IR_SRC_SET_TOS(reg, val)     ((reg) = ((reg) & ~IR_SRC_TOS_MASK) | (((val) << IR_SRC_TOS_POS) & IR_SRC_TOS_MASK))
+#define IR_SRC_SET_CS(reg, val)      ((reg) = ((reg) & ~IR_SRC_CS_MASK) | (((val) << IR_SRC_CS_POS) & IR_SRC_CS_MASK))
+#define IR_SRC_SET_VM(reg, val)      ((reg) = ((reg) & ~IR_SRC_VM_MASK) | (((val) << IR_SRC_VM_POS) & IR_SRC_VM_MASK))
+#define IR_SRC_SET_SRPN(reg, val)    ((reg) = ((reg) & ~IR_SRC_SRPN_MASK) | (((val) << IR_SRC_SRPN_POS) & IR_SRC_SRPN_MASK))
 
 #define GPSRG_SR_IOVCLR_POS       31
 #define GPSRG_SR_IOV_POS          30
@@ -153,8 +160,30 @@ struct IR_ACCESSEN {
         uint32_t PRS; // PRS access enable register
 };
 
+struct ir_int_icu {
+    uint32_t VM[IR_MAX_VM];     // 0x0C00 + z*34H + y*4: ICU latest service request information signaled for VMy
+    uint32_t LASR;      // 0x0C20 + z*34H: ICU Last Acknowledged Service Request Register
+    uint32_t ECR;       // 0x0C24 + z*34H: ICU error capture register
+    uint32_t ECTRL;     // 0x0C28 + z*34H: ICU error control register
+    uint32_t EGEN;      // 0x0C2C + z*34H: ICU error generation register
+    uint32_t VMEN;      // 0x0C30 + z*34H: ICU VM control register
+};
+
+struct ir_int_tos {
+    struct IR_ACCESSEN ACCENSCFG;
+    struct IR_ACCESSEN ACCENSCTRL;
+};
+
+struct ir_int_gpsrg_swc {
+    uint32_t ACCEN; // 0x0700 + x*40H + y*4: GPRSGx_SWCy write access protection register
+    uint32_t CR;   // 0x0720 + x*40H + y*4: SW control register for GPSRGxSRy
+};
+
+struct ir_int_gpsrg {
+    struct ir_int_gpsr_swc SWC[IR_MAX_SW_INT]; // 0x0700
+};
+
 struct ir_int_hw {
-typedef struct {
     uint32_t RESERVED1;
     uint32_t OCS;                    // 0x0004: OCDS Control and Status Register
     uint32_t ID;                     // 0x0008: Module Identification Register
@@ -166,34 +195,18 @@ typedef struct {
     uint32_t PROTSE;                 // 0x0020: PROT Register safe endinit
     uint32_t PROTCSE;                // 0x0024: PROT Register Cyber Security Endinit
     uint32_t PROTTOS[IR_MAX_ISP];    // 0x0030 + z*4: PROT Register for TOS=z  0 <= z <= 10
-    struct IR_ACCESSEN CS;
+    struct IR_ACCESSEN ACCENCS;
     uint32_t reserved2[2];           // Padding to 0x00A0
-    struct IR_ACCESSEN DBG;
+    struct IR_ACCESSEN ACCENDBG;
     uint8_t RESERVED3[0x100-0xB4];   // Padding to 0x0100
-    struct IR_ACCESSEN SRB[IR_MAX_GROUPS];
+    struct IR_ACCESSEN ACCENSRB[IR_MAX_GROUPS];
     uint32_t RESERVED4[0x300-0x280]; // Padding to 0x0300
-    struct {
-        struct IR_ACCESSEN SCFG;
-        struct IR_ACCESSEN SCTRL;
-    } TOS[IR_MAX_ISP]; /* Type Of Service (TOS) */
+    struct ir_int_tos TOS[IR_MAX_ISP]; // Type Of Service
     uint32_t RESERVED5[0x700-0x510]; // Padding to 0x0700
-    struct {
-        struct {
-            uint32_t ACCEN; // 0x0700 + x*40H + y*4: GPRSGx_SWCy write access protection register
-            uint32_t SWC;   // 0x0720 + x*40H + y*4: SW control register for GPSRGxSRy
-        } SR[IR_MAX_SW_INT];
-    } GPSRG[IR_MAX_GROUPS]; /* General Purpose Service Request */
+    struct ir_int_gpsrg GPSRG[IR_MAX_GROUPS]; /* General Purpose Service Request */
     uint32_t SRB[IR_MAX_GROUPS];     // 0x0B00 + x*4: Service request broadcast register x
     uint32_t RESERVED6[0xC00-0xB40]; // Padding to 0x0c00
-    struct {
-        uint32_t VM[IR_MAX_VM];     // 0x0C00 + z*34H + y*4: ICU latest service request information signaled for VMy
-        uint32_t LASR;      // 0x0C20 + z*34H: ICU Last Acknowledged Service Request Register
-        uint32_t ECR;       // 0x0C24 + z*34H: ICU error capture register
-        uint32_t ECTRL;     // 0x0C28 + z*34H: ICU error control register
-        uint32_t EGEN;      // 0x0C2C + z*34H: ICU error generation register
-        uint32_t VMEN;      // 0x0C30 + z*34H: ICU VM control register
-    } ICU[IR_MAX_ISP];
-}
+    struct ir_int_icu ICU[IR_MAX_ISP]; // 0x0C00 + z*34H 
 } __attribute__((__packed__, aligned(PAGE_SIZE)));
 
 extern volatile struct ir_src_hw* ir_src;
@@ -212,12 +225,5 @@ bool ir_set_pend(irqid_t int_id);
 bool ir_clr_pend(irqid_t int_id);
 void ir_send_ipi(cpuid_t target_cpu);
 
-struct ir_cntxt {
-    cpuid_t core_id;
-    enum { PRIV_M = 3, PRIV_S = 2, PRIV_U = 0 } mode;
-};
-
-ssize_t ir_plat_cntxt_to_id(struct ir_cntxt cntxt);
-struct ir_cntxt ir_plat_id_to_cntxt(size_t id);
 
 #endif /* __IR_H__ */

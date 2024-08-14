@@ -136,7 +136,7 @@ void ir_send_ipi(cpuid_t target_cpu)
 
 void ir_config_irq(irqid_t int_id, bool en)
 {
-    if( int_id > PLAT_IR_MAX_INTERRUPTS){
+    if(int_id > PLAT_IR_MAX_INTERRUPTS){
         ERROR("%s invalid interrupt %u", __func__, int_id);
     }
 
@@ -155,9 +155,11 @@ void ir_config_irq(irqid_t int_id, bool en)
 
 void ir_assign_int_to_vm(struct vm* vm, irqid_t id)
 {
-    static unsigned gen_tos = 1; /* TOS zero maps hypervisor permissions */
-    /* TODO allocate PROT TOS */
-
+    /* VM direct injection */
     IR_SRC_SET_VM(ir_src_hw.SRC[id], vm->vm_id);
-    ir_int_hw.TOS[cpu()->cpuid].
+    ir_src_hw.ICU[cpu()->cpuid] = 1 << vm->vm_id;
+
+    /* set interrupt on cpu */
+    IRS_SRC_SET_VM(ir_int_hw.SRC[id], cpu()->cpuid);
+
 }

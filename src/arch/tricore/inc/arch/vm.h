@@ -50,7 +50,8 @@ struct arch_vm_platform {
 
     /* interrupt controller */
 
-    /* struct ir ir; */
+    paddr_t ir_int_addr;
+    paddr_t ir_srb_addr;
 };
 
 struct vm_arch {
