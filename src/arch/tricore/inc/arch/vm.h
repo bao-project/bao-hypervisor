@@ -45,10 +45,27 @@
 #define REG_A14 (30)
 #define REG_A15 (31)
 
+struct vir_interrupt {
+    node_t node;
+    struct vcpu* owner;
+    spinlock_t lock;
+    irqid_t id;
+    uint8_t state;
+    uint8_t prio;
+    uint32_t target
+    bool enabled;
+};
+
+struct vir {
+    struct vir_interrupt* interrupts;
+    spinlock_t lock;
+    size_t int_num;
+};
 struct arch_vm_platform {
     unsigned int a;
 
     /* interrupt controller */
+
 
     paddr_t ir_int_addr;
     paddr_t ir_srb_addr;

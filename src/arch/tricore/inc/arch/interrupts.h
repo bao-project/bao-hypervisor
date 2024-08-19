@@ -10,6 +10,7 @@
 
 #define MAX_INTERRUPTS PLAT_IR_MAX_INTERUPTS
 
+/* TODO platform dependent */
 #define IPI_CPU_MSG      1332 /* TODO this is the first GPSR in TC49 */
 
 void interrupts_arch_handle(void);

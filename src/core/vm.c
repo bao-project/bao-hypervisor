@@ -318,6 +318,7 @@ void vm_msg_broadcast(struct vm* vm, struct cpu_msg* msg)
     for (size_t i = 0, n = 0; n < vm->cpu_num - 1; i++) {
         if (((1U << i) & vm->cpus) && (i != cpu()->id)) {
             n++;
+            /* TODO Tricore allows us to do this much more efficiently */
             cpu_send_msg(i, msg);
         }
     }

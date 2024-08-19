@@ -25,6 +25,14 @@ struct vir {
     struct emul_mem ir_threshold_emul;
 };
 
+struct vir_descript {
+    struct{
+        paddr_t src_base;
+        paddr_t gpsr_base;
+    } src;
+    paddr_t int_base;
+} ;
+
 struct vm;
 struct vcpu;
 union vm_irqc_dscrp;

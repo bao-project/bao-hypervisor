@@ -14,12 +14,19 @@ void vm_arch_init(struct vm* vm, const struct vm_config* vm_config)
 {
     (void) vm;
     (void) vm_config;
+
+    if (vm->master == cpu()->id) {
+        vir_init(vm, &vm_config->platform.arch.ir);
+    }
+    cpu_sync_and_clear_msgs(&vm->sync);
 }
 
 void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm)
 {
     (void) vcpu;
     (void) vm;
+
+    vir_vcpu_init(vcpu);
 }
 
 void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)

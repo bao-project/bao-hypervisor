@@ -4,38 +4,56 @@
  */
 
 #include "inc/ir.h"
+#include "arch/interrupts.h"
+#include "inc/arch/ir.h"
 #include <ir.h>
 #include <interrupts.h>
 #include <cpu.h>
 #include <fences.h>
 
 
-volatile struct ir_src_hw* ir_src;
-
 volatile struct ir_int_hw* ir_int;
+volatile struct ir_src_hw* ir_src;
+volatile struct ir_gpsr_hw* ir_gpsr;
 
 void ir_init(void)
 {
-    /* Maps IR device */
-    ir_int = (void*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
-        platform.arch.irqc.ir.base_int, NUM_PAGES(sizeof(struct ir_int_hw)));
+    if (cpu_is_master()) {
+        /* Map IR */
+        ir_int = (void*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
+                platform.arch.ir.base_int, NUM_PAGES(sizeof(struct ir_int_hw)));
+        ir_src = (void*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
+                platform.arch.ir.base_src,
+                NUM_PAGES(sizeof(ir_src->SRC[0]) * PLAT_IR_MAX_INTERRUPTS));
 
-    ir_src = (void*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
-        platform.arch.irqc.ir.base_src,
-        NUM_PAGES(sizeof(struct ir_src_hw) * PLAT_IR_MAX_INTERRUPTS));
+        /* TODO add group broadcast support */
+        ir_gpsr = (volatile struct ir_gpsr_hw*)&ir_src->SRC[IPI_CPU_MSG];
 
-    /** Ensure that instructions after fence have the IR fully mapped */
-    fence_sync();
+        /** Ensure that instructions after fence have the IR fully mapped */
+        fence_sync();
+    }
+    cpu_sync_and_clear_msgs(&cpu_glb_sync);
+
 
     /* disable all interrupts */
     for (size_t i = 0; i < PLAT_IR_MAX_INTERRUPTS; i++) {
         /* TODO Inneficient, maybe write default value to SRC */
-        IR_SRC_SET_SRPN(ir_src[i], 0);
-        IR_SRC_SET_TOS(ir_src[i], 0xf);
-        IR_SRC_SET_SRE(ir_src[i], false);
+        IR_SRC_SET_SRPN(ir_src->SRC[i], 0);
+        IR_SRC_SET_TOS(ir_src->SRC[i], 0xf);
+        IR_SRC_SET_SRE(ir_src->SRC[i], false);
     }
 
-    /* TODO: configure IPI */
+    for(unsigned int i = 0; i < PLAT_CPU_NUM; i++){
+        /* configure each GPSRG interrupt in this group for each CPU */
+        IR_SRC_SET_TOS(ir_gpsr->SRC_GPSRG_SR[i], i);
+
+        /* TODO after enabling we can broadcast interrupts (through SRB) for all cpus simultaneously 
+         * although care must be taken as the current cpu could also be interrupted.
+         * we could disable interrupts, and temporarily remove this cpu from
+         * broadcast. use the gpsr lock mechanism to do sync */
+
+        /* TODO add api for ipi management to bao */
+    }
 }
 
 void ir_cpu_init(void)
@@ -122,16 +140,17 @@ void ir_handle(void)
 
     /* TODO */
 }
-void ir_send_ipi(cpuid_t target_cpu)
+void ir_send_ipi(cpuid_t target_cpu, irqid_t ipi_id)
 {
     if(target_cpu < PLAT_NUM_CPUS){
         ERROR("%s invalid cpu number %u", target_cpu, __func__);
     }
 
-    /* TODO is it ok to change the TOS? */
-    SET_IR_SRC_TOS(ir_scr_hw.SCR[IPI_CPU_MSG], target_cpu);
+    /* TODO we are using group 0 for hyp we should probably use the last one */
+    /* TODO why not do this? SET_GPSR_SR_SETR(ir_int_hw.GPSRG[0].SWC.CR[target_cpu], 1); */
 
-    SET_GPSR_SR_SETR(ir_int_hw.GPSRG[target_cpu], 1);
+    /* We previously configure interrupts for each CPU */
+    IR_SRC_SETR_POS(ir_gpsr.SRC_GPSRG_SR[target_cpu], 1);
 }
 
 void ir_config_irq(irqid_t int_id, bool en)
@@ -162,4 +181,15 @@ void ir_assign_int_to_vm(struct vm* vm, irqid_t id)
     /* set interrupt on cpu */
     IRS_SRC_SET_VM(ir_int_hw.SRC[id], cpu()->cpuid);
 
+}
+
+void ir_assign_icu_to_vm(struct vm* vm)
+{
+    uint8_t vmid = vm->id;
+    /* TODO: check this upon vmid generation */
+    /* TODO: add this define */
+    if(vmid > PLAT_TRICORE_VM_NUM)
+        ERROR("Unsuported VM id %u", vmid);
+
+    ir_int_hw->ICU[cpu()->id].VMEN = 1 << vmid;
 }

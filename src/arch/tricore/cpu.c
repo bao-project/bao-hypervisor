@@ -27,6 +27,9 @@ void cpu_arch_init(cpuid_t cpuid, paddr_t load_addr)
             /* } */
         }
     }
+
+    /* Enable virtualization on the CPU */
+    /* TODO VCON0 = 1 << 1 (EN) */
 }
 
 void cpu_arch_idle(void)

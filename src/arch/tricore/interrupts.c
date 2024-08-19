@@ -6,7 +6,7 @@
 #include <bao.h>
 #include <interrupts.h>
 
-/* #include <irqc.h> */
+#include <arch/ir.h>
 #include <cpu.h>
 #include <mem.h>
 #include <platform.h>
@@ -31,7 +31,7 @@ void interrupts_arch_init()
 
 void interrupts_arch_ipi_send(cpuid_t target_cpu, irqid_t ipi_id)
 {
-    ir_send_ipi(target_cpu);
+    ir_send_ipi(target_cpu, ipi_id);
 }
 
 void interrupts_arch_enable(irqid_t int_id, bool en)
