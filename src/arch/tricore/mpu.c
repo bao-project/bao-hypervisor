@@ -3,6 +3,7 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
+#include "types.h"
 #include <mem.h>
 #include <cpu.h>
 #include <arch/sysregs.h>
@@ -10,19 +11,373 @@
 
 static inline size_t mpu_num_entries()
 {
-    return (size_t)MPUIR_REGION(sysreg_mpuir_el2_read());
+    /* TODO separate data and code region */
+    return (size_t)32;
 }
+
+/* Protection Range Registers */
+
+#define CSR_GEN_PRx(x)                                                             \
+    static inline unsigned long csr_get_dpr##x##_l(void)                           \
+    {                                                                              \
+        unsigned long val;                                                         \
+        asm inline("mfcrs %d[reg], DPR"STR(x)"_L\n\t" [reg] "=d" (val) : : );      \
+        return val;                                                                \
+    }                                                                              \
+    static inline unsigned long csr_get_dpr##x##_u(void)                           \
+    {                                                                              \
+        unsigned long val;                                                         \
+        asm inline("mfcrs %d[reg], DPR"STR(x)"_U\n\t" [reg] "=d" (val) : : );      \
+        return val;                                                                \
+    }                                                                              \
+    static inline unsigned long csr_get_cpr##x##_l(void)                           \
+    {                                                                              \
+        unsigned long val;                                                         \
+        asm inline("mfcrs %d[reg], CPR"STR(x)"_L\n\t" [reg] "=d" (val) : : );      \
+        return val;                                                                \
+    }                                                                              \
+    static inline unsigned long csr_get_cpr##x##_u(void)                           \
+    {                                                                              \
+        unsigned long val;                                                         \
+        asm inline("mfcrs %d[reg], CPR"STR(x)"_U\n\t" [reg] "=d" (val) : : );      \
+        return val;                                                                \
+    }                                                                              \
+    static inline unsigned long csr_set_dpr##x##_l(unsigned long val)              \
+    {                                                                              \
+        asm inline("mtcrs HRVH_DPR"STR(x)"_L, %d[reg]\n\t" [reg] : "d" (val) : );  \
+    }                                                                              \
+    static inline unsigned long csr_set_dpr##x##_u(unsigned long val)              \
+    {                                                                              \
+        asm inline("mtcrs HRVH_DPR"STR(x)"_U, %d[reg]\n\t" [reg] : "d" (val) : );  \
+    }                                                                              \
+    static inline unsigned long csr_set_cpr##x##_l(unsigned long val)              \
+    {                                                                              \
+        asm inline("mtcrs HRVH_CPR"STR(x)"_L, %d[reg]\n\t" [reg] : "d" (val) : );  \
+    }                                                                              \
+    static inline unsigned long csr_set_cpr##x##_u(unsigned long val)              \
+    {                                                                              \
+        asm inline("mtcrs HRVH_CPR"STR(x)"_U, %d[reg]\n\t" [reg] : "d" (val) : );  \
+    }
+
+
+CSR_GEN_PRx(0)
+CSR_GEN_PRx(1)
+CSR_GEN_PRx(2)
+CSR_GEN_PRx(3)
+CSR_GEN_PRx(4)
+CSR_GEN_PRx(5)
+CSR_GEN_PRx(6)
+CSR_GEN_PRx(7)
+CSR_GEN_PRx(8)
+CSR_GEN_PRx(9)
+CSR_GEN_PRx(10)
+CSR_GEN_PRx(11)
+CSR_GEN_PRx(12)
+CSR_GEN_PRx(13)
+CSR_GEN_PRx(14)
+CSR_GEN_PRx(15)
+CSR_GEN_PRx(16)
+CSR_GEN_PRx(17)
+CSR_GEN_PRx(18)
+CSR_GEN_PRx(19)
+CSR_GEN_PRx(20)
+CSR_GEN_PRx(21)
+CSR_GEN_PRx(22)
+CSR_GEN_PRx(23)
+CSR_GEN_PRx(24)
+CSR_GEN_PRx(25)
+CSR_GEN_PRx(26)
+CSR_GEN_PRx(27)
+CSR_GEN_PRx(28)
+CSR_GEN_PRx(29)
+CSR_GEN_PRx(30)
+CSR_GEN_PRx(31)
+
+
+#define CSR_GEN_PR_ACCESSOR(m, r)                                                    \
+    static inline unsigned long csr_get_##m##pr_##r##(mpid_t id)                     \
+    {                                                                                \
+        switch(id){                                                                  \
+            case 0:                                                                  \
+                return csr_get_##m##pr0_##r##();                                     \
+            case 1:                                                                  \
+                return csr_get_##m##pr1_##r##();                                     \
+            case 2:                                                                  \
+                return csr_get_##m##pr2_##r##();                                     \
+            case 3:                                                                  \
+                return csr_get_##m##pr3_##r##();                                     \
+            case 4:                                                                  \
+                return csr_get_##m##pr4_##r##();                                     \
+            case 5:                                                                  \
+                return csr_get_##m##pr5_##r##();                                     \
+            case 6:                                                                  \
+                return csr_get_##m##pr6_##r##();                                     \
+            case 7:                                                                  \
+                return csr_get_##m##pr7_##r##();                                     \
+            case 8:                                                                  \
+                return csr_get_##m##pr8_##r##();                                     \
+            case 9:                                                                  \
+                return csr_get_##m##pr9_##r##();                                     \
+            case 10:                                                                 \
+                return csr_get_##m##pr10_##r##();                                    \
+            case 11:                                                                 \
+                return csr_get_##m##pr11_##r##();                                    \
+            case 12:                                                                 \
+                return csr_get_##m##pr12_##r##();                                    \
+            case 13:                                                                 \
+                return csr_get_##m##pr13_##r##();                                    \
+            case 14:                                                                 \
+                return csr_get_##m##pr14_##r##();                                    \
+            case 15:                                                                 \
+                return csr_get_##m##pr15_##r##();                                    \
+            case 16:                                                                 \
+                return csr_get_##m##pr16_##r##();                                    \
+            case 17:                                                                 \
+                return csr_get_##m##pr17_##r##();                                    \
+            case 18:                                                                 \
+                return csr_get_##m##pr18_##r##();                                    \
+            case 19:                                                                 \
+                return csr_get_##m##pr19_##r##();                                    \
+            case 20:                                                                 \
+                return csr_get_##m##pr20_##r##();                                    \
+            case 21:                                                                 \
+                return csr_get_##m##pr21_##r##();                                    \
+            case 22:                                                                 \
+                return csr_get_##m##pr22_##r##();                                    \
+            case 23:                                                                 \
+                return csr_get_##m##pr23_##r##();                                    \
+            case 24:                                                                 \
+                return csr_get_##m##pr24_##r##();                                    \
+            case 25:                                                                 \
+                return csr_get_##m##pr25_##r##();                                    \
+            case 26:                                                                 \
+                return csr_get_##m##pr26_##r##();                                    \
+            case 27:                                                                 \
+                return csr_get_##m##pr27_##r##();                                    \
+            case 28:                                                                 \
+                return csr_get_##m##pr28_##r##();                                    \
+            case 29:                                                                 \
+                return csr_get_##m##pr29_##r##();                                    \
+            case 30:                                                                 \
+                return csr_get_##m##pr30_##r##();                                    \
+            case 31:                                                                 \
+                return csr_get_##m##pr31_##r##();                                    \
+        }                                                                            \
+    }                                                                                \
+    static inline unsigned long csr_set_##m##pr_##r##(mpid_t id, unsigned long val)  \
+    {                                                                                \
+        switch(id){                                                                  \
+            case 0:                                                                  \
+                return csr_set_##m##pr0_##r##(val);                                  \
+            case 1:                                                                  \
+                return csr_set_##m##pr1_##r##(val);                                  \
+            case 2:                                                                  \
+                return csr_set_##m##pr2_##r##(val);                                  \
+            case 3:                                                                  \
+                return csr_set_##m##pr3_##r##(val);                                  \
+            case 4:                                                                  \
+                return csr_set_##m##pr4_##r##(val);                                  \
+            case 5:                                                                  \
+                return csr_set_##m##pr5_##r##(val);                                  \
+            case 6:                                                                  \
+                return csr_set_##m##pr6_##r##(val);                                  \
+            case 7:                                                                  \
+                return csr_set_##m##pr7_##r##(val);                                  \
+            case 8:                                                                  \
+                return csr_set_##m##pr8_##r##(val);                                  \
+            case 9:                                                                  \
+                return csr_set_##m##pr9_##r##(val);                                  \
+            case 10:                                                                 \
+                return csr_set_##m##pr10_##r##(val);                                 \
+            case 11:                                                                 \
+                return csr_set_##m##pr11_##r##(val);                                 \
+            case 12:                                                                 \
+                return csr_set_##m##pr12_##r##(val);                                 \
+            case 13:                                                                 \
+                return csr_set_##m##pr13_##r##(val);                                 \
+            case 14:                                                                 \
+                return csr_set_##m##pr14_##r##(val);                                 \
+            case 15:                                                                 \
+                return csr_set_##m##pr15_##r##(val);                                 \
+            case 16:                                                                 \
+                return csr_set_##m##pr16_##r##(val);                                 \
+            case 17:                                                                 \
+                return csr_set_##m##pr17_##r##(val);                                 \
+            case 18:                                                                 \
+                return csr_set_##m##pr18_##r##(val);                                 \
+            case 19:                                                                 \
+                return csr_set_##m##pr19_##r##(val);                                 \
+            case 20:                                                                 \
+                return csr_set_##m##pr20_##r##(val);                                 \
+            case 21:                                                                 \
+                return csr_set_##m##pr21_##r##(val);                                 \
+            case 22:                                                                 \
+                return csr_set_##m##pr22_##r##(val);                                 \
+            case 23:                                                                 \
+                return csr_set_##m##pr23_##r##(val);                                 \
+            case 24:                                                                 \
+                return csr_set_##m##pr24_##r##(val);                                 \
+            case 25:                                                                 \
+                return csr_set_##m##pr25_##r##(val);                                 \
+            case 26:                                                                 \
+                return csr_set_##m##pr26_##r##(val);                                 \
+            case 27:                                                                 \
+                return csr_set_##m##pr27_##r##(val);                                 \
+            case 28:                                                                 \
+                return csr_set_##m##pr28_##r##(val);                                 \
+            case 29:                                                                 \
+                return csr_set_##m##pr29_##r##(val);                                 \
+            case 30:                                                                 \
+                return csr_set_##m##pr30_##r##(val);                                 \
+            case 31:                                                                 \
+                return csr_set_##m##pr31_##r##(val);                                 \
+        }                                                                            \
+    }
+
+/* data */
+#define CSR_GEN_PR_ACCESSOR(d, u)
+#define CSR_GEN_PR_ACCESSOR(d, l)
+/* code */
+#define CSR_GEN_PR_ACCESSOR(c, u)
+#define CSR_GEN_PR_ACCESSOR(c, l)
+
+void get_pr_l(mpid_t mpid)
+{
+    /* TODO 32 is code end */
+    if(mpid < 32)
+        csr_get_cpr_l(mpid);
+    else
+        csr_get_dpr_l(mpid);
+}
+
+void set_pr_u(mpid_t mpid)
+{
+    /* TODO 32 is code end */
+    if(mpid < 32)
+        csr_set_cpr_u(mpid);
+    else
+        csr_set_dpr_u(mpid);
+}
+
+/* Protection Read/Write/Execute Enable Registers */
+
+#define CSR_GEN_Px(x)                                                          \
+    static inline unsigned long csr_get_dpre##x##(mpid_t id)                        \
+    {                                                                          \
+        unsigned long val;                                                     \
+        asm inline("mfcrs %d[reg], DPRE_"STR(x)"\n\t" [reg] "=d" (val) : : );  \
+        return val & (1 << id);                                                          \
+    }                                                                          \
+    static inline unsigned long csr_get_dpwe##x##(mpid_t id)                        \
+    {                                                                          \
+        unsigned long val;                                                     \
+        asm inline("mfcrs %d[reg], DPWE_"STR(x)"\n\t" [reg] "=d" (val) : : );  \
+        return val & (1 << id);                                                          \
+    }                                                                          \
+    static inline unsigned long csr_get_cpxe##x##(mpid_t id)                        \
+    {                                                                          \
+        unsigned long val;                                                     \
+        asm inline("mfcrs %d[reg], CPXE_"STR(x)"\n\t" [reg] "=d" (val) : : );  \
+        return val & (1 << id);                                                          \
+    }                                                                          \
+    static inline unsigned long csr_set_dpre##x##(mpid_t id, unsigned long val)                        \
+    {                                                                          \
+        asm inline("mtcrs DPRE_"STR(x)", %d[reg]\n\t" [reg] : "d" (1 << val) : );   \
+    }                                                                          \
+    static inline unsigned long csr_set_dpwe##x##(mpid_t id, unsigned long val)                        \
+    {                                                                          \
+        asm inline("mtcrs DPRE_"STR(x)", %d[reg]\n\t" [reg] : "d" (1 << val) : );   \
+    }                                                                          \
+    static inline unsigned long csr_set_cpxe##x##(mpid_t id, unsigned long val)                        \
+    {                                                                          \
+        asm inline("mtcrs DPRE_"STR(x)", %d[reg]\n\t" [reg] : "d" (1 << val) : );   \
+    }
+
+CSR_GEN_Px(0)
+CSR_GEN_Px(1)
+CSR_GEN_Px(2)
+CSR_GEN_Px(3)
+CSR_GEN_Px(4)
+CSR_GEN_Px(5)
+CSR_GEN_Px(6)
+CSR_GEN_Px(7)
+
+#define GEN_P_ACCESSOR(m)                                                \
+    static inline unsigned long get_##m##(psid_t psid, mpid_t mpid)                     \
+    {                                                                    \
+        unsigned long val = 0;
+        switch(psid){                                                      \
+            case 0:                                                      \
+                val = csr_get_##m##0(mpid);                                \
+                    break;                                               \
+            case 1:                                                      \
+                val = csr_get_##m##1(mpid);                                \
+                    break;                                               \
+            case 2:                                                      \
+                val = csr_get_##m##2(mpid);                                \
+                    break;                                               \
+            case 3:                                                      \
+                val = csr_get_##m##3(mpid);                                \
+                    break;                                               \
+            case 4:                                                      \
+                val = csr_get_##m##4(mpid);                                \
+                    break;                                               \
+            case 5:                                                      \
+                val = csr_get_##m##5(mpid);                                \
+                    break;                                               \
+            case 6:                                                      \
+                val = csr_get_##m##6(mpid);                                \
+                    break;                                               \
+            case 7:                                                      \
+                val = csr_get_##m##7(mpid);                                \
+                    break;                                               \
+        }                                                                \
+    }                                                                    \
+    static inline unsigned long set_##m##(psid_t psid, mpid_t mpid, unsigned long val)  \
+    {                                                                    \
+        switch(psid){                                                      \
+            case 0:                                                      \
+                return csr_set_##m##0(mpid, val);                          \
+            case 1:                                                      \
+                return csr_set_##m##1(mpid, val);                          \
+            case 2:                                                      \
+                return csr_set_##m##2(mpid, val);                          \
+            case 3:                                                      \
+                return csr_set_##m##3(mpid, val);                          \
+            case 4:                                                      \
+                return csr_set_##m##4(mpid, val);                          \
+            case 5:                                                      \
+                return csr_set_##m##5(mpid, val);                          \
+            case 6:                                                      \
+                return csr_set_##m##6(mpid, val);                          \
+            case 7:                                                      \
+                return csr_set_##m##7(mpid, val);                          \
+        }                                                                \
+    }
+
+GEN_P_ACCESSOR(dpre)
+GEN_P_ACCESSOR(dpwe)
+GEN_P_ACCESSOR(cpxe)
 
 static void mpu_entry_get_region(mpid_t mpid, struct mp_region* mpe)
 {
     sysreg_prselr_el2_write(mpid);
     ISB();
-    unsigned long prbar = sysreg_prbar_el2_read();
-    unsigned long prlar = sysreg_prlar_el2_read();
-    mpe->mem_flags.prbar = PRBAR_FLAGS(prbar);
-    mpe->mem_flags.prlar = PRLAR_FLAGS(prlar);
-    mpe->base = PRBAR_BASE(prbar);
-    mpe->size = (PRLAR_LIMIT(prlar) + 1) - mpe->base;
+    unsigned long l = get_pr_l(mpid);
+    unsigned long u = get_pr_u(mpid);
+
+    /* TODO based on vm protection set register? */
+    /* TODO How to know if we should used PSW.PRS (i.e., hyp permission) or VCON2.L2_PRS (i.e. VM permission) */
+    /* TODO we probably need data one the mpe to know this */
+    unsigned long vm_ps = 0;
+    mpe->mem_flags = get_cpxe(vm_ps, mpid);
+    if(mpe->mem_flags == 0) {
+        mpe->mem_flags = get_dpre(vm_ps, mpid);
+        mpe->mem_flags = get_dpwe(vm_ps, mpid);
+    }
+
+    mpe->base = l;
+    mpe->size = u - l;
     mpe->as_sec = SEC_UNKNOWN;
 }
 
@@ -45,15 +400,14 @@ static int mpu_node_cmp(node_t* _n1, node_t* _n2)
 
 static void mpu_entry_set(mpid_t mpid, struct mp_region* mpr)
 {
-    unsigned long lim = mpr->base + mpr->size - 1;
+    /* TODO */
+    /* unsigned long lim = mpr->base + mpr->size - 1; */
 
-    sysreg_prselr_el2_write(mpid);
-    ISB();
-    sysreg_prbar_el2_write((mpr->base & PRBAR_BASE_MSK) | mpr->mem_flags.prbar);
-    sysreg_prlar_el2_write((lim & PRLAR_LIMIT_MSK) | mpr->mem_flags.prlar);
+    /* sysreg_prbar_el2_write((mpr->base & PRBAR_BASE_MSK) | mpr->mem_flags.prbar); */
+    /* sysreg_prlar_el2_write((lim & PRLAR_LIMIT_MSK) | mpr->mem_flags.prlar); */
 
-    list_insert_ordered(&cpu()->arch.profile.mpu.order.list,
-        (node_t*)&cpu()->arch.profile.mpu.order.node[mpid], mpu_node_cmp);
+    /* list_insert_ordered(&cpu()->arch.profile.mpu.order.list, */
+    /*     (node_t*)&cpu()->arch.profile.mpu.order.node[mpid], mpu_node_cmp); */
 }
 
 static void mpu_entry_modify(mpid_t mpid, struct mp_region* mpr)
@@ -67,10 +421,14 @@ static bool mpu_entry_clear(mpid_t mpid)
 {
     list_rm(&cpu()->arch.profile.mpu.order.list, (node_t*)&cpu()->arch.profile.mpu.order.node[mpid]);
 
-    sysreg_prselr_el2_write(mpid);
-    ISB();
-    sysreg_prlar_el2_write(0);
-    sysreg_prbar_el2_write(0);
+    /* TODO */
+    unsigned long vm_ps = 0;
+    unsigned long dre = set_dpre(vm_ps, mpid);
+    unsigned long dwe = set_dpwe(vm_ps, mpid);
+    unsigned long cxe = set_cpxe(vm_ps, mpid);
+    set_pr_l(mpid, 0);
+    set_pr_u(mpid, 0);
+
     return true;
 }
 
@@ -82,9 +440,12 @@ static inline void mpu_entry_free(mpid_t mpid)
 
 static inline bool mpu_entry_valid(mpid_t mpid)
 {
-    sysreg_prselr_el2_write(mpid);
-    ISB();
-    return !!(sysreg_prlar_el2_read() & PRLAR_EN);
+    unsigned long vm_ps = 0;
+    unsigned long dre = get_dpre(vm_ps, mpid);
+    unsigned long dwe = get_dpwe(vm_ps, mpid);
+    unsigned long cxe = get_cpxe(vm_ps, mpid);
+
+    return !!(dre | dwe | cxe);
 }
 
 static inline bool mpu_entry_locked(mpid_t mpid)
@@ -103,9 +464,19 @@ static bool mpu_entry_has_priv(mpid_t mpid, priv_t priv)
 
 static inline perms_t mem_vmpu_entry_perms(struct mp_region* mpr)
 {
-    perms_t perms = PERM_R;
-    perms |= !(mpr->mem_flags.prbar & PRBAR_XN) ? PERM_X : 0;
-    perms |= !(mpr->mem_flags.prbar & PRBAR_NWR_BIT) ? PERM_W : 0;
+    /* TODO */
+    unsigned long vm_ps = 0;
+    unsigned long dre = get_dpre(vm_ps, mpid);
+    unsigned long dwe = get_dpwe(vm_ps, mpid);
+    unsigned long cxe = get_cpxe(vm_ps, mpid);
+
+    perms_t perms = 0;
+    if(cxe)
+        perms = PERM_X;
+    else{
+        perms = dre ? PERM_R : 0;
+        perms |= dwe ? PERM_W : 0;
+    }
     return perms;
 }
 
@@ -116,19 +487,17 @@ static inline void mpu_entry_set_perms(struct mp_region* mpr, struct mpu_perms m
     bool el1_priv = mpu_perms.el1 != PERM_NONE;
     perms_t perms = mpu_perms.el1 | mpu_perms.el2;
 
-    mpr->mem_flags.prbar &= (uint16_t) ~(PRBAR_PERMS_FLAGS_MSK);
-    if (perms & PERM_W) {
-        mpr->mem_flags.prbar |= PRBAR_AP_RW_EL2;
+    if (perms & PERM_X) {
+        mpr->mem_flags.cxe = PERM_X;
     } else {
-        mpr->mem_flags.prbar |= PRBAR_AP_RO_EL2;
-    }
-
-    if (!(perms & PERM_X)) {
-        mpr->mem_flags.prbar |= PRBAR_XN;
+        if(perms & PERM_R)
+            mpr->mem_flags.dre |= PERM_R;
+        if(perms & PERM_W)
+            mpr->mem_flags.drw |= PERM_W;
     }
 
     if (el1_priv) {
-        mpr->mem_flags.prbar |= PRBAR_EL1_BIT;
+        /* TODO VM Protection set */
     }
 }
 
@@ -146,11 +515,10 @@ static inline bool mpu_perms_equivalent(struct mpu_perms* p1, struct mpu_perms* 
     return (p1->el1 == p2->el1) && (p1->el2 == p2->el2);
 }
 
+/* TODO not needed */
 static inline mem_attrs_t mpu_entry_attrs(struct mp_region* mpr)
 {
     mem_flags_t flags = mpr->mem_flags;
-    flags.prbar &= PRBAR_MEM_ATTR_FLAGS_MSK;
-    flags.prbar &= PRLAR_MEM_ATTR_FLAGS_MSK;
     return (mem_attrs_t)flags.raw;
 }
 
@@ -169,6 +537,11 @@ static mpid_t mpu_entry_allocate()
 
 bool mpu_map(priv_t priv, struct mp_region* mpr)
 {
+    if(!mpr)
+        ERROR("invalid argument in %s", __func__);
+
+    /* TODO detect whether map code or map data and whether is hyp or VM rgn */
+
     size_t size_left = mpr->size;
     bool failed = false;
     struct mp_region reg1 = *mpr;

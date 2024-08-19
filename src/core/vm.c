@@ -89,6 +89,8 @@ static void vm_map_img_rgn_inplace(struct vm* vm, const struct vm_config* vm_con
     /* map img in place */
     struct ppages pa_img = mem_ppages_get(vm_config->image.load_addr, n_img);
 
+    /* TODO this is insufficient for tricore, tricore must know wether memory region is code or data */
+
     mem_alloc_map(&vm->as, SEC_VM_ANY, NULL, (vaddr_t)reg->base, n_before, PTE_VM_FLAGS);
     if (all_clrs(vm->as.colors)) {
         /* map img in place */

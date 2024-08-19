@@ -14,28 +14,43 @@
 
 volatile struct ir_int_hw* ir_int;
 volatile struct ir_src_hw* ir_src;
+
+/* TODO is this the best approach? */
 volatile struct ir_gpsr_hw* ir_gpsr;
+
+static void ir_init_ipi(void)
+{
+    /* TODO add group broadcast support */
+    ir_gpsr = (volatile struct ir_gpsr_hw*)&ir_src->SRC[IPI_CPU_MSG];
+
+    /* TODO should each CPU add itself to the broadcast group? */
+    for(unsigned int i = 0; i < PLAT_CPU_NUM; i++){
+        /* configure each GPSRG interrupt in this group for each CPU */
+        IR_SRC_SET_TOS(ir_gpsr->SRC_GPSRG_SR[i], i);
+
+        /* TODO after enabling we can broadcast interrupts (through SRB) for all cpus simultaneously 
+         * although care must be taken as the current cpu could also be interrupted.
+         * we could  temporarily remove this cpu from broadcast. use the gpsr
+         * lock mechanism to do sync */
+
+        /* TODO add api for ipi management to bao */
+    }
+}
 
 void ir_init(void)
 {
-    if (cpu_is_master()) {
-        /* Map IR */
-        ir_int = (void*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
-                platform.arch.ir.base_int, NUM_PAGES(sizeof(struct ir_int_hw)));
-        ir_src = (void*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
-                platform.arch.ir.base_src,
-                NUM_PAGES(sizeof(ir_src->SRC[0]) * PLAT_IR_MAX_INTERRUPTS));
+    /* Map IR */
+    ir_int = (void*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
+            platform.arch.ir.int_base, NUM_PAGES(sizeof(struct ir_int_hw)));
+    ir_src = (void*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
+            platform.arch.ir.src_base,
+            NUM_PAGES(sizeof(ir_src->SRC[0]) * PLAT_IR_MAX_INTERRUPTS));
 
-        /* TODO add group broadcast support */
-        ir_gpsr = (volatile struct ir_gpsr_hw*)&ir_src->SRC[IPI_CPU_MSG];
+    /** Ensure that instructions after fence have the IR fully mapped */
+    fence_sync();
 
-        /** Ensure that instructions after fence have the IR fully mapped */
-        fence_sync();
-    }
-    cpu_sync_and_clear_msgs(&cpu_glb_sync);
-
-
-    /* disable all interrupts */
+    /* make sure all interrupts are set to a default state */
+    /* TODO necessary? default states is all 0x0 except TOS which is set to 0xF */
     for (size_t i = 0; i < PLAT_IR_MAX_INTERRUPTS; i++) {
         /* TODO Inneficient, maybe write default value to SRC */
         IR_SRC_SET_SRPN(ir_src->SRC[i], 0);
@@ -43,22 +58,12 @@ void ir_init(void)
         IR_SRC_SET_SRE(ir_src->SRC[i], false);
     }
 
-    for(unsigned int i = 0; i < PLAT_CPU_NUM; i++){
-        /* configure each GPSRG interrupt in this group for each CPU */
-        IR_SRC_SET_TOS(ir_gpsr->SRC_GPSRG_SR[i], i);
-
-        /* TODO after enabling we can broadcast interrupts (through SRB) for all cpus simultaneously 
-         * although care must be taken as the current cpu could also be interrupted.
-         * we could disable interrupts, and temporarily remove this cpu from
-         * broadcast. use the gpsr lock mechanism to do sync */
-
-        /* TODO add api for ipi management to bao */
-    }
+    ir_init_ipi();
 }
 
 void ir_cpu_init(void)
 {
-
+    /* TODO initialize ipi herea as each CPU adds itself to the broadcast group? */
 }
 
 void ir_set_enbl(irqid_t int_id, bool en)
@@ -106,7 +111,7 @@ bool ir_get_pend(irqid_t int_id)
     if(int_id > PLAT_IR_MAX_INTERRUPTS) {
         ERROR("%s Invalid interrupt %u", __func__, int_id);
     }
-    bool pending = IR_SRC_GET_SRR(ir_src[int_id]);
+    bool pending = IR_SRC_GET_SRR(ir_src[int_id]) != 0;
     return pending;
 }
 
@@ -115,7 +120,7 @@ void ir_set_pend(irqid_t int_id)
     if(int_id > PLAT_IR_MAX_INTERRUPTS) {
         ERROR("%s Invalid interrupt %u", __func__, int_id);
     }
-    IR_SRC_SET_SRR(ir_src[int_id], true);
+    IR_SRC_SET_SETR(ir_src[int_id], true);
 }
 
 void ir_clr_pend(irqid_t int_id)
@@ -123,7 +128,7 @@ void ir_clr_pend(irqid_t int_id)
     if(int_id > PLAT_IR_MAX_INTERRUPTS) {
         ERROR("%s Invalid interrupt %u", __func__, int_id);
     }
-    IR_SRC_SET_CLRR(ir_src[int_id], true);
+    IR_SRC_SET_CLRR(ir_src[int_id], 1);
 }
 
 void ir_handle(void)
@@ -138,6 +143,8 @@ void ir_handle(void)
     unsigned int cs = GET_IR_SR_CS(sr);
     unsigned int stat = GET_IR_SR_STAT(sr);
 
+    enum irq_res res = interrupts_handle(id);
+    ir_clr_pend(id);
     /* TODO */
 }
 void ir_send_ipi(cpuid_t target_cpu, irqid_t ipi_id)
@@ -150,7 +157,7 @@ void ir_send_ipi(cpuid_t target_cpu, irqid_t ipi_id)
     /* TODO why not do this? SET_GPSR_SR_SETR(ir_int_hw.GPSRG[0].SWC.CR[target_cpu], 1); */
 
     /* We previously configure interrupts for each CPU */
-    IR_SRC_SETR_POS(ir_gpsr.SRC_GPSRG_SR[target_cpu], 1);
+    ir_set_pend(ipi_id + target_cpu, 1);
 }
 
 void ir_config_irq(irqid_t int_id, bool en)
@@ -175,21 +182,18 @@ void ir_config_irq(irqid_t int_id, bool en)
 void ir_assign_int_to_vm(struct vm* vm, irqid_t id)
 {
     /* VM direct injection */
-    IR_SRC_SET_VM(ir_src_hw.SRC[id], vm->vm_id);
-    ir_src_hw.ICU[cpu()->cpuid] = 1 << vm->vm_id;
+    uint32_t vmid = vm->id;
+    if(vmid)
+        ERROR("Unsuported vm id %u > 7", vmid);
+
+    IR_SRC_SET_VM(ir_src_hw.SRC[id], vmid);
+
+    /* TODO assumes VM will execute on this pcpu */
+    ir_int_hw->ICU[cpu()->id].VMEN = 1 << vmid;
 
     /* set interrupt on cpu */
-    IRS_SRC_SET_VM(ir_int_hw.SRC[id], cpu()->cpuid);
-
+    /* TODO assumes interrupt is for this cpu */
+    IRS_SRC_SET_TOS(ir_int_hw.SRC[id], cpu()->cpuid);
+    IRS_SRC_SET_VM(ir_int_hw.SRC[id], vmid);
 }
 
-void ir_assign_icu_to_vm(struct vm* vm)
-{
-    uint8_t vmid = vm->id;
-    /* TODO: check this upon vmid generation */
-    /* TODO: add this define */
-    if(vmid > PLAT_TRICORE_VM_NUM)
-        ERROR("Unsuported VM id %u", vmid);
-
-    ir_int_hw->ICU[cpu()->id].VMEN = 1 << vmid;
-}
