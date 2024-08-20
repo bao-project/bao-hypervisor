@@ -28,10 +28,12 @@ static void ir_init_ipi(void)
         /* configure each GPSRG interrupt in this group for each CPU */
         IR_SRC_SET_TOS(ir_gpsr->SRC_GPSRG_SR[i], i);
 
-        /* TODO after enabling we can broadcast interrupts (through SRB) for all cpus simultaneously 
+        /* TODO after enabling we can broadcast interrupts (through SRB) for all cpus simultaneously
          * although care must be taken as the current cpu could also be interrupted.
          * we could  temporarily remove this cpu from broadcast. use the gpsr
          * lock mechanism to do sync */
+
+        /* TODO limit access to SRB */
 
         /* TODO add api for ipi management to bao */
     }
@@ -39,7 +41,7 @@ static void ir_init_ipi(void)
 
 void ir_init(void)
 {
-    /* Map IR */
+    /* Map IR and SRC */
     ir_int = (void*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
             platform.arch.ir.int_base, NUM_PAGES(sizeof(struct ir_int_hw)));
     ir_src = (void*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
@@ -54,8 +56,10 @@ void ir_init(void)
     for (size_t i = 0; i < PLAT_IR_MAX_INTERRUPTS; i++) {
         /* TODO Inneficient, maybe write default value to SRC */
         IR_SRC_SET_SRPN(ir_src->SRC[i], 0);
-        IR_SRC_SET_TOS(ir_src->SRC[i], 0xf);
+        /* we need to set TOS to prevent VMs from accessing the interrupts */
+        IR_SRC_SET_TOS(ir_src->SRC[i], 0);
         IR_SRC_SET_SRE(ir_src->SRC[i], false);
+        IR_SRC_SET_VM(ir_src->SRC[i], 0);
     }
 
     ir_init_ipi();
@@ -134,7 +138,7 @@ void ir_clr_pend(irqid_t int_id)
 void ir_handle(void)
 {
     uint32_t cpuid = cpu()->cpuid;
-    uint32_t sr = ir_int_hw.ICU[cpuid];
+    uint32_t sr = ir_int.ICU[cpuid];
 
     int pn = GET_IR_SR_VALID(sr);
     int valid = GET_IR_SR_VALID(sr);
@@ -154,7 +158,7 @@ void ir_send_ipi(cpuid_t target_cpu, irqid_t ipi_id)
     }
 
     /* TODO we are using group 0 for hyp we should probably use the last one */
-    /* TODO why not do this? SET_GPSR_SR_SETR(ir_int_hw.GPSRG[0].SWC.CR[target_cpu], 1); */
+    /* TODO why not do this? SET_GPSR_SR_SETR(ir_int.GPSRG[0].SWC.CR[target_cpu], 1); */
 
     /* We previously configure interrupts for each CPU */
     ir_set_pend(ipi_id + target_cpu, 1);
@@ -176,24 +180,54 @@ void ir_config_irq(irqid_t int_id, bool en)
     } else {
         IR_SRC_SET_SRE(sr, 0); /* disable */
     }
-    ir_src_hw.SRC[int_id] = sr;
+    ir_src.SRC[int_id] = sr;
 }
 
 void ir_assign_int_to_vm(struct vm* vm, irqid_t id)
 {
+    /* TODO assumes interrupt is for this cpu */
+
     /* VM direct injection */
     uint32_t vmid = vm->id;
     if(vmid)
         ERROR("Unsuported vm id %u > 7", vmid);
 
-    IR_SRC_SET_VM(ir_src_hw.SRC[id], vmid);
+    IR_SRC_SET_VM(ir_src.SRC[id], vmid);
+
+    /* TODO extract function to avoid duplicate code */
 
     /* TODO assumes VM will execute on this pcpu */
-    ir_int_hw->ICU[cpu()->id].VMEN = 1 << vmid;
+    ir_int->ICU[cpu()->id].VMEN = 1 << vmid;
+
+    /* TODO What is bus master id for this CPU? */
+    ir_int->TOS[cpu()->id].ACCENSCTRL.RDA = 1 << cpu()->id;
+    ir_int->TOS[cpu()->id].ACCENSCTRL.WRA = 1 << cpu()->id;
+
+
+    /* VM can access SRC[16:31] */
+    ir_int->TOS[cpu()->id].ACCENSCTRL.VM = 1 << vmid; // read
+    ir_int->TOS[cpu()->id].ACCENSCTRL.VM = 1 << vmid << 16; // write
+    /* TODO confirm PRS is the same as VCON2.L2_PRS / PSW.PRS or maybe VM should control this */
+    ir_int->TOS[cpu()->id].ACCENSCTRL.PRS = 1 << vmid; // read
+    ir_int->TOS[cpu()->id].ACCENSCTRL.PRS = 1 << vmid << 16; // write
+
+    /* TODO necessary? */
+    /* VM0 (i.e., hyp) can also access SRC[16:31] */
+    ir_int->TOS[cpu()->id].ACCENSCTRL.VM = 1; // read
+    ir_int->TOS[cpu()->id].ACCENSCTRL.VM = 1 << 16; // write
+    /* TODO confirm PRS is the same as VCON2.L2_PRS / PSW.PRS or maybe VM should control this */
+    ir_int->TOS[cpu()->id].ACCENSCTRL.PRS = 1; // read
+    ir_int->TOS[cpu()->id].ACCENSCTRL.PRS = 1 << 16; // write
+
+
+    /* only VM0 (i.e., hyp) can access SRC[0:15] */
+    ir_int->TOS[cpu()->id].ACCENSCFG.VM = 1; // read
+    ir_int->TOS[cpu()->id].ACCENSCFG.VM = 1 << 16; // write
+    ir_int->TOS[cpu()->id].ACCENSCFG.PRS = 1; // read
+    ir_int->TOS[cpu()->id].ACCENSCFG.PRS = 1 << 16; // write
 
     /* set interrupt on cpu */
-    /* TODO assumes interrupt is for this cpu */
-    IRS_SRC_SET_TOS(ir_int_hw.SRC[id], cpu()->cpuid);
-    IRS_SRC_SET_VM(ir_int_hw.SRC[id], vmid);
+    IRS_SRC_SET_TOS(ir_int.SRC[id], cpu()->cpuid);
+    IRS_SRC_SET_VM(ir_int.SRC[id], vmid);
 }
 

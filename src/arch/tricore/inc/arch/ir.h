@@ -151,69 +151,69 @@
 
 
 struct ir_src_hw {
-    uint32_t SRC[IR_MAX_INTERRUPTS];
+    volatile uint32_t SRC[IR_MAX_INTERRUPTS];
 } __attribute__((__packed__, aligned(PAGE_SIZE)));
 
 struct ir_gpsr_hw {
-    uint32_t SRC_GPSRG_SR[PLAT_CPU_NUM];
+    volatile uint32_t SRC_GPSRG_SR[PLAT_CPU_NUM];
 } __attribute__((__packed__, aligned(PAGE_SIZE)));
 
 struct IR_ACCESSEN {
-        uint32_t WRA; // write access enable register A
-        uint32_t WRB; // write access enable register B
-        uint32_t RDA; // read access enable register A
-        uint32_t RDB; // read access enable register B
-        uint32_t VM;  // VM access enable register
-        uint32_t PRS; // PRS access enable register
+    volatile uint32_t WRA; // write access enable register A
+    volatile uint32_t WRB; // write access enable register B
+    volatile uint32_t RDA; // read access enable register A
+    volatile uint32_t RDB; // read access enable register B
+    volatile uint32_t VM;  // VM access enable register
+    volatile uint32_t PRS; // PRS access enable register
 };
 
 struct ir_int_gpsrg_swc {
-    uint32_t ACCEN; // 0x0700 + x*40H + y*4: GPRSGx_SWCy write access protection register
-    uint32_t CR;   // 0x0720 + x*40H + y*4: SW control register for GPSRGxSRy
+    volatile uint32_t ACCEN; // 0x0700 + x*40H + y*4: GPRSGx_SWCy write access protection register
+    volatile uint32_t CR;   // 0x0720 + x*40H + y*4: SW control register for GPSRGxSRy
 };
 
 struct ir_int_gpsrg {
-    struct ir_int_gpsr_swc SWC[IR_MAX_SW_INT]; // 0x0700U
+    volatile struct ir_int_gpsr_swc SWC[IR_MAX_SW_INT]; // 0x0700U
 };
 
 struct ir_int_tos {
-    struct IR_ACCESSEN ACCENSCFG;  /* Configure access to SRC[0:15] */
-    struct IR_ACCESSEN ACCENSCTRL; /* Configure access to SRC[16:31] */
+    volatile struct IR_ACCESSEN ACCENSCFG;  /* Configure access to SRC[0:15] */
+    volatile struct IR_ACCESSEN ACCENSCTRL; /* Configure access to SRC[16:31] */
 };
 
 struct ir_int_icu {
-    uint32_t VM[IR_MAX_VM]; // 0x0C00 + z*34H + y*4: ICU latest service request information signaled for VMy
-    uint32_t LASR;          // 0x0C20 + z*34H: ICU Last Acknowledged Service Request Register
-    uint32_t ECR;           // 0x0C24 + z*34H: ICU error capture register
-    uint32_t ECTRL;         // 0x0C28 + z*34H: ICU error control register
-    uint32_t EGEN;          // 0x0C2C + z*34H: ICU error generation register
-    uint32_t VMEN;          // 0x0C30 + z*34H: ICU VM control register
+    volatile uint32_t VM[IR_MAX_VM]; // 0x0C00 + z*34H + y*4: ICU latest service request information signaled for VMy
+    volatile uint32_t LASR;          // 0x0C20 + z*34H: ICU Last Acknowledged Service Request Register
+    volatile uint32_t ECR;           // 0x0C24 + z*34H: ICU error capture register
+    volatile uint32_t ECTRL;         // 0x0C28 + z*34H: ICU error control register
+    volatile uint32_t EGEN;          // 0x0C2C + z*34H: ICU error generation register
+    volatile uint32_t VMEN;          // 0x0C30 + z*34H: ICU VM control register
 };
 
 struct ir_int_hw {
-    uint32_t RESERVED1;
-    uint32_t OCS;                    // 0x0004: OCDS Control and Status Register
-    uint32_t ID;                     // 0x0008: Module Identification Register
-    uint32_t LCLTEST;                // 0x000C: LCL Test Register
-    uint32_t OIXMS;                  // 0x0010: OTGB IRQ MUX Missed IRQ Select
-    uint32_t OIXS0;                  // 0x0014: OTGB IRQ MUX Select 0U
-    uint32_t OIXS1;                  // 0x0018: OTGB IRQ MUX Select 1U
-    uint32_t OIT;                    // 0x001C: OTGB IRQ Trace
-    uint32_t PROTSE;                 // 0x0020: PROT Register safe endinit
-    uint32_t PROTCSE;                // 0x0024: PROT Register Cyber Security Endinit
-    uint32_t PROTTOS[IR_MAX_ISP];    // 0x0030 + z*4: PROT Register for TOS=z  0 <= z <= 10U
-    struct IR_ACCESSEN ACCENCS;
-    uint32_t reserved2[2];           // Padding to 0x00A0U
-    struct IR_ACCESSEN ACCENDBG;
-    uint8_t RESERVED3[0x100-0xB4];   // Padding to 0x0100U
-    struct IR_ACCESSEN ACCENSRB[IR_MAX_GROUPS];
-    uint32_t RESERVED4[0x300-0x280]; // Padding to 0x0300U
-    struct ir_int_tos TOS[IR_MAX_ISP]; // Type Of Service
-    uint32_t RESERVED5[0x700-0x510]; // Padding to 0x0700U
-    struct ir_int_gpsrg GPSRG[IR_MAX_GROUPS]; /* General Purpose Service Request */
-    uint32_t SRB[IR_MAX_GROUPS];     // 0x0B00 + x*4: Service request broadcast register x
-    uint32_t RESERVED6[0xC00-0xB40]; // Padding to 0x0c00U
-    struct ir_int_icu ICU[IR_MAX_ISP]; // 0x0C00 + z*34H 
+    volatile uint32_t RESERVED1;
+    volatile uint32_t OCS;                    // 0x0004: OCDS Control and Status Register
+    volatile uint32_t ID;                     // 0x0008: Module Identification Register
+    volatile uint32_t LCLTEST;                // 0x000C: LCL Test Register
+    volatile uint32_t OIXMS;                  // 0x0010: OTGB IRQ MUX Missed IRQ Select
+    volatile uint32_t OIXS0;                  // 0x0014: OTGB IRQ MUX Select 0U
+    volatile uint32_t OIXS1;                  // 0x0018: OTGB IRQ MUX Select 1U
+    volatile uint32_t OIT;                    // 0x001C: OTGB IRQ Trace
+    volatile uint32_t PROTSE;                 // 0x0020: PROT Register safe endinit
+    volatile uint32_t PROTCSE;                // 0x0024: PROT Register Cyber Security Endinit
+    volatile uint32_t PROTTOS[IR_MAX_ISP];    // 0x0030 + z*4: PROT Register for TOS=z  0 <= z <= 10U
+    volatile struct IR_ACCESSEN ACCENCS;
+    volatile uint32_t reserved2[2];           // Padding to 0x00A0U
+    volatile struct IR_ACCESSEN ACCENDBG;
+    volatile uint8_t RESERVED3[0x100-0xB4];   // Padding to 0x0100U
+    volatile struct IR_ACCESSEN ACCENSRB[IR_MAX_GROUPS];
+    volatile uint32_t RESERVED4[0x300-0x280]; // Padding to 0x0300U
+    volatile struct ir_int_tos TOS[IR_MAX_ISP]; // Type Of Service
+    volatile uint32_t RESERVED5[0x700-0x510]; // Padding to 0x0700U
+    volatile struct ir_int_gpsrg GPSRG[IR_MAX_GROUPS]; /* General Purpose Service Request */
+    volatile uint32_t SRB[IR_MAX_GROUPS];     // 0x0B00 + x*4: Service request broadcast register x
+    volatile uint32_t RESERVED6[0xC00-0xB40]; // Padding to 0x0c00U
+    volatile struct ir_int_icu ICU[IR_MAX_ISP]; // 0x0C00 + z*34H 
 } __attribute__((__packed__, aligned(PAGE_SIZE)));
 
 extern volatile struct ir_src_hw* ir_src;

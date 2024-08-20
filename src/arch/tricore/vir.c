@@ -186,21 +186,31 @@ static void ir_int_emul_misc_access(struct emul_access* acc, struct vir_reg_hand
 
 }
 
+
 static void ir_int_emul_accen_acces(struct emul_access* acc, struct vir_reg_handler_info* handlers,
-    cpuid_t vcpuid, uint32_t field_offset)
+    cpuid_t vcpuid, struct IR_ACCESSEN* accen)
 {
     uint32_t acc_addr = IRD_REG_MASK(acc->addr);
     uint32_t acc_int_offset = acc_addr - field_offset;
 
     uint32_t idx = acc_int_offset / sizeof(struct IR_ACCESSEN);
 
-    /* TODO: virtualize group? i.e., group ids per partition?*/
-
     /* TODO figure which masters this vm can control */
 
-    if (!acc->write) {
+    if(field_offset == offsetof(struct IR_ACCESSEN, accen->WRA)){
         /* TODO */
-        /* vcpu_writereg(cpu()->vcpu, acc->reg, ); */
+    } else if(field_offset == offsetof(struct IR_ACCESSEN, accen->WRB)){
+        /* TODO */
+    } else if(field_offset == offsetof(struct IR_ACCESSEN, accen->RDA)){
+        /* TODO */
+    } else if(field_offset == offsetof(struct IR_ACCESSEN, accen->RDB)){
+        /* TODO */
+    } else if(field_offset == offsetof(struct IR_ACCESSEN, accen->RDB)){
+        /* TODO */
+    } else if(field_offset == offsetof(struct IR_ACCESSEN, accen->PRS)){
+        /* TODO */
+    } else {
+        ERROR("Trying to access unauthorized ACCESSEN register 0x%x in 0x%x", offset, accen);
     }
 }
 
@@ -209,7 +219,9 @@ static void ir_int_emul_accensrb_access(struct emul_access* acc, struct vir_reg_
 {
     /* TODO: does this work? */
     uint32_t offset = offsetof(struct ir_int_hw, ir_int->ACCENSRB);
-    ir_int_emul_accen_acces(acc, handlers, vcpuid, offset);
+    /* TODO is it okay to modify this? */
+    acc->addr -= offset;
+    ir_int_emul_accen_acces(acc, handlers, vcpuid, ir_int->ACCENSRB);
 }
 
 static void vir_emul_icu_access(struct emul_access* acc, struct vir_reg_handler_info* handlers,
@@ -264,9 +276,15 @@ static void vir_emul_tos_access(struct emul_access* acc, struct vir_reg_handler_
     uint32_t accensctrl_offset = offsetof(struct ir_int_tos, ir_int->TOS[0].ACCENSCTRL);
     uint32_t accen_sz =  sizeof(struct IR_ACCESSEN);
     if(field_offset >= accenscfg_offset && field_offset < accenscfg_offset + accen_sz){
-        ir_int_emul_accen_acces(acc, handlers, vcpuid, field_offset);
+        uint32_t offset = offsetof(struct ir_int_hw, ir_int->TOS[idx].ACCENSCFG);
+        /* TODO ok to do this? */
+        acc->addr -= offset;
+        ir_int_emul_accen_acces(acc, handlers, vcpuid, ir_int->TOS[idx].ACCENSCFG);
     } else if(field_offset >= accensctrl_offset && field_offset < accensctrl_offset + accen_sz){
-        ir_int_emul_accen_acces(acc, handlers, vcpuid, field_offset-accensctrl_offset);
+        uint32_t offset = offsetof(struct ir_int_hw, ir_int->TOS[idx].ACCENSCTRL);
+        /* TODO ok to do this? */
+        acc->addr -= offset;
+        ir_int_emul_accen_acces(acc, handlers, vcpuid, ir_int->TOS[idx].ACCENSCTRL);
     } else {
         ERROR("Trying to access unknwon TOS register 0x%x", offset);
     }
