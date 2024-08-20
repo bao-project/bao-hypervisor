@@ -62,11 +62,16 @@ _reset_handler:
      * Install vector table physical address early, in case exception occurs during this
      * initialization.
      */
-    get_phys_addr %d3, %d4, _hyp_vector_table
+    get_phys_addr %d3, %d4, _trap_vector_table
 
+    movh    %d3,hi:_trap_vector_table
+    addi    %d3,%d3,lo:_trap_vector_table
+    mtcr    $btv,%d3
+
+    get_phys_addr %d3, %d4, _hyp_vector_table
     movh    %d3,hi:_hyp_vector_table
     addi    %d3,%d3,lo:_hyp_vector_table
-    mtcr    $btv,%d3
+    mtcr    $bhv,%d3
 
     movh    %d3,hi:_irq_vector
     addi    %d3,%d3,lo:_irq_vector

@@ -14,8 +14,8 @@
 .endm
 
 .balign 0x100
-.global _exception_vector
-_exception_vector:
+.global _trap_vector_table
+_trap_vector_table:
 
 .balign ENTRY_SIZE
 mmu_trap:
@@ -28,6 +28,10 @@ internal_protection_trap:
 .balign ENTRY_SIZE
 instruction_error:
     j	instruction_error
+
+balign ENTRY_SIZE
+ctx_mgnt:
+    j	ctx_mgnt:
 
 .balign ENTRY_SIZE
 sys_bus_errors:
@@ -45,16 +49,41 @@ system_call:
 non_mskbl_interrupt:
     j	non_mskbl_interrupt
 
-.balign ENTRY_SIZE
+
+
+.balign 0x100
 .global _irq_vector
 _irq_vector:
-    call ir_handle
-    .rept   2
+    .rept   255
         .balign ENTRY_SIZE
         1:
             /* TODO */
             j 1b
     .endr
 
+
+
+.balign 0x100
+.global _hyp_vector_table
+_hyp_vector_table:
+
 .balign ENTRY_SIZE
+hyp_call:
+    j   hyp_call
+
+.balign ENTRY_SIZE
+hyp_interrupt_trap:
+    j   hyp_interrupt_trap
+
+.balign ENTRY_SIZE
+l2_data_mem_prot_trap:
+    j	l2_data_mem_prot_trap
+
+balign ENTRY_SIZE
+l2_code_mem_prot_trap:
+    j	l2_code_mem_prot_trap
+
+.balign ENTRY_SIZE
+hyp_csfr_access_supp:
+    j	hyp_csfr_access_supp
 
