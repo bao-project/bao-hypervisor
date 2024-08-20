@@ -150,7 +150,7 @@ static inline mem_attrs_t mpu_entry_attrs(struct mp_region* mpr)
 {
     mem_flags_t flags = mpr->mem_flags;
     flags.prbar &= PRBAR_MEM_ATTR_FLAGS_MSK;
-    flags.prbar &= PRLAR_MEM_ATTR_FLAGS_MSK;
+    flags.prlar &= PRLAR_MEM_ATTR_FLAGS_MSK;
     return (mem_attrs_t)flags.raw;
 }
 
