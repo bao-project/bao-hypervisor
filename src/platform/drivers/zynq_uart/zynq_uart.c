@@ -91,7 +91,7 @@ uint32_t uart_getc(volatile struct Uart_Zynq_hw* uart)
 
     // Chose one of the following: (Trigger Level or Not Empty)
     /* Wait until RxFIFO is filled up to the trigger level */
-    while (!uart->ch_status & UART_CH_STATUS_RTRIG) { }
+    while (!(uart->ch_status & UART_CH_STATUS_RTRIG)) { }
     /* Wait until RxFIFO is not empty */
     // while(!uart->ch_status & UART_CH_STATUS_REMPTY) { }
 
