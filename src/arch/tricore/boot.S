@@ -102,10 +102,10 @@ _reset_handler:
     /* Invalidate Caches */
     /* TODO do we need to? */
     mov     %d10, 1 // invalidate data cache
-    mtcr    $hrv_dcon1, %d0
+    mtcr    $hrhv_dcon1, %d0
 
     mov     %d10, 3 // TODO invalidate program cache and program buffer */
-    mtcr    $hrv_pcon1, %d3
+    mtcr    $hrhv_pcon1, %d3
     isync
 
     /** subarch specific **/
@@ -131,9 +131,9 @@ _reset_handler:
 
     mov     %d3, 2
     /* Program cache bypass */
-    mtcr    $hrv_pcon0, %d3
+    mtcr    $hrhv_pcon0, %d3
     /* Data cache bypass */
-    mtcr    $hrv_dcon0, %d3
+    mtcr    $hrhv_dcon0, %d3
 
     /* disable memory protection and other properties... */
     mov %d3, 0
@@ -144,32 +144,32 @@ _reset_handler:
 
     mov %d3, 0
     /* make sure no region can be accessed, executed */
-    mtcr    $hrv_dpre_0, %d3
-    mtcr    $hrv_dpre_1, %d3
-    mtcr    $hrv_dpre_2, %d3
-    mtcr    $hrv_dpre_3, %d3
-    mtcr    $hrv_dpre_4, %d3
-    mtcr    $hrv_dpre_5, %d3
-    mtcr    $hrv_dpre_6, %d3
-    mtcr    $hrv_dpre_7, %d3
+    mtcr    $hrhv_dpre_0, %d3
+    mtcr    $hrhv_dpre_1, %d3
+    mtcr    $hrhv_dpre_2, %d3
+    mtcr    $hrhv_dpre_3, %d3
+    mtcr    $hrhv_dpre_4, %d3
+    mtcr    $hrhv_dpre_5, %d3
+    mtcr    $hrhv_dpre_6, %d3
+    mtcr    $hrhv_dpre_7, %d3
 
-    mtcr    $hrv_dpwe_0, %d3
-    mtcr    $hrv_dpwe_1, %d3
-    mtcr    $hrv_dpwe_2, %d3
-    mtcr    $hrv_dpwe_3, %d3
-    mtcr    $hrv_dpwe_4, %d3
-    mtcr    $hrv_dpwe_5, %d3
-    mtcr    $hrv_dpwe_6, %d3
-    mtcr    $hrv_dpwe_7, %d3
+    mtcr    $hrhv_dpwe_0, %d3
+    mtcr    $hrhv_dpwe_1, %d3
+    mtcr    $hrhv_dpwe_2, %d3
+    mtcr    $hrhv_dpwe_3, %d3
+    mtcr    $hrhv_dpwe_4, %d3
+    mtcr    $hrhv_dpwe_5, %d3
+    mtcr    $hrhv_dpwe_6, %d3
+    mtcr    $hrhv_dpwe_7, %d3
 
-    mtcr    $hrv_cpxe_0, %d3
-    mtcr    $hrv_cpxe_1, %d3
-    mtcr    $hrv_cpxe_2, %d3
-    mtcr    $hrv_cpxe_3, %d3
-    mtcr    $hrv_cpxe_4, %d3
-    mtcr    $hrv_cpxe_5, %d3
-    mtcr    $hrv_cpxe_6, %d3
-    mtcr    $hrv_cpxe_7, %d3
+    mtcr    $hrhv_cpxe_0, %d3
+    mtcr    $hrhv_cpxe_1, %d3
+    mtcr    $hrhv_cpxe_2, %d3
+    mtcr    $hrhv_cpxe_3, %d3
+    mtcr    $hrhv_cpxe_4, %d3
+    mtcr    $hrhv_cpxe_5, %d3
+    mtcr    $hrhv_cpxe_6, %d3
+    mtcr    $hrhv_cpxe_7, %d3
 
     /**
      * Map loadable image (and possibly unloadable)
@@ -178,13 +178,14 @@ _reset_handler:
      */
     movh    %d3,hi:_image_start
     addi    %d3,%d3,lo:_image_start
-    mtcr    $hrv_dpr0_l, %d3
+    mtcr    $hrhv_dpr0_l, %d3
+    mtcr    $hrhv_cpr0_l, %d3
 
     movh    %d3,hi:_image_load_end
     addi    %d3,%d3,lo:_image_load_end
     movh    %d4,hi:_image_noload_start
     addi    %d4,%d4,lo:_image_noload_start
-    jne    %d3, %d4, 1f
+    jne     %d3, %d4, 1f
 
     movh    %d3,hi:_image_end
     addi    %d3,%d3,lo:_image_end
@@ -195,21 +196,22 @@ _reset_handler:
 2:
     mov     %d4, 1
     sub     %d3, %d4
-    mtcr    $hrv_dpr0_0, %d3
+    mtcr    $hrhv_dpr0_u, %d3
+    mtcr    $hrhv_cpr0_u, %d3
 
     /* TODO x-only, RO, and RW according to section permissions */
     /* TODO set permissions all at once to avoid muiltiple rw to sys regs */
-    mfcr    %d3, $hrv_cpxe_0
+    mfcr    %d3, $hrhv_cpxe_0
     or      %d3, %d3, (1 << 0)
-    mtcr    $hrv_cpxe_0, %d3
+    mtcr    $hrhv_cpxe_0, %d3
 
-    mfcr    %d3, $hrv_dpre_0
+    mfcr    %d3, $hrhv_dpre_0
     or      %d3, %d3, (1 << 0)
-    mtcr    $hrv_dpre_0, %d3
+    mtcr    $hrhv_dpre_0, %d3
 
-    mfcr    %d3, $hrv_dpwe_0
+    mfcr    %d3, $hrhv_dpwe_0
     or      %d3, %d3, (1 << 0)
-    mtcr    $hrv_dpwe_0, %d3
+    mtcr    $hrhv_dpwe_0, %d3
 
 
     /* Map Image Non-loadable if needed */
@@ -221,62 +223,66 @@ _reset_handler:
 
     movh    %d3,hi:_image_noload_start
     addi    %d3,%d3,lo:_image_noload_start
-    mtcr    $hrv_dpr1_l, %d3
+    mtcr    $hrhv_dpr1_l, %d3
+    mtcr    $hrhv_cpr1_l, %d3
 
     movh    %d3,hi:_image_end
     addi    %d3,%d3,lo:_image_end
     mov     %d4, 1
     sub     %d3, %d4
-    mtcr    $hrv_dpr1_l, %d3
+    mtcr    $hrhv_dpr1_u, %d3
+    mtcr    $hrhv_cpr1_u, %d3
 
-    mfcr    %d3, $hrv_cpxe_0
+    mfcr    %d3, $hrhv_cpxe_0
     or      %d3, %d3, (1 << 1)
-    mtcr    $hrv_cpxe_0, %d3
+    mtcr    $hrhv_cpxe_0, %d3
 
-    mfcr    %d3, $hrv_dpre_0
+    mfcr    %d3, $hrhv_dpre_0
     or      %d3, %d3, (1 << 1)
-    mtcr    $hrv_dpre_0, %d3
+    mtcr    $hrhv_dpre_0, %d3
 
-    mfcr    %d3, $hrv_dpwe_0
+    mfcr    %d3, $hrhv_dpwe_0
     or      %d3, %d3, (1 << 1)
-    mtcr    $hrv_dpwe_0, %d3
+    mtcr    $hrhv_dpwe_0, %d3
 
 
 skip_non_loadable:
 
     /* Region 2 - CPU */
     mov.d   %d3, %a14
-    mtcr    $hrv_dpr2_l, %d3
+    mtcr    $hrhv_dpr2_l, %d3
+    mtcr    $hrhv_cpr2_l, %d3
 
     mov     %d4, CPU_SIZE
     add     %d3, %d3, %d4
     mov     %d4, 1
     sub     %d3, %d3, %d4
-    mtcr    $hrv_dpr2_u, %d3
+    mtcr    $hrhv_dpr2_u, %d3
+    mtcr    $hrhv_cpr2_u, %d3
 
-    mfcr    %d3, $hrv_cpxe_0
+    mfcr    %d3, $hrhv_cpxe_0
     or      %d3, %d3, (1 << 2)
-    mtcr    $hrv_cpxe_0, %d3
+    mtcr    $hrhv_cpxe_0, %d3
 
-    mfcr    %d3, $hrv_dpre_0
+    mfcr    %d3, $hrhv_dpre_0
     or      %d3, %d3, (1 << 2)
-    mtcr    $hrv_dpre_0, %d3
+    mtcr    $hrhv_dpre_0, %d3
 
-    mfcr    %d3, $hrv_dpwe_0
+    mfcr    %d3, $hrhv_dpwe_0
     or      %d3, %d3, (1 << 2)
-    mtcr    $hrv_dpwe_0, %d3
+    mtcr    $hrhv_dpwe_0, %d3
 
     isync
 
     mov %d3, 2
     /* Program cache bypass */
-    mtcr $hrv_pcon0, %d3
+    mtcr $hrhv_pcon0, %d3
     /* Data cache bypass */
-    mtcr $hrv_dcon0, %d3
+    mtcr $hrhv_dcon0, %d3
 
     /* disable memory protection and other properties... */
     mov %d3, 0
-    mtcr $hrv_corecon, %d3
+    mtcr $hrhv_corecon, %d3
 
     isync
 
@@ -284,9 +290,9 @@ skip_non_loadable:
 
 
     /* reset access to system global registers */
-    mfcr    %d0,$hrv_psw
+    mfcr    %d0,$hrhv_psw
     andn    %d0,%d0,0x100               // clear GW bit
-    mtcr    $hrv_psw,%d0
+    mtcr    $hrhv_psw,%d0
     isync
 
     movh    %d3,hi:_dmem_phys_beg
@@ -393,7 +399,7 @@ boot_cache_invalidate:
 .func _init_csa
 _init_csa:
     movh    %d0,0
-    mtcr    $hrv_pcxi,%d0               // previous context info is null
+    mtcr    $hrhv_pcxi,%d0               // previous context info is null
     isync
 
     addi    %d0,%d0,0x3f            // force alignment (2^6)
@@ -417,7 +423,7 @@ _init_csa:
     mov.d   %d2,%a3
     extr.u  %d2,%d2,6,16            // get CSA index
     or      %d2,%d2,%d0             // add segment number
-    mtcr    $hrv_lcx,%d1                // initialize lcx
+    mtcr    $hrhv_lcx,%d1                // initialize lcx
 
     add     %d1,%d1,-2              // CSAs to initialize -= 2
     mov.a   %a5,%d1                 // %a5 = loop counter
@@ -434,7 +440,7 @@ csa_loop:
     mov.d   %d2,%a4                 // %d1 = current CSA address
     extr.u  %d2,%d2,6,16            // get CSA index
     or      %d2,%d2,%d0             // add segment number
-    mtcr    $hrv_fcx,%d1            // initialize fcx
+    mtcr    $hrhv_fcx,%d1            // initialize fcx
     isync
     ji      %a11
 .endfunc

@@ -25,42 +25,42 @@ static inline size_t mpu_num_entries()
     static inline unsigned long csr_get_dpr##x##_l(void)                           \
     {                                                                              \
         unsigned long val;                                                         \
-        asm inline("mfcsr %d[reg], HRVH_DPR"STR(x)"_L\n\t" [reg] "=d" (val) : : );      \
+        asm inline("mfcsr %d[reg], HRHV_DPR"STR(x)"_L\n\t" [reg] "=d" (val) : : );      \
         return val;                                                                \
     }                                                                              \
     static inline unsigned long csr_get_dpr##x##_u(void)                           \
     {                                                                              \
         unsigned long val;                                                         \
-        asm inline("mfcsr %d[reg], HRVH_DPR"STR(x)"_U\n\t" [reg] "=d" (val) : : );      \
+        asm inline("mfcsr %d[reg], HRHV_DPR"STR(x)"_U\n\t" [reg] "=d" (val) : : );      \
         return val;                                                                \
     }                                                                              \
     static inline unsigned long csr_get_cpr##x##_l(void)                           \
     {                                                                              \
         unsigned long val;                                                         \
-        asm inline("mfcsr %d[reg], HRVH_CPR"STR(x)"_L\n\t" [reg] "=d" (val) : : );      \
+        asm inline("mfcsr %d[reg], HRHV_CPR"STR(x)"_L\n\t" [reg] "=d" (val) : : );      \
         return val;                                                                \
     }                                                                              \
     static inline unsigned long csr_get_cpr##x##_u(void)                           \
     {                                                                              \
         unsigned long val;                                                         \
-        asm inline("mfcsr %d[reg], HRVH_CPR"STR(x)"_U\n\t" [reg] "=d" (val) : : );      \
+        asm inline("mfcsr %d[reg], HRHV_CPR"STR(x)"_U\n\t" [reg] "=d" (val) : : );      \
         return val;                                                                \
     }                                                                              \
     static inline unsigned long csr_set_dpr##x##_l(unsigned long val)              \
     {                                                                              \
-        asm inline("mtcsr HRVH_DPR"STR(x)"_L, %d[reg]\n\t" [reg] : "d" (val) : );  \
+        asm inline("mtcsr HRHV_DPR"STR(x)"_L, %d[reg]\n\t" [reg] : "d" (val) : );  \
     }                                                                              \
     static inline unsigned long csr_set_dpr##x##_u(unsigned long val)              \
     {                                                                              \
-        asm inline("mtcsr HRVH_DPR"STR(x)"_U, %d[reg]\n\t" [reg] : "d" (val) : );  \
+        asm inline("mtcsr HRHV_DPR"STR(x)"_U, %d[reg]\n\t" [reg] : "d" (val) : );  \
     }                                                                              \
     static inline unsigned long csr_set_cpr##x##_l(unsigned long val)              \
     {                                                                              \
-        asm inline("mtcsr HRVH_CPR"STR(x)"_L, %d[reg]\n\t" [reg] : "d" (val) : );  \
+        asm inline("mtcsr HRHV_CPR"STR(x)"_L, %d[reg]\n\t" [reg] : "d" (val) : );  \
     }                                                                              \
     static inline unsigned long csr_set_cpr##x##_u(unsigned long val)              \
     {                                                                              \
-        asm inline("mtcsr HRVH_CPR"STR(x)"_U, %d[reg]\n\t" [reg] : "d" (val) : );  \
+        asm inline("mtcsr HRHV_CPR"STR(x)"_U, %d[reg]\n\t" [reg] : "d" (val) : );  \
     }
 
 
@@ -213,32 +213,32 @@ void set_pr_u(mpid_t mpid, unsigned long addr)
     static inline unsigned long csr_get_dpre##x##(mpid_t id)                     \
     {                                                                            \
         unsigned long val;                                                       \
-        asm inline("mfcsr %d[reg], DPRE_"STR(x)"\n\t" [reg] "=d" (val) : : );    \
+        asm inline("mfcsr %d[reg], HRHV_DPRE_"STR(x)"\n\t" [reg] "=d" (val) : : );    \
         return val & (1 << id);                                                  \
     }                                                                            \
     static inline unsigned long csr_get_dpwe##x##(mpid_t id)                     \
     {                                                                            \
         unsigned long val;                                                       \
-        asm inline("mfcsr %d[reg], DPWE_"STR(x)"\n\t" [reg] "=d" (val) : : );    \
+        asm inline("mfcsr %d[reg], HRHV_DPWE_"STR(x)"\n\t" [reg] "=d" (val) : : );    \
         return val & (1 << id);                                                  \
     }                                                                            \
     static inline unsigned long csr_get_cpxe##x##(mpid_t id)                     \
     {                                                                            \
         unsigned long val;                                                       \
-        asm inline("mfcsr %d[reg], CPXE_"STR(x)"\n\t" [reg] "=d" (val) : : );    \
+        asm inline("mfcsr %d[reg], HRHV_CPXE_"STR(x)"\n\t" [reg] "=d" (val) : : );    \
         return val & (1 << id);                                                  \
     }                                                                            \
     static inline unsigned long csr_set_dpre##x##(mpid_t id, unsigned long val)  \
     {                                                                            \
-        asm inline("mtcsr DPRE_"STR(x)", %d[reg]\n\t" [reg] : "d" (val) : );     \
+        asm inline("mtcsr HRHV_DPRE_"STR(x)", %d[reg]\n\t" [reg] : "d" (val) : );     \
     }                                                                            \
     static inline unsigned long csr_set_dpwe##x##(mpid_t id, unsigned long val)  \
     {                                                                            \
-        asm inline("mtcsr DPRE_"STR(x)", %d[reg]\n\t" [reg] : "d" (val) : );     \
+        asm inline("mtcsr HRHV_DPRE_"STR(x)", %d[reg]\n\t" [reg] : "d" (val) : );     \
     }                                                                            \
     static inline unsigned long csr_set_cpxe##x##(mpid_t id, unsigned long val)  \
     {                                                                            \
-        asm inline("mtcsr DPRE_"STR(x)", %d[reg]\n\t" [reg] : "d" (val) : );     \
+        asm inline("mtcsr HRHV_DPRE_"STR(x)", %d[reg]\n\t" [reg] : "d" (val) : );     \
     }
 
 CSR_GEN_Px(0)

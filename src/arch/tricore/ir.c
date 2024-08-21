@@ -138,14 +138,20 @@ void ir_clr_pend(irqid_t int_id)
 void ir_handle(void)
 {
     uint32_t cpuid = cpu()->cpuid;
-    uint32_t sr = ir_int.ICU[cpuid];
 
-    int pn = GET_IR_SR_VALID(sr);
-    int valid = GET_IR_SR_VALID(sr);
-    int invalid = GET_IR_SR_INVALID(sr);
-    unsigned int intid = GET_IR_SR_ID(sr);
-    unsigned int cs = GET_IR_SR_CS(sr);
-    unsigned int stat = GET_IR_SR_STAT(sr);
+    /* TODO read ICR.PIPN */
+
+    if(for_vm){
+        /* TODO */
+        uint32_t sr = ir_int.ICU[cpuid].LASR;
+
+        int pn = GET_IR_SR_VALID(sr);
+        int valid = GET_IR_SR_VALID(sr);
+        int invalid = GET_IR_SR_INVALID(sr);
+        unsigned int intid = GET_IR_SR_ID(sr);
+        unsigned int cs = GET_IR_SR_CS(sr);
+        unsigned int stat = GET_IR_SR_STAT(sr);
+    }
 
     enum irq_res res = interrupts_handle(id);
     ir_clr_pend(id);
