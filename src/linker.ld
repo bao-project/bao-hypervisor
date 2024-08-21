@@ -46,9 +46,8 @@ SECTIONS
 	.ipi_cpumsg_handlers_id : {
 		_ipi_cpumsg_handlers_id_start = .;
 		*(.ipi_cpumsg_handlers_id)
+        _ipi_cpumsg_handlers_id_end = .;
 	}
-
-	_ipi_cpumsg_handlers_size = SIZEOF(.ipi_cpumsg_handlers);
 
     . = ALIGN(PAGE_SIZE);
     _image_load_end = .;
