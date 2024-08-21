@@ -103,16 +103,16 @@ struct arch_regs {
             unsigned long d13; /* upper ctx */
             unsigned long d14; /* upper ctx */
             unsigned long d15; /* upper ctx */
-            unsigned long a0;  /* System global register: content not saved accross calls traps and irqs */
-            unsigned long a1;  /* System global register: content not saved accross calls traps and irqs */
+            unsigned long a0;  /* System global register: not saved accross calls traps and irqs */
+            unsigned long a1;  /* System global register: not saved accross calls traps and irqs */
             unsigned long a2;  /* lower ctx */
             unsigned long a3;  /* lower ctx */
             unsigned long a4;  /* lower ctx */
             unsigned long a5;  /* lower ctx */
             unsigned long a6;  /* lower ctx */
             unsigned long a7;  /* lower ctx */
-            unsigned long a8;  /* System global register: content not saved accross calls traps and irqs */
-            unsigned long a9;  /* System global register: content not saved accross calls traps and irqs */
+            unsigned long a8;  /* System global register: not saved accross calls traps and irqs */
+            unsigned long a9;  /* System global register: not saved accross calls traps and irqs */
             union{
                 unsigned long a10;
                 unsigned long sp; /* stack pointer */
@@ -128,8 +128,8 @@ struct arch_regs {
         };
     };
 
-    unsigned long psw; /* program status word */
     unsigned long pc; /* programm counter */
+    unsigned long psw; /* program status word */
     unsigned long pcxi; /* previous ctx information */
     unsigned long pprs; /* previous protection register set registers */
 

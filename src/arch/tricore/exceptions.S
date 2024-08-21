@@ -8,132 +8,43 @@
 .text 
 
 .macro SAVE_HYP_GPRS
+    st.d [%a10]0x0, d0
+    st.d [%a10]0x4, d1
+    st.d [%a10]0x8, d2
+    st.d [%a10]0xc, d3
+    st.d [%a10]0x10, d4
+    st.d [%a10]0x14, d5
+    st.d [%a10]0x18, d6
+    st.d [%a10]0x1c, d7
+    st.d [%a10]0x20, d8
+    st.d [%a10]0x24, d9
+    st.d [%a10]0x28, d10
+    st.d [%a10]0x2c, d11
+    st.d [%a10]0x30, d12
+    st.d [%a10]0x34, d13
+    st.d [%a10]0x38, d14
+    st.d [%a10]0x3c, d15
 
-//    push {r0-r12}
-//    add r0, sp, #(13*4)  // adjust and save the sp (cp is r13)
-//    push {r0, r14}
-
+    st.a [%a10]0x40, a0
+    st.a [%a10]0x44, a1
+    st.a [%a10]0x48, a2
+    st.a [%a10]0x4c, a3
+    st.a [%a10]0x50, a4
+    st.a [%a10]0x54, a5
+    st.a [%a10]0x58, a6
+    st.a [%a10]0x5c, a7
+    st.a [%a10]0x60, a8
+    st.a [%a10]0x64, a9
+    mov.a %a9, %a10
+    st.a [%a10]0x68, a9
+    st.a [%a10]0x6c, a11
+    st.a [%a10]0x70, a12
+    st.a [%a10]0x74, a13
+    st.a [%a10]0x78, a14
+    st.a [%a10]0x7c, a15
 .endm
 
-
-.macro SAVE_ELR_SPSR
-
-//    mrs r0, ELR_hyp
-//    mrs r1, SPSR_hyp
-//    push {r0, r1}
-
-.endm
-
-.macro LOAD_ELR_SPSR
-
- //   pop {r0, r1}
- //   msr ELR_hyp, r0
- //   msr SPSR_hyp, r1
-
-.endm
-
-.macro SET_SP
-
-//    mrc p15, 4, r0, c13, c0, 2  // Read HTPIDR (CPU base address)
-//    add r0, r0, #CPU_STACK_OFF
-//    add r0, r0, #CPU_STACK_SIZE
-//    mov sp, r0
-    
-.endm
-
-
-.macro VM_EXIT
-    svlcx
-
-    /* TODO move lcx and ucx in the CSA to vcpu registers */
-//    push {r14}
-//    SAVE_SP
-//    push {r0-r12}
-//    SAVE_ELR_SPSR
-
-.endm
-
-
-.macro SAVE_SP
-
-//    mrs r14, SPSR_hyp
-//    and r14, r14, #0x1F
-//    
-//    cmp r14, #SPSR_USR
-//    beq 1f
-//    cmp r14, #SPSR_IRQ
-//    beq 2f
-//    cmp r14, #SPSR_SVC
-//    beq 3f
-//    cmp r14, #SPSR_ABT
-//    beq 4f
-//    cmp r14, #SPSR_UND
-//    beq 5f
-//    
-//    1:  //read_usr:
-//        mrs r14,  sp_usr
-//        push {r14}
-//        b 6f
-//    2:  //read_irq:
-//        mrs r14,  sp_irq
-//        push {r14}
-//        b 6f
-//    3:  //read_hvc:
-//        mrs r14,  sp_svc
-//        push {r14}
-//        b 6f
-//    4:  //read_abt:
-//        mrs r14,  sp_abt
-//        push {r14}
-//        b 6f
-//    5:  //read_und:
-//        mrs r14,  sp_und
-//        push {r14}
-//    6:
-
-.endm
-
-.macro LOAD_SP
-
-//    mrs r14, SPSR_hyp
-//    and r14, r14, #0x1F
-//    
-//    cmp r14, #SPSR_USR
-//    beq 1f
-//    cmp r14, #SPSR_IRQ
-//    beq 2f
-//    cmp r14, #SPSR_SVC
-//    beq 3f
-//    cmp r14, #SPSR_ABT
-//    beq 4f
-//    cmp r14, #SPSR_UND
-//    beq 5f
-//    
-//    1:  
-//        pop {r14}
-//        msr sp_usr, r14
-//        b 6f
-//    2:
-//        pop {r14}
-//        msr sp_irq, r14
-//        b 6f
-//    3:
-//        pop {r14}
-//        msr sp_svc, r14
-//        b 6f
-//    4:
-//        pop {r14}
-//        msr sp_abt, r14
-//        b 6f
-//    5:
-//        pop {r14}
-//        msr sp_und, r14
-//    6:
-
-.endm
-
-.macro VM_ENTRY
-
+.macro GET_CPU_PTR
     movh    %d9,hi:_dmem_phys_beg
     addi    %d9,%d9,lo:_dmem_phys_beg
 
@@ -143,18 +54,171 @@
     mov     %d10, CPU_SIZE
     madd    %d8, %d9, %d8, %d10
     mov.a   %a10, %d0
+.endm
+
+.macro GET_VCPU_REG_PTR
+    GET_CPU_PTR
 
     ld.a    %a10, [%a10]#CPU_VCPU_OFF
     add     %a10, %a10, #VCPU_REGS_OFF
+.endm
 
-    /* TODO move vcpu registers to lcx and ucx in the CSA */
+.macro SET_SP
+    GET_CPU_PTR
+    ld.a    %a10, [%a10]#CPU_STACK_OFF
+    add     %a10, %a10, #CPU_STACK_SIZE
+.endm
 
-    // LOAD_ELR_SPSR TODO what is this?
-    pop {r0-r12}
-    LOAD_SP
-    pop {r14}
-    
-    rslcx
+.macro VM_EXIT
+    GET_VCPU_REG_PTR
+
+    /* save unsave regs */
+    st.d [%a10]0x0, d0
+    st.d [%a10]0x4, d1
+    st.d [%a10]0x8, d2
+    st.d [%a10]0xc, d3
+    st.d [%a10]0x10, d4
+    st.d [%a10]0x14, d5
+    st.d [%a10]0x18, d6
+    st.d [%a10]0x1c, d7
+
+    st.a [%a10]0x40, a0 // not saved
+    st.a [%a10]0x44, a1 // not saved
+    st.a [%a10]0x48, a2 // Lower Ctx
+    st.a [%a10]0x4c, a3 // Lower Ctx
+    st.a [%a10]0x50, a4 // Lower Ctx
+    st.a [%a10]0x54, a5 // Lower Ctx
+    st.a [%a10]0x58, a6 // Lower Ctx
+    st.a [%a10]0x5c, a7 // Lower Ctx
+    st.a [%a10]0x60, a8 // not saved
+    st.a [%a10]0x64, a9 // not saved
+
+
+    /* TODO how to handle first exit? a CSA needs to be allocated ? */
+    /* Save remaining regs from upper context CSA */
+    mfcsr %a12, $PCX
+
+    ld.a  %a13, [%a12]0x8
+    st.a [%a10]0x68, %a13 /* Guest a10 */
+
+    ld.a  %a13, [%a12]0xc
+    st.a [%a10]0x6c, %a13 /* Guest a11 */
+
+    ld.a  %a13, [%a12]0x10
+    st.a [%a10]0x20, %a13 /* Guest d8 */
+
+    ld.a  %a13, [%a12]0x14
+    st.a [%a10]0x24, %a13 /* Guest d9 */
+
+    ld.a  %a13, [%a12]0x18
+    st.a [%a10]0x28, %a13 /* Guest d10 */
+
+    ld.a  %a13, [%a12]0x1c
+    st.a [%a10]0x2c, %a13 /* Guest d11 */
+
+    ld.a  %a13, [%a12]0x20
+    st.a [%a10]0x70, %a13 /* Guest a12 */
+
+    ld.a  %a13, [%a12]0x24
+    st.a [%a10]0x74, %a13 /* Guest a13 */
+
+    ld.a  %a13, [%a12]0x28
+    st.a [%a10]0x78, %a13 /* Guest a14 */
+
+    ld.a  %a13, [%a12]0x2c
+    st.a [%a10]0x7c, %a13 /* Guest a15 */
+
+    ld.a  %a13, [%a12]0x30
+    st.a [%a10]0x80, %a13 /* Guest a16 */
+
+    ld.a  %a13, [%a12]0x34
+    st.a [%a10]0x30, %a13 /* Guest d12 */
+
+    ld.a  %a13, [%a12]0x38
+    st.a [%a10]0x34, %a13 /* Guest d13 */
+
+    ld.a  %a13, [%a12]0x3c
+    st.a [%a10]0x38, %a13 /* Guest d14 */
+
+    ld.a  %a13, [%a12]0x40
+    st.a [%a10]0x3c, %a13 /* Guest d15 */
+
+    SET_SP
+.endm
+
+.macro VM_ENTRY
+
+    GET_VCPU_REG_PTR
+
+    /* restore unsave regs */
+    ld.d d0, [%a10]0x0
+    ld.d d1, [%a10]0x4
+    ld.d d2, [%a10]0x8
+    ld.d d3, [%a10]0xc
+    ld.d d4, [%a10]0x10
+    ld.d d5, [%a10]0x14
+    ld.d d6, [%a10]0x18
+    ld.d d7, [%a10]0x1c
+
+    ld.a a0, [%a10]0x40
+    ld.a a1, [%a10]0x44
+    ld.a a2, [%a10]0x48
+    ld.a a3, [%a10]0x4c
+    ld.a a4, [%a10]0x50
+    ld.a a5, [%a10]0x54
+    ld.a a6, [%a10]0x58
+    ld.a a7, [%a10]0x5c
+    ld.a a8, [%a10]0x60
+    ld.a a9, [%a10]0x64
+
+
+    /* restore remaining regs to upper context CSA */
+    mfcsr %a12, $PCX
+
+    ld.a  %a13, [%a10]0x68 /* Guest a10 */
+    st.a  [%a12]0x8, %a13
+
+    ld.a %a13, [%a10]0x6c /* Guest a11 */
+    st.a  [%a12]0xc, %a13
+
+    ld.a %a13, [%a10]0x20 /* Guest d8 */
+    st.a  [%a12]0x10, %a13
+
+    ld.a %a13, [%a10]0x24 /* Guest d9 */
+    st.a  [%a12]0x14, %a13
+
+    ld.a %a13, [%a10]0x28 /* Guest d10 */
+    st.a  [%a12]0x18, %a13
+
+    ld.a %a13, [%a10]0x2c /* Guest d11 */
+    st.a  [%a12]0x1c, %a13
+
+    ld.a %a13, [%a10]0x70 /* Guest a12 */
+    st.a  [%a12]0x20, %a13
+
+    ld.a %a13, [%a10]0x74 /* Guest a13 */
+    st.a  [%a12]0x24, %a13
+
+    ld.a %a13, [%a10]0x78 /* Guest a14 */
+    st.a  [%a12]0x28, %a13
+
+    ld.a %a13, [%a10]0x7c /* Guest a15 */
+    st.a  [%a12]0x2c, %a13
+
+    ld.a %a13, [%a10]0x30 /* Guest d12 */
+    st.a  [%a12]0x30, %a13
+
+    ld.a %a13, [%a10]0x34 /* Guest d13 */
+    st.a  [%a12]0x34, %a13
+
+    ld.a %a13, [%a10]0x38 /* Guest d14 */
+    st.a  [%a12]0x38, %a13
+
+    ld.a %a13, [%a10]0x3c /* Guest d15 */
+    st.a  [%a12]0x3c, %a13
+
+    ld.a a11, [%a10]0x80 /* address to return to */
+
     rfh
 
 oops:
@@ -283,7 +347,6 @@ non_mskbl_interrupt_handler:
 .global _irq_handler
 _irq_handler
     VM_EXIT
-    /* TODO identify interrupt */
     j ir_handle
     VM_ENTRY
 

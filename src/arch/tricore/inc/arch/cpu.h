@@ -15,8 +15,6 @@ extern cpuid_t CPU_MASTER;
 #define MPU_ARCH_MAX_NUM_ENTRIES 32
 
 struct cpu_arch {
-    unsigned hart_id;
-    unsigned plic_cntxt;
     struct {
         BITMAP_ALLOC(bitmap, MPU_ARCH_MAX_NUM_ENTRIES);
         /**
