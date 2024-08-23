@@ -11,7 +11,7 @@
 #include <mem.h>
 #include <platform.h>
 #include <vm.h>
-#include <arch/csrs.h>
+#include <arch/csfrs.h>
 #include <fences.h>
 #include <arch/aclint.h>
 
@@ -31,7 +31,8 @@ void interrupts_arch_init()
 
 void interrupts_arch_ipi_send(cpuid_t target_cpu, irqid_t ipi_id)
 {
-    ir_send_ipi(target_cpu, ipi_id);
+    (void)ipi_id;
+    ir_send_ipi(target_cpu);
 }
 
 void interrupts_arch_enable(irqid_t int_id, bool en)

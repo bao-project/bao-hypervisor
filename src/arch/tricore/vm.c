@@ -4,11 +4,12 @@
  */
 
 #include <vm.h>
-#include <arch/csrs.h>
-/* #include <ir.h> */
+#include <arch/csfrs.h>
+#include <arch/vir.h>
 #include <arch/instructions.h>
 #include <string.h>
 #include <config.h>
+#include <platform.h>
 
 void vm_arch_init(struct vm* vm, const struct vm_config* vm_config)
 {
@@ -16,7 +17,7 @@ void vm_arch_init(struct vm* vm, const struct vm_config* vm_config)
     (void) vm_config;
 
     if (vm->master == cpu()->id) {
-        vir_init(vm, &vm_config->platform.arch.ir);
+        vir_init(vm, &vm_config->platform.arch.vir);
     }
     cpu_sync_and_clear_msgs(&vm->sync);
 }
@@ -62,7 +63,9 @@ void vcpu_writepc(struct vcpu* vcpu, unsigned long pc)
 
 void vcpu_arch_run(struct vcpu* vcpu)
 {
-    if (vcpu->arch.scr_ctx.state == STARTED) {
+    (void)vcpu;
+    /* if (vcpu->arch.scr_ctx.state == STARTED) { */
+    if (1) {
         vcpu_arch_entry();
     } else {
         cpu_idle();

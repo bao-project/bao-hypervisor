@@ -20,9 +20,11 @@ struct platform platform = {
         }
     },
 
-    .ir = {
-        .int_base = 0xF0030000,
-        .src_base = 0xF0032000,
+    .arch = {
+        .ir = {
+            .int_addr = 0xF0030000,
+            .src_addr = 0xF0032000,
+        },
     },
 
     .console = {

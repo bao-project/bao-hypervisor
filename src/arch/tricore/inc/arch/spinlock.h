@@ -17,27 +17,26 @@
 #define __ARCH_SPINLOCK__
 
 
-typedef volatile uint32_t spinlock_t __attribute__((aligned(4)));
+typedef struct {
+    uint32_t spinlock_t;
+} spinlock_t;
 
-#define SPINLOCK_INITVAL    (0)
+#define SPINLOCK_INITVAL ((spinlock_t){0})
 
 static inline unsigned int cmpAndSwap (unsigned int volatile *address,
            unsigned int value, unsigned int condition)
 {
-  unsigned long reg64 = 0;
+  unsigned long long reg64;
 
-  (void) address;
-  (void) value;
-  (void) condition;
-  /* __asm volatile ( */
-  /*   "mov        %A[reg], %[cond], %[val]\n\t" */
-  /*   "cmpswap.w [%[addr]], %A[reg]" : */
-  /*   [reg] "=d" (reg64) : */
-  /*   [addr] "a" (address), */
-  /*   [cond] "d" (condition), */
-  /*   [val] "d" (value) : */
-  /*   "memory"); */
-  return (unsigned int)reg64;
+  __asm__ volatile (
+    "mov        %A[reg], %[cond], %[val]\n\t"
+    "cmpswap.w [%[addr]]0, %A[reg]" :
+    [reg] "=d" (reg64) :
+    [addr] "a" (address),
+    [cond] "d" (condition),
+    [val] "d" (value) :
+    "memory");
+  return reg64;
 }
 
 /* TODO: ticket lock */
@@ -62,7 +61,7 @@ static inline void spin_lock(spinlock_t* lock){
 
 static inline void spin_unlock(spinlock_t* lock){
 
-    *lock = 0;
+    *lock = SPINLOCK_INITVAL;
 }
 
 #endif /* __ARCH_SPINLOCK__ */

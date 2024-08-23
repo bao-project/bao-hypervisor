@@ -283,7 +283,7 @@ endif
 
 $(ld_script_temp).d: $(ld_script)
 	@echo "Creating dependency	$(patsubst $(cur_dir)/%, %, $<)"
-	@$(cc) -x assembler-with-cpp  -MM -MT "$(ld_script_temp) $@" \
+	@$(cc) $(CFLAGS) -x assembler-with-cpp  -MM -MT "$(ld_script_temp) $@" \
 		$(addprefix -I, $(inc_dirs))  $< > $@
 
 $(build_dir)/%.d : $(src_dir)/%.[c,S]
@@ -291,8 +291,8 @@ $(build_dir)/%.d : $(src_dir)/%.[c,S]
 	@$(cc) $(CFLAGS) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $< > $@
 
 $(objs-y):
-	echo "Compiling source	$(patsubst $(cur_dir)/%, %, $<)"
-	$(cc) $(ASFLAGS) $(CFLAGS) -c $< -o $@
+	@echo "Compiling source	$(patsubst $(cur_dir)/%, %, $<)"
+	@$(cc) $(ASFLAGS) $(CFLAGS) -c $< -o $@
 
 %.bin: %.elf
 	@echo "Generating binary	$(patsubst $(cur_dir)/%, %, $@)"

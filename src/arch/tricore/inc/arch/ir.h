@@ -8,15 +8,16 @@
 
 #include <bao.h>
 #include <platform.h>
+#include <vm.h>
 
 #define IR_MAX_INTERRUPTS (2024U)
 #define IR_MAX_ISP        (11U)
 #define IR_MAX_VM         (8U)
 #define IR_MAX_GROUPS     (16U)
-#define IR_MAX_SW_INT      (8U)
+#define IR_MAX_SW_INT     (8U)
 #define IR_MAX_PRIO       (255U)
 #define IR_MIN_PRIO       (0U)
-#define IR_TARGET_NONE       (0xfU)
+#define IR_TARGET_NONE    (0xfU)
 
 
 #ifndef PLAT_IR_MAX_INTERRUPTS
@@ -155,7 +156,7 @@ struct ir_src_hw {
 } __attribute__((__packed__, aligned(PAGE_SIZE)));
 
 struct ir_gpsr_hw {
-    volatile uint32_t SRC_GPSRG_SR[PLAT_CPU_NUM];
+    volatile uint32_t SRC_GPSRG_SR[8];
 } __attribute__((__packed__, aligned(PAGE_SIZE)));
 
 struct IR_ACCESSEN {
@@ -173,7 +174,7 @@ struct ir_int_gpsrg_swc {
 };
 
 struct ir_int_gpsrg {
-    volatile struct ir_int_gpsr_swc SWC[IR_MAX_SW_INT]; // 0x0700U
+    volatile struct ir_int_gpsrg_swc SWC[IR_MAX_SW_INT]; // 0x0700U
 };
 
 struct ir_int_tos {
@@ -224,8 +225,8 @@ extern size_t IR_IMPL_INTERRUPTS;
 void ir_init(void);
 void ir_cpu_init(void);
 void ir_handle(void);
-void ir_set_enbl(size_t cntxt, irqid_t int_id, bool en);
-bool ir_get_enbl(size_t cntxt, irqid_t int_id);
+void ir_set_enbl(irqid_t int_id, bool en);
+bool ir_get_enbl(irqid_t int_id);
 void ir_set_prio(irqid_t int_id, uint32_t prio);
 uint32_t ir_get_prio(irqid_t int_id);
 bool ir_get_pend(irqid_t int_id);
@@ -233,5 +234,7 @@ bool ir_set_pend(irqid_t int_id);
 bool ir_clr_pend(irqid_t int_id);
 void ir_send_ipi(cpuid_t target_cpu);
 
+struct vm;
+void ir_assign_icu_to_vm(unsigned long id, struct vm* vm);
 
 #endif /* __IR_H__ */

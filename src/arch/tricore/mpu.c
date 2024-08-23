@@ -6,7 +6,7 @@
 #include "types.h"
 #include <mem.h>
 #include <cpu.h>
-#include <arch/sysregs.h>
+#include <arch/csfrs.h>
 #include <arch/fences.h>
 
 #define VM_PSR (1)
@@ -21,319 +21,177 @@ static inline size_t mpu_num_entries()
 
 /* Protection Range Registers */
 
-#define CSR_GEN_PRx(x)                                                             \
-    static inline unsigned long csr_get_dpr##x##_l(void)                           \
-    {                                                                              \
-        unsigned long val;                                                         \
-        asm inline("mfcsr %d[reg], HRHV_DPR"STR(x)"_L\n\t" [reg] "=d" (val) : : );      \
-        return val;                                                                \
-    }                                                                              \
-    static inline unsigned long csr_get_dpr##x##_u(void)                           \
-    {                                                                              \
-        unsigned long val;                                                         \
-        asm inline("mfcsr %d[reg], HRHV_DPR"STR(x)"_U\n\t" [reg] "=d" (val) : : );      \
-        return val;                                                                \
-    }                                                                              \
-    static inline unsigned long csr_get_cpr##x##_l(void)                           \
-    {                                                                              \
-        unsigned long val;                                                         \
-        asm inline("mfcsr %d[reg], HRHV_CPR"STR(x)"_L\n\t" [reg] "=d" (val) : : );      \
-        return val;                                                                \
-    }                                                                              \
-    static inline unsigned long csr_get_cpr##x##_u(void)                           \
-    {                                                                              \
-        unsigned long val;                                                         \
-        asm inline("mfcsr %d[reg], HRHV_CPR"STR(x)"_U\n\t" [reg] "=d" (val) : : );      \
-        return val;                                                                \
-    }                                                                              \
-    static inline unsigned long csr_set_dpr##x##_l(unsigned long val)              \
-    {                                                                              \
-        asm inline("mtcsr HRHV_DPR"STR(x)"_L, %d[reg]\n\t" [reg] : "d" (val) : );  \
-    }                                                                              \
-    static inline unsigned long csr_set_dpr##x##_u(unsigned long val)              \
-    {                                                                              \
-        asm inline("mtcsr HRHV_DPR"STR(x)"_U, %d[reg]\n\t" [reg] : "d" (val) : );  \
-    }                                                                              \
-    static inline unsigned long csr_set_cpr##x##_l(unsigned long val)              \
-    {                                                                              \
-        asm inline("mtcsr HRHV_CPR"STR(x)"_L, %d[reg]\n\t" [reg] : "d" (val) : );  \
-    }                                                                              \
-    static inline unsigned long csr_set_cpr##x##_u(unsigned long val)              \
-    {                                                                              \
-        asm inline("mtcsr HRHV_CPR"STR(x)"_U, %d[reg]\n\t" [reg] : "d" (val) : );  \
+
+#define CSFR_GEN_PR_READ(m, r)                                                     \
+    static inline unsigned long csfr_##m##pr_##r##_read(mpid_t id)            \
+    {                                                                         \
+        switch(id){                                                           \
+            case 0: return csfr_##m##pr0_##r##_read();                        \
+            case 1: return csfr_##m##pr1_##r##_read();                        \
+            case 2: return csfr_##m##pr2_##r##_read();                        \
+            case 3: return csfr_##m##pr3_##r##_read();                        \
+            case 4: return csfr_##m##pr4_##r##_read();                        \
+            case 5: return csfr_##m##pr5_##r##_read();                        \
+            case 6: return csfr_##m##pr6_##r##_read();                        \
+            case 7: return csfr_##m##pr7_##r##_read();                        \
+            case 8: return csfr_##m##pr8_##r##_read();                        \
+            case 9: return csfr_##m##pr9_##r##_read();                        \
+            case 10: return csfr_##m##pr10_##r##_read();                      \
+            case 11: return csfr_##m##pr11_##r##_read();                      \
+            case 12: return csfr_##m##pr12_##r##_read();                      \
+            case 13: return csfr_##m##pr13_##r##_read();                      \
+            case 14: return csfr_##m##pr14_##r##_read();                      \
+            case 15: return csfr_##m##pr15_##r##_read();                      \
+            default:                                                          \
+                     ERROR("mpu entry outside of supported range");           \
+        }                                                                     \
     }
 
-
-CSR_GEN_PRx(0)
-CSR_GEN_PRx(1)
-CSR_GEN_PRx(2)
-CSR_GEN_PRx(3)
-CSR_GEN_PRx(4)
-CSR_GEN_PRx(5)
-CSR_GEN_PRx(6)
-CSR_GEN_PRx(7)
-CSR_GEN_PRx(8)
-CSR_GEN_PRx(9)
-CSR_GEN_PRx(10)
-CSR_GEN_PRx(11)
-CSR_GEN_PRx(12)
-CSR_GEN_PRx(13)
-CSR_GEN_PRx(14)
-CSR_GEN_PRx(15)
-CSR_GEN_PRx(16)
-CSR_GEN_PRx(17)
-CSR_GEN_PRx(18)
-CSR_GEN_PRx(19)
-CSR_GEN_PRx(20)
-CSR_GEN_PRx(21)
-CSR_GEN_PRx(22)
-CSR_GEN_PRx(23)
-CSR_GEN_PRx(24)
-CSR_GEN_PRx(25)
-CSR_GEN_PRx(26)
-CSR_GEN_PRx(27)
-CSR_GEN_PRx(28)
-CSR_GEN_PRx(29)
-CSR_GEN_PRx(30)
-CSR_GEN_PRx(31)
-
-
-#define CSR_GEN_PR_ACCESSOR(m, r)                                                    \
-    static inline unsigned long csr_get_##m##pr_##r##(mpid_t id)                     \
-    {                                                                                \
-        switch(id){                                                                  \
-            case 0: return csr_get_##m##pr0_##r##();                                 \
-            case 1: return csr_get_##m##pr1_##r##();                                 \
-            case 2: return csr_get_##m##pr2_##r##();                                 \
-            case 3: return csr_get_##m##pr3_##r##();                                 \
-            case 4: return csr_get_##m##pr4_##r##();                                 \
-            case 5: return csr_get_##m##pr5_##r##();                                 \
-            case 6: return csr_get_##m##pr6_##r##();                                 \
-            case 7: return csr_get_##m##pr7_##r##();                                 \
-            case 8: return csr_get_##m##pr8_##r##();                                 \
-            case 9: return csr_get_##m##pr9_##r##();                                 \
-            case 10: return csr_get_##m##pr10_##r##();                               \
-            case 11: return csr_get_##m##pr11_##r##();                               \
-            case 12: return csr_get_##m##pr12_##r##();                               \
-            case 13: return csr_get_##m##pr13_##r##();                               \
-            case 14: return csr_get_##m##pr14_##r##();                               \
-            case 15: return csr_get_##m##pr15_##r##();                               \
-            case 16: return csr_get_##m##pr16_##r##();                               \
-            case 17: return csr_get_##m##pr17_##r##();                               \
-            case 18: return csr_get_##m##pr18_##r##();                               \
-            case 19: return csr_get_##m##pr19_##r##();                               \
-            case 20: return csr_get_##m##pr20_##r##();                               \
-            case 21: return csr_get_##m##pr21_##r##();                               \
-            case 22: return csr_get_##m##pr22_##r##();                               \
-            case 23: return csr_get_##m##pr23_##r##();                               \
-            case 24: return csr_get_##m##pr24_##r##();                               \
-            case 25: return csr_get_##m##pr25_##r##();                               \
-            case 26: return csr_get_##m##pr26_##r##();                               \
-            case 27: return csr_get_##m##pr27_##r##();                               \
-            case 28: return csr_get_##m##pr28_##r##();                               \
-            case 29: return csr_get_##m##pr29_##r##();                               \
-            case 30: return csr_get_##m##pr30_##r##();                               \
-            case 31: return csr_get_##m##pr31_##r##();                               \
-        }                                                                            \
-    }                                                                                \
-    static inline unsigned long csr_set_##m##pr_##r##(mpid_t id, unsigned long val)  \
-    {                                                                                \
-        switch(id){                                                                  \
-            case 0: return csr_set_##m##pr0_##r##(val);                              \
-            case 1: return csr_set_##m##pr1_##r##(val);                              \
-            case 2: return csr_set_##m##pr2_##r##(val);                              \
-            case 3: return csr_set_##m##pr3_##r##(val);                              \
-            case 4: return csr_set_##m##pr4_##r##(val);                              \
-            case 5: return csr_set_##m##pr5_##r##(val);                              \
-            case 6: return csr_set_##m##pr6_##r##(val);                              \
-            case 7: return csr_set_##m##pr7_##r##(val);                              \
-            case 8: return csr_set_##m##pr8_##r##(val);                              \
-            case 9: return csr_set_##m##pr9_##r##(val);                              \
-            case 10: return csr_set_##m##pr10_##r##(val);                            \
-            case 11: return csr_set_##m##pr11_##r##(val);                            \
-            case 12: return csr_set_##m##pr12_##r##(val);                            \
-            case 13: return csr_set_##m##pr13_##r##(val);                            \
-            case 14: return csr_set_##m##pr14_##r##(val);                            \
-            case 15: return csr_set_##m##pr15_##r##(val);                            \
-            case 16: return csr_set_##m##pr16_##r##(val);                            \
-            case 17: return csr_set_##m##pr17_##r##(val);                            \
-            case 18: return csr_set_##m##pr18_##r##(val);                            \
-            case 19: return csr_set_##m##pr19_##r##(val);                            \
-            case 20: return csr_set_##m##pr20_##r##(val);                            \
-            case 21: return csr_set_##m##pr21_##r##(val);                            \
-            case 22: return csr_set_##m##pr22_##r##(val);                            \
-            case 23: return csr_set_##m##pr23_##r##(val);                            \
-            case 24: return csr_set_##m##pr24_##r##(val);                            \
-            case 25: return csr_set_##m##pr25_##r##(val);                            \
-            case 26: return csr_set_##m##pr26_##r##(val);                            \
-            case 27: return csr_set_##m##pr27_##r##(val);                            \
-            case 28: return csr_set_##m##pr28_##r##(val);                            \
-            case 29: return csr_set_##m##pr29_##r##(val);                            \
-            case 30: return csr_set_##m##pr30_##r##(val);                            \
-            case 31: return csr_set_##m##pr31_##r##(val);                            \
-        }                                                                            \
+#define CSFR_GEN_PR_WRITE(m, r)                                                     \
+    static inline void csfr_##m##pr_##r##_write(mpid_t id, unsigned long val) \
+    {                                                                         \
+        switch(id){                                                           \
+            case 0: return csfr_##m##pr0_##r##_write(val);                    \
+            case 1: return csfr_##m##pr1_##r##_write(val);                    \
+            case 2: return csfr_##m##pr2_##r##_write(val);                    \
+            case 3: return csfr_##m##pr3_##r##_write(val);                    \
+            case 4: return csfr_##m##pr4_##r##_write(val);                    \
+            case 5: return csfr_##m##pr5_##r##_write(val);                    \
+            case 6: return csfr_##m##pr6_##r##_write(val);                    \
+            case 7: return csfr_##m##pr7_##r##_write(val);                    \
+            case 8: return csfr_##m##pr8_##r##_write(val);                    \
+            case 9: return csfr_##m##pr9_##r##_write(val);                    \
+            case 10: return csfr_##m##pr10_##r##_write(val);                  \
+            case 11: return csfr_##m##pr11_##r##_write(val);                  \
+            case 12: return csfr_##m##pr12_##r##_write(val);                  \
+            case 13: return csfr_##m##pr13_##r##_write(val);                  \
+            case 14: return csfr_##m##pr14_##r##_write(val);                  \
+            case 15: return csfr_##m##pr15_##r##_write(val);                  \
+        }                                                                     \
     }
 
 /* data */
-#define CSR_GEN_PR_ACCESSOR(d, u)
-#define CSR_GEN_PR_ACCESSOR(d, l)
+CSFR_GEN_PR_WRITE(d, u)
+CSFR_GEN_PR_WRITE(d, l)
 /* code */
-#define CSR_GEN_PR_ACCESSOR(c, u)
-#define CSR_GEN_PR_ACCESSOR(c, l)
+CSFR_GEN_PR_READ(c, u)
+CSFR_GEN_PR_READ(c, l)
 
-void get_pr_l(mpid_t mpid)
+CSFR_GEN_PR_WRITE(c, u)
+CSFR_GEN_PR_WRITE(c, l)
+
+unsigned long get_pr_l(mpid_t mpid)
 {
     /* cpr and dpr refer to the same region */
-    csr_get_cpr_l(mpid);
+    return csfr_cpr_l_read(mpid);
 }
 
-void get_pr_u(mpid_t mpid)
+unsigned long get_pr_u(mpid_t mpid)
 {
     /* cpr and dpr refer to the same region */
-    csr_get_cpr_u(mpid);
+    return csfr_cpr_u_read(mpid);
 }
 
 void set_pr_l(mpid_t mpid, unsigned long addr)
 {
     /* make cpr and dpr refer to the same region */
-    csr_set_cpr_l(mpid, addr);
-    csr_set_dpr_l(mpid, addr);
+    csfr_cpr_l_write(mpid, addr);
+    csfr_dpr_l_write(mpid, addr);
 }
 
 void set_pr_u(mpid_t mpid, unsigned long addr)
 {
     /* make cpr and dpr refer to the same region */
-    csr_set_cpr_u(mpid, addr);
-    csr_set_dpr_u(mpid, addr);
+    csfr_cpr_u_write(mpid, addr);
+    csfr_dpr_u_write(mpid, addr);
 }
 
-/* Protection Read/Write/Execute Enable Registers */
 
-#define CSR_GEN_Px(x)                                                            \
-    static inline unsigned long csr_get_dpre##x##(mpid_t id)                     \
-    {                                                                            \
-        unsigned long val;                                                       \
-        asm inline("mfcsr %d[reg], HRHV_DPRE_"STR(x)"\n\t" [reg] "=d" (val) : : );    \
-        return val & (1 << id);                                                  \
-    }                                                                            \
-    static inline unsigned long csr_get_dpwe##x##(mpid_t id)                     \
-    {                                                                            \
-        unsigned long val;                                                       \
-        asm inline("mfcsr %d[reg], HRHV_DPWE_"STR(x)"\n\t" [reg] "=d" (val) : : );    \
-        return val & (1 << id);                                                  \
-    }                                                                            \
-    static inline unsigned long csr_get_cpxe##x##(mpid_t id)                     \
-    {                                                                            \
-        unsigned long val;                                                       \
-        asm inline("mfcsr %d[reg], HRHV_CPXE_"STR(x)"\n\t" [reg] "=d" (val) : : );    \
-        return val & (1 << id);                                                  \
-    }                                                                            \
-    static inline unsigned long csr_set_dpre##x##(mpid_t id, unsigned long val)  \
-    {                                                                            \
-        asm inline("mtcsr HRHV_DPRE_"STR(x)", %d[reg]\n\t" [reg] : "d" (val) : );     \
-    }                                                                            \
-    static inline unsigned long csr_set_dpwe##x##(mpid_t id, unsigned long val)  \
-    {                                                                            \
-        asm inline("mtcsr HRHV_DPRE_"STR(x)", %d[reg]\n\t" [reg] : "d" (val) : );     \
-    }                                                                            \
-    static inline unsigned long csr_set_cpxe##x##(mpid_t id, unsigned long val)  \
-    {                                                                            \
-        asm inline("mtcsr HRHV_DPRE_"STR(x)", %d[reg]\n\t" [reg] : "d" (val) : );     \
-    }
-
-CSR_GEN_Px(0)
-CSR_GEN_Px(1)
-CSR_GEN_Px(2)
-CSR_GEN_Px(3)
-CSR_GEN_Px(4)
-CSR_GEN_Px(5)
-CSR_GEN_Px(6)
-CSR_GEN_Px(7)
-
-#define GEN_P_ACCESSOR(m)                                                      \
-    static inline bool get_##m##(psid_t psid, mpid_t mpid)                     \
-    {                                                                          \
-        unsigned long val = 0;                                                 \
-        switch(psid){                                                          \
-            case 0: val = csr_get_##m##0(mpid);                                \
-                break;                                                         \
-            case 1: val = csr_get_##m##1(mpid);                                \
-                break;                                                         \
-            case 2: val = csr_get_##m##2(mpid);                                \
-                break;                                                         \
-            case 3: val = csr_get_##m##3(mpid);                                \
-                break;                                                         \
-            case 4: val = csr_get_##m##4(mpid);                                \
-                break;                                                         \
-            case 5: val = csr_get_##m##5(mpid);                                \
-                break;                                                         \
-            case 6: val = csr_get_##m##6(mpid);                                \
-                break;                                                         \
-            case 7: val = csr_get_##m##7(mpid);                                \
-                break;                                                         \
-        }                                                                      \
-        return !!(val & (1 << mpid));                                          \
-    }                                                                          \
-    static inline void set_##m##(psid_t psid, mpid_t mpid, bool val)  \
-    {                                                                          \
-        switch(psid){                                                          \
-            case 0:                                                            \
-                unsigned long tmp = csr_get_##m##0(mpid);                      \
-                if(val)                                                        \
-                    tmp |= 1 << mpid;                                          \
-                else                                                           \
-                    tmp &= ~(1 << mpid);                                       \
-                return csr_set_##m##0(mpid, val);                              \
-            case 1:                                                            \
-                unsigned long tmp = csr_get_##m##1(mpid);                      \
-                if(val)                                                        \
-                    tmp |= 1 << mpid;                                          \
-                else                                                           \
-                    tmp &= ~(1 << mpid);                                       \
-                return csr_set_##m##1(mpid, val);                              \
-            case 2:                                                            \
-                unsigned long tmp = csr_get_##m##2(mpid);                      \
-                if(val)                                                        \
-                    tmp |= 1 << mpid;                                          \
-                else                                                           \
-                    tmp &= ~(1 << mpid);                                       \
-                return csr_set_##m##2(mpid, val);                              \
-            case 3:                                                            \
-                unsigned long tmp = csr_get_##m##3(mpid);                      \
-                if(val)                                                        \
-                    tmp |= 1 << mpid;                                          \
-                else                                                           \
-                    tmp &= ~(1 << mpid);                                       \
-                return csr_set_##m##3(mpid, val);                              \
-            case 4:                                                            \
-                unsigned long tmp = csr_get_##m##4(mpid);                      \
-                if(val)                                                        \
-                    tmp |= 1 << mpid;                                          \
-                else                                                           \
-                    tmp &= ~(1 << mpid);                                       \
-                return csr_set_##m##4(mpid, val);                              \
-            case 5:                                                            \
-                unsigned long tmp = csr_get_##m##5(mpid);                      \
-                if(val)                                                        \
-                    tmp |= 1 << mpid;                                          \
-                else                                                           \
-                    tmp &= ~(1 << mpid);                                       \
-                return csr_set_##m##5(mpid, val);                              \
-            case 6:                                                            \
-                unsigned long tmp = csr_get_##m##6(mpid);                      \
-                if(val)                                                        \
-                    tmp |= 1 << mpid;                                          \
-                else                                                           \
-                    tmp &= ~(1 << mpid);                                       \
-                return csr_set_##m##6(mpid, val);                              \
-            case 7:                                                            \
-                unsigned long tmp = csr_get_##m##7(mpid);                      \
-                if(val)                                                        \
-                    tmp |= 1 << mpid;                                          \
-                else                                                           \
-                    tmp &= ~(1 << mpid);                                       \
-                return csr_set_##m##7(mpid, val);                              \
-        }                                                                      \
+#define GEN_P_ACCESSOR(m)                                                 \
+    static inline bool get_##m(unsigned long psid, mpid_t mpid)           \
+    {                                                                     \
+        unsigned long val = 0;                                            \
+        switch(psid){                                                     \
+            case 0: val = csfr_##m##_0_read();                            \
+                break;                                                    \
+            case 1: val = csfr_##m##_1_read();                            \
+                break;                                                    \
+            case 2: val = csfr_##m##_2_read();                            \
+                break;                                                    \
+            case 3: val = csfr_##m##_3_read();                            \
+                break;                                                    \
+            case 4: val = csfr_##m##_4_read();                            \
+                break;                                                    \
+            case 5: val = csfr_##m##_5_read();                            \
+                break;                                                    \
+            case 6: val = csfr_##m##_6_read();                            \
+                break;                                                    \
+            case 7: val = csfr_##m##_7_read();                            \
+                break;                                                    \
+        }                                                                 \
+        return !!(val & (1 << mpid));                                     \
+    }                                                                     \
+    static inline void set_##m(unsigned long psid, mpid_t mpid, bool val) \
+    {                                                                     \
+        unsigned long tmp = 0;  \
+        switch(psid){                                                     \
+            case 0:                                                       \
+                tmp = csfr_##m##_0_read();              \
+                if(val)                                                   \
+                    tmp |= 1 << mpid;                                     \
+                else                                                      \
+                    tmp &= ~(1 << mpid);                                  \
+                return csfr_##m##_0_write(tmp);                       \
+            case 1:                                                       \
+                tmp = csfr_##m##_1_read();              \
+                if(val)                                                   \
+                    tmp |= 1 << mpid;                                     \
+                else                                                      \
+                    tmp &= ~(1 << mpid);                                  \
+                return csfr_##m##_1_write(tmp);                       \
+            case 2:                                                       \
+                tmp = csfr_##m##_2_read();              \
+                if(val)                                                   \
+                    tmp |= 1 << mpid;                                     \
+                else                                                      \
+                    tmp &= ~(1 << mpid);                                  \
+                return csfr_##m##_2_write(tmp);                       \
+            case 3:                                                       \
+                tmp = csfr_##m##_3_read();              \
+                if(val)                                                   \
+                    tmp |= 1 << mpid;                                     \
+                else                                                      \
+                    tmp &= ~(1 << mpid);                                  \
+                return csfr_##m##_3_write(tmp);                       \
+            case 4:                                                       \
+                tmp = csfr_##m##_4_read();              \
+                if(val)                                                   \
+                    tmp |= 1 << mpid;                                     \
+                else                                                      \
+                    tmp &= ~(1 << mpid);                                  \
+                return csfr_##m##_4_write(tmp);                       \
+            case 5:                                                       \
+                tmp = csfr_##m##_5_read();              \
+                if(val)                                                   \
+                    tmp |= 1 << mpid;                                     \
+                else                                                      \
+                    tmp &= ~(1 << mpid);                                  \
+                return csfr_##m##_5_write(tmp);                       \
+            case 6:                                                       \
+                tmp = csfr_##m##_6_read();              \
+                if(val)                                                   \
+                    tmp |= 1 << mpid;                                     \
+                else                                                      \
+                    tmp &= ~(1 << mpid);                                  \
+                return csfr_##m##_6_write(val);                       \
+            case 7:                                                       \
+                tmp = csfr_##m##_7_read();              \
+                if(val)                                                   \
+                    tmp |= 1 << mpid;                                     \
+                else                                                      \
+                    tmp &= ~(1 << mpid);                                  \
+                return csfr_##m##_7_write(val);                       \
+        }                                                                 \
     }
 
 GEN_P_ACCESSOR(dpre)
@@ -351,7 +209,7 @@ static void mpu_entry_get_region(mpid_t mpid, struct mp_region* mpe)
     bool read  = get_dpre(ps, mpid);
     bool write = get_dpwe(ps, mpid);
     if(exec || read || write)
-        mpe.mem_flags.el1 = true;
+        mpe->mem_flags.vm = true;
 
     mpe->mem_flags.exec = exec;
     mpe->mem_flags.read = read;
@@ -362,11 +220,11 @@ static void mpu_entry_get_region(mpid_t mpid, struct mp_region* mpe)
     read  = get_dpre(ps, mpid);
     write = get_dpwe(ps, mpid);
     if(exec || read || write)
-        mpe.mem_flags.el2 = true;
+        mpe->mem_flags.hyp = true;
 
-    mpe->mem_flags.exec ||= exec;
-    mpe->mem_flags.read ||= read;
-    mpe->mem_flags.write ||= write;
+    mpe->mem_flags.exec = exec || mpe->mem_flags.exec;
+    mpe->mem_flags.read = read || mpe->mem_flags.read;
+    mpe->mem_flags.write = write || mpe->mem_flags.write;
 
     mpe->base = l;
     mpe->size = u - l;
@@ -401,17 +259,17 @@ static void mpu_entry_set(mpid_t mpid, struct mp_region* mpr)
     unsigned long ps = VM_PSR;
     if(mpr->mem_flags.vm){
         ps = VM_PSR;
-        set_cpxe(ps, pmid, mpr->mem_flags.exec);
-        set_dpre(ps, pmid, mpr->mem_flags.read);
-        set_dpwe(ps, pmid, mpr->mem_flags.write);
+        set_cpxe(ps, mpid, mpr->mem_flags.exec);
+        set_dpre(ps, mpid, mpr->mem_flags.read);
+        set_dpwe(ps, mpid, mpr->mem_flags.write);
     }
 
     /* TODO this is duplicate code */
     if(mpr->mem_flags.hyp){
         ps = HYP_PSR;
-        set_cpxe(ps, pmid, mpr->mem_flags.exec);
-        set_dpre(ps, pmid, mpr->mem_flags.read);
-        set_dpwe(ps, pmid, mpr->mem_flags.write);
+        set_cpxe(ps, mpid, mpr->mem_flags.exec);
+        set_dpre(ps, mpid, mpr->mem_flags.read);
+        set_dpwe(ps, mpid, mpr->mem_flags.write);
     }
 
     list_insert_ordered(&cpu()->arch.mpu.order.list,
@@ -477,20 +335,9 @@ static bool mpu_entry_has_priv(mpid_t mpid, priv_t priv)
 
 static inline perms_t mem_vmpu_entry_perms(struct mp_region* mpr)
 {
-    /* TODO we need to know the address space */
-    unsigned long ps = VM_PSR;
-    unsigned long dre = get_dpre(ps, mpid);
-    unsigned long dwe = get_dpwe(ps, mpid);
-    unsigned long cxe = get_cpxe(ps, mpid);
-
-    ps = HYP_PSR;
-    dre |= get_dpre(ps, mpid);
-    dwe |= get_dpwe(ps, mpid);
-    cxe |= get_cpxe(ps, mpid);
-
-    perms_t perms = cxe ? PERM_X : 0;
-    perms | = dre ? PERM_R : 0;
-    perms | = dwe ? PERM_W : 0;
+    perms_t perms = mpr->mem_flags.exec ? PERM_X : 0;
+    perms |= mpr->mem_flags.read ? PERM_R : 0;
+    perms |= mpr->mem_flags.write ? PERM_W : 0;
 
     return perms;
 }
@@ -531,7 +378,17 @@ static inline bool mpu_perms_equivalent(struct mpu_perms* p1, struct mpu_perms* 
 static inline bool mpu_entry_attrs_equivalent(struct mp_region* mpr1, struct mp_region* mpr2)
 {
     /* TODO make sure it is correct */
-    return mpr1->mem_flags == mpr2->mem_flags;
+    if(mpr1->mem_flags.write == mpr2->mem_flags.write)
+        return false;
+    if(mpr1->mem_flags.read == mpr2->mem_flags.read)
+        return false;
+    if(mpr1->mem_flags.exec == mpr2->mem_flags.exec)
+        return false;
+    if(mpr1->mem_flags.vm == mpr2->mem_flags.vm)
+        return false;
+    if(mpr1->mem_flags.hyp == mpr2->mem_flags.hyp)
+        return false;
+    return true;
 }
 
 static mpid_t mpu_entry_allocate()

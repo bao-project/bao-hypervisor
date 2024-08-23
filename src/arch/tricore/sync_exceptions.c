@@ -7,7 +7,7 @@
 #include <cpu.h>
 #include <vm.h>
 #include <arch/encoding.h>
-#include <arch/csrs.h>
+#include <arch/csfrs.h>
 #include <arch/instructions.h>
 
 /* static void internal_exception_handler(unsigned long gprs[]) */

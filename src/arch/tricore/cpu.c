@@ -5,7 +5,6 @@
 
 #include <bao.h>
 #include <cpu.h>
-#include <arch/scr.h>
 #include <platform.h>
 
 cpuid_t CPU_MASTER __attribute__((section(".data")));

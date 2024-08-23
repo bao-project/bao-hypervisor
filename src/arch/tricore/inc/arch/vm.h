@@ -7,9 +7,12 @@
 #define __ARCH_VM_H__
 
 #include <bao.h>
-#include <arch/scr.h>
+#include <arch/csfrs.h>
 #include <cpu.h>
 #include <arch/interrupts.h>
+#include <arch/vir.h>
+#include <emul.h>
+#include <vm.h>
 
 #define REG_D0  (1)
 #define REG_D1  (2)
@@ -45,40 +48,45 @@
 #define REG_A14 (30)
 #define REG_A15 (31)
 
-struct vir_interrupt {
+struct vir_src {
     node_t node;
     struct vcpu* owner;
     spinlock_t lock;
     irqid_t id;
-    uint8_t state;
     uint8_t prio;
-    uint32_t target
+    uint32_t target;
     bool enabled;
 };
 
-struct vir {
-    struct vir_interrupt* interrupts;
-    spinlock_t lock;
-    size_t int_num;
+
+struct vir_dscrp {
+    paddr_t int_addr;
+    paddr_t src_addr;
 };
+
 struct arch_vm_platform {
-    unsigned int a;
-
     /* interrupt controller */
-
-
-    paddr_t ir_int_addr;
-    paddr_t ir_srb_addr;
+    struct vir_dscrp vir;
 };
+
 
 struct vm_arch {
     /* interrupt controller */
-    unsigned int a;
+    /* TODO needed? struct vir_int vir_int; */
+    struct vir_src *vir_src;
+
+    paddr_t vir_int_addr;
+    spinlock_t vir_int_lock;
+    paddr_t vir_src_addr;
+    spinlock_t vir_src_lock;
+
+    struct emul_mem vir_int_emul;
+    struct emul_mem vir_src_emul;
 };
 
 struct vcpu_arch {
     vcpuid_t core_id;
-    struct scr_ctx scr_ctx;
+    /* TODO CPU power state ctx */
 };
 
 struct arch_regs {
@@ -150,6 +158,15 @@ static inline void vcpu_arch_inject_irq(struct vcpu* vcpu, irqid_t id)
     (void)id;
     /* virqc_inject(vcpu, id); */
 }
+
+void vir_vcpu_init(struct vcpu *vcpu);
+
+void ir_config_irq(irqid_t int_id, bool en);
+
+struct vm;
+void ir_assign_int_to_vm(struct vm* vm, irqid_t id);
+
+void ir_assign_int_to_vm(struct vm* vm, irqid_t id);
 
 #endif /* __ARCH_VM_H__ */
 

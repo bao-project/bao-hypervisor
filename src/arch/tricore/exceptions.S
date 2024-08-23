@@ -3,45 +3,49 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
+#include <asm_defs.h>
+#include <arch/csfrs.h>
+
 #define ENTRY_SIZE   (0x20)
 
 .text 
 
 .macro SAVE_HYP_GPRS
-    st.d [%a10]0x0, d0
-    st.d [%a10]0x4, d1
-    st.d [%a10]0x8, d2
-    st.d [%a10]0xc, d3
-    st.d [%a10]0x10, d4
-    st.d [%a10]0x14, d5
-    st.d [%a10]0x18, d6
-    st.d [%a10]0x1c, d7
-    st.d [%a10]0x20, d8
-    st.d [%a10]0x24, d9
-    st.d [%a10]0x28, d10
-    st.d [%a10]0x2c, d11
-    st.d [%a10]0x30, d12
-    st.d [%a10]0x34, d13
-    st.d [%a10]0x38, d14
-    st.d [%a10]0x3c, d15
+    st.w [%a10]0x0, %d0
+    st.w [%a10]0x4, %d1
+    st.w [%a10]0x8, %d2
+    st.w [%a10]0xc, %d3
+    st.w [%a10]0x10, %d4
+    st.w [%a10]0x14, %d5
+    st.w [%a10]0x18, %d6
+    st.w [%a10]0x1c, %d7
+    st.w [%a10]0x20, %d8
+    st.w [%a10]0x24, %d9
+    st.w [%a10]0x28, %d10
+    st.w [%a10]0x2c, %d11
+    st.w [%a10]0x30, %d12
+    st.w [%a10]0x34, %d13
+    st.w [%a10]0x38, %d14
+    st.w [%a10]0x3c, %d15
 
-    st.a [%a10]0x40, a0
-    st.a [%a10]0x44, a1
-    st.a [%a10]0x48, a2
-    st.a [%a10]0x4c, a3
-    st.a [%a10]0x50, a4
-    st.a [%a10]0x54, a5
-    st.a [%a10]0x58, a6
-    st.a [%a10]0x5c, a7
-    st.a [%a10]0x60, a8
-    st.a [%a10]0x64, a9
-    mov.a %a9, %a10
-    st.a [%a10]0x68, a9
-    st.a [%a10]0x6c, a11
-    st.a [%a10]0x70, a12
-    st.a [%a10]0x74, a13
-    st.a [%a10]0x78, a14
-    st.a [%a10]0x7c, a15
+    st.a [%a10]0x40, %a0
+    st.a [%a10]0x44, %a1
+    st.a [%a10]0x48, %a2
+    st.a [%a10]0x4c, %a3
+    st.a [%a10]0x50, %a4
+    st.a [%a10]0x54, %a5
+    st.a [%a10]0x58, %a6
+    st.a [%a10]0x5c, %a7
+    st.a [%a10]0x60, %a8
+    st.a [%a10]0x64, %a9
+    mov.d %d0, %a10
+    mov.a %a9, %d0
+    st.a [%a10]0x68, %a9
+    st.a [%a10]0x6c, %a11
+    st.a [%a10]0x70, %a12
+    st.a [%a10]0x74, %a13
+    st.a [%a10]0x78, %a14
+    st.a [%a10]0x7c, %a15
 .endm
 
 .macro GET_CPU_PTR
@@ -59,46 +63,50 @@
 .macro GET_VCPU_REG_PTR
     GET_CPU_PTR
 
-    ld.a    %a10, [%a10]#CPU_VCPU_OFF
-    add     %a10, %a10, #VCPU_REGS_OFF
+    ld.a    %a10, [%a10] CPU_VCPU_OFF
+    mov.a   %a11, VCPU_REGS_OFF
+    add.a   %a10, %a11
 .endm
 
 .macro SET_SP
     GET_CPU_PTR
-    ld.a    %a10, [%a10]#CPU_STACK_OFF
-    add     %a10, %a10, #CPU_STACK_SIZE
+
+    ld.a    %a10, [%a10] CPU_STACK_OFF
+    mov     %d9, CPU_STACK_SIZE
+    mov.a   %a11, %d9
+    add.a   %a10, %a11
 .endm
 
 .macro VM_EXIT
     GET_VCPU_REG_PTR
 
     /* save unsave regs */
-    st.d [%a10]0x0, d0
-    st.d [%a10]0x4, d1
-    st.d [%a10]0x8, d2
-    st.d [%a10]0xc, d3
-    st.d [%a10]0x10, d4
-    st.d [%a10]0x14, d5
-    st.d [%a10]0x18, d6
-    st.d [%a10]0x1c, d7
+    st.w [%a10]0x0, %d0
+    st.w [%a10]0x4, %d1
+    st.w [%a10]0x8, %d2
+    st.w [%a10]0xc, %d3
+    st.w [%a10]0x10, %d4
+    st.w [%a10]0x14, %d5
+    st.w [%a10]0x18, %d6
+    st.w [%a10]0x1c, %d7
 
-    st.a [%a10]0x40, a0 // not saved
-    st.a [%a10]0x44, a1 // not saved
-    st.a [%a10]0x48, a2 // Lower Ctx
-    st.a [%a10]0x4c, a3 // Lower Ctx
-    st.a [%a10]0x50, a4 // Lower Ctx
-    st.a [%a10]0x54, a5 // Lower Ctx
-    st.a [%a10]0x58, a6 // Lower Ctx
-    st.a [%a10]0x5c, a7 // Lower Ctx
-    st.a [%a10]0x60, a8 // not saved
-    st.a [%a10]0x64, a9 // not saved
+    st.a [%a10]0x40, %a0 // not saved
+    st.a [%a10]0x44, %a1 // not saved
+    st.a [%a10]0x48, %a2 // Lower Ctx
+    st.a [%a10]0x4c, %a3 // Lower Ctx
+    st.a [%a10]0x50, %a4 // Lower Ctx
+    st.a [%a10]0x54, %a5 // Lower Ctx
+    st.a [%a10]0x58, %a6 // Lower Ctx
+    st.a [%a10]0x5c, %a7 // Lower Ctx
+    st.a [%a10]0x60, %a8 // not saved
+    st.a [%a10]0x64, %a9 // not saved
 
 
     /* TODO how to handle first exit? a CSA needs to be allocated ? */
     /* Save remaining regs from upper context CSA */
-    mfcsr %a12, $PCX
+    mfcr %d0, csfr_pcx
+    mov.a %a12, %d0
 
-    /* actuall
     ld.a  %a13, [%a12]0x8
     st.a [%a10]0x68, %a13 /* Guest a10 */
 
@@ -152,29 +160,30 @@
     GET_VCPU_REG_PTR
 
     /* restore unsave regs */
-    ld.d d0, [%a10]0x0
-    ld.d d1, [%a10]0x4
-    ld.d d2, [%a10]0x8
-    ld.d d3, [%a10]0xc
-    ld.d d4, [%a10]0x10
-    ld.d d5, [%a10]0x14
-    ld.d d6, [%a10]0x18
-    ld.d d7, [%a10]0x1c
+    ld.w %d0, [%a10]0x0
+    ld.w %d1, [%a10]0x4
+    ld.w %d2, [%a10]0x8
+    ld.w %d3, [%a10]0xc
+    ld.w %d4, [%a10]0x10
+    ld.w %d5, [%a10]0x14
+    ld.w %d6, [%a10]0x18
+    ld.w %d7, [%a10]0x1c
 
-    ld.a a0, [%a10]0x40
-    ld.a a1, [%a10]0x44
-    ld.a a2, [%a10]0x48
-    ld.a a3, [%a10]0x4c
-    ld.a a4, [%a10]0x50
-    ld.a a5, [%a10]0x54
-    ld.a a6, [%a10]0x58
-    ld.a a7, [%a10]0x5c
-    ld.a a8, [%a10]0x60
-    ld.a a9, [%a10]0x64
+    ld.a %a0, [%a10]0x40
+    ld.a %a1, [%a10]0x44
+    ld.a %a2, [%a10]0x48
+    ld.a %a3, [%a10]0x4c
+    ld.a %a4, [%a10]0x50
+    ld.a %a5, [%a10]0x54
+    ld.a %a6, [%a10]0x58
+    ld.a %a7, [%a10]0x5c
+    ld.a %a8, [%a10]0x60
+    ld.a %a9, [%a10]0x64
 
 
     /* restore remaining regs to upper context CSA */
-    mfcsr %a12, $PCX
+    mfcr %d9, csfr_pcx
+    mov.a %a12, %d9
 
     ld.a  %a13, [%a10]0x68 /* Guest a10 */
     st.a  [%a12]0x8, %a13
@@ -218,12 +227,12 @@
     ld.a %a13, [%a10]0x3c /* Guest d15 */
     st.a  [%a12]0x3c, %a13
 
-    ld.a a11, [%a10]0x80 /* address to return to */
+    ld.a %a11, [%a10]0x80 /* address to return to */
 
     rfh
 
-oops:
-    j   oops
+1:
+    j   1b
 .endm
 
 
@@ -243,7 +252,7 @@ internal_protection_trap:
 instruction_error:
     j	instruction_error_handler
 
-balign ENTRY_SIZE
+.balign ENTRY_SIZE
 ctx_mgnt:
     j	ctx_mgnt_handler
 
@@ -293,7 +302,7 @@ hyp_interrupt_trap:
 l2_data_mem_prot_trap:
     j	l2_data_mem_prot_trap_handler
 
-balign ENTRY_SIZE
+.balign ENTRY_SIZE
 l2_code_mem_prot_trap:
     j	l2_code_mem_prot_trap_handler
 
@@ -346,7 +355,7 @@ non_mskbl_interrupt_handler:
     j non_mskbl_interrupt_handler
 
 .global _irq_handler
-_irq_handler
+_irq_handler:
     VM_EXIT
     j ir_handle
     VM_ENTRY

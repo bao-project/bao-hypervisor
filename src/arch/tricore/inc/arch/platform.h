@@ -11,8 +11,8 @@
 // Arch-specific platform data
 struct arch_platform {
     struct ir_descript {
-        paddr_t int_base;
-        paddr_t src_base;
+        paddr_t int_addr;
+        paddr_t src_addr;
     } ir;
 };
 

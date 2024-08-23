@@ -7,12 +7,11 @@
 #define __ARCH_CPU_H__
 
 #include <bao.h>
+#include <mem.h>
 
 #define CPU_HAS_EXTENSION(EXT) (DEFINED(EXT))
 
 extern cpuid_t CPU_MASTER;
-
-#define MPU_ARCH_MAX_NUM_ENTRIES 32
 
 struct cpu_arch {
     struct {

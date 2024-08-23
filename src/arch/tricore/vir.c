@@ -3,28 +3,25 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
-#include "inc/arch/ir.h"
 #include <arch/vir.h>
 #include <arch/ir.h>
-
-
 #include <bit.h>
-#include <cstddef>
 #include <spinlock.h>
 #include <cpu.h>
 #include <interrupts.h>
 #include <vm.h>
+#include <arch/vm.h>
 #include <platform.h>
 
 enum VIR_EVENTS { VIR_UPDATE_ENABLE, VIR_ROUTE, VIR_INJECT, VIR_SET_REG };
 extern volatile const size_t VIR_IPI_ID;
 
-#define IRD_IS_REG(REG, offset)                    \
-    (((offset) >= offsetof(struct ird_hw, REG)) && \
-        (offset) < (offsetof(struct ird_hw, REG) + sizeof(ird->REG)))
+#define IR_IS_REG(REG, offset)                    \
+    (((offset) >= offsetof(struct ir_int_hw, REG)) && \
+        (offset) < (offsetof(struct ir_int_hw, REG) + sizeof(ir_int->REG)))
 
-#define IRD_REG_GROUP(REG) ((offsetof(struct ir_int_hw, REG) & 0xffff) >> 8)
-#define IRD_REG_MASK(ADDR) ((ADDR) & (0xffffUL))
+#define IR_REG_GROUP(REG) ((offsetof(struct ir_int_hw, REG) & 0xffff) >> 8)
+#define IR_REG_MASK(ADDR) ((ADDR) & (0xffffUL))
 
 /* #define IRD_REG_IND(REG)   (offsetof(struct ird_hw, REG) & 0x7f) */
 
@@ -40,58 +37,17 @@ extern volatile const size_t VIR_IPI_ID;
 void vir_ipi_handler(uint32_t event, uint64_t data);
 CPU_MSG_HANDLER(vir_ipi_handler, VIR_IPI_ID)
 
-inline struct vir_int* vir_get_int(struct vcpu* vcpu, irqid_t int_id, vcpuid_t virr_id)
+inline struct vir_src* vir_get_int(struct vcpu* vcpu, irqid_t int_id, vcpuid_t vcpu_id)
 {
-    if (int_id >= vcpu->vm->arch.ir_int.int_num) {
-        return NULL;
-    }
+    /* if (int_id >= vcpu->vm->arch.ir_int.int_num) { */
+    /*     return NULL; */
+    /* } */
+    (void)vcpu_id;
 
-    return &vcpu->vm->arch.ir_int.interrupts[int_id - IR_CPU_PRIV];
+    return &vcpu->vm->arch.vir_src[int_id];
 }
 
-static inline bool vir_int_is_hw(struct vir_int* interrupt)
-{
-    return interrupt->hw;
-}
-
-static inline ssize_t irh_get_lr(struct vir_int* interrupt, ir_lr_t* lr)
-{
-    if (!interrupt->in_lr || interrupt->owner->phys_id != cpu()->id) {
-        return -1;
-    }
-
-    ir_lr_t lr_val = (ir_lr_t)irh_read_lr(interrupt->lr);
-    if (((irqid_t)(IRH_LR_VID(lr_val)) == interrupt->id) && (IRH_LR_STATE(lr_val) != INV)) {
-        if (lr != NULL) {
-            *lr = lr_val;
-        }
-        return interrupt->lr;
-    }
-
-    return -1;
-}
-
-static inline uint8_t vir_get_state(struct vir_int* interrupt)
-{
-    uint8_t state = 0;
-
-    ir_lr_t lr_val = 0;
-    if (irh_get_lr(interrupt, &lr_val) >= 0) {
-        state = (uint8_t)IRH_LR_STATE(lr_val);
-    } else {
-        state = interrupt->state;
-    }
-
-#if (IR_VERSION == IRV2)
-    if (interrupt->id < IR_MAX_SGIS && interrupt->sgi.pend) {
-        state |= PEND;
-    }
-#endif
-
-    return state;
-}
-
-bool vir_get_ownership(struct vcpu* vcpu, struct vir_int* interrupt)
+bool vir_get_ownership(struct vcpu* vcpu, struct vir_src* interrupt)
 {
     bool ret = false;
 
@@ -105,17 +61,15 @@ bool vir_get_ownership(struct vcpu* vcpu, struct vir_int* interrupt)
     return ret;
 }
 
-static bool vir_owns(struct vcpu* vcpu, struct vir_int* interrupt)
+static bool vir_owns(struct vcpu* vcpu, struct vir_src* interrupt)
 {
     return interrupt->owner == vcpu;
 }
 
-void vir_yield_ownership(struct vcpu* vcpu, struct vir_int* interrupt)
+void vir_yield_ownership(struct vcpu* vcpu, struct vir_src* interrupt)
 {
-    if ((IR_VERSION == IRV2 && ir_is_priv(interrupt->id)) || !vir_owns(vcpu, interrupt) ||
-        interrupt->in_lr || (vir_get_state(interrupt) & ACT)) {
+    if (!vir_owns(vcpu, interrupt))
         return;
-    }
 
     interrupt->owner = NULL;
 }
@@ -137,100 +91,58 @@ void vir_send_sgi_msg(struct vcpu* vcpu, cpumap_t pcpu_mask, irqid_t int_id)
     }
 }
 
-static void vir_route(struct vcpu* vcpu, struct vir_int* interrupt)
+static void ir_int_emul_accen_access(struct emul_access* acc, cpuid_t vcpuid,
+        volatile struct IR_ACCESSEN* accen)
 {
-    if ((interrupt->state == INV) || !interrupt->enabled) {
-        return;
-    }
-
-    if (vir_int_vcpu_is_target(vcpu, interrupt)) {
-        ir_set_pend(vcpu, interrupt);
-    }
-
-    if (!interrupt->in_lr && vir_int_has_other_target(vcpu, interrupt)) {
-        struct cpu_msg msg = {
-            (uint32_t)VIR_IPI_ID,
-            VIR_ROUTE,
-            VIR_MSG_DATA(vcpu->vm->id, vcpu->id, interrupt->id, 0, 0),
-        };
-        vir_yield_ownership(vcpu, interrupt);
-        cpumap_t trgtlist = vir_int_ptarget_mask(vcpu, interrupt) & ~(1UL << vcpu->phys_id);
-        for (size_t i = 0; i < platform.cpu_num; i++) {
-            if (trgtlist & (1ULL << i)) {
-                cpu_send_msg(i, &msg);
-            }
-        }
-    }
-}
-
-
-#define VIR_ENABLE_MASK ((IR_VERSION == IRV2) ? IRD_CTLR_EN_BIT : IRD_CTLR_ENA_BIT)
-
-static inline void vir_update_enable(struct vcpu* vcpu)
-{
-    UNUSED_ARG(vcpu);
-
-    if (cpu()->vcpu->vm->arch.ir_int.CTLR & VIR_ENABLE_MASK) {
-        irh_set_hcr(irh_get_hcr() | IRH_HCR_En_BIT);
-    } else {
-        irh_set_hcr(irh_get_hcr() & ~IRH_HCR_En_BIT);
-    }
-}
-
-static void ir_int_emul_misc_access(struct emul_access* acc, struct vir_reg_handler_info* handlers,
-    bool irr_access, cpuid_t virr_id)
-{
-    UNUSED_ARG(handlers);
-    UNUSED_ARG(irr_access);
-    UNUSED_ARG(virr_id);
-
-}
-
-
-static void ir_int_emul_accen_acces(struct emul_access* acc, struct vir_reg_handler_info* handlers,
-    cpuid_t vcpuid, struct IR_ACCESSEN* accen)
-{
-    uint32_t acc_addr = IRD_REG_MASK(acc->addr);
-    uint32_t acc_int_offset = acc_addr - field_offset;
+    (void)vcpuid;
+    uint32_t acc_addr = IR_REG_MASK(acc->addr);
+    (void)acc_addr;
+    uint32_t acc_int_offset = 0;// TODO acc_addr - field_offset;
 
     uint32_t idx = acc_int_offset / sizeof(struct IR_ACCESSEN);
+    (void)idx;
 
     /* TODO figure which masters this vm can control */
+    unsigned long field_offset = 0;
 
-    if(field_offset == offsetof(struct IR_ACCESSEN, accen->WRA)){
+    switch(field_offset){
+        case offsetof(struct IR_ACCESSEN, WRA):
         /* TODO */
-    } else if(field_offset == offsetof(struct IR_ACCESSEN, accen->WRB)){
+        case offsetof(struct IR_ACCESSEN, WRB):
         /* TODO */
-    } else if(field_offset == offsetof(struct IR_ACCESSEN, accen->RDA)){
+        case offsetof(struct IR_ACCESSEN, RDA):
         /* TODO */
-    } else if(field_offset == offsetof(struct IR_ACCESSEN, accen->RDB)){
+        case offsetof(struct IR_ACCESSEN, RDB):
         /* TODO */
-    } else if(field_offset == offsetof(struct IR_ACCESSEN, accen->RDB)){
+        case offsetof(struct IR_ACCESSEN, PRS):
         /* TODO */
-    } else if(field_offset == offsetof(struct IR_ACCESSEN, accen->PRS)){
-        /* TODO */
-    } else {
-        ERROR("Trying to access unauthorized ACCESSEN register 0x%x in 0x%x", offset, accen);
+        default:
+            ERROR("Trying to access unauthorized ACCESSEN register 0x%x in 0x%x",
+                    field_offset, accen);
     }
 }
 
-static void ir_int_emul_accensrb_access(struct emul_access* acc, struct vir_reg_handler_info* handlers,
-    cpuid_t vcpuid)
+static void ir_int_emul_accensrb_access(struct emul_access* acc, cpuid_t vcpuid)
 {
     /* TODO: does this work? */
-    uint32_t offset = offsetof(struct ir_int_hw, ir_int->ACCENSRB);
+    uint32_t offset = offsetof(struct ir_int_hw, ACCENSRB);
+
     /* TODO is it okay to modify this? */
     acc->addr -= offset;
-    ir_int_emul_accen_acces(acc, handlers, vcpuid, ir_int->ACCENSRB);
+
+    /* TODO get idx */
+    unsigned long idx = 0;
+    ir_int_emul_accen_access(acc, vcpuid, &ir_int->ACCENSRB[idx]);
 }
 
-static void vir_emul_icu_access(struct emul_access* acc, struct vir_reg_handler_info* handlers,
-    cpuid_t vcpuid)
+static void vir_emul_icu_access(struct emul_access* acc, cpuid_t vcpuid)
 {
-    uint32_t acc_addr = IRD_REG_MASK(acc->addr);
-    uint32_t offset = offsetof(struct ir_int_hw, ir_int->icu);
+    uint32_t acc_addr = IR_REG_MASK(acc->addr);
+    uint32_t offset = offsetof(struct ir_int_hw, ICU);
     uint32_t icu_offset = acc_addr - offset;
     uint32_t idx = icu_offset/sizeof(ir_int->ICU);
+
+    (void)vcpuid;
 
     /* TODO figure out if VM can access ICU */
     bool can_acces_icu = true;
@@ -239,26 +151,26 @@ static void vir_emul_icu_access(struct emul_access* acc, struct vir_reg_handler_
         ERROR("Trying to access unauthorized ICU %u", idx);
     }
 
-    uint32_t field_offset = icu_offset - idx * sizeof(ir_int->icu);
+    uint32_t field_offset = icu_offset - idx * sizeof(ir_int->ICU);
 
-    if(field_offset == offsetof(struct ir_int_icu, ir_int->ICU[0].LASR)){
-        /* TODO */
-    } else if(field_offset == offsetof(struct ir_int_icu, ir_int->ICU[0].ECR)){
-        /* TODO */
-    } else if(field_offset == offsetof(struct ir_int_icu, ir_int->ICU[0].ECTRL)){
-        /* TODO */
-    } else if(field_offset == offsetof(struct ir_int_icu, ir_int->ICU[0].EGEN)){
-        /* TODO */
-    } else {
-        ERROR("Trying to access unauthorized ICU register 0x%x", offset);
+    switch(field_offset){
+        case offsetof(struct ir_int_icu, LASR):
+            /* TODO */
+        case offsetof(struct ir_int_icu, ECR):
+            /* TODO */
+        case offsetof(struct ir_int_icu, ECTRL):
+            /* TODO */
+        case offsetof(struct ir_int_icu, EGEN):
+            /* TODO */
+        default:
+            ERROR("Trying to access unauthorized ICU register 0x%x", offset);
     }
 }
 
-static void vir_emul_tos_access(struct emul_access* acc, struct vir_reg_handler_info* handlers,
-    cpuid_t vcpuid)
+static void vir_emul_tos_access(struct emul_access* acc, cpuid_t vcpuid)
 {
     uint32_t acc_addr = IR_REG_MASK(acc->addr);
-    uint32_t offset = offsetof(struct ir_int_hw, ir_int->TOS);
+    uint32_t offset = offsetof(struct ir_int_hw, TOS);
     uint32_t tos_offset = acc_addr - offset;
     uint32_t idx = tos_offset/sizeof(ir_int->TOS);
 
@@ -272,34 +184,33 @@ static void vir_emul_tos_access(struct emul_access* acc, struct vir_reg_handler_
     uint32_t field_offset = tos_offset - idx * sizeof(ir_int->TOS);
 
     /* TODO cleanup */
-    uint32_t accenscfg_offset = offsetof(struct ir_int_tos, ir_int->TOS[0].ACCENSCFG);
-    uint32_t accensctrl_offset = offsetof(struct ir_int_tos, ir_int->TOS[0].ACCENSCTRL);
+    uint32_t accenscfg_offset = offsetof(struct ir_int_tos, ACCENSCFG);
+    uint32_t accensctrl_offset = offsetof(struct ir_int_tos, ACCENSCTRL);
     uint32_t accen_sz =  sizeof(struct IR_ACCESSEN);
     if(field_offset >= accenscfg_offset && field_offset < accenscfg_offset + accen_sz){
-        uint32_t offset = offsetof(struct ir_int_hw, ir_int->TOS[idx].ACCENSCFG);
         /* TODO ok to do this? */
-        acc->addr -= offset;
-        ir_int_emul_accen_acces(acc, handlers, vcpuid, ir_int->TOS[idx].ACCENSCFG);
+        acc->addr -= accenscfg_offset;
+        ir_int_emul_accen_access(acc, vcpuid, &ir_int->TOS[idx].ACCENSCFG);
     } else if(field_offset >= accensctrl_offset && field_offset < accensctrl_offset + accen_sz){
-        uint32_t offset = offsetof(struct ir_int_hw, ir_int->TOS[idx].ACCENSCTRL);
         /* TODO ok to do this? */
-        acc->addr -= offset;
-        ir_int_emul_accen_acces(acc, handlers, vcpuid, ir_int->TOS[idx].ACCENSCTRL);
+        acc->addr -= accensctrl_offset;
+        ir_int_emul_accen_access(acc, vcpuid, &ir_int->TOS[idx].ACCENSCTRL);
     } else {
         ERROR("Trying to access unknwon TOS register 0x%x", offset);
     }
 }
 
-static void vir_emul_gpsrg_access(struct emul_access* acc, struct vir_reg_handler_info* handlers,
-    cpuid_t vcpuid)
+static void vir_emul_gpsrg_access(struct emul_access* acc, cpuid_t vcpuid)
 {
+    (void)vcpuid;
+
     uint32_t acc_addr = IR_REG_MASK(acc->addr);
     /* start of gpsrg */
-    uint32_t offset = offsetof(struct ir_int_hw, ir_int->gpsrg);
+    uint32_t offset = offsetof(struct ir_int_hw, GPSRG);
     /* offset within the gpsrg array */
     uint32_t gpsrg_offset = acc_addr - offset;
     /* gpsrg array entry */
-    uint32_t idx = gpsrg_offset/sizeof(ir_int->gpsrg);
+    uint32_t idx = gpsrg_offset/sizeof(ir_int->GPSRG);
 
     /* TODO figure out if VM can access gpsrg */
     bool can_acces_gpsrg = true;
@@ -309,16 +220,16 @@ static void vir_emul_gpsrg_access(struct emul_access* acc, struct vir_reg_handle
     }
 
     /* field_offset offset within correct gpsrg */
-    uint32_t field_offset = gpsrg_offset - idx * sizeof(struct ir_int->gpsrg);
+    uint32_t field_offset = gpsrg_offset - idx * sizeof(ir_int->GPSRG);
 
 
     /* TODO this is essentially duplicate code */
     /* start of swc */
-    uint32_t offset = offsetof(struct ir_int_gpsrg, ir_int->GPSRG[0].SWC);
+    offset = offsetof(struct ir_int_gpsrg, SWC);
     /* offset within the swc array */
     uint32_t swc_offset = field_offset - offset;
     /* swc array entry */
-    uint32_t idx = swc_offset/sizeof(struct ir_int_gpsr_swc);
+    idx = swc_offset/sizeof(struct ir_int_gpsrg_swc);
 
     /* TODO figure out if VM can access SWC */
     bool can_acces_swc = true;
@@ -328,26 +239,25 @@ static void vir_emul_gpsrg_access(struct emul_access* acc, struct vir_reg_handle
     }
 
     /* offset within ir_int_gpsrg_swc */
-    uint32_t field_offset = swc_offset - idx * sizeof(struct ir_int_gpsr_swc);
+    field_offset = swc_offset - idx * sizeof(struct ir_int_gpsrg_swc);
 
 
     /* TODO cleanup */
-    uint32_t accen_offset = offsetof(struct ir_int_gpsrg_swc, ir_int->GPSRG[0].swc[0].ACCEN);
-    uint32_t ctrl_offset = offsetof(struct ir_int_gpsrg_swc, ir_int->GPSRG[0].swc[0].CR);
-    if(field_offset == accen_offset){
-        /* TODO */
-    } else if(field_offset == ctrl_offset){
-        /* TODO */
-    } else {
-        ERROR("Trying to access unknwon gpsrg register 0x%x", offset);
+    switch(offset){
+        case offsetof(struct ir_int_gpsrg_swc, ACCEN):
+            /* TODO */
+        case offsetof(struct ir_int_gpsrg_swc, CR):
+                /* TODO */
+        default:
+                ERROR("Trying to access unknwon gpsrg register 0x%x", offset);
     }
 }
 
-static void vir_emul_srb_access(struct emul_access* acc, struct vir_reg_handler_info* handlers,
-    cpuid_t vcpuid)
+static void vir_emul_srb_access(struct emul_access* acc, cpuid_t vcpuid)
 {
+    (void)vcpuid;
     uint32_t acc_addr = IR_REG_MASK(acc->addr);
-    uint32_t offset = offsetof(struct ir_int_hw, ir_int->SRB);
+    uint32_t offset = offsetof(struct ir_int_hw, SRB);
     uint32_t srb_offset = acc_addr - offset;
     uint32_t idx = srb_offset/sizeof(ir_int->SRB);
 
@@ -358,7 +268,8 @@ static void vir_emul_srb_access(struct emul_access* acc, struct vir_reg_handler_
         ERROR("Trying to access unauthorized SRB %u", idx);
     }
 
-    uint32_t val = vcpu_readreg(cpu.vcpu, acc->reg);
+    /* TODO get correct vcpu */
+    uint32_t val = vcpu_readreg(cpu()->vcpu, acc->reg);
     val &= 0x7f; /* TODO */
     /* TODO figure out which CPU ISP this VM can target and if all is well perform the access */
 
@@ -366,293 +277,62 @@ static void vir_emul_srb_access(struct emul_access* acc, struct vir_reg_handler_
     ir_int->SRB[idx] = val;
 }
 
-static void vir_emul_misc_access(struct emul_access* acc, struct vir_reg_handler_info* handlers,
-    cpuid_t vcpuid)
+static void vir_emul_misc_access(struct emul_access* acc, cpuid_t vcpuid)
 {
+    (void)vcpuid;
     uint32_t acc_addr = IR_REG_MASK(acc->addr);
 
-    if(acc_addr == offsetof(struct ir_int_hw, ir_int->ID)){
+    if(acc_addr == offsetof(struct ir_int_hw, ID)){
         /* TODO */
-        vcpu_writereg(cpu.vcpu, acc->reg, ir_int->ID);
+        vcpu_writereg(cpu()->vcpu, acc->reg, ir_int->ID);
     } else {
         ERROR("unsuported register emulation 0x%x", acc_addr);
     }
 }
 
-static bool vir_int_update_enable(struct vcpu* vcpu, struct vir_int* interrupt, bool enable)
-{
-    UNUSED_ARG(vcpu);
-
-    if (enable != interrupt->enabled) {
-        interrupt->enabled = enable;
-        return true;
-    } else {
-        return false;
-    }
-}
-
-static void vir_int_enable_hw(struct vcpu* vcpu, struct vir_int* interrupt)
-{
-    UNUSED_ARG(vcpu);
-
-    ir_set_enable(interrupt->id, interrupt->enabled);
-}
-
-static bool vir_int_clear_enable(struct vcpu* vcpu, struct vir_int* interrupt, unsigned long data)
-{
-    if (!data) {
-        return false;
-    } else {
-        return vir_int_update_enable(vcpu, interrupt, false);
-    }
-}
-
-static bool vir_int_set_enable(struct vcpu* vcpu, struct vir_int* interrupt, unsigned long data)
-{
-    UNUSED_ARG(vcpu);
-
-    if (!data) {
-        return false;
-    } else {
-        return vir_int_update_enable(vcpu, interrupt, true);
-    }
-}
-
-static unsigned long vir_int_get_enable(struct vcpu* vcpu, struct vir_int* interrupt)
-{
-    UNUSED_ARG(vcpu);
-
-    return (unsigned long)interrupt->enabled;
-}
-
-static bool vir_int_update_pend(struct vcpu* vcpu, struct vir_int* interrupt, bool pend)
-{
-    UNUSED_ARG(vcpu);
-
-    if (pend ^ !!(interrupt->state & PEND)) {
-        if (pend) {
-            interrupt->state |= PEND;
-        } else {
-            interrupt->state &= (uint8_t)~PEND;
-        }
-        return true;
-    } else {
-        return false;
-    }
-}
-
-static void vir_int_state_hw(struct vcpu* vcpu, struct vir_int* interrupt)
-{
-    UNUSED_ARG(vcpu);
-
-    uint8_t state = interrupt->state == PEND ? ACT : interrupt->state;
-    bool pend = (state & PEND) != 0;
-    bool act = (state & ACT) != 0;
-
-    /* TODO */
-    /* ir_set_act(interrupt->id, act); */
-    ir_set_pend(interrupt->id, pend);
-}
-
-static bool vir_int_clear_pend(struct vcpu* vcpu, struct vir_int* interrupt, unsigned long data)
-{
-    if (!data) {
-        return false;
-    } else {
-        return vir_int_update_pend(vcpu, interrupt, false);
-    }
-}
-
-static bool vir_int_set_pend(struct vcpu* vcpu, struct vir_int* interrupt, unsigned long data)
-{
-    if (!data) {
-        return false;
-    } else {
-        return vir_int_update_pend(vcpu, interrupt, true);
-    }
-}
-
-static unsigned long vir_int_get_pend(struct vcpu* vcpu, struct vir_int* interrupt)
-{
-    UNUSED_ARG(vcpu);
-
-    return (interrupt->state & PEND) ? 1 : 0;
-}
-
-static bool vir_int_update_act(struct vcpu* vcpu, struct vir_int* interrupt, bool act)
-{
-    UNUSED_ARG(vcpu);
-
-    if (act ^ !!(interrupt->state & ACT)) {
-        if (act) {
-            interrupt->state |= ACT;
-        } else {
-            interrupt->state &= (uint8_t)~ACT;
-        }
-        return true;
-    } else {
-        return false;
-    }
-}
-
-static bool vir_int_clear_act(struct vcpu* vcpu, struct vir_int* interrupt, unsigned long data)
-{
-    if (!data) {
-        return false;
-    } else {
-        return vir_int_update_act(vcpu, interrupt, false);
-    }
-}
-
-static bool vir_int_set_act(struct vcpu* vcpu, struct vir_int* interrupt, unsigned long data)
-{
-    if (!data) {
-        return false;
-    } else {
-        return vir_int_update_act(vcpu, interrupt, true);
-    }
-}
-
-static unsigned long vir_int_get_act(struct vcpu* vcpu, struct vir_int* interrupt)
-{
-    UNUSED_ARG(vcpu);
-
-    return (interrupt->state & ACT) ? 1 : 0;
-}
-
-static bool vir_int_set_cfg(struct vcpu* vcpu, struct vir_int* interrupt, unsigned long cfg)
-{
-    UNUSED_ARG(vcpu);
-    uint8_t prev_cfg = interrupt->cfg;
-    interrupt->cfg = (uint8_t)cfg;
-    return prev_cfg != cfg;
-}
-
-static unsigned long vir_int_get_cfg(struct vcpu* vcpu, struct vir_int* interrupt)
-{
-    UNUSED_ARG(vcpu);
-    return (unsigned long)interrupt->cfg;
-}
-
-static void vir_int_set_cfg_hw(struct vcpu* vcpu, struct vir_int* interrupt)
-{
-    UNUSED_ARG(vcpu);
-#if (IR_VERSION != IRV2)
-    if (ir_is_priv(interrupt->id)) {
-        irr_set_icfgr(interrupt->id, interrupt->cfg, interrupt->phys.redist);
-    } else {
-        ird_set_icfgr(interrupt->id, interrupt->cfg);
-    }
-#else
-    ir_set_icfgr(interrupt->id, interrupt->cfg);
-#endif
-}
-
-static bool vir_int_set_prio(struct vcpu* vcpu, struct vir_int* interrupt, unsigned long prio)
+static bool vir_int_set_prio(struct vcpu* vcpu, struct vir_src* interrupt, unsigned long prio)
 {
     UNUSED_ARG(vcpu);
     uint8_t prev_prio = interrupt->prio;
-    interrupt->prio = (uint8_t)(prio & BIT_MASK(8 - IRH_LR_PRIO_LEN, IRH_LR_PRIO_LEN));
     return prev_prio != prio;
 }
 
-static unsigned long vir_int_get_prio(struct vcpu* vcpu, struct vir_int* interrupt)
+static unsigned long vir_int_get_prio(struct vcpu* vcpu, struct vir_src* interrupt)
 {
     UNUSED_ARG(vcpu);
     return (unsigned long)interrupt->prio;
 }
 
-static void vir_int_set_prio_hw(struct vcpu* vcpu, struct vir_int* interrupt)
-{
-    UNUSED_ARG(vcpu);
-
-    ir_set_prio(interrupt->id, interrupt->prio);
-}
 
 struct vir_reg_handler_info ir_int_misc_info = {
-    ir_int_emul_misc_access,
-    0x4,
-    0,
-    0,
-    0,
-    NULL,
-    NULL,
-    NULL,
+    vir_emul_misc_access,
+    0x2,
 };
 
 struct vir_reg_handler_info ir_int_accensrb_info = {
     ir_int_emul_accensrb_access,
-    0x4,
-    0,
-    0,
-    0,
-    NULL,
-    NULL,
-    NULL,
+    0x2,
 };
 
 struct vir_reg_handler_info ir_int_tos_info = {
     vir_emul_tos_access,
-    0x4,
-    0,
-    0,
-    0,
-    NULL,
-    NULL,
-    NULL,
+    0x2,
 };
 
 struct vir_reg_handler_info ir_int_gpsrg_info = {
     vir_emul_gpsrg_access,
-    0x4,
-    0,
-    0,
-    0,
-    NULL,
-    NULL,
-    NULL,
+    0x2,
 };
 
 struct vir_reg_handler_info ir_int_srb_info = {
     vir_emul_srb_access,
-    0x4,
-    0,
-    0,
-    0,
-    NULL,
-    NULL,
-    NULL,
+    0x2,
 };
 
 struct vir_reg_handler_info ir_int_icu_info = {
     vir_emul_icu_access,
-    0x4,
-    0,
-    0,
-    0,
-    NULL,
-    NULL,
-    NULL,
+    0x2,
 };
-
-
-struct vir_reg_handler_info* reg_handler_info_table[VIR_REG_HANDLER_ID_NUM] = {
-    [VIR_INT_MISC_ID] = &ir_int_misc_info,
-    [VIR_INT_ACCENSRB_ID] = &ir_int_accensrb_info,
-    [VIR_INT_TOS_ID] = &ir_int_tos_info,
-    [VIR_INT_GPSRG_ID] = &ir_int_gpsrg_info,
-    [VIR_INT_SRB_ID] = &ir_int_srb_info,
-    [VIR_INT_ICU_ID] = &ir_int_icu_info,
-};
-
-static struct vir_reg_handler_info* vir_get_reg_handler_info(enum vir_reg_handler_info_id id)
-{
-    if (id >= VIR_REG_HANDLER_ID_NUM) {
-        return NULL;
-    }
-
-    return reg_handler_info_table[id];
-}
 
 bool vir_check_reg_alignment(struct emul_access* acc, struct vir_reg_handler_info* handlers)
 {
@@ -663,41 +343,49 @@ bool vir_check_reg_alignment(struct emul_access* acc, struct vir_reg_handler_inf
     return true;
 }
 
-static void vir_emul_src_access(struct emul_access* acc, struct vcpu *vcpu, struct vir_int* interrupt)
+static void vir_emul_src_access(struct emul_access* acc, struct vcpu *vcpu, struct vir_src* interrupt)
 {
     /* TODO consider 16bit access */
     if(acc->write) {
         uint32_t val = vcpu_readreg(vcpu, acc->reg);
+
         uint32_t srpn = IR_SRC_GET_SRPN(val);
+        (void) srpn;
 
         uint32_t tos = IR_SRC_GET_TOS(val);
+        (void)tos;
         /* TODO check which ISP VM can access */
 
-        bool sre = IR_SRC_GET_SRE(val) != 0;
-        if(sre){
-            vir_int_update_enable(vcpu, interrupt, sre);
-        }
+        /* bool sre = IR_SRC_GET_SRE(val) != 0; */
+        /* if(sre){ */
+        /*     vir_int_update_enable(vcpu, interrupt, sre); */
+        /* } */
 
-        bool clrr = IR_SRC_GET_CLRR(val) != 0;
-        bool setr = IR_SRC_GET_SETR(val) != 0;
+        /* bool clrr = IR_SRC_GET_CLRR(val) != 0; */
+        /* bool setr = IR_SRC_GET_SETR(val) != 0; */
 
-        if(!(clrr && setr)){
-            if(setr){
-                vir_int_update_pend(vcpu, interrupt, true);
-            } else if (clrr) {
-                vir_int_update_pend(vcpu, interrupt, false);
-            }
-        }
+        /* if(!(clrr && setr)){ */
+        /*     if(setr){ */
+        /*         vir_int_update_pend(vcpu, interrupt, true); */
+        /*     } else if (clrr) { */
+        /*         vir_int_update_pend(vcpu, interrupt, false); */
+        /*     } */
+        /* } */
 
-        bool iovclr = IR_SRC_GET_IOVCLR(val) != 0;
+        /* bool iovclr = IR_SRC_GET_IOVCLR(val) != 0; */
         /* TODO what should hyp do? */
+        unsigned long prio = 0;
+        vir_int_set_prio(vcpu, interrupt, prio);
+
 
     } else {
         uint32_t src_mask = IR_SRC_IOVCLR_MASK | IR_SRC_IOV_MASK |
             IR_SRC_SETR_MASK | IR_SRC_CLRR_MASK | IR_SRC_SRR_MASK |
             IR_SRC_SRE_MASK | IR_SRC_TOS_MASK | IR_SRC_CS_MASK | IR_SRC_SRPN_MASK;
         /* TODO we are SPH we can read directly, diferent with ctx switch */
-        uint32_t val = ir_src.SCR[interrupt->idx] & src_mask;
+        uint32_t val = ir_src->SRC[interrupt->id] & src_mask;
+        unsigned long prio = vir_int_get_prio(vcpu, interrupt);
+        (void)prio;
 
         vcpu_writereg(vcpu, acc->reg, val);
     }
@@ -706,36 +394,36 @@ static void vir_emul_src_access(struct emul_access* acc, struct vcpu *vcpu, stru
 bool ir_src_emul_handler(struct emul_access* acc)
 {
     uint32_t addr = acc->addr;
-    uint32_t src_offset = addr - cpu()->vcpu->vm->arch->ir_srb_addr;
+    uint32_t src_offset = addr - cpu()->vcpu->vm->arch.vir_src_addr;
 
     uint32_t intid = src_offset / sizeof(ir_src->SRC[0]);
 
-    struct vir_int* interrupt = vir_get_int(vcpu, id, vcpu->id);
+    struct vir_src* interrupt = vir_get_int(cpu()->vcpu, intid, cpu()->vcpu->id);
     /* TODO check if VM owns intid */
     if(!interrupt)
         ERROR("Access to unsigned interrupt %u", intid);
 
-    spin_lock(&cpu()->vcpu->vm->arch.ir_src.lock);
-    vir_emul_src_access(acc, vcpu, interrupt);
-    spin_unlock(&cpu()->vcpu->vm->arch.ir_src.lock);
+    spin_lock(&cpu()->vcpu->vm->arch.vir_src_lock);
+    vir_emul_src_access(acc, cpu()->vcpu, interrupt);
+    spin_unlock(&cpu()->vcpu->vm->arch.vir_src_lock);
     return true;
 }
 
 bool ir_int_emul_handler(struct emul_access* acc)
 {
     struct vir_reg_handler_info* handler_info = NULL;
-    size_t acc_off = IRD_REG_MASK(acc->addr);
-    if (IRD_IS_REG(SRB, acc_off)) {
+    size_t acc_off = IR_REG_MASK(acc->addr);
+    if (IR_IS_REG(SRB, acc_off)) {
         handler_info = &ir_int_srb_info;
-    } else if (IRD_IS_REG(ICU, acc_off)) {
+    } else if (IR_IS_REG(ICU, acc_off)) {
         handler_info = &ir_int_icu_info;
-    } else if (IRD_IS_REG(TOS, acc_off)) {
+    } else if (IR_IS_REG(TOS, acc_off)) {
         handler_info = &ir_int_tos_info;
-    } else if (IRD_IS_REG(GPSRG, acc_off)) {
+    } else if (IR_IS_REG(GPSRG, acc_off)) {
         handler_info = &ir_int_gpsrg_info;
-    } else if (IRD_IS_REG(ACCENSRB, acc_off)) {
+    } else if (IR_IS_REG(ACCENSRB, acc_off)) {
         handler_info = &ir_int_accensrb_info;
-    } else if((IRD_REG_MASK(acc->addr) >> 7) == IRD_REG_GROUP(OCS)){
+    } else if((IR_REG_MASK(acc->addr) >> 7) == IR_REG_GROUP(OCS)){
         handler_info = &ir_int_misc_info;
     } else {
         ERROR("Unknown IR register at 0x%x", acc->addr);
@@ -745,37 +433,22 @@ bool ir_int_emul_handler(struct emul_access* acc)
         return false;
     }
 
-    spin_lock(&cpu()->vcpu->vm->arch.ir_int.lock);
-    handler_info->reg_access(acc, handler_info, cpu()->vcpu->id);
-    spin_unlock(&cpu()->vcpu->vm->arch.ir_int.lock);
+    spin_lock(&cpu()->vcpu->vm->arch.vir_int_lock);
+    handler_info->reg_access(acc, cpu()->vcpu->id);
+    spin_unlock(&cpu()->vcpu->vm->arch.vir_int_lock);
     return true;
 }
 
-void vir_inject_hw(struct vcpu* vcpu, irqid_t id)
+void vir_inject(struct vcpu* vcpu, irqid_t id)
 {
-    struct vir_int* interrupt = vir_get_int(vcpu, id, vcpu->id);
+    struct vir_src* interrupt = vir_get_int(vcpu, id, vcpu->id);
     spin_lock(&interrupt->lock);
     interrupt->owner = vcpu;
-    interrupt->state = PEND;
-    interrupt->in_lr = false;
 
     /* TODO: any other considerations? */
-    ir_set_pend(vcpu, interrupt);
+    ir_set_pend(id);
 
     spin_unlock(&interrupt->lock);
-}
-
-void vir_inject(struct vcpu* vcpu, irqid_t id, vcpuid_t source)
-{
-    struct vir_int* interrupt = vir_get_int(vcpu, id, vcpu->id);
-    if (interrupt != NULL) {
-        if (vir_int_is_hw(interrupt)) {
-            vir_inject_hw(vcpu, id);
-        } else {
-             /* TODO is it necessary to deal specailly with SGI? */
-             /* maybe not SGIs but broadcast interrupts might need additional logic */
-        }
-    }
 }
 
 void vir_ipi_handler(uint32_t event, uint64_t data)
@@ -785,71 +458,12 @@ void vir_ipi_handler(uint32_t event, uint64_t data)
     irqid_t int_id = VIR_MSG_INTID(data);
     uint64_t val = VIR_MSG_VAL(data);
 
-    if (vm_id != cpu()->vcpu->vm->id) {
-        ERROR("received vir msg target to another vcpu");
-        // TODO: need to fetch vcpu from other vm if the taget vm for this is not active
-    }
-
-    switch (event) {
-        case VIR_UPDATE_ENABLE: {
-            vir_update_enable(cpu()->vcpu);
-        } break;
-
-        case VIR_ROUTE: {
-            struct vir_int* interrupt = vir_get_int(cpu()->vcpu, int_id, cpu()->vcpu->id);
-            if (interrupt != NULL) {
-                spin_lock(&interrupt->lock);
-                if (vir_get_ownership(cpu()->vcpu, interrupt)) {
-                    if (vir_int_vcpu_is_target(cpu()->vcpu, interrupt)) {
-                        ir_set_pend(cpu()->vcpu, interrupt);
-                    }
-                    vir_yield_ownership(cpu()->vcpu, interrupt);
-                }
-                spin_unlock(&interrupt->lock);
-            }
-        } break;
-
-        case VIR_INJECT: {
-            vir_inject(cpu()->vcpu, int_id, (vcpuid_t)val);
-        } break;
-
-        case VIR_SET_REG: {
-            uint64_t reg_id = VIR_MSG_REG(data);
-            struct vir_reg_handler_info* handlers = vir_get_reg_handler_info(reg_id);
-            struct vir_int* interrupt = vir_get_int(cpu()->vcpu, int_id, virr_id);
-            if (handlers != NULL && interrupt != NULL) {
-                vir_int_set_field(handlers, cpu()->vcpu, interrupt, (unsigned long)val);
-            }
-        } break;
-
-        default:
-            WARNING("Unknown VIR IPI event");
-            break;
-    }
-}
-
-void ir_maintenance_handler(irqid_t irq_id)
-{
-    /* TODO: is there a maintenance interrupt? */
-}
-
-void vir_set_hw(struct vm* vm, irqid_t id)
-{
-    if (id < IR_MAX_SGIS) {
-        return;
-    }
-
-    /**
-     * This assumes this method is called only during VM initlization
-     */
-    struct vir_int* interrupt = vir_get_int(vm_get_vcpu(vm, 0), id, 0);
-    if (interrupt != NULL) {
-        spin_lock(&interrupt->lock);
-        interrupt->hw = true;
-        spin_unlock(&interrupt->lock);
-    } else {
-        WARNING("trying to link non-existent virtual irq to physical irq");
-    }
+    /* TODO do we need this? */
+    (void) event;
+    (void)vm_id;
+    (void)virr_id;
+    (void)int_id;
+    (void)val;
 }
 
 void vir_init(struct vm* vm, const struct vir_dscrp* vir_dscrp)
@@ -857,48 +471,47 @@ void vir_init(struct vm* vm, const struct vir_dscrp* vir_dscrp)
     /* Although we map the IR unto the VM, we restric VM access by using ICU.VMEN and SRC.VM */
 
     /* TODO IR and SRC could probably be a single mapping */
-    mem_alloc_map_dev(&vm->as, SEC_VM_ANY, (vaddr_t)vir_dscrp->ir_int_addr,
+    mem_alloc_map_dev(&vm->as, SEC_VM_ANY, (vaddr_t)vir_dscrp->int_addr,
         (vaddr_t)platform.arch.ir.int_addr, NUM_PAGES(sizeof(struct ir_int_hw)));
 
     vm->arch.vir_int_emul = (struct emul_mem){ 
-        .va_base = vir_dscrp->ir_int_addr,
+        .va_base = vir_dscrp->int_addr,
         .size = ALIGN(sizeof(struct ir_int_hw), PAGE_SIZE),
-        .handler = vir_int_emul_handler };
-    vm_emul_add_mem(vm, &vm->arch.vir_ir_emul);
+        .handler = ir_int_emul_handler };
+    vm_emul_add_mem(vm, &vm->arch.vir_int_emul);
 
 
     /* TODO Magic number */
-    uint32_t src_sz = PLAT_N_INTERRUPTS*4;
-    mem_alloc_map_dev(&vm->as, SEC_VM_ANY, (vaddr_t)vir_dscrp->ir_src_addr,
+    uint32_t src_sz = IR_MAX_INTERRUPTS*4; /* TODO platform number of interrupts */
+    mem_alloc_map_dev(&vm->as, SEC_VM_ANY, (vaddr_t)vir_dscrp->src_addr,
         (vaddr_t)platform.arch.ir.src_addr, NUM_PAGES(src_sz));
 
     vm->arch.vir_src_emul = (struct emul_mem){
-        .va_base = vir_dscrp->ir_src_addr,
+        .va_base = vir_dscrp->src_addr,
         .size = ALIGN(src_sz, PAGE_SIZE),
-        .handler = vir_ir_emul_handler
+        .handler = ir_src_emul_handler
     };
 
     vm_emul_add_mem(vm, &vm->arch.vir_src_emul);
 
     /* This should be aware of the number of interrupts */
-    size_t vir_interrupt_size = vm->arch.vgicd.int_num * sizeof(struct vgic_int);
-    vm->arch.vgicd.interrupts = mem_alloc_page(NUM_PAGES(vgic_int_size), SEC_HYP_VM, false);
-    if (vm->arch.vgicd.interrupts == NULL) {
+    size_t vir_interrupt_size = IR_MAX_INTERRUPTS * sizeof(struct vir_src);
+    vm->arch.vir_src = mem_alloc_page(NUM_PAGES(vir_interrupt_size), SEC_HYP_VM, false);
+    if (vm->arch.vir_src == NULL) {
         ERROR("failed to alloc vgic");
     }
 
-    for (irqid_t i = 0; i < vm->arch.vir.int_num; i++) {
-        vm->arch.vir.interrupts[i].owner = NULL;
-        vm->arch.vir.interrupts[i].lock = SPINLOCK_INITVAL;
-        vm->arch.vir.interrupts[i].id = i;
-        vm->arch.vir.interrupts[i].state = INV;
-        vm->arch.vir.interrupts[i].prio = IR_MIN_PRIO;
-        vm->arch.vir.interrupts[i].target = IR_TARGET_NONE;
-        vm->arch.vir.interrupts[i].enabled = false;
+    for (irqid_t i = 0; i < IR_MAX_INTERRUPTS; i++) {
+        vm->arch.vir_src[i].owner = NULL;
+        vm->arch.vir_src[i].lock = SPINLOCK_INITVAL;
+        vm->arch.vir_src[i].id = i;
+        vm->arch.vir_src[i].prio = IR_MIN_PRIO;
+        vm->arch.vir_src[i].target = IR_TARGET_NONE;
+        vm->arch.vir_src[i].enabled = false;
     }
 }
 
 void vir_vcpu_init(struct vcpu *vcpu)
 {
-   ir_assign_icu_to_vm(vcpu->vm);
+   ir_assign_icu_to_vm(cpu()->id, vcpu->vm);
 }

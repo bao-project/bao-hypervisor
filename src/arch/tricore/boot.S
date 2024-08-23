@@ -4,7 +4,7 @@
  */
 
 #include <arch/bao.h>
-#include <arch/registers.h>
+#include <arch/csfrs.h>
 #include <asm_defs.h>
 #include <config_defs.h>
 #include <platform_defs.h>
@@ -71,7 +71,7 @@ _reset_handler:
     get_phys_addr %d3, %d4, _hyp_vector_table
     movh    %d3,hi:_hyp_vector_table
     addi    %d3,%d3,lo:_hyp_vector_table
-    mtcr    $bhv,%d3
+    mtcr    0xb010,%d3
 
     movh    %d3,hi:_irq_vector
     addi    %d3,%d3,lo:_irq_vector
@@ -102,10 +102,10 @@ _reset_handler:
     /* Invalidate Caches */
     /* TODO do we need to? */
     mov     %d10, 1 // invalidate data cache
-    mtcr    $hrhv_dcon1, %d0
+    mtcr    csfr_dcon1, %d0
 
     mov     %d10, 3 // TODO invalidate program cache and program buffer */
-    mtcr    $hrhv_pcon1, %d3
+    mtcr    csfr_pcon1, %d3
     isync
 
     /** subarch specific **/
@@ -131,45 +131,45 @@ _reset_handler:
 
     mov     %d3, 2
     /* Program cache bypass */
-    mtcr    $hrhv_pcon0, %d3
+    mtcr    csfr_pcon0, %d3
     /* Data cache bypass */
-    mtcr    $hrhv_dcon0, %d3
+    mtcr    csfr_dcon0, %d3
 
     /* disable memory protection and other properties... */
     mov %d3, 0
-    mtcr    CORECON, %d3
+    mtcr    csfr_corecon, %d3
 
     isync
 
 
     mov %d3, 0
     /* make sure no region can be accessed, executed */
-    mtcr    $hrhv_dpre_0, %d3
-    mtcr    $hrhv_dpre_1, %d3
-    mtcr    $hrhv_dpre_2, %d3
-    mtcr    $hrhv_dpre_3, %d3
-    mtcr    $hrhv_dpre_4, %d3
-    mtcr    $hrhv_dpre_5, %d3
-    mtcr    $hrhv_dpre_6, %d3
-    mtcr    $hrhv_dpre_7, %d3
+    mtcr    csfr_dpre_0, %d3
+    mtcr    csfr_dpre_1, %d3
+    mtcr    csfr_dpre_2, %d3
+    mtcr    csfr_dpre_3, %d3
+    mtcr    csfr_dpre_4, %d3
+    mtcr    csfr_dpre_5, %d3
+    mtcr    csfr_dpre_6, %d3
+    mtcr    csfr_dpre_7, %d3
 
-    mtcr    $hrhv_dpwe_0, %d3
-    mtcr    $hrhv_dpwe_1, %d3
-    mtcr    $hrhv_dpwe_2, %d3
-    mtcr    $hrhv_dpwe_3, %d3
-    mtcr    $hrhv_dpwe_4, %d3
-    mtcr    $hrhv_dpwe_5, %d3
-    mtcr    $hrhv_dpwe_6, %d3
-    mtcr    $hrhv_dpwe_7, %d3
+    mtcr    csfr_dpwe_0, %d3
+    mtcr    csfr_dpwe_1, %d3
+    mtcr    csfr_dpwe_2, %d3
+    mtcr    csfr_dpwe_3, %d3
+    mtcr    csfr_dpwe_4, %d3
+    mtcr    csfr_dpwe_5, %d3
+    mtcr    csfr_dpwe_6, %d3
+    mtcr    csfr_dpwe_7, %d3
 
-    mtcr    $hrhv_cpxe_0, %d3
-    mtcr    $hrhv_cpxe_1, %d3
-    mtcr    $hrhv_cpxe_2, %d3
-    mtcr    $hrhv_cpxe_3, %d3
-    mtcr    $hrhv_cpxe_4, %d3
-    mtcr    $hrhv_cpxe_5, %d3
-    mtcr    $hrhv_cpxe_6, %d3
-    mtcr    $hrhv_cpxe_7, %d3
+    mtcr    csfr_cpxe_0, %d3
+    mtcr    csfr_cpxe_1, %d3
+    mtcr    csfr_cpxe_2, %d3
+    mtcr    csfr_cpxe_3, %d3
+    mtcr    csfr_cpxe_4, %d3
+    mtcr    csfr_cpxe_5, %d3
+    mtcr    csfr_cpxe_6, %d3
+    mtcr    csfr_cpxe_7, %d3
 
     /**
      * Map loadable image (and possibly unloadable)
@@ -178,8 +178,8 @@ _reset_handler:
      */
     movh    %d3,hi:_image_start
     addi    %d3,%d3,lo:_image_start
-    mtcr    $hrhv_dpr0_l, %d3
-    mtcr    $hrhv_cpr0_l, %d3
+    mtcr    csfr_dpr0_l, %d3
+    mtcr    csfr_cpr0_l, %d3
 
     movh    %d3,hi:_image_load_end
     addi    %d3,%d3,lo:_image_load_end
@@ -196,22 +196,22 @@ _reset_handler:
 2:
     mov     %d4, 1
     sub     %d3, %d4
-    mtcr    $hrhv_dpr0_u, %d3
-    mtcr    $hrhv_cpr0_u, %d3
+    mtcr    csfr_dpr0_u, %d3
+    mtcr    csfr_cpr0_u, %d3
 
     /* TODO x-only, RO, and RW according to section permissions */
     /* TODO set permissions all at once to avoid muiltiple rw to sys regs */
-    mfcr    %d3, $hrhv_cpxe_0
+    mfcr    %d3, csfr_cpxe_0
     or      %d3, %d3, (1 << 0)
-    mtcr    $hrhv_cpxe_0, %d3
+    mtcr    csfr_cpxe_0, %d3
 
-    mfcr    %d3, $hrhv_dpre_0
+    mfcr    %d3, csfr_dpre_0
     or      %d3, %d3, (1 << 0)
-    mtcr    $hrhv_dpre_0, %d3
+    mtcr    csfr_dpre_0, %d3
 
-    mfcr    %d3, $hrhv_dpwe_0
+    mfcr    %d3, csfr_dpwe_0
     or      %d3, %d3, (1 << 0)
-    mtcr    $hrhv_dpwe_0, %d3
+    mtcr    csfr_dpwe_0, %d3
 
 
     /* Map Image Non-loadable if needed */
@@ -223,66 +223,66 @@ _reset_handler:
 
     movh    %d3,hi:_image_noload_start
     addi    %d3,%d3,lo:_image_noload_start
-    mtcr    $hrhv_dpr1_l, %d3
-    mtcr    $hrhv_cpr1_l, %d3
+    mtcr    csfr_dpr1_l, %d3
+    mtcr    csfr_cpr1_l, %d3
 
     movh    %d3,hi:_image_end
     addi    %d3,%d3,lo:_image_end
     mov     %d4, 1
     sub     %d3, %d4
-    mtcr    $hrhv_dpr1_u, %d3
-    mtcr    $hrhv_cpr1_u, %d3
+    mtcr    csfr_dpr1_u, %d3
+    mtcr    csfr_cpr1_u, %d3
 
-    mfcr    %d3, $hrhv_cpxe_0
+    mfcr    %d3, csfr_cpxe_0
     or      %d3, %d3, (1 << 1)
-    mtcr    $hrhv_cpxe_0, %d3
+    mtcr    csfr_cpxe_0, %d3
 
-    mfcr    %d3, $hrhv_dpre_0
+    mfcr    %d3, csfr_dpre_0
     or      %d3, %d3, (1 << 1)
-    mtcr    $hrhv_dpre_0, %d3
+    mtcr    csfr_dpre_0, %d3
 
-    mfcr    %d3, $hrhv_dpwe_0
+    mfcr    %d3, csfr_dpwe_0
     or      %d3, %d3, (1 << 1)
-    mtcr    $hrhv_dpwe_0, %d3
+    mtcr    csfr_dpwe_0, %d3
 
 
 skip_non_loadable:
 
     /* Region 2 - CPU */
     mov.d   %d3, %a14
-    mtcr    $hrhv_dpr2_l, %d3
-    mtcr    $hrhv_cpr2_l, %d3
+    mtcr    csfr_dpr2_l, %d3
+    mtcr    csfr_cpr2_l, %d3
 
     mov     %d4, CPU_SIZE
     add     %d3, %d3, %d4
     mov     %d4, 1
     sub     %d3, %d3, %d4
-    mtcr    $hrhv_dpr2_u, %d3
-    mtcr    $hrhv_cpr2_u, %d3
+    mtcr    csfr_dpr2_u, %d3
+    mtcr    csfr_cpr2_u, %d3
 
-    mfcr    %d3, $hrhv_cpxe_0
+    mfcr    %d3, csfr_cpxe_0
     or      %d3, %d3, (1 << 2)
-    mtcr    $hrhv_cpxe_0, %d3
+    mtcr    csfr_cpxe_0, %d3
 
-    mfcr    %d3, $hrhv_dpre_0
+    mfcr    %d3, csfr_dpre_0
     or      %d3, %d3, (1 << 2)
-    mtcr    $hrhv_dpre_0, %d3
+    mtcr    csfr_dpre_0, %d3
 
-    mfcr    %d3, $hrhv_dpwe_0
+    mfcr    %d3, csfr_dpwe_0
     or      %d3, %d3, (1 << 2)
-    mtcr    $hrhv_dpwe_0, %d3
+    mtcr    csfr_dpwe_0, %d3
 
     isync
 
     mov %d3, 2
     /* Program cache bypass */
-    mtcr $hrhv_pcon0, %d3
+    mtcr csfr_pcon0, %d3
     /* Data cache bypass */
-    mtcr $hrhv_dcon0, %d3
+    mtcr csfr_dcon0, %d3
 
     /* disable memory protection and other properties... */
     mov %d3, 0
-    mtcr $hrhv_corecon, %d3
+    mtcr csfr_corecon, %d3
 
     isync
 
@@ -290,9 +290,9 @@ skip_non_loadable:
 
 
     /* reset access to system global registers */
-    mfcr    %d0,$hrhv_psw
+    mfcr    %d0,$psw
     andn    %d0,%d0,0x100               // clear GW bit
-    mtcr    $hrhv_psw,%d0
+    mtcr    $psw,%d0
     isync
 
     movh    %d3,hi:_dmem_phys_beg
@@ -367,7 +367,6 @@ oops:
 /*****  Helper functions for boot code. ******/
 
 .global boot_clear
-.func boot_clear
 boot_clear:
     mov     %d8, 0
     mov.d   %d4, %a1
@@ -380,11 +379,9 @@ boot_clear:
     j       2b
 1:
     ji      %a11
-.endfunc
 
 
 .global boot_cache_invalidate
-.func boot_cache_invalidate
 boot_cache_invalidate:
     /* TODO */
     /* cachei.i [a3]4 */
@@ -392,14 +389,12 @@ boot_cache_invalidate:
      * by the address register A[b] is present in the L1 data cache, then
      * invalidate the line. Note that there is no writeback of any dirty data
      * in the cache line prior to invalidation." */
-.endfunc
 
 
 .global    _init_csa
-.func _init_csa
 _init_csa:
     movh    %d0,0
-    mtcr    $hrhv_pcxi,%d0               // previous context info is null
+    mtcr    csfr_pcxi,%d0               // previous context info is null
     isync
 
     addi    %d0,%d0,0x3f            // force alignment (2^6)
@@ -423,7 +418,7 @@ _init_csa:
     mov.d   %d2,%a3
     extr.u  %d2,%d2,6,16            // get CSA index
     or      %d2,%d2,%d0             // add segment number
-    mtcr    $hrhv_lcx,%d1                // initialize lcx
+    mtcr    csfr_lcx,%d1                // initialize lcx
 
     add     %d1,%d1,-2              // CSAs to initialize -= 2
     mov.a   %a5,%d1                 // %a5 = loop counter
@@ -440,10 +435,9 @@ csa_loop:
     mov.d   %d2,%a4                 // %d1 = current CSA address
     extr.u  %d2,%d2,6,16            // get CSA index
     or      %d2,%d2,%d0             // add segment number
-    mtcr    $hrhv_fcx,%d1            // initialize fcx
+    mtcr    csfr_fcx,%d1            // initialize fcx
     isync
     ji      %a11
-.endfunc
 
 .data
 .balign 0x1000

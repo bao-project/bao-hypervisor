@@ -4,7 +4,7 @@
  */
 
 #include <vmm.h>
-#include <arch/csrs.h>
+#include <arch/csfrs.h>
 
 void vmm_arch_init()
 {
