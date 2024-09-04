@@ -16,9 +16,19 @@ spinlock_t irq_reserve_lock = SPINLOCK_INITVAL;
 
 irq_handler_t interrupt_handlers[MAX_INTERRUPTS];
 
-void interrupts_cpu_sendipi(cpuid_t target_cpu, irqid_t ipi_id)
+void interrupts_cpu_sendipi(cpuid_t target_cpu)
 {
-    interrupts_arch_ipi_send(target_cpu, ipi_id);
+    interrupts_arch_ipi_send(target_cpu);
+}
+
+void interrupts_init_ipi(void)
+{
+    interrupts_arch_ipi_init();
+}
+
+void interrupts_cpu_enable_ipi(void)
+{
+    interrupts_arch_ipi_enable();
 }
 
 void interrupts_cpu_enable(irqid_t int_id, bool en)
@@ -42,14 +52,10 @@ void interrupts_init(void)
 
     /* TODO Tricore allows us to do this much more efficiently using gpsr and broadcast */
     if (cpu_is_master()) {
-        /* TODO this is not sufficient for tricore. we must reserve as many interrupts as there are cpus */
-        if (!interrupts_reserve(IPI_CPU_MSG, (irq_handler_t)cpu_msg_handler)) {
-            ERROR("Failed to reserve IPI_CPU_MSG interrupt");
-        }
+        interrupts_init_ipi();
     }
 
-    /* TODO this is not sufficient for tricore. we must enable as many interrupts as there are cpus */
-    interrupts_cpu_enable(IPI_CPU_MSG, true);
+    interrupts_cpu_enable_ipi();
 }
 
 static inline bool interrupt_assigned_to_hyp(irqid_t int_id)

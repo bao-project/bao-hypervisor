@@ -15,18 +15,12 @@
 volatile struct ir_int_hw* ir_int;
 volatile struct ir_src_hw* ir_src;
 
-/* TODO is this the best approach? */
-volatile struct ir_gpsr_hw* ir_gpsr;
-
-static void ir_init_ipi(void)
+void ir_init_ipi(void)
 {
-    /* TODO add group broadcast support */
-    ir_gpsr = (volatile struct ir_gpsr_hw*)&ir_src->SRC[IPI_CPU_MSG];
-
     /* TODO should each CPU add itself to the broadcast group? */
     for(unsigned int i = 0; i < PLAT_CPU_NUM; i++){
         /* configure each GPSRG interrupt in this group for each CPU */
-        IR_SRC_SET_TOS(ir_gpsr->SRC_GPSRG_SR[i], i);
+        IR_SRC_SET_TOS(ir_src->SRC[IPI_CPU_MSG + i], i);
 
         /* TODO after enabling we can broadcast interrupts (through SRB) for all cpus simultaneously
          * although care must be taken as the current cpu could also be interrupted.
@@ -34,8 +28,6 @@ static void ir_init_ipi(void)
          * lock mechanism to do sync */
 
         /* TODO limit access to SRB */
-
-        /* TODO add api for ipi management to bao */
     }
 }
 
@@ -61,13 +53,11 @@ void ir_init(void)
         IR_SRC_SET_SRE(ir_src->SRC[i], false);
         IR_SRC_SET_VM(ir_src->SRC[i], 0);
     }
-
-    ir_init_ipi();
 }
 
 void ir_cpu_init(void)
 {
-    /* TODO initialize ipi herea as each CPU adds itself to the broadcast group? */
+    /* Nothing to do */
 }
 
 void ir_set_enbl(irqid_t int_id, bool en)
@@ -164,6 +154,7 @@ void ir_handle(void)
     ir_clr_pend(id);
     /* TODO */
 }
+
 void ir_send_ipi(cpuid_t target_cpu)
 {
     if(target_cpu < PLAT_CPU_NUM){
@@ -198,93 +189,76 @@ void ir_config_irq(irqid_t int_id, bool en)
 
 void ir_assign_int_to_vm(struct vm* vm, irqid_t id)
 {
-    /* TODO assumes interrupt is for this cpu */
+    /* TODO assumes interrupt is for this cpu, and that VM was assigned to this CPU */
 
     /* VM direct injection */
     uint32_t vmid = vm->id;
-    if(vmid)
+    if(vmid > 7)
         ERROR("Unsuported vm id %u > 7", vmid);
 
     IR_SRC_SET_VM(ir_src->SRC[id], vmid);
-
-    /* TODO extract function to avoid duplicate code */
-
-    /* TODO assumes VM will execute on this pcpu */
-    ir_int->ICU[cpu()->id].VMEN = 1 << vmid;
-
-    /* TODO What is bus master id for this CPU? */
-    ir_int->TOS[cpu()->id].ACCENSCTRL.RDA = 1 << cpu()->id;
-    ir_int->TOS[cpu()->id].ACCENSCTRL.WRA = 1 << cpu()->id;
-
-
-    /* VM can access SRC[16:31] */
-    ir_int->TOS[cpu()->id].ACCENSCTRL.VM = 1 << vmid; // read
-    ir_int->TOS[cpu()->id].ACCENSCTRL.VM = 1 << vmid << 16; // write
-    /* TODO confirm PRS is the same as VCON2.L2_PRS / PSW.PRS or maybe VM should control this */
-    ir_int->TOS[cpu()->id].ACCENSCTRL.PRS = 1 << vmid; // read
-    ir_int->TOS[cpu()->id].ACCENSCTRL.PRS = 1 << vmid << 16; // write
-
-    /* TODO necessary? */
-    /* VM0 (i.e., hyp) can also access SRC[16:31] */
-    ir_int->TOS[cpu()->id].ACCENSCTRL.VM = 1; // read
-    ir_int->TOS[cpu()->id].ACCENSCTRL.VM = 1 << 16; // write
-    /* TODO confirm PRS is the same as VCON2.L2_PRS / PSW.PRS or maybe VM should control this */
-    ir_int->TOS[cpu()->id].ACCENSCTRL.PRS = 1; // read
-    ir_int->TOS[cpu()->id].ACCENSCTRL.PRS = 1 << 16; // write
-
-
-    /* only VM0 (i.e., hyp) can access SRC[0:15] */
-    ir_int->TOS[cpu()->id].ACCENSCFG.VM = 1; // read
-    ir_int->TOS[cpu()->id].ACCENSCFG.VM = 1 << 16; // write
-    ir_int->TOS[cpu()->id].ACCENSCFG.PRS = 1; // read
-    ir_int->TOS[cpu()->id].ACCENSCFG.PRS = 1 << 16; // write
 
     /* set interrupt on cpu */
     IR_SRC_SET_TOS(ir_src->SRC[id], cpu()->id);
     IR_SRC_SET_VM(ir_src->SRC[id], vmid);
 }
 
+void ir_reset_cpu_int_ctrl_access(unsigned long icuid)
+{
+    ir_int->TOS[icuid].ACCENSCTRL.VM = 0;
+    ir_int->TOS[icuid].ACCENSCTRL.PRS = 0;
+}
+void ir_reset_cpu_int_cfg_access(unsigned long icuid)
+{
+    ir_int->TOS[icuid].ACCENSCFG.VM = 0;
+    ir_int->TOS[icuid].ACCENSCFG.PRS = 0;
+}
+
+void ir_enable_vm_int_ctrl_access(unsigned long icuid, unsigned long vmid)
+{
+    unsigned long perm = 0;
+    perm = (1 << vmid); // read
+    perm |= (1 << vmid << 16); // write
+
+    unsigned long vm = ir_int->TOS[icuid].ACCENSCTRL.VM;
+    vm |= perm;
+    ir_int->TOS[cpu()->id].ACCENSCTRL.VM = vm; // read
+
+    unsigned long prs = ir_int->TOS[icuid].ACCENSCTRL.PRS;
+    prs |= perm;
+    /* TODO confirm PRS is the same as VCON2.L2_PRS / PSW.PRS or maybe VM should control this */
+    ir_int->TOS[cpu()->id].ACCENSCTRL.PRS = prs; // read
+}
+
+void ir_enable_vm_int_cfg_access(unsigned long icuid, unsigned long vmid)
+{
+    unsigned long perm = 0;
+    perm = (1 << vmid); // read
+    perm |= (1 << vmid << 16); // write
+
+    unsigned long vm = ir_int->TOS[icuid].ACCENSCTRL.VM;
+    vm |= perm;
+    ir_int->TOS[cpu()->id].ACCENSCTRL.VM = vm; // read
+
+    unsigned long prs = ir_int->TOS[icuid].ACCENSCTRL.PRS;
+    prs |= perm;
+    /* TODO confirm PRS is the same as VCON2.L2_PRS / PSW.PRS or maybe VM should control this */
+    ir_int->TOS[cpu()->id].ACCENSCFG.PRS = prs; // read
+}
+
 void ir_assign_icu_to_vm(unsigned long id, struct vm* vm)
 {
-    /* TODO assumes interrupt is for this cpu */
-
     /* VM direct injection */
     uint32_t vmid = vm->id;
     if(vmid)
         ERROR("Unsuported vm id %u > 7", vmid);
 
-    IR_SRC_SET_VM(ir_src->SRC[id], vmid);
+    ir_reset_cpu_int_ctrl_access(id);
+    ir_enable_vm_int_ctrl_access(id, vmid);
+    ir_enable_vm_int_ctrl_access(id, 0); /* TODO 0 is hyp */
 
-    /* TODO extract function to avoid duplicate code */
-
-    /* TODO assumes VM will execute on this pcpu */
-    ir_int->ICU[id].VMEN = 1 << vmid;
-
-    /* TODO What is bus master id for this CPU? */
-    ir_int->TOS[id].ACCENSCTRL.RDA = 1 << id;
-    ir_int->TOS[id].ACCENSCTRL.WRA = 1 << id;
-
-
-    /* VM can access SRC[16:31] */
-    ir_int->TOS[id].ACCENSCTRL.VM = 1 << vmid; // read
-    ir_int->TOS[id].ACCENSCTRL.VM = 1 << vmid << 16; // write
-    /* TODO confirm PRS is the same as VCON2.L2_PRS / PSW.PRS or maybe VM should control this */
-    ir_int->TOS[id].ACCENSCTRL.PRS = 1 << vmid; // read
-    ir_int->TOS[id].ACCENSCTRL.PRS = 1 << vmid << 16; // write
-
-    /* TODO necessary? */
-    /* VM0 (i.e., hyp) can also access SRC[16:31] */
-    ir_int->TOS[id].ACCENSCTRL.VM = 1; // read
-    ir_int->TOS[id].ACCENSCTRL.VM = 1 << 16; // write
-    /* TODO confirm PRS is the same as VCON2.L2_PRS / PSW.PRS or maybe VM should control this */
-    ir_int->TOS[id].ACCENSCTRL.PRS = 1; // read
-    ir_int->TOS[id].ACCENSCTRL.PRS = 1 << 16; // write
-
-
-    /* only VM0 (i.e., hyp) can access SRC[0:15] */
-    ir_int->TOS[id].ACCENSCFG.VM = 1; // read
-    ir_int->TOS[id].ACCENSCFG.VM = 1 << 16; // write
-    ir_int->TOS[id].ACCENSCFG.PRS = 1; // read
-    ir_int->TOS[id].ACCENSCFG.PRS = 1 << 16; // write
+    /* TODO should not be needed */
+    ir_reset_cpu_int_cfg_access(id);
+    ir_enable_vm_int_cfg_access(id, 0); /* TODO 0 is hyp */
 }
 

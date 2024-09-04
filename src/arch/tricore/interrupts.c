@@ -29,10 +29,25 @@ void interrupts_arch_init()
     /* TODO: enable interrupts */
 }
 
-void interrupts_arch_ipi_send(cpuid_t target_cpu, irqid_t ipi_id)
+void interrupts_arch_ipi_send(cpuid_t target_cpu)
 {
-    (void)ipi_id;
     ir_send_ipi(target_cpu);
+}
+
+void interrupts_arch_ipi_init(void)
+{
+    ir_init_ipi();
+    for(int i = 0; i < PLAT_CPU_NUM; i++){
+        if (!interrupts_reserve(IPI_CPU_MSG + i, (irq_handler_t)cpu_msg_handler)) {
+            ERROR("Failed to reserve IPI_CPU_MSG interrupt");
+        }
+    }
+}
+
+void interrupts_arch_ipi_enable(void)
+{
+    /* TODO this is not sufficient for tricore. we must enable as many interrupts as there are cpus */
+    interrupts_arch_enable(IPI_CPU_MSG + cpu()->id, true);
 }
 
 void interrupts_arch_enable(irqid_t int_id, bool en)

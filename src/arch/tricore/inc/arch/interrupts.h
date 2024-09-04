@@ -14,5 +14,6 @@
 #define IPI_CPU_MSG      1332 /* TODO this is the first GPSR in TC49 */
 
 void interrupts_arch_handle(void);
+void ir_init_ipi(void);
 
 #endif /* __ARCH_INTERRUPTS_H__ */

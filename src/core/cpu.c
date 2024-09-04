@@ -63,7 +63,7 @@ void cpu_send_msg(cpuid_t trgtcpu, struct cpu_msg* msg)
     node->msg = *msg;
     list_push(&cpu_if(trgtcpu)->event_list, (node_t*)node);
     fence_sync_write();
-    interrupts_cpu_sendipi(trgtcpu, IPI_CPU_MSG);
+    interrupts_cpu_sendipi(trgtcpu);
 }
 
 bool cpu_get_msg(struct cpu_msg* msg)

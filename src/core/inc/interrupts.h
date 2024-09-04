@@ -18,7 +18,7 @@ typedef void (*irq_handler_t)(irqid_t int_id);
 void interrupts_init(void);
 bool interrupts_reserve(irqid_t int_id, irq_handler_t handler);
 
-void interrupts_cpu_sendipi(cpuid_t target_cpu, irqid_t ipi_id);
+void interrupts_cpu_sendipi(cpuid_t target_cpu);
 void interrupts_cpu_enable(irqid_t int_id, bool en);
 
 bool interrupts_check(irqid_t int_id);
@@ -35,7 +35,9 @@ void interrupts_arch_init(void);
 void interrupts_arch_enable(irqid_t int_id, bool en);
 bool interrupts_arch_check(irqid_t int_id);
 void interrupts_arch_clear(irqid_t int_id);
-void interrupts_arch_ipi_send(cpuid_t cpu_target, irqid_t ipi_id);
+void interrupts_arch_ipi_send(cpuid_t cpu_target);
+void interrupts_arch_ipi_init(void);
+void interrupts_arch_ipi_enable(void);
 void interrupts_arch_vm_assign(struct vm* vm, irqid_t id);
 bool interrupts_arch_conflict(bitmap_t* interrupt_bitmap, irqid_t id);
 
