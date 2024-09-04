@@ -40,7 +40,7 @@ let
                     inherit toolchain;
                     guest_name = "baremetal";
                     list_tests = "";
-                    list_suites = "CPU_BOOT_CHECK";
+                    list_suites = "CPU_BOOT_CHECK IRQ_CHECK";
                     inherit log_level;                     
                   }
           )
