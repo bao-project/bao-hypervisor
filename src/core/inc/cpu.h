@@ -40,8 +40,6 @@ struct cpu {
 
     uint64_t handling_irq_id;
 
-    mem_throt_t mem_throt;
-
     BITMAP_ALLOC(events_bitmap, EVENTS_CNTR_MAX_NUM);
 
     irq_handler_t array_interrupt_functions[EVENTS_CNTR_MAX_NUM];

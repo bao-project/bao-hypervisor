@@ -71,6 +71,8 @@ struct vm {
     size_t cpu_num;
     cpumap_t cpus;
 
+    mem_throt_t mem_throt;
+
     struct addr_space as;
 
     struct vm_arch arch;
