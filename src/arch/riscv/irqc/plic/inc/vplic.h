@@ -31,6 +31,7 @@ union vm_irqc_dscrp;
 void vplic_init(struct vm* vm, const union vm_irqc_dscrp* vm_irqc_dscrp);
 void vplic_inject(struct vcpu* vcpu, irqid_t id);
 void vplic_set_hw(struct vm* vm, irqid_t id);
+void vplic_reset(struct vm* vm);
 
 static inline void virqc_init(struct vm* vm, const union vm_irqc_dscrp* vm_irqc_dscrp)
 {
@@ -41,6 +42,11 @@ typedef struct vcpu vcpu_t;
 static inline void virqc_inject(vcpu_t* vcpu, irqid_t id)
 {
     vplic_inject(vcpu, id);
+}
+
+static inline void virqc_reset(struct vm* vm)
+{
+    vplic_reset(vm);
 }
 
 #endif //__VPLIC_H__

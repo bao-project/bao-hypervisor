@@ -10,6 +10,7 @@
 #include <vm.h>
 #include <interrupts.h>
 #include <arch/csrs.h>
+#include <string.h>
 
 static ssize_t vplic_vcntxt_to_pcntxt(struct vcpu* vcpu, size_t vcntxt_id)
 {
@@ -369,6 +370,24 @@ static bool vplic_hart_emul_handler(struct emul_access* acc)
     return true;
 }
 
+void vplic_reset(struct vm* vm)
+{
+    memset(vm->arch.vplic.pend, 0, sizeof(vm->arch.vplic.pend));
+    memset(vm->arch.vplic.act, 0, sizeof(vm->arch.vplic.act));
+    memset(vm->arch.vplic.prio, 0, sizeof(vm->arch.vplic.prio));
+    memset(vm->arch.vplic.enbl, 0, sizeof(vm->arch.vplic.enbl));
+    memset(vm->arch.vplic.pend, 0, sizeof(vm->arch.vplic.pend));
+
+    for (irqid_t id = 1; id <= PLIC_IMPL_INTERRUPTS; id++) {
+        if (vm->arch.vplic.hw) {
+            plic_set_prio(id, 0);
+            for (size_t j = 1; j < PLIC_PLAT_CNTXT_NUM; j += 2) {
+                plic_set_enbl(j, id, false);
+            }
+        }
+    }
+}
+
 void vplic_init(struct vm* vm, const union vm_irqc_dscrp* vm_irqc_dscrp)
 {
     if (cpu()->id == vm->master) {
@@ -387,5 +406,7 @@ void vplic_init(struct vm* vm, const union vm_irqc_dscrp* vm_irqc_dscrp)
 
         /* assumes 2 contexts per hart */
         vm->arch.vplic.cntxt_num = vm->cpu_num * 2;
+
+        vplic_reset(vm);
     }
 }

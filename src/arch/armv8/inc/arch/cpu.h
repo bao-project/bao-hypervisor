@@ -14,6 +14,7 @@
 struct cpu_arch {
     struct cpu_arch_profile profile;
     unsigned long mpidr;
+    unsigned long handling_irq_ack;
 };
 
 unsigned long cpu_id_to_mpidr(cpuid_t id);

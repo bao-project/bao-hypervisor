@@ -9,13 +9,16 @@
 #include <cpu.h>
 #include <platform.h>
 #include <arch/gic.h>
+#if (GIC_VERSION == GICV2)
+#include <arch/gicv2.h>
+#elif (GIC_VERSION == GICV3)
+#include <arch/gicv3.h>
+#else
+#error "unknown GIV version " GIC_VERSION
+#endif
 #include <mem.h>
 #include <arch/sysregs.h>
 #include <vm.h>
-
-#ifndef GIC_VERSION
-#error "GIC_VERSION not defined for this platform"
-#endif
 
 void interrupts_arch_init()
 {
@@ -60,4 +63,13 @@ void interrupts_arch_clear(irqid_t int_id)
 void interrupts_arch_vm_assign(struct vm* vm, irqid_t id)
 {
     vgic_set_hw(vm, id);
+}
+
+void interrupts_arch_finish()
+{
+    if (cpu()->is_handling_irq) {
+        gicc_eoir((uint32_t)cpu()->arch.handling_irq_ack);
+        gicc_dir((uint32_t)cpu()->arch.handling_irq_ack);
+        cpu()->is_handling_irq = false;
+    }
 }

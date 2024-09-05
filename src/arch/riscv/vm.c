@@ -29,7 +29,6 @@ void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm)
     UNUSED_ARG(vm);
 
     vcpu->arch.sbi_ctx.lock = SPINLOCK_INITVAL;
-    vcpu->arch.sbi_ctx.state = vcpu->id == 0 ? STARTED : STOPPED;
 }
 
 void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
@@ -65,6 +64,8 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
     csrs_vstval_write(0);
     csrs_hvip_write(0);
     csrs_vsatp_write(0);
+
+    vcpu->arch.sbi_ctx.state = vcpu->id == 0 ? STARTED : STOPPED;
 }
 
 unsigned long vcpu_readreg(struct vcpu* vcpu, unsigned long reg)
@@ -100,4 +101,9 @@ void vcpu_arch_run(struct vcpu* vcpu)
     } else {
         cpu_idle();
     }
+}
+
+void vm_arch_reset(struct vm* vm)
+{
+    virqc_reset(vm);
 }

@@ -10,6 +10,7 @@
 #include <mem.h>
 #include <interrupts.h>
 #include <arch/csrs.h>
+#include <string.h>
 
 #define APLIC_MIN_PRIO             (0xFF)
 #define UPDATE_ALL_HARTS           (~0U)
@@ -1282,6 +1283,28 @@ static bool vaplic_idc_emul_handler(struct emul_access* acc)
     return true;
 }
 
+void vaplic_reset(struct vm* vm)
+{
+    memset(vm->arch.vaplic.srccfg, 0, sizeof(vm->arch.vaplic.srccfg));
+    memset(vm->arch.vaplic.ip, 0, sizeof(vm->arch.vaplic.ip));
+    memset(vm->arch.vaplic.ie, 0, sizeof(vm->arch.vaplic.ie));
+    memset(vm->arch.vaplic.target, 0, sizeof(vm->arch.vaplic.target));
+    memset(vm->arch.vaplic.idelivery, 0, sizeof(vm->arch.vaplic.idelivery));
+    memset(vm->arch.vaplic.iforce, 0, sizeof(vm->arch.vaplic.iforce));
+    memset(vm->arch.vaplic.ithreshold, 0, sizeof(vm->arch.vaplic.ithreshold));
+    memset(vm->arch.vaplic.topi_claimi, 0, sizeof(vm->arch.vaplic.topi_claimi));
+
+    for (irqid_t id = 1; id <= APLIC_MAX_INTERRUPTS; id++) {
+        if (bitmap_get(vm->arch.vaplic.hw, id)) {
+            aplic_clr_enbl(id);
+            aplic_clr_pend(id);
+            aplic_set_sourcecfg(id, APLIC_SOURCECFG_SM_INACTIVE);
+            aplic_set_target_prio(id, APLIC_TARGET_MIN_PRIO);
+            aplic_set_target_hart(id, 0);
+        }
+    }
+}
+
 void vaplic_init(struct vm* vm, const union vm_irqc_dscrp* vm_irqc_dscrp)
 {
     if (cpu()->id == vm->master) {
@@ -1301,5 +1324,7 @@ void vaplic_init(struct vm* vm, const union vm_irqc_dscrp* vm_irqc_dscrp)
                 .handler = vaplic_idc_emul_handler };
 
         vm_emul_add_mem(vm, &vm->arch.vaplic.aplic_idc_emul);
+
+        vaplic_reset(vm);
     }
 }

@@ -177,6 +177,7 @@ static int32_t psci_features_handler(uint32_t feature_id)
         case PSCI_AFFINITY_INFO_SMC32:
         case PSCI_AFFINITY_INFO_SMC64:
         case PSCI_FEATURES:
+        case PSCI_SYSTEM_RESET:
             ret = PSCI_E_SUCCESS;
             break;
         default:
@@ -185,6 +186,21 @@ static int32_t psci_features_handler(uint32_t feature_id)
     }
 
     return ret;
+}
+
+static int32_t psci_reset()
+{
+    // Although the spec mandates this call cannot fail, this might actually happen if Bao did
+    // not keep a copy of the original guest image around
+    bool res = PSCI_E_DENIED;
+
+    if (vm_reset(cpu()->vcpu->vm)) {
+        // Note that, if successful, this PSCI call does not actually return. We still "return"
+        // success to keep the compiler happy.
+        res = PSCI_E_SUCCESS;
+    }
+
+    return res;
 }
 
 int32_t psci_smc_handler(uint32_t smc_fid, unsigned long x1, unsigned long x2, unsigned long x3)
@@ -223,6 +239,9 @@ int32_t psci_smc_handler(uint32_t smc_fid, unsigned long x1, unsigned long x2, u
             ret = PSCI_TOS_NOT_PRESENT_MP;
             break;
 
+        case PSCI_SYSTEM_RESET:
+            ret = psci_reset();
+            break;
         default:
             INFO("unkown psci smc_fid 0x%lx", smc_fid);
     }

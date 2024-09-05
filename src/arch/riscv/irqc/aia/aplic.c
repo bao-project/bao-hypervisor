@@ -167,6 +167,7 @@ void aplic_handle(void)
     irqid_t intp_identity = aplic_idc_get_claimi_intpid(idc_id);
 
     if (intp_identity != 0) {
+        cpu()->arch.handling_irq.external_id = intp_identity;
         interrupts_handle(intp_identity);
     }
 }
