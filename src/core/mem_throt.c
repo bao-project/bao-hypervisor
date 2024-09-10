@@ -7,11 +7,13 @@
 #include <cpu.h>
 
 void mem_throt_period_timer_callback(irqid_t int_id) {
-
     timer_disable();
     events_cntr_disable(cpu()->mem_throt.counter_id);
     timer_reschedule_interrupt(cpu()->mem_throt.period_counts);
     events_cntr_set(cpu()->mem_throt.counter_id, cpu()->mem_throt.budget);
+
+    console_printk("Timer Callback\n");
+    console_printk("Events counter disable: %d\n", cpu()->mem_throt.counter_id);
 
     if (cpu()->mem_throt.throttled) {
         events_cntr_irq_enable(cpu()->mem_throt.counter_id);
@@ -25,7 +27,7 @@ void mem_throt_period_timer_callback(irqid_t int_id) {
 
 
 void mem_throt_event_overflow_callback(irqid_t int_id) {
-
+    console_printk("Budget overflow callback for CPU %d\n", cpu()->id);
     events_clear_cntr_ovs(cpu()->mem_throt.counter_id);
     events_cntr_disable(cpu()->mem_throt.counter_id);
     events_cntr_irq_disable(cpu()->mem_throt.counter_id);
