@@ -48,6 +48,7 @@ static void vm_vcpu_init(struct vm* vm, const struct vm_config* vm_config)
     vcpu->id = vcpu_id;
     vcpu->phys_id = cpu()->id;
     vcpu->vm = vm;
+    vcpu->active = true;
     cpu()->vcpu = vcpu;
 
     vcpu_arch_init(vcpu, vm);
@@ -349,6 +350,9 @@ __attribute__((weak)) cpumap_t vm_translate_to_vcpu_mask(struct vm* vm, cpumap_t
 
 void vcpu_run(struct vcpu* vcpu)
 {
-    cpu()->vcpu->active = true;
-    vcpu_arch_run(vcpu);
+    if (vcpu->active == false) {
+        cpu_idle();
+    } else {
+        vcpu_arch_run(vcpu);
+    }
 }
