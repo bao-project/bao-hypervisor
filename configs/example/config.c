@@ -38,7 +38,7 @@ struct config config = {
      * This configuration has 2 VMs.
      */
     .vmlist_size = 2,
-    .vmlist = {
+    .vmlist = (struct vm_config[]) {
         { 
             .image = {
                 .base_addr = 0x80000000,
