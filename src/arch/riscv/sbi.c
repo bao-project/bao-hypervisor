@@ -405,6 +405,7 @@ static struct sbiret sbi_bao_handler(unsigned long fid)
     struct sbiret ret;
 
     ret.error = hypercall(fid);
+    ret.value = (long int)vcpu_readreg(cpu()->vcpu, REG_A1);
 
     return ret;
 }
