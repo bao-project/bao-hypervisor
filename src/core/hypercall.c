@@ -20,6 +20,9 @@ long int hypercall(unsigned long id)
         case HC_IPC:
             ret = ipc_hypercall(arg0, arg1, arg2);
             break;
+        case HC_REMIO:
+            ret = remio_hypercall(arg0, arg1, arg2);
+            break;
         default:
             WARNING("Unknown hypercall id %d", id);
     }
