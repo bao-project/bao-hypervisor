@@ -50,6 +50,8 @@ typedef unsigned deviceid_t;
 
 typedef size_t objpool_id_t;
 
+typedef size_t remio_bind_key_t;
+
 typedef enum AS_SEC {
     /*--- HYP AS SECTIONS -----*/
     SEC_HYP_GLOBAL = 0,

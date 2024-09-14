@@ -9,6 +9,7 @@
 #include <cache.h>
 #include <config.h>
 #include <shmem.h>
+#include <objpool.h>
 
 static void vm_master_init(struct vm* vm, const struct vm_config* vm_config, vmid_t vm_id)
 {
@@ -225,6 +226,57 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* vm_config)
     }
 }
 
+static void vm_init_remio_dev(struct vm* vm, struct remio_dev* remio_dev)
+{
+    struct shmem* shmem = shmem_get(remio_dev->shmem.shmem_id);
+    if (shmem == NULL) {
+        ERROR("Invalid shmem id (%d) in the Remote I/O device (%d) configuration",
+            remio_dev->shmem.shmem_id, remio_dev->bind_key);
+    }
+    size_t shmem_size = remio_dev->shmem.size;
+    if (shmem_size > shmem->size) {
+        shmem_size = shmem->size;
+        WARNING("Trying to map region to smaller shared memory. Truncated");
+    }
+    spin_lock(&shmem->lock);
+    shmem->cpu_masters |= (1UL << cpu()->id);
+    spin_unlock(&shmem->lock);
+
+    struct vm_mem_region reg = {
+        .base = remio_dev->shmem.base,
+        .size = shmem_size,
+        .place_phys = true,
+        .phys = shmem->phys,
+        .colors = shmem->colors,
+    };
+
+    vm_map_mem_region(vm, &reg);
+
+    if (remio_dev->type == REMIO_DEV_FRONTEND) {
+        struct emul_mem* emu = &remio_dev->emul;
+        emu->va_base = remio_dev->va;
+        emu->size = remio_dev->size;
+        emu->handler = remio_mmio_emul_handler;
+        vm_emul_add_mem(vm, emu);
+    }
+}
+
+static void vm_init_remio(struct vm* vm, const struct vm_config* vm_config)
+{
+    if (vm_config->platform.remio_dev_num == 0) {
+        return;
+    }
+
+    vm->remio_dev_num = vm_config->platform.remio_dev_num;
+    vm->remio_devs = vm_config->platform.remio_devs;
+
+    for (size_t i = 0; i < vm_config->platform.remio_dev_num; i++) {
+        struct remio_dev* remio_dev = &vm_config->platform.remio_devs[i];
+        vm_init_remio_dev(vm, remio_dev);
+    }
+    remio_assign_vm_cpus(vm);
+}
+
 static struct vm* vm_allocation_init(struct vm_allocation* vm_alloc)
 {
     struct vm* vm = vm_alloc->vm;
@@ -271,6 +323,7 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* vm_co
         vm_init_mem_regions(vm, vm_config);
         vm_init_dev(vm, vm_config);
         vm_init_ipc(vm, vm_config);
+        vm_init_remio(vm, vm_config);
     }
 
     cpu_sync_and_clear_msgs(&vm->sync);
