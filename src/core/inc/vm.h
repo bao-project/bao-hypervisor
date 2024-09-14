@@ -17,6 +17,7 @@
 #include <bitmap.h>
 #include <io.h>
 #include <ipc.h>
+#include <remio.h>
 
 struct vm_mem_region {
     paddr_t base;
@@ -46,6 +47,9 @@ struct vm_platform {
 
     size_t dev_num;
     struct vm_dev_region* devs;
+
+    size_t remio_dev_num;
+    struct remio_dev* remio_devs;
 
     // /**
     //  * In MPU-based platforms which might also support virtual memory
@@ -84,6 +88,9 @@ struct vm {
 
     size_t ipc_num;
     struct ipc* ipcs;
+
+    size_t remio_dev_num;
+    struct remio_dev* remio_devs;
 };
 
 struct vcpu {

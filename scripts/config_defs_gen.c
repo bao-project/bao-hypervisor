@@ -6,6 +6,21 @@
 #include <stdio.h>
 #include <config.h>
 
+static size_t remio_dev_num(void)
+{
+    size_t dev_num = 0;
+    for (size_t vm_id = 0; vm_id < config.vmlist_size; vm_id++) {
+        struct vm_config* vm_config = &config.vmlist[vm_id];
+        for (size_t i = 0; i < vm_config->platform.remio_dev_num; i++) {
+            struct remio_dev* dev = &vm_config->platform.remio_devs[i];
+            if (dev->type == REMIO_DEV_BACKEND) {
+                dev_num++;
+            }
+        }
+    }
+    return dev_num;
+}
+
 int main() {
     size_t vcpu_num = 0;
     for (size_t i = 0; i < config.vmlist_size; i++) {
@@ -20,6 +35,8 @@ int main() {
     } else {
         printf("#define CONFIG_HYP_BASE_ADDR PLAT_BASE_ADDR\n");
     }
+
+    printf("#define CONFIG_REMIO_DEV_NUM %ld\n", remio_dev_num());
 
     return 0;
  }
