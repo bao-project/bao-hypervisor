@@ -12,9 +12,9 @@ long int hypercall(unsigned long id)
 {
     long int ret = -HC_E_INVAL_ID;
 
-    unsigned long arg0 = vcpu_readreg(cpu()->vcpu, HYPCALL_ARG_REG(0));
-    unsigned long arg1 = vcpu_readreg(cpu()->vcpu, HYPCALL_ARG_REG(1));
-    unsigned long arg2 = vcpu_readreg(cpu()->vcpu, HYPCALL_ARG_REG(2));
+    unsigned long arg0 = vcpu_readreg(cpu()->vcpu, HYPCALL_IN_ARG_REG(0));
+    unsigned long arg1 = vcpu_readreg(cpu()->vcpu, HYPCALL_IN_ARG_REG(1));
+    unsigned long arg2 = vcpu_readreg(cpu()->vcpu, HYPCALL_IN_ARG_REG(2));
 
     switch (id) {
         case HC_IPC:
