@@ -24,9 +24,13 @@ jobs:
           "IPIC_SBI",
           "IPIC_ACLINT",
         ]
+        cross_compile: [
+            "",
+            "CROSS_COMPILE=clang",
+        ]
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
       - run: make PLATFORM=${{ matrix.platform }} IRQC=${{ matrix.irqc }} \
-            IPIC=${{ matrix.ipic }} CONFIG=null
+            IPIC=${{ matrix.ipic }} CONFIG=null ${{ matrix.cross_compile }}
