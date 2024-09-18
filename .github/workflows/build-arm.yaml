@@ -23,8 +23,13 @@ jobs:
           "GICV2",
           "GICV3",
         ]
+        cross_compile: [
+            "",
+            "CROSS_COMPILE=clang",
+        ]
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - run: make PLATFORM=${{ matrix.platform }} GIC_VERSION=${{ matrix.gic }} CONFIG=null
+      - run: make PLATFORM=${{ matrix.platform }} GIC_VERSION=${{ matrix.gic }} \
+            CONFIG=null ${{ matrix.cross_compile }}
