@@ -195,6 +195,9 @@ void aborts_sync_handler(void)
     abort_handler_t handler = abort_handlers[ec];
     if (handler) {
         handler(iss, ipa_fault_addr, il, ec);
+        if (cpu()->vcpu->active == false) {
+            cpu_idle();
+        }
     } else {
         ERROR("no handler for abort ec = 0x%x", ec); // unknown guest exception
     }

@@ -153,4 +153,7 @@ void sync_exception_handler(void)
     }
 
     vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + pc_step);
+    if (cpu()->vcpu->active == false) {
+        cpu_idle();
+    }
 }
