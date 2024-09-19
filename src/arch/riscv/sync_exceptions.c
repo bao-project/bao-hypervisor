@@ -152,5 +152,5 @@ void sync_exception_handler(void)
         ERROR("unkown synchronous exception (%d)", _scause);
     }
 
-    cpu()->vcpu->regs.sepc += pc_step;
+    vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + pc_step);
 }
