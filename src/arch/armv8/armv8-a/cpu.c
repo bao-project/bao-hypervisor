@@ -31,16 +31,7 @@ void cpu_arch_profile_idle()
 {
     int64_t err = psci_power_down(PSCI_WAKEUP_IDLE);
     if (err) {
-        switch (err) {
-            case PSCI_E_NOT_SUPPORTED:
-                /**
-                 * If power down is not supported let's just wait for an interrupt
-                 */
-                __asm__ volatile("wfi");
-                break;
-            default:
-                ERROR("PSCI cpu%d power down failed with error %ld", cpu()->id, err);
-        }
+        ERROR("PSCI cpu%d power down failed with error %ld", cpu()->id, err);
     }
 
     /**
