@@ -44,6 +44,7 @@ platforms is presented below:
 - [x] Raspberry Pi 4
 - [x] QEMU virt
 - [x] Arm Fixed Virtual Platforms
+- [x] Toradex Verdin iMX8M Plus (w/ Dahlia Carrier Board)
 - [ ] BeagleBone AI-64
 - [ ] NXP MCIMX8M-EVK
 - [ ] 96Boards ROCK960
