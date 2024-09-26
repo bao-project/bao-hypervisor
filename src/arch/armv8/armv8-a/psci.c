@@ -90,6 +90,13 @@ int32_t psci_standby()
 
 int32_t psci_power_down(enum wakeup_reason reason)
 {
+    /* We've observed that some platforms behave unexpectedly when performing
+     * power down. In these cases, after powerdown, the CPU cores are not awaken
+     * by interrupts as expected by Bao. */
+    if (DEFINED(PLAT_PSCI_POWERDOWN_NOT_SUPPORTED)) {
+        return psci_standby();
+    }
+
     extern void psci_boot_entry(unsigned long x0);
 
     uint32_t pwr_state_aux = PSCI_POWER_STATE_LVL_0 | PSCI_STATE_TYPE_POWERDOWN;
