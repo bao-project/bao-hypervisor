@@ -394,6 +394,7 @@ void remio_init(void)
 {
     size_t frontend_cnt = 0, backend_cnt = 0;
     int devices[REMIO_MAX_DEVICES][REMIO_NUM_DEV_TYPES];
+    struct remio_shmem shmem[REMIO_MAX_DEVICES][REMIO_NUM_DEV_TYPES];
 
     /** Only execute the Remote I/O initialization routine on the master CPU */
     if (!cpu_is_master()) {
@@ -407,6 +408,8 @@ void remio_init(void)
     for (size_t i = 0; i < REMIO_MAX_DEVICES; i++) {
         devices[i][REMIO_DEV_FRONTEND] = REMIO_DEVICE_UNINITIALIZED;
         devices[i][REMIO_DEV_BACKEND] = REMIO_DEVICE_UNINITIALIZED;
+        shmem[i][REMIO_DEV_FRONTEND] = (struct remio_shmem){ 0 };
+        shmem[i][REMIO_DEV_BACKEND] = (struct remio_shmem){ 0 };
     }
 
     /** Create the Remote I/O devices based on the VM configuration */
@@ -429,9 +432,11 @@ void remio_init(void)
                 list_push(&remio_device_list, (node_t*)device);
                 backend_cnt++;
                 devices[dev->id][REMIO_DEV_BACKEND] = (int)vm_id;
+                shmem[dev->id][REMIO_DEV_BACKEND] = dev->shmem;
             } else if (dev->type == REMIO_DEV_FRONTEND) {
                 frontend_cnt++;
                 devices[dev->id][REMIO_DEV_FRONTEND] = (int)vm_id;
+                shmem[dev->id][REMIO_DEV_FRONTEND] = dev->shmem;
             } else {
                 ERROR("Unknown Remote I/O device type");
             }
@@ -441,6 +446,20 @@ void remio_init(void)
     /** Check if there is a 1-to-1 mapping between a Remote I/O backend and Remote I/O frontend */
     if (backend_cnt != frontend_cnt) {
         ERROR("There is no 1-to-1 mapping between a Remote I/O backend and Remote I/O frontend");
+    }
+
+    /** Check if the shared memory regions are correctly configured */
+    for (size_t i = 0; i < REMIO_MAX_DEVICES; i++) {
+        if (devices[i][REMIO_DEV_FRONTEND] != REMIO_DEVICE_UNINITIALIZED &&
+            devices[i][REMIO_DEV_BACKEND] != REMIO_DEVICE_UNINITIALIZED) {
+            if (shmem[i][REMIO_DEV_FRONTEND].base != shmem[i][REMIO_DEV_BACKEND].base ||
+                shmem[i][REMIO_DEV_FRONTEND].size != shmem[i][REMIO_DEV_BACKEND].size ||
+                shmem[i][REMIO_DEV_FRONTEND].shmem_id != shmem[i][REMIO_DEV_BACKEND].shmem_id) {
+                ERROR("Invalid shared memory region configuration for Remote I/O device %d.\n"
+                      "The frontend and backend shared memory regions must be the aligned.",
+                    i);
+            }
+        }
     }
 
     /** Update the Remote I/O device configuration */
