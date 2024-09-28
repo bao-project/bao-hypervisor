@@ -19,6 +19,7 @@ jobs:
         irqc: [
           "PLIC",
           "APLIC",
+          "AIA",
         ]
         ipic: [
           "IPIC_SBI",
