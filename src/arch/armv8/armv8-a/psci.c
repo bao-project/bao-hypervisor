@@ -82,6 +82,16 @@ void psci_wake(uint32_t handler_id)
 
 int32_t psci_standby()
 {
+    /* We've observed that some platforms behave unexpectedly when performing
+     * standby. In these cases, after standby, the CPU cores are not awaken
+     * by interrupts. */
+    if (DEFINED(PLAT_PSCI_STANDBY_NOT_SUPPORTED)) {
+        /**
+         * If standby is not supported let's just wait for an interrupt
+         */
+        __asm__ volatile("wfi");
+        return PSCI_E_SUCCESS;
+    }
     /* only apply request to core level */
     uint32_t pwr_state_aux = PSCI_POWER_STATE_LVL_0 | PSCI_STATE_TYPE_STANDBY;
 
