@@ -48,6 +48,8 @@ typedef unsigned irqid_t;
 
 typedef unsigned deviceid_t;
 
+typedef size_t objpool_id_t;
+
 typedef enum AS_SEC {
     /*--- HYP AS SECTIONS -----*/
     SEC_HYP_GLOBAL = 0,
