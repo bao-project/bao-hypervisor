@@ -69,14 +69,7 @@ static int32_t psci_cpu_suspend_handler(uint32_t power_state, unsigned long entr
         ret = psci_power_down(PSCI_WAKEUP_POWERDOWN);
     } else {
         // PSCI_STATE_TYPE_STANDBY:
-        /**
-         *  TODO: ideally we would emmit a standby request to PSCI (currently, ATF), but when we
-         * do, we do not wake up on interrupts on the current development target zcu104. We should
-         * understand why. To circunvent this, we directly emmit a wfi
-         */
-        // ret = psci_standby();
-        __asm__ volatile("wfi\n\r");
-        ret = PSCI_E_SUCCESS;
+        ret = psci_standby();
     }
 
     return ret;
