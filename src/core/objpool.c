@@ -12,7 +12,7 @@ void objpool_init(struct objpool* objpool)
     memset(objpool->bitmap, 0, BITMAP_SIZE(objpool->num));
 }
 
-void* objpool_alloc(struct objpool* objpool)
+void* objpool_alloc_with_id(struct objpool* objpool, objpool_id_t* id)
 {
     void* obj = NULL;
     spin_lock(&objpool->lock);
@@ -21,8 +21,16 @@ void* objpool_alloc(struct objpool* objpool)
         bitmap_set(objpool->bitmap, (size_t)n);
         obj = (void*)((uintptr_t)objpool->pool + (objpool->objsize * (size_t)n));
     }
+    if (id != NULL) {
+        *id = (objpool_id_t)n;
+    }
     spin_unlock(&objpool->lock);
     return obj;
+}
+
+void* objpool_alloc(struct objpool* objpool)
+{
+    return objpool_alloc_with_id(objpool, NULL);
 }
 
 void objpool_free(struct objpool* objpool, void* obj)

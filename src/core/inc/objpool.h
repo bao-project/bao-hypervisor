@@ -32,6 +32,15 @@ struct objpool {
 
 void objpool_init(struct objpool* objpool);
 void* objpool_alloc(struct objpool* objpool);
+void* objpool_alloc_with_id(struct objpool* objpool, objpool_id_t* id);
 void objpool_free(struct objpool* objpool, void* obj);
+
+inline void* objpool_get_by_id(struct objpool* objpool, objpool_id_t id)
+{
+    if (id < objpool->num) {
+        return (void*)((uintptr_t)objpool->pool + (objpool->objsize * id));
+    }
+    return NULL;
+}
 
 #endif /* OBJPOOL_H */
