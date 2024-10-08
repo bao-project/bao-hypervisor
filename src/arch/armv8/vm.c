@@ -90,6 +90,6 @@ void vcpu_arch_run(struct vcpu* vcpu)
     if (vcpu_psci_state_on(vcpu)) {
         vcpu_arch_entry();
     } else {
-        cpu_idle();
+        cpu_standby();
     }
 }
