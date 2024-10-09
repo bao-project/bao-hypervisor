@@ -91,6 +91,7 @@ struct vm_config {
         bool mem_thrott_en;
         uint64_t budget;
         uint64_t period_us;
+        uint64_t ticket_num;
     } mem_throth;
 
     /**
