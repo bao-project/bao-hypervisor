@@ -90,6 +90,7 @@ struct vm_config {
     struct {
         uint64_t budget;
         uint64_t period_us;
+        uint64_t ticket_num;
     } mem_throth;
 
     /**

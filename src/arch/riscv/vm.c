@@ -92,6 +92,6 @@ void vcpu_arch_run(struct vcpu* vcpu)
     if (vcpu->arch.sbi_ctx.state == STARTED) {
         vcpu_arch_entry();
     } else {
-        cpu_idle();
+        cpu_standby();
     }
 }
