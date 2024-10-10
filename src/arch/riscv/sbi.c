@@ -404,7 +404,10 @@ static struct sbiret sbi_bao_handler(unsigned long fid)
 {
     struct sbiret ret;
 
-    ret.error = hypercall(fid);
+    // Any hypercall will always be successful from a purely SBI standpoint. A
+    // bao-specific hypercall code is returned as the value.
+    ret.error = SBI_SUCCESS;
+    ret.value = hypercall(fid);
 
     return ret;
 }
