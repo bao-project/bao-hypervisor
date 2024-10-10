@@ -23,7 +23,7 @@ void mem_throt_period_timer_callback(irqid_t int_id) {
     events_cntr_enable(cpu()->vcpu->vm->mem_throt.counter_id);
     
     if (cpu()->vcpu->vm->master) 
-        cpu()->vcpu->vm->mem_throt.ticket_num_left = cpu()->vcpu->vm->mem_throt.ticket_num;
+        cpu()->vcpu->vm->mem_throt.num_tickets_left = cpu()->vcpu->vm->mem_throt.num_tickets;
     
     timer_enable();
 
@@ -34,9 +34,9 @@ void mem_throt_event_overflow_callback(irqid_t int_id) {
     events_cntr_disable(cpu()->vcpu->vm->mem_throt.counter_id);
     events_cntr_irq_disable(cpu()->vcpu->vm->mem_throt.counter_id);
 
-    if(cpu()->vcpu->vm->mem_throt.ticket_num_left > 0)
+    if(cpu()->vcpu->vm->mem_throt.num_tickets_left > 0)
     {
-        cpu()->vcpu->vm->mem_throt.ticket_num_left--;
+        cpu()->vcpu->vm->mem_throt.num_tickets_left--;
         events_cntr_set(cpu()->vcpu->vm->mem_throt.counter_id, cpu()->vcpu->vm->mem_throt.budget);
         events_cntr_enable(cpu()->vcpu->vm->mem_throt.counter_id);
 
@@ -71,15 +71,15 @@ void mem_throt_events_init(events_enum event, unsigned long budget, irq_handler_
     events_cntr_enable(cpu()->vcpu->vm->mem_throt.counter_id);
 }
 
-void mem_throt_init(uint64_t budget, uint64_t period_us, uint64_t ticket_num) {
+void mem_throt_init(uint64_t budget, uint64_t period_us, uint64_t num_tickets) {
 
     if (cpu()->vcpu->vm->master) 
     {
         cpu()->vcpu->vm->mem_throt.throttled = false;
         cpu()->vcpu->vm->mem_throt.period_us = period_us;
-        cpu()->vcpu->vm->mem_throt.ticket_num = ticket_num - cpu()->vcpu->vm->cpu_num;
-        cpu()->vcpu->vm->mem_throt.ticket_num_left = cpu()->vcpu->vm->mem_throt.ticket_num;
-        cpu()->vcpu->vm->mem_throt.budget = budget / cpu()->vcpu->vm->mem_throt.ticket_num;
+        cpu()->vcpu->vm->mem_throt.num_tickets = num_tickets - cpu()->vcpu->vm->cpu_num;
+        cpu()->vcpu->vm->mem_throt.num_tickets_left = cpu()->vcpu->vm->mem_throt.num_tickets;
+        cpu()->vcpu->vm->mem_throt.budget = budget / cpu()->vcpu->vm->mem_throt.num_tickets;
         is_mem_throt_initialized = true;
     }
     while (!is_mem_throt_initialized);
