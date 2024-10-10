@@ -7,6 +7,7 @@
 #include <cpu.h>
 #include <vm.h>
 
+bool is_mem_throt_initialized = false;
 
 void mem_throt_period_timer_callback(irqid_t int_id) {
 
