@@ -10,6 +10,8 @@
 #include <events.h>
 #include <bitmap.h>
 
+bool is_mem_throt_initialized = false;
+
 typedef struct mem_throt_info {
 	int budget;              
 	bool throttled;			 
