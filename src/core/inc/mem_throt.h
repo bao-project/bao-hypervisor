@@ -16,12 +16,12 @@ typedef struct mem_throt_info {
 	int counter_id;
 	int period_us;
 	int period_counts;
-	int ticket_num;
-	int ticket_num_left;
+	int vm_ticket_num;
+	int vm_ticket_num_left;
 }mem_throt_t;
 
 
-void mem_throt_init(uint64_t budget, uint64_t period_us, uint64_t ticket_num);
+void vm_mem_throt_init(uint64_t budget, uint64_t period_us, uint64_t ticket_num);
 void mem_throt_period_timer_callback(irqid_t);
 
 /* budget is used up. PMU generate an interrupt */

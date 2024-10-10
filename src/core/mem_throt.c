@@ -45,7 +45,7 @@ void mem_throt_period_timer_callback(irqid_t int_id) {
     events_cntr_enable(cpu()->vcpu->vm->mem_throt.counter_id);
     
     if (cpu()->vcpu->vm->master) 
-        cpu()->vcpu->vm->mem_throt.ticket_num_left = cpu()->vcpu->vm->mem_throt.ticket_num;
+        cpu()->vcpu->vm->mem_throt.vm_ticket_num_left = cpu()->vcpu->vm->mem_throt.vm_ticket_num;
     
     timer_enable();
     // uint32_t target_cpu_mask = cpu()->vcpu->vm->cpus;  // Assuming this is a bitmask of all CPUs
@@ -72,12 +72,11 @@ void mem_throt_event_overflow_callback(irqid_t int_id) {
     events_cntr_disable(cpu()->vcpu->vm->mem_throt.counter_id);
     events_cntr_irq_disable(cpu()->vcpu->vm->mem_throt.counter_id);
 
-    if(cpu()->vcpu->vm->mem_throt.ticket_num_left > 0)
+    if(cpu()->vcpu->vm->mem_throt.vm_ticket_num_left > 0)
     {
-        cpu()->vcpu->vm->mem_throt.ticket_num_left--;
+        cpu()->vcpu->vm->mem_throt.vm_ticket_num_left--;
         events_cntr_set(cpu()->vcpu->vm->mem_throt.counter_id, cpu()->vcpu->vm->mem_throt.budget);
         events_cntr_enable(cpu()->vcpu->vm->mem_throt.counter_id);
-
     }
     else
     {
@@ -111,16 +110,21 @@ void mem_throt_events_init(events_enum event, unsigned long budget, irq_handler_
     events_cntr_enable(cpu()->vcpu->vm->mem_throt.counter_id);
 }
 
-void mem_throt_init(uint64_t budget, uint64_t period_us, uint64_t ticket_num) {
+void vm_mem_throt_init(uint64_t budget, uint64_t period_us, uint64_t ticket_num) {
 
     if (cpu()->vcpu->vm->master) 
     {
         cpu()->vcpu->vm->mem_throt.throttled = false;
         cpu()->vcpu->vm->mem_throt.period_us = period_us;
-        cpu()->vcpu->vm->mem_throt.ticket_num = ticket_num - cpu()->vcpu->vm->cpu_num;
-        cpu()->vcpu->vm->mem_throt.ticket_num_left = cpu()->vcpu->vm->mem_throt.ticket_num;
-        cpu()->vcpu->vm->mem_throt.budget = budget / cpu()->vcpu->vm->mem_throt.ticket_num;
+        cpu()->vcpu->vm->mem_throt.vm_ticket_num = ticket_num - cpu()->vcpu->vm->cpu_num;
+        cpu()->vcpu->vm->mem_throt.vm_ticket_num_left = cpu()->vcpu->vm->mem_throt.vm_ticket_num;
+        cpu()->vcpu->vm->mem_throt.budget = budget / cpu()->vcpu->vm->mem_throt.vm_ticket_num;
     }
     mem_throt_timer_init(mem_throt_period_timer_callback);
     mem_throt_events_init(bus_access, cpu()->vcpu->vm->mem_throt.budget, mem_throt_event_overflow_callback);
+}
+
+void cpu_mem_throt_init(uint64_t budget, uint64_t period_us, uint64_t ticket_num) {
+    cpu()->vcpu.mbr_ticket_num = ticket_num;
+    cpu()->vcpu.mbr_ticket_num_left = ticket_num;
 }

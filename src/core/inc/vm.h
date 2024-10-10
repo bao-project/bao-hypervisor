@@ -98,6 +98,10 @@ struct vcpu {
     cpuid_t phys_id;
     bool active;
 
+    uint64_t mbr_ticket_num;
+    uint64_t mbr_ticket_num_left;
+
+
     struct vm* vm;
 };
 
