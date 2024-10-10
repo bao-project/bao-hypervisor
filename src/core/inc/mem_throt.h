@@ -10,7 +10,6 @@
 #include <events.h>
 #include <bitmap.h>
 
-bool is_mem_throt_initialized = false;
 
 typedef struct mem_throt_info {
 	int budget;              
@@ -18,12 +17,13 @@ typedef struct mem_throt_info {
 	int counter_id;
 	int period_us;
 	int period_counts;
-	int ticket_num;
-	int ticket_num_left;
+	int num_tickets;
+	int num_tickets_left;
 }mem_throt_t;
 
+bool is_mem_throt_initialized;
 
-void mem_throt_init(uint64_t budget, uint64_t period_us, uint64_t ticket_num);
+void mem_throt_init(uint64_t budget, uint64_t period_us, uint64_t num_ticket);
 void mem_throt_period_timer_callback(irqid_t);
 
 /* budget is used up. PMU generate an interrupt */
