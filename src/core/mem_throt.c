@@ -120,7 +120,9 @@ void mem_throt_init(uint64_t budget, uint64_t period_us, uint64_t ticket_num) {
         cpu()->vcpu->vm->mem_throt.ticket_num = ticket_num - cpu()->vcpu->vm->cpu_num;
         cpu()->vcpu->vm->mem_throt.ticket_num_left = cpu()->vcpu->vm->mem_throt.ticket_num;
         cpu()->vcpu->vm->mem_throt.budget = budget / cpu()->vcpu->vm->mem_throt.ticket_num;
+        is_mem_throt_initialized = true;
     }
+    while (!is_mem_throt_initialized);
     mem_throt_timer_init(mem_throt_period_timer_callback);
     mem_throt_events_init(bus_access, cpu()->vcpu->vm->mem_throt.budget, mem_throt_event_overflow_callback);
 }
