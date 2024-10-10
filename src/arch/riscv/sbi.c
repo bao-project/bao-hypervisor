@@ -436,7 +436,7 @@ size_t sbi_vs_handler()
             break;
         default:
             WARNING("guest issued unsupport sbi extension call (%d)", extid);
-            ret.value = SBI_ERR_NOT_SUPPORTED;
+            ret.error = SBI_ERR_NOT_SUPPORTED;
     }
 
     vcpu_writereg(cpu()->vcpu, REG_A0, (unsigned long)ret.error);
