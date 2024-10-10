@@ -42,6 +42,12 @@ void mem_throt_period_timer_callback(irqid_t int_id) {
         events_cntr_irq_enable(cpu()->vcpu->vm->mem_throt.counter_id);
         cpu()->vcpu->vm->mem_throt.throttled = false;
     }
+    events_cntr_enable(cpu()->vcpu->vm->mem_throt.counter_id);
+    
+    if (cpu()->vcpu->vm->master) 
+        cpu()->vcpu->vm->mem_throt.ticket_num_left = cpu()->vcpu->vm->mem_throt.ticket_num;
+    
+    timer_enable();
     // uint32_t target_cpu_mask = cpu()->vcpu->vm->cpus;  // Assuming this is a bitmask of all CPUs
     
     // Clear the bit for the current CPU to avoid sending IPI to itself
@@ -58,29 +64,27 @@ void mem_throt_period_timer_callback(irqid_t int_id) {
     //         cpu_send_msg(i, &msg);
     //     }
     //  }
-    events_cntr_enable(cpu()->vcpu->vm->mem_throt.counter_id);
-    
-    if (cpu()->vcpu->vm->master) 
-        cpu()->vcpu->vm->mem_throt.ticket_num_left = cpu()->vcpu->vm->mem_throt.ticket_num;
-    
-    timer_enable();
+
 }
 void mem_throt_event_overflow_callback(irqid_t int_id) {
 
     events_clear_cntr_ovs(cpu()->vcpu->vm->mem_throt.counter_id);
     events_cntr_disable(cpu()->vcpu->vm->mem_throt.counter_id);
-    
+    events_cntr_irq_disable(cpu()->vcpu->vm->mem_throt.counter_id);
+
     if(cpu()->vcpu->vm->mem_throt.ticket_num_left > 0)
     {
         cpu()->vcpu->vm->mem_throt.ticket_num_left--;
         events_cntr_set(cpu()->vcpu->vm->mem_throt.counter_id, cpu()->vcpu->vm->mem_throt.budget);
+        events_cntr_enable(cpu()->vcpu->vm->mem_throt.counter_id);
+
     }
     else
     {
-        events_cntr_irq_disable(cpu()->vcpu->vm->mem_throt.counter_id);
         cpu()->vcpu->vm->mem_throt.throttled = true;  
         cpu_standby();
     }
+    //enhace this part
 }
 
 
