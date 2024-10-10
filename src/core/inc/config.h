@@ -88,6 +88,7 @@ struct vm_config {
     colormap_t colors;
 
     struct {
+        bool mem_thrott_en;
         uint64_t budget;
         uint64_t period_us;
         uint64_t vm_ticket_num;

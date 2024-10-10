@@ -10,18 +10,20 @@
 #include <events.h>
 #include <bitmap.h>
 
+
 typedef struct mem_throt_info {
 	int budget;              
 	bool throttled;			 
 	int counter_id;
 	int period_us;
 	int period_counts;
-	int vm_ticket_num;
-	int vm_ticket_num_left;
+	int num_tickets;
+	int num_tickets_left;
 }mem_throt_t;
 
+extern bool is_mem_throt_initialized;
 
-void vm_mem_throt_init(uint64_t budget, uint64_t period_us, uint64_t ticket_num);
+void mem_throt_init(uint64_t budget, uint64_t period_us, uint64_t num_ticket);
 void mem_throt_period_timer_callback(irqid_t);
 
 /* budget is used up. PMU generate an interrupt */

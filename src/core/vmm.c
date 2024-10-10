@@ -139,7 +139,6 @@ void vmm_init()
         struct vm* vm = vm_init(vm_alloc, vm_config, master, vm_id);
         cpu_sync_barrier(&vm->sync);
         vcpu_run(cpu()->vcpu);
-        console_printk("VM %d started\n", vm_id);
     } else {
         cpu_idle();
     }
