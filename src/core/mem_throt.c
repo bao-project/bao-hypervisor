@@ -10,7 +10,6 @@
 bool is_mem_throt_initialized = false;
 
 void mem_throt_period_timer_callback(irqid_t int_id) {
-
     timer_disable();
     events_cntr_disable(cpu()->vcpu->vm->mem_throt.counter_id);
     timer_reschedule_interrupt(cpu()->vcpu->vm->mem_throt.period_counts);
