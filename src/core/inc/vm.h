@@ -102,7 +102,6 @@ struct vcpu {
     uint64_t mbr_num_tickets_left;
     uint64_t mbr_budget;
 
-
     struct vm* vm;
 };
 

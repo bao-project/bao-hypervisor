@@ -24,6 +24,9 @@ typedef struct mem_throt_info {
 extern bool is_mem_throt_initialized;
 
 void vm_mem_throt_init(uint64_t budget, uint64_t period_us, uint64_t num_ticket);
+
+void cpu_mem_throt_init(uint64_t num_tickets);
+
 void mem_throt_period_timer_callback(irqid_t);
 
 /* budget is used up. PMU generate an interrupt */
