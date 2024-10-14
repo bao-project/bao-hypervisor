@@ -13,7 +13,7 @@ void mem_throt_period_timer_callback(irqid_t int_id) {
     timer_disable();
     events_cntr_disable(cpu()->vcpu->vm->mem_throt.counter_id);
     timer_reschedule_interrupt(cpu()->vcpu->vm->mem_throt.period_counts);
-    events_cntr_set(cpu()->vcpu->vm->mem_throt.counter_id, cpu()->vcpu->vm->mem_throt.budget);
+    events_cntr_set(cpu()->vcpu->vm->mem_throt.counter_id, cpu()->vcpu->mbr_budget);
 
     if (cpu()->vcpu->vm->mem_throt.throttled) 
     {
@@ -24,7 +24,8 @@ void mem_throt_period_timer_callback(irqid_t int_id) {
     
     if (cpu()->vcpu->vm->master) 
         cpu()->vcpu->vm->mem_throt.num_tickets_vm_left = cpu()->vcpu->vm->mem_throt.num_tickets_vm;
-    
+    cpu()->vcpu->mbr_num_tickets_left = cpu()->vcpu->mbr_num_tickets;
+
     timer_enable();
 
 }
@@ -34,7 +35,7 @@ void mem_throt_event_overflow_callback(irqid_t int_id) {
     events_cntr_disable(cpu()->vcpu->vm->mem_throt.counter_id);
     events_cntr_irq_disable(cpu()->vcpu->vm->mem_throt.counter_id);
 
-    if(cpu()->vcpu->mbr_num_tickets)
+    if(cpu()->vcpu->mbr_num_tickets_left)
     {
         cpu()->vcpu->mbr_num_tickets_left--;
         events_cntr_set(cpu()->vcpu->vm->mem_throt.counter_id, cpu()->vcpu->vm->mem_throt.budget);
