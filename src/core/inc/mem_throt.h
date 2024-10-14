@@ -11,6 +11,7 @@
 #include <bitmap.h>
 
 
+
 typedef struct mem_throt_info {
 	int budget;              
 	bool throttled;			 
@@ -22,9 +23,11 @@ typedef struct mem_throt_info {
 	uint64_t ticket_budget;
 }mem_throt_t;
 
-extern bool is_mem_throt_initialized;
+extern size_t global_num_ticket_hypervisor;
 
 void mem_throt_config(uint64_t period_us, uint64_t num_tickets_vm, uint64_t ticket_budget, uint64_t* num_tickets_cpu);
+
+void hypervisor_mem_throt_config(size_t num_ticket_hypervisor);
 
 void mem_throt_init();
 

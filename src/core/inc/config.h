@@ -124,6 +124,8 @@ extern struct config {
     /* The number of VMs specified by this configuration */
     size_t vmlist_size;
 
+    size_t hypervisor_tickets;
+
     /* Array list with VM configuration */
     struct vm_config* vmlist;
 
