@@ -19,13 +19,14 @@ typedef struct mem_throt_info {
 	uint64_t period_counts;
 	uint64_t num_tickets;
 	uint64_t num_tickets_left;
+	uint64_t ticket_budget;
 }mem_throt_t;
 
 extern bool is_mem_throt_initialized;
 
-void vm_mem_throt_init(uint64_t budget, uint64_t period_us, uint64_t num_ticket);
+void mem_throt_config(uint64_t period_us, uint64_t num_tickets_vm, uint64_t ticket_budget, uint64_t* num_tickets_cpu);
 
-void cpu_mem_throt_init(uint64_t budget, uint64_t* num_tickets);
+void mem_throt_init();
 
 void mem_throt_period_timer_callback(irqid_t);
 

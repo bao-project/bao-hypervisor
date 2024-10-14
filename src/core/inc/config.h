@@ -88,13 +88,10 @@ struct vm_config {
     colormap_t colors;
 
     struct {
-        bool mem_thrott_en;
-        uint64_t vm_budget;
         uint64_t period_us;
+        uint64_t ticket_budget;
         uint64_t vm_num_tickets;
-        uint64_t cpu_budget;
         uint64_t* cpu_num_tickets;
-        
     } mem_throth;
 
     /**

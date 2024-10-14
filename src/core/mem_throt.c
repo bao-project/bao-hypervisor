@@ -79,7 +79,10 @@ void mem_throt_events_init(events_enum event, unsigned long budget, irq_handler_
     events_cntr_enable(cpu()->vcpu->vm->mem_throt.counter_id);
 }
 
-void vm_mem_throt_init(uint64_t budget, uint64_t period_us, uint64_t num_tickets_vm) {
+void mem_throt_config(uint64_t period_us, uint64_t num_tickets_vm, uint64_t ticket_budget, uint64_t* num_tickets_cpu) {
+
+    if(ticket_budget == 0) return;
+    
 
     if (cpu()->vcpu->vm->master) 
     {
@@ -87,16 +90,15 @@ void vm_mem_throt_init(uint64_t budget, uint64_t period_us, uint64_t num_tickets
         cpu()->vcpu->vm->mem_throt.period_us = period_us;
         cpu()->vcpu->vm->mem_throt.num_tickets = num_tickets_vm;
         cpu()->vcpu->vm->mem_throt.num_tickets_left = cpu()->vcpu->vm->mem_throt.num_tickets;
-        cpu()->vcpu->vm->mem_throt.budget = budget;
-        is_mem_throt_initialized = true;
     }
-    while (!is_mem_throt_initialized);
-    mem_throt_timer_init(mem_throt_period_timer_callback);
+
+    cpu()->vcpu->mem_throt.throttled = false;
+    cpu()->vcpu->mem_throt.num_tickets = num_tickets_cpu[cpu()->id]; //TODO: does not allow vm stacking
+    cpu()->vcpu->mem_throt.num_tickets_left = cpu()->vcpu->mem_throt.num_tickets - 1;
+    cpu()->vcpu->mem_throt.ticket_budget = ticket_budget;
 }
 
-void cpu_mem_throt_init(uint64_t budget, uint64_t* num_tickets) {
-    // cpu()->vcpu->mem_throt.budget = budget/num_tickets;
-    cpu()->vcpu->mem_throt.num_tickets = num_tickets[cpu()->id]; //TODO: fazer um for para dar assign aos cpus
-    cpu()->vcpu->mem_throt.num_tickets_left = cpu()->vcpu->mem_throt.num_tickets - 1;
+void mem_throt_init() {
+    mem_throt_timer_init(mem_throt_period_timer_callback);
     mem_throt_events_init(bus_access, cpu()->vcpu->mem_throt.budget, mem_throt_event_overflow_callback);
 }

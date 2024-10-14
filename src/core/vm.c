@@ -272,8 +272,11 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* vm_co
         vm_init_ipc(vm, vm_config);
     }
 
-    vm_mem_throt_init(vm_config->mem_throth.vm_budget, vm_config->mem_throth.period_us, vm_config->mem_throth.vm_num_tickets);
-    cpu_mem_throt_init(vm->config->mem_throth.cpu_budget,vm_config->mem_throth.cpu_num_tickets);
+    mem_throt_config(vm_config->mem_throth.period_us, vm_config->mem_throth.vm_num_tickets, vm_config->mem_throth.ticket_budget, vm_config->mem_throth.cpu_num_tickets);
+    
+    cpu_sync_barrier(&vm->sync);
+
+    mem_throt_init();
     
     cpu_sync_and_clear_msgs(&vm->sync);
 
