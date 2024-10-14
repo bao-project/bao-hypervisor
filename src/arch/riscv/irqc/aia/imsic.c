@@ -53,7 +53,7 @@ void imsic_init(void)
 void imsic_set_enbl(irqid_t intp_id)
 {
     csrs_siselect_write(IMSIC_EIE + imsic_eie_index(intp_id));
-    csrs_sireg_set(1ULL << imsic_eie_bit(intp_id));
+    csrs_sireg_set(1UL << imsic_eie_bit(intp_id));
 }
 
 bool imsic_get_pend(irqid_t intp_id)
@@ -65,7 +65,7 @@ bool imsic_get_pend(irqid_t intp_id)
 void imsic_clr_pend(irqid_t intp_id)
 {
     csrs_siselect_write(IMSIC_EIP + imsic_eie_index(intp_id));
-    csrs_sireg_clear(1ULL << imsic_eie_bit(intp_id));
+    csrs_sireg_clear(1UL << imsic_eie_bit(intp_id));
 }
 
 /**
@@ -77,7 +77,7 @@ void imsic_inject_pend(size_t guest_file, irqid_t intp_id)
     UNUSED_ARG(guest_file);
 
     csrs_vsiselect_write(IMSIC_EIP + imsic_eie_index(intp_id));
-    csrs_vsireg_clear(1ULL << imsic_eie_bit(intp_id));
+    csrs_vsireg_clear(1UL << imsic_eie_bit(intp_id));
 }
 
 void imsic_send_msi(cpuid_t target_cpu, irqid_t ipi_id)
