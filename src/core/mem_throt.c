@@ -94,9 +94,9 @@ void vm_mem_throt_init(uint64_t budget, uint64_t period_us, uint64_t num_tickets
     mem_throt_timer_init(mem_throt_period_timer_callback);
 }
 
-void cpu_mem_throt_init(uint64_t budget, uint64_t num_tickets) {
-    cpu()->vcpu->mem_throt.budget = budget/num_tickets;
-    cpu()->vcpu->mem_throt.num_tickets = num_tickets;
-    cpu()->vcpu->mem_throt.num_tickets_left = --num_tickets;
+void cpu_mem_throt_init(uint64_t budget, uint64_t* num_tickets) {
+    // cpu()->vcpu->mem_throt.budget = budget/num_tickets;
+    cpu()->vcpu->mem_throt.num_tickets = num_tickets[cpu()->id]; //TODO: fazer um for para dar assign aos cpus
+    cpu()->vcpu->mem_throt.num_tickets_left = cpu()->vcpu->mem_throt.num_tickets - 1;
     mem_throt_events_init(bus_access, cpu()->vcpu->mem_throt.budget, mem_throt_event_overflow_callback);
 }
