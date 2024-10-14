@@ -29,6 +29,7 @@ void mem_throt_period_timer_callback(irqid_t int_id) {
     timer_enable();
 
 }
+
 void mem_throt_event_overflow_callback(irqid_t int_id) {
 
     events_clear_cntr_ovs(cpu()->vcpu->vm->mem_throt.counter_id);
@@ -82,7 +83,6 @@ void mem_throt_events_init(events_enum event, unsigned long budget, irq_handler_
 void mem_throt_config(uint64_t period_us, uint64_t num_tickets_vm, uint64_t ticket_budget, uint64_t* num_tickets_cpu) {
 
     if(ticket_budget == 0) return;
-    
 
     if (cpu()->vcpu->vm->master) 
     {
@@ -92,8 +92,9 @@ void mem_throt_config(uint64_t period_us, uint64_t num_tickets_vm, uint64_t tick
         cpu()->vcpu->vm->mem_throt.num_tickets_left = cpu()->vcpu->vm->mem_throt.num_tickets;
     }
 
-    cpu()->vcpu->mem_throt.throttled = false;
-    cpu()->vcpu->mem_throt.num_tickets = num_tickets_cpu[cpu()->id]; //TODO: does not allow vm stacking
+    cpu()->vcpu->mem_throt.num_tickets = num_tickets_cpu[cpu()->vcpu->id]; 
+
+    cpu()->vcpu->mem_throt.num_tickets = num_tickets_cpu[cpu()->id]; 
     cpu()->vcpu->mem_throt.num_tickets_left = cpu()->vcpu->mem_throt.num_tickets - 1;
     cpu()->vcpu->mem_throt.ticket_budget = ticket_budget;
 }
