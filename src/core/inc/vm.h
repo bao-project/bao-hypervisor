@@ -98,9 +98,7 @@ struct vcpu {
     cpuid_t phys_id;
     bool active;
 
-    uint64_t mbr_num_tickets;
-    uint64_t mbr_num_tickets_left;
-    uint64_t mbr_budget;
+    mem_throt_t mem_throt;
 
     struct vm* vm;
 };

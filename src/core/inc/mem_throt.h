@@ -17,8 +17,8 @@ typedef struct mem_throt_info {
 	int counter_id;
 	int period_us;
 	int period_counts;
-	int num_tickets_vm;
-	int num_tickets_vm_left;
+	int num_tickets;
+	int num_tickets_left;
 }mem_throt_t;
 
 extern bool is_mem_throt_initialized;
