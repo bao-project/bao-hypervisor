@@ -104,7 +104,7 @@
 #define SSTATUS_XS_DIRTY            (3ULL << SSTATUS_XS_OFF)
 #define SSTATUS_SUM                 (1ULL << 18)
 #define SSTATUS_MXR                 (1ULL << 19)
-#define SSTATUS_SD                  (1ULL << 63)
+#define SSTATUS_SD                  (1ULL << ((REGLEN * 8) - 1))
 
 #define SIE_USIE                    (1ULL << 0)
 #define SIE_SSIE                    (1ULL << 1)
