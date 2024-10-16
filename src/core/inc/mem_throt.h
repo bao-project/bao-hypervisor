@@ -13,19 +13,18 @@
 
 
 typedef struct mem_throt_info {
-	int budget;              
 	bool throttled;			 
 	uint64_t counter_id;
 	uint64_t period_us;
 	uint64_t period_counts;
-	uint64_t num_tickets;
-	uint64_t num_tickets_left;
-	uint64_t ticket_budget;
+	uint64_t budget;
+	uint64_t budget_left;
+	uint64_t assign_ratio;
 }mem_throt_t;
 
 extern size_t global_num_ticket_hypervisor;
 
-void mem_throt_config(uint64_t period_us, uint64_t num_tickets_vm, uint64_t ticket_budget, uint64_t* num_tickets_cpu);
+void mem_throt_config(uint64_t period_us, uint64_t vm_budget, uint64_t* cpu_ratio);
 
 void hypervisor_mem_throt_config(size_t num_ticket_hypervisor);
 
