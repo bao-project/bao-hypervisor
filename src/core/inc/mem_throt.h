@@ -38,5 +38,6 @@ void mem_throt_process_overflow(void);
 
 void mem_throt_timer_init(irq_handler_t hander);
 void mem_throt_events_init(events_enum event, unsigned long budget, irq_handler_t handler);
+void mem_throt_budget_change(uint64_t budget);
 
 #endif /* __mem_throt_H__ */
