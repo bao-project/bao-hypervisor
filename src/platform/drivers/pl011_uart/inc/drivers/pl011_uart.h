@@ -8,6 +8,11 @@
 
 #include <stdint.h>
 
+#include <plat/platform.h>
+#ifndef PL011_PAGE_OFFSET
+#define PL011_PAGE_OFFSET (0x000) /**< offset in range of 0-0xFFF */
+#endif
+
 /* UART Base Address (PL011) */
 
 #define UART_BASE_0             0xFDF02000
@@ -28,8 +33,10 @@
 
 #define NUM_UART                6
 
+#ifndef UART_CLK
 #define UART_CLK                19200000
-#define UART_BAUD_RATE          115200
+#endif
+#define UART_BAUD_RATE           115200
 
 /* UART Data Register */
 
@@ -177,6 +184,7 @@
 /* UART (PL011) register structure */
 
 struct Pl011_Uart_hw {
+    const uint8_t offset[PL011_PAGE_OFFSET]; // Offset for page alignment
     volatile uint32_t data;               // UART Data Register
     volatile uint32_t status_error;       // UART Receive Status Register/Error Clear
                                           // Register
