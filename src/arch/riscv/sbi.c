@@ -404,7 +404,10 @@ static struct sbiret sbi_bao_handler(unsigned long fid)
 {
     struct sbiret ret;
 
-    ret.error = hypercall(fid);
+    // Any hypercall will always be successful from a purely SBI standpoint. A
+    // bao-specific hypercall code is returned as the value.
+    ret.error = SBI_SUCCESS;
+    ret.value = hypercall(fid);
 
     return ret;
 }
@@ -436,7 +439,7 @@ size_t sbi_vs_handler()
             break;
         default:
             WARNING("guest issued unsupport sbi extension call (%d)", extid);
-            ret.value = SBI_ERR_NOT_SUPPORTED;
+            ret.error = SBI_ERR_NOT_SUPPORTED;
     }
 
     vcpu_writereg(cpu()->vcpu, REG_A0, (unsigned long)ret.error);
