@@ -6,6 +6,7 @@
 #ifndef ARCH_HYPERCALL_H
 #define ARCH_HYPERCALL_H
 
-#define HYPCALL_ARG_REG(ARG) ((ARG) + 1)
+#define HYPCALL_IN_ARG_REG(ARG)  ((ARG) + 1)
+#define HYPCALL_OUT_ARG_REG(ARG) (HYPCALL_IN_ARG_REG(ARG))
 
 #endif /* ARCH_HYPERCALL_H */
