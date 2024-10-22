@@ -32,7 +32,7 @@ void mem_throt_period_timer_callback(irqid_t int_id) {
 
 void mem_throt_event_overflow_callback(irqid_t int_id) {
 
-    console_printk("PMU Counter %d", events_get_cntr_value(cpu()->vcpu->vm->mem_throt.counter_id));
+    console_printk("CALLBACK: CPU ID: %d PMU Counter %d \n", cpu()->id,events_get_cntr_value(cpu()->vcpu->vm->mem_throt.counter_id));
     events_clear_cntr_ovs(cpu()->vcpu->vm->mem_throt.counter_id);
     events_cntr_disable(cpu()->vcpu->vm->mem_throt.counter_id);
     events_cntr_irq_disable(cpu()->vcpu->vm->mem_throt.counter_id);
@@ -44,7 +44,6 @@ void mem_throt_event_overflow_callback(irqid_t int_id) {
     if(cpu()->vcpu->vm->mem_throt.budget_left >= 0)
     {
         mem_throt_budget_change((cpu()->vcpu->vm->mem_throt.budget / cpu()->vcpu->vm->cpu_num));
-        console_printk("CPU %d budget left = %d", cpu()->id, cpu()->vcpu->vm->mem_throt.budget_left);
     }
     else 
     {
@@ -76,20 +75,21 @@ void mem_throt_events_init(events_enum event, unsigned long budget, irq_handler_
     events_cntr_enable(cpu()->vcpu->vm->mem_throt.counter_id);
 }
 
-inline void mem_throt_budget_change(uint64_t budget) {
+inline void mem_throt_budget_change(size_t budget) {
     events_cntr_set(cpu()->vcpu->vm->mem_throt.counter_id, cpu()->vcpu->vm->mem_throt.budget);
     events_cntr_enable(cpu()->vcpu->vm->mem_throt.counter_id);
     events_cntr_irq_enable(cpu()->vcpu->vm->mem_throt.counter_id);
 }
 
-void mem_throt_config(uint64_t period_us, uint64_t vm_budget, uint64_t* cpu_ratio) {
+void mem_throt_config(size_t period_us, size_t vm_budget, size_t* cpu_ratio) {
     if(vm_budget == 0) return;
 
     if (cpu()->vcpu->vm->master) 
-    {
+    {   
+        vm_budget = vm_budget / cpu()->vcpu->vm->cpu_num;
         cpu()->vcpu->vm->mem_throt.throttled = false;
         cpu()->vcpu->vm->mem_throt.period_us = period_us;
-        cpu()->vcpu->vm->mem_throt.budget = vm_budget;
+        cpu()->vcpu->vm->mem_throt.budget = vm_budget * cpu()->vcpu->vm->cpu_num ;
         cpu()->vcpu->vm->mem_throt.budget_left = cpu()->vcpu->vm->mem_throt.budget;
         cpu()->vcpu->vm->mem_throt.is_initialized = true;
     }
@@ -101,9 +101,9 @@ void mem_throt_config(uint64_t period_us, uint64_t vm_budget, uint64_t* cpu_rati
     cpu()->vcpu->mem_throt.assign_ratio = cpu_ratio[cpu()->vcpu->id]; 
     cpu()->vcpu->mem_throt.budget = vm_budget * (cpu()->vcpu->mem_throt.assign_ratio) / 100;
     cpu()->vcpu->vm->mem_throt.budget -= cpu()->vcpu->mem_throt.budget;
-    cpu()->vcpu->vm->mem_throt.budget_left -= cpu()->vcpu->vm->mem_throt.budget;
+    cpu()->vcpu->vm->mem_throt.budget_left -= cpu()->vcpu->mem_throt.budget;
     cpu()->vcpu->vm->mem_throt.assign_ratio += cpu()->vcpu->mem_throt.assign_ratio;
-
+    cpu()->vcpu->vm->mem_throt.counter_id = 1;
     spin_unlock(&lock);
 
 
@@ -119,6 +119,7 @@ void mem_throt_init() {
     if (cpu()->vcpu->mem_throt.budget == 0) return;
 
     console_printk("\n Budget left %d, Budget %d \n ", cpu()->vcpu->vm->mem_throt.budget_left, cpu()->vcpu->vm->mem_throt.budget);
+    console_printk("mem_throt_budget %d \n", cpu()->vcpu->mem_throt.budget);
     mem_throt_events_init(bus_access, cpu()->vcpu->mem_throt.budget, mem_throt_event_overflow_callback);
     console_printk("FOR EACH %d = %d", (cpu()->vcpu->vm->mem_throt.budget_left / cpu()->vcpu->vm->cpu_num), cpu()->vcpu->vm->cpu_num);
     mem_throt_timer_init(mem_throt_period_timer_callback);
