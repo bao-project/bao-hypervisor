@@ -14,7 +14,7 @@ void mem_throt_period_timer_callback(irqid_t int_id) {
     timer_disable();
     events_cntr_disable(cpu()->vcpu->vm->mem_throt.counter_id);
     timer_reschedule_interrupt(cpu()->vcpu->vm->mem_throt.period_counts);
-    events_cntr_set(cpu()->vcpu->vm->mem_throt.counter_id, cpu()->vcpu->mem_throt.budget * cpu()->vcpu->mem_throt.assign_ratio / 100);
+    events_cntr_set(cpu()->vcpu->vm->mem_throt.counter_id, cpu()->vcpu->mem_throt.budget);
 
     if (cpu()->vcpu->mem_throt.throttled)  
     {
