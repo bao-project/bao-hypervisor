@@ -129,8 +129,6 @@ void vmm_init()
     vmm_io_init();
     shmem_init();
 
-    hypervisor_mem_throt_config(config.hypervisor_tickets);
-
     cpu_sync_barrier(&cpu_glb_sync);
 
     bool master = false;
