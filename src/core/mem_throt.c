@@ -32,6 +32,7 @@ void mem_throt_period_timer_callback(irqid_t int_id) {
 
 void mem_throt_event_overflow_callback(irqid_t int_id) {
 
+    console_printk("PMU Counter %d", events_get_cntr_value(cpu()->vcpu->vm->mem_throt.counter_id));
     events_clear_cntr_ovs(cpu()->vcpu->vm->mem_throt.counter_id);
     events_cntr_disable(cpu()->vcpu->vm->mem_throt.counter_id);
     events_cntr_irq_disable(cpu()->vcpu->vm->mem_throt.counter_id);
@@ -106,8 +107,9 @@ void mem_throt_config(uint64_t period_us, uint64_t vm_budget, uint64_t* cpu_rati
     spin_unlock(&lock);
 
 
-    if(cpu()->vcpu->vm->mem_throt.assign_ratio > 100)    
+    if(cpu()->vcpu->vm->mem_throt.assign_ratio > 100){
         ERROR("The sum of the ratios is greater than 100");
+    }
 
     
 }
