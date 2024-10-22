@@ -13,13 +13,16 @@
  * From https://github.com/riscv/riscv-sbi-doc
  */
 
-#define SBI_SUCCESS               (0)
-#define SBI_ERR_FAILURE           (-1)
-#define SBI_ERR_NOT_SUPPORTED     (-2)
-#define SBI_ERR_INVALID_PARAM     (-3)
-#define SBI_ERR_DENIED            (-4)
-#define SBI_ERR_INVALID_ADDRESS   (-5)
-#define SBI_ERR_ALREADY_AVAILABLE (-6)
+#define SBI_SUCCESS                 (0)
+#define SBI_ERR_FAILURE             (-1)
+#define SBI_ERR_NOT_SUPPORTED       (-2)
+#define SBI_ERR_INVALID_PARAM       (-3)
+#define SBI_ERR_DENIED              (-4)
+#define SBI_ERR_INVALID_ADDRESS     (-5)
+#define SBI_ERR_ALREADY_AVAILABLE   (-6)
+
+#define SBI_HSM_SUSPEND_RET_DEFAULT (0x00000000)
+#define SBI_HSM_SUSP_NON_RET_BIT    (0x80000000)
 
 struct sbiret {
     long error;
@@ -73,5 +76,6 @@ struct sbiret sbi_remote_hfence_vvma(const unsigned long hart_mask, unsigned lon
 struct sbiret sbi_hart_start(unsigned long hartid, unsigned long start_addr, unsigned long priv);
 struct sbiret sbi_hart_stop(void);
 struct sbiret sbi_hart_status(unsigned long hartid);
+struct sbiret sbi_hart_suspend(uint32_t suspend_type, unsigned long resume_addr, unsigned long priv);
 
 #endif /* __SBI_H__ */
