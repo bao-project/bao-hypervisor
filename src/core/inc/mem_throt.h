@@ -13,6 +13,7 @@
 
 
 typedef struct mem_throt_info {
+	bool is_initialized;
 	bool throttled;			 
 	uint64_t counter_id;
 	uint64_t period_us;

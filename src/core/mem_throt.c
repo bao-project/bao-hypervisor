@@ -14,7 +14,7 @@ void mem_throt_period_timer_callback(irqid_t int_id) {
     timer_disable();
     events_cntr_disable(cpu()->vcpu->vm->mem_throt.counter_id);
     timer_reschedule_interrupt(cpu()->vcpu->vm->mem_throt.period_counts);
-    events_cntr_set(cpu()->vcpu->vm->mem_throt.counter_id, cpu()->vcpu->vm->mem_throt.budget * cpu()->vcpu->mem_throt.assign_ratio / 100);
+    events_cntr_set(cpu()->vcpu->vm->mem_throt.counter_id, cpu()->vcpu->mem_throt.budget * cpu()->vcpu->mem_throt.assign_ratio / 100);
 
     if (cpu()->vcpu->mem_throt.throttled)  
     {
@@ -35,9 +35,11 @@ void mem_throt_event_overflow_callback(irqid_t int_id) {
     events_clear_cntr_ovs(cpu()->vcpu->vm->mem_throt.counter_id);
     events_cntr_disable(cpu()->vcpu->vm->mem_throt.counter_id);
     events_cntr_irq_disable(cpu()->vcpu->vm->mem_throt.counter_id);
+
     spin_lock(&lock);
     cpu()->vcpu->vm->mem_throt.budget_left -= (cpu()->vcpu->vm->mem_throt.budget / cpu()->vcpu->vm->cpu_num);
     spin_unlock(&lock);
+    
     if(cpu()->vcpu->vm->mem_throt.budget_left >= 0)
     {
         mem_throt_budget_change((cpu()->vcpu->vm->mem_throt.budget / cpu()->vcpu->vm->cpu_num));
@@ -88,25 +90,25 @@ void mem_throt_config(uint64_t period_us, uint64_t vm_budget, uint64_t* cpu_rati
         cpu()->vcpu->vm->mem_throt.period_us = period_us;
         cpu()->vcpu->vm->mem_throt.budget = vm_budget;
         cpu()->vcpu->vm->mem_throt.budget_left = cpu()->vcpu->vm->mem_throt.budget;
+        cpu()->vcpu->vm->mem_throt.is_initialized = true;
     }
 
-    cpu()->vcpu->mem_throt.assign_ratio = cpu_ratio[cpu()->vcpu->id]; 
-
-    cpu()->vcpu->mem_throt.budget = vm_budget * (cpu()->vcpu->mem_throt.assign_ratio) / 100;
-
-    cpu()->vcpu->vm->mem_throt.budget -= cpu()->vcpu->mem_throt.budget;
-
-    cpu()->vcpu->vm->mem_throt.budget_left = cpu()->vcpu->vm->mem_throt.budget;
+    while(cpu()->vcpu->vm->mem_throt.is_initialized != true);
 
     spin_lock(&lock);
 
+    cpu()->vcpu->mem_throt.assign_ratio = cpu_ratio[cpu()->vcpu->id]; 
+    cpu()->vcpu->mem_throt.budget = vm_budget * (cpu()->vcpu->mem_throt.assign_ratio) / 100;
+    cpu()->vcpu->vm->mem_throt.budget -= cpu()->vcpu->mem_throt.budget;
+    cpu()->vcpu->vm->mem_throt.budget_left -= cpu()->vcpu->vm->mem_throt.budget;
     cpu()->vcpu->vm->mem_throt.assign_ratio += cpu()->vcpu->mem_throt.assign_ratio;
 
-    if(cpu()->vcpu->vm->mem_throt.assign_ratio > 100)
-    {
-        ERROR("The sum of the ratios is greater than 100");
-    }
     spin_unlock(&lock);
+
+
+    if(cpu()->vcpu->vm->mem_throt.assign_ratio > 100)    
+        ERROR("The sum of the ratios is greater than 100");
+
     
 }
 
