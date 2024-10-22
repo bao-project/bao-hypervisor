@@ -84,7 +84,7 @@ inline void mem_throt_budget_change(size_t budget) {
 void mem_throt_config(size_t period_us, size_t vm_budget, size_t* cpu_ratio) {
     if(vm_budget == 0) return;
 
-    if (cpu()->vcpu->vm->master) 
+    if (cpu()->id == cpu()->vcpu->vm->master) 
     {   
         vm_budget = vm_budget / cpu()->vcpu->vm->cpu_num;
         cpu()->vcpu->vm->mem_throt.throttled = false;
