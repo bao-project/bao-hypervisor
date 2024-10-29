@@ -32,7 +32,6 @@ void mem_throt_period_timer_callback(irqid_t int_id) {
 
 void mem_throt_event_overflow_callback(irqid_t int_id) {
 
-    console_printk("CALLBACK: CPU ID: %d PMU Counter %d \n", cpu()->id,events_get_cntr_value(cpu()->vcpu->vm->mem_throt.counter_id));
     events_clear_cntr_ovs(cpu()->vcpu->vm->mem_throt.counter_id);
     events_cntr_disable(cpu()->vcpu->vm->mem_throt.counter_id);
     events_cntr_irq_disable(cpu()->vcpu->vm->mem_throt.counter_id);
@@ -117,11 +116,7 @@ void mem_throt_config(size_t period_us, size_t vm_budget, size_t* cpu_ratio) {
 void mem_throt_init() {
 
     if (cpu()->vcpu->mem_throt.budget == 0) return;
-
-    console_printk("\n Budget left %d, Budget %d \n ", cpu()->vcpu->vm->mem_throt.budget_left, cpu()->vcpu->vm->mem_throt.budget);
-    console_printk("mem_throt_budget %d \n", cpu()->vcpu->mem_throt.budget);
     mem_throt_events_init(bus_access, cpu()->vcpu->mem_throt.budget, mem_throt_event_overflow_callback);
-    console_printk("FOR EACH %d = %d", (cpu()->vcpu->vm->mem_throt.budget_left / cpu()->vcpu->vm->cpu_num), cpu()->vcpu->vm->cpu_num);
     mem_throt_timer_init(mem_throt_period_timer_callback);
 }
 
