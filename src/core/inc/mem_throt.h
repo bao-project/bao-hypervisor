@@ -12,18 +12,22 @@
 
 
 typedef struct mem_throt_info {
-	int budget;              
+	bool is_initialized;
 	bool throttled;			 
-	int counter_id;
-	int period_us;
-	int period_counts;
-	int num_tickets;
-	int num_tickets_left;
+	size_t counter_id;
+	size_t period_us;
+	size_t period_counts;
+	size_t budget; 
+	int64_t budget_left;
+	size_t assign_ratio;
 }mem_throt_t;
 
-extern bool is_mem_throt_initialized;
+extern size_t global_num_ticket_hypervisor;
 
-void mem_throt_init(uint64_t budget, uint64_t period_us, uint64_t num_ticket);
+void mem_throt_config(size_t period_us, size_t vm_budget, size_t* cpu_ratio);
+
+void mem_throt_init();
+
 void mem_throt_period_timer_callback(irqid_t);
 
 /* budget is used up. PMU generate an interrupt */
@@ -32,5 +36,6 @@ void mem_throt_process_overflow(void);
 
 void mem_throt_timer_init(irq_handler_t hander);
 void mem_throt_events_init(events_enum event, unsigned long budget, irq_handler_t handler);
+void mem_throt_budget_change(uint64_t budget);
 
 #endif /* __mem_throt_H__ */

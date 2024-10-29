@@ -88,10 +88,9 @@ struct vm_config {
     colormap_t colors;
 
     struct {
-        bool mem_thrott_en;
-        uint64_t budget;
         uint64_t period_us;
-        uint64_t ticket_num;
+        uint64_t vm_budget;
+        uint64_t* cpu_num_tickets;
     } mem_throth;
 
     /**
@@ -123,6 +122,8 @@ extern struct config {
 
     /* The number of VMs specified by this configuration */
     size_t vmlist_size;
+
+    size_t hypervisor_tickets;
 
     /* Array list with VM configuration */
     struct vm_config* vmlist;

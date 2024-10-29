@@ -49,7 +49,7 @@ static void vm_vcpu_init(struct vm* vm, const struct vm_config* vm_config)
     vcpu->phys_id = cpu()->id;
     vcpu->vm = vm;
     cpu()->vcpu = vcpu;
-
+    
     vcpu_arch_init(vcpu, vm);
     vcpu_arch_reset(vcpu, vm_config->entry);
 }
@@ -254,7 +254,7 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* vm_co
      *  Initialize each virtual core.
      */
     vm_vcpu_init(vm, vm_config);
-
+    
     cpu_sync_barrier(&vm->sync);
 
     /**
@@ -272,11 +272,12 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* vm_co
         vm_init_ipc(vm, vm_config);
     }
 
-    if(vm_config->mem_throth.mem_thrott_en == 1)
-    {
-        mem_throt_init(vm_config->mem_throth.budget, vm_config->mem_throth.period_us, vm_config->mem_throth.ticket_num);
-    }
+    mem_throt_config(vm_config->mem_throth.period_us, vm_config->mem_throth.vm_budget, vm_config->mem_throth.cpu_num_tickets);
+    
+    cpu_sync_barrier(&vm->sync);
 
+    mem_throt_init();
+    
     cpu_sync_and_clear_msgs(&vm->sync);
 
     return vm;

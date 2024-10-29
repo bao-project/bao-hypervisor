@@ -25,7 +25,7 @@ size=		$(CROSS_COMPILE)size
 HOST_CC:=gcc
 
 #Makefile arguments and default values
-DEBUG:=n
+DEBUG:=y
 OPTIMIZATIONS:=2
 CONFIG=
 PLATFORM=

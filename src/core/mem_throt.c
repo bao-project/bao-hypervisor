@@ -6,24 +6,25 @@
 #include <mem_throt.h>
 #include <cpu.h>
 #include <vm.h>
+#include <spinlock.h>
 
-bool is_mem_throt_initialized = false;
+spinlock_t lock;
 
 void mem_throt_period_timer_callback(irqid_t int_id) {
     timer_disable();
     events_cntr_disable(cpu()->vcpu->vm->mem_throt.counter_id);
     timer_reschedule_interrupt(cpu()->vcpu->vm->mem_throt.period_counts);
-    events_cntr_set(cpu()->vcpu->vm->mem_throt.counter_id, cpu()->vcpu->vm->mem_throt.budget);
+    events_cntr_set(cpu()->vcpu->vm->mem_throt.counter_id, cpu()->vcpu->mem_throt.budget);
 
-    if (cpu()->vcpu->vm->mem_throt.throttled) 
+    if (cpu()->vcpu->mem_throt.throttled)  
     {
         events_cntr_irq_enable(cpu()->vcpu->vm->mem_throt.counter_id);
-        cpu()->vcpu->vm->mem_throt.throttled = false;
+        cpu()->vcpu->mem_throt.throttled = false;
     }
     events_cntr_enable(cpu()->vcpu->vm->mem_throt.counter_id);
     
     if (cpu()->vcpu->vm->master) 
-        cpu()->vcpu->vm->mem_throt.num_tickets_left = cpu()->vcpu->vm->mem_throt.num_tickets;
+        cpu()->vcpu->vm->mem_throt.budget_left = cpu()->vcpu->vm->mem_throt.budget;
     
     timer_enable();
 
@@ -34,16 +35,17 @@ void mem_throt_event_overflow_callback(irqid_t int_id) {
     events_cntr_disable(cpu()->vcpu->vm->mem_throt.counter_id);
     events_cntr_irq_disable(cpu()->vcpu->vm->mem_throt.counter_id);
 
-    if(cpu()->vcpu->vm->mem_throt.num_tickets_left > 0)
+    spin_lock(&lock);
+    cpu()->vcpu->vm->mem_throt.budget_left -= (cpu()->vcpu->vm->mem_throt.budget / cpu()->vcpu->vm->cpu_num);
+    spin_unlock(&lock);
+    
+    if(cpu()->vcpu->vm->mem_throt.budget_left >= 0)
     {
-        cpu()->vcpu->vm->mem_throt.num_tickets_left--;
-        events_cntr_set(cpu()->vcpu->vm->mem_throt.counter_id, cpu()->vcpu->vm->mem_throt.budget);
-        events_cntr_enable(cpu()->vcpu->vm->mem_throt.counter_id);
-
+        mem_throt_budget_change((cpu()->vcpu->vm->mem_throt.budget / cpu()->vcpu->vm->cpu_num));
     }
-    else
+    else 
     {
-        cpu()->vcpu->vm->mem_throt.throttled = true;  
+        cpu()->vcpu->mem_throt.throttled = true;  
         cpu_standby();
     }
 }
@@ -71,18 +73,49 @@ void mem_throt_events_init(events_enum event, unsigned long budget, irq_handler_
     events_cntr_enable(cpu()->vcpu->vm->mem_throt.counter_id);
 }
 
-void mem_throt_init(uint64_t budget, uint64_t period_us, uint64_t num_tickets) {
+inline void mem_throt_budget_change(size_t budget) {
+    events_cntr_set(cpu()->vcpu->vm->mem_throt.counter_id, cpu()->vcpu->vm->mem_throt.budget);
+    events_cntr_enable(cpu()->vcpu->vm->mem_throt.counter_id);
+    events_cntr_irq_enable(cpu()->vcpu->vm->mem_throt.counter_id);
+}
 
-    if (cpu()->vcpu->vm->master) 
-    {
+void mem_throt_config(size_t period_us, size_t vm_budget, size_t* cpu_ratio) {
+    if(vm_budget == 0) return;
+
+    if (cpu()->id == cpu()->vcpu->vm->master) 
+    {   
+        vm_budget = vm_budget / cpu()->vcpu->vm->cpu_num;
         cpu()->vcpu->vm->mem_throt.throttled = false;
         cpu()->vcpu->vm->mem_throt.period_us = period_us;
-        cpu()->vcpu->vm->mem_throt.num_tickets = num_tickets - cpu()->vcpu->vm->cpu_num;
-        cpu()->vcpu->vm->mem_throt.num_tickets_left = cpu()->vcpu->vm->mem_throt.num_tickets;
-        cpu()->vcpu->vm->mem_throt.budget = budget / cpu()->vcpu->vm->mem_throt.num_tickets;
-        is_mem_throt_initialized = true;
+        cpu()->vcpu->vm->mem_throt.budget = vm_budget * cpu()->vcpu->vm->cpu_num ;
+        cpu()->vcpu->vm->mem_throt.budget_left = cpu()->vcpu->vm->mem_throt.budget;
+        cpu()->vcpu->vm->mem_throt.is_initialized = true;
     }
-    while (!is_mem_throt_initialized);
-    mem_throt_timer_init(mem_throt_period_timer_callback);
-    mem_throt_events_init(bus_access, cpu()->vcpu->vm->mem_throt.budget, mem_throt_event_overflow_callback);
+
+    while(cpu()->vcpu->vm->mem_throt.is_initialized != true);
+
+    spin_lock(&lock);
+
+    cpu()->vcpu->mem_throt.assign_ratio = cpu_ratio[cpu()->vcpu->id]; 
+    cpu()->vcpu->mem_throt.budget = vm_budget * (cpu()->vcpu->mem_throt.assign_ratio) / 100;
+    cpu()->vcpu->vm->mem_throt.budget -= cpu()->vcpu->mem_throt.budget;
+    cpu()->vcpu->vm->mem_throt.budget_left -= cpu()->vcpu->mem_throt.budget;
+    cpu()->vcpu->vm->mem_throt.assign_ratio += cpu()->vcpu->mem_throt.assign_ratio;
+    cpu()->vcpu->vm->mem_throt.counter_id = 1;
+    spin_unlock(&lock);
+
+
+    if(cpu()->vcpu->vm->mem_throt.assign_ratio > 100){
+        ERROR("The sum of the ratios is greater than 100");
+    }
+
+    
 }
+
+void mem_throt_init() {
+
+    if (cpu()->vcpu->mem_throt.budget == 0) return;
+    mem_throt_events_init(bus_access, cpu()->vcpu->mem_throt.budget, mem_throt_event_overflow_callback);
+    mem_throt_timer_init(mem_throt_period_timer_callback);
+}
+

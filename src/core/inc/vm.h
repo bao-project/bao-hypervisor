@@ -98,6 +98,8 @@ struct vcpu {
     cpuid_t phys_id;
     bool active;
 
+    mem_throt_t mem_throt;
+
     struct vm* vm;
 };
 
