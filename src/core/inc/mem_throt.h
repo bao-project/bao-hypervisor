@@ -11,7 +11,6 @@
 #include <bitmap.h>
 
 
-
 typedef struct mem_throt_info {
 	bool is_initialized;
 	bool throttled;			 

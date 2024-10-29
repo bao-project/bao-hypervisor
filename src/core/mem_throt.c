@@ -29,7 +29,6 @@ void mem_throt_period_timer_callback(irqid_t int_id) {
     timer_enable();
 
 }
-
 void mem_throt_event_overflow_callback(irqid_t int_id) {
 
     events_clear_cntr_ovs(cpu()->vcpu->vm->mem_throt.counter_id);
