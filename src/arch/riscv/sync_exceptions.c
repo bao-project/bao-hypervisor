@@ -80,7 +80,7 @@ static inline bool is_pseudo_ins(uint32_t ins)
 
 static size_t guest_page_fault_handler(void)
 {
-    vaddr_t addr = csrs_htval_read() << 2;
+    vaddr_t addr = (csrs_htval_read() << 2) | (csrs_stval_read() & 0x3);
 
     emul_handler_t handler = vm_emul_get_mem(cpu()->vcpu->vm, addr);
     if (handler != NULL) {
