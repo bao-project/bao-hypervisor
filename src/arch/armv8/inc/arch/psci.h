@@ -90,12 +90,7 @@ struct psci_off_state {
     struct gicc_state gicc_state __attribute__((aligned(8)));
 } __attribute__((packed, aligned(8)));
 
-enum wakeup_reason {
-    PSCI_WAKEUP_CPU_OFF,
-    PSCI_WAKEUP_POWERDOWN,
-    PSCI_WAKEUP_IDLE,
-    PSCI_WAKEUP_NUM
-};
+enum wakeup_reason { PSCI_WAKEUP_CPU_OFF, PSCI_WAKEUP_POWERDOWN, PSCI_WAKEUP_NUM };
 
 /* --------------------------------
         SMC Trapping
@@ -104,7 +99,7 @@ enum wakeup_reason {
 int32_t psci_smc_handler(uint32_t smc_fid, unsigned long x1, unsigned long x2, unsigned long x3);
 
 int32_t psci_standby(void);
-int32_t psci_power_down(enum wakeup_reason reason);
+int32_t psci_power_down(void);
 void psci_wake_from_off(void);
 void psci_wake(uint32_t handler_id);
 

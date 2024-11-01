@@ -56,17 +56,11 @@ static void psci_wake_from_powerdown(void)
     vcpu_run(cpu()->vcpu);
 }
 
-static void psci_wake_from_idle(void)
-{
-    cpu_idle_wakeup();
-}
-
 void psci_wake_from_off(void);
 
 void (*psci_wake_handlers[PSCI_WAKEUP_NUM])(void) = {
     [PSCI_WAKEUP_CPU_OFF] = psci_wake_from_off,
     [PSCI_WAKEUP_POWERDOWN] = psci_wake_from_powerdown,
-    [PSCI_WAKEUP_IDLE] = psci_wake_from_idle,
 };
 
 void psci_wake(uint32_t handler_id)
@@ -98,7 +92,7 @@ int32_t psci_standby()
     return psci_cpu_suspend(pwr_state_aux, 0, 0);
 }
 
-int32_t psci_power_down(enum wakeup_reason reason)
+int32_t psci_power_down()
 {
     /* We've observed that some platforms behave unexpectedly when performing
      * power down. In these cases, after powerdown, the CPU cores are not awaken
@@ -111,7 +105,7 @@ int32_t psci_power_down(enum wakeup_reason reason)
 
     uint32_t pwr_state_aux = PSCI_POWER_STATE_LVL_0 | PSCI_STATE_TYPE_POWERDOWN;
 
-    psci_save_state(reason);
+    psci_save_state(PSCI_WAKEUP_POWERDOWN);
     paddr_t cntxt_paddr;
     paddr_t psci_wakeup_addr;
     mem_translate(&cpu()->as, (vaddr_t)&cpu()->arch.profile.psci_off_state, &cntxt_paddr);

@@ -174,7 +174,7 @@ unsigned long vcpu_readreg(struct vcpu* vcpu, unsigned long reg);
 void vcpu_writereg(struct vcpu* vcpu, unsigned long reg, unsigned long val);
 unsigned long vcpu_readpc(struct vcpu* vcpu);
 void vcpu_writepc(struct vcpu* vcpu, unsigned long pc);
-void vcpu_arch_run(struct vcpu* vcpu);
 void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry);
+bool vcpu_arch_is_on(struct vcpu* vcpu);
 
 #endif /* __VM_H__ */

@@ -140,6 +140,6 @@ void vmm_init()
         cpu_sync_barrier(&vm->sync);
         vcpu_run(cpu()->vcpu);
     } else {
-        cpu_idle();
+        cpu_powerdown();
     }
 }

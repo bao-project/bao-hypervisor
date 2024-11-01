@@ -66,7 +66,7 @@ static int32_t psci_cpu_suspend_handler(uint32_t power_state, unsigned long entr
         cpu()->vcpu->arch.psci_ctx.entrypoint = entrypoint;
         cpu()->vcpu->arch.psci_ctx.context_id = context_id;
         spin_unlock(&cpu()->vcpu->arch.psci_ctx.lock);
-        ret = psci_power_down(PSCI_WAKEUP_POWERDOWN);
+        ret = psci_power_down();
     } else {
         // PSCI_STATE_TYPE_STANDBY:
         ret = psci_standby();
@@ -86,7 +86,7 @@ static int32_t psci_cpu_off_handler(void)
     cpu()->vcpu->arch.psci_ctx.state = OFF;
     spin_unlock(&cpu()->vcpu->arch.psci_ctx.lock);
 
-    cpu_idle();
+    cpu_powerdown();
 
     spin_lock(&cpu()->vcpu->arch.psci_ctx.lock);
     cpu()->vcpu->arch.psci_ctx.state = ON;

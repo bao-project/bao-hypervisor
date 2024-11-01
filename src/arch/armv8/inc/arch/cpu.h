@@ -18,7 +18,8 @@ struct cpu_arch {
 
 unsigned long cpu_id_to_mpidr(cpuid_t id);
 void cpu_arch_profile_init(cpuid_t cpuid, paddr_t load_addr);
-void cpu_arch_profile_idle(void);
+void cpu_arch_profile_standby(void);
+void cpu_arch_profile_powerdown(void);
 
 extern cpuid_t CPU_MASTER;
 

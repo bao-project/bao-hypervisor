@@ -80,16 +80,7 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
      */
 }
 
-static inline bool vcpu_psci_state_on(struct vcpu* vcpu)
+bool vcpu_arch_is_on(struct vcpu* vcpu)
 {
     return vcpu->arch.psci_ctx.state == ON;
-}
-
-void vcpu_arch_run(struct vcpu* vcpu)
-{
-    if (vcpu_psci_state_on(vcpu)) {
-        vcpu_arch_entry();
-    } else {
-        cpu_idle();
-    }
 }
