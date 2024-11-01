@@ -18,9 +18,7 @@ int32_t psci_standby()
     return PSCI_E_SUCCESS;
 }
 
-int32_t psci_power_down(enum wakeup_reason reason)
+int32_t psci_power_down()
 {
-    UNUSED_ARG(reason);
-
     return psci_standby();
 }

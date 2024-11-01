@@ -27,13 +27,21 @@ void cpu_arch_init(cpuid_t cpuid, paddr_t load_addr)
     }
 }
 
-void cpu_arch_idle(void)
+void cpu_arch_standby(void)
 {
     struct sbiret ret = sbi_hart_suspend(SBI_HSM_SUSPEND_RET_DEFAULT, 0, 0);
     if (ret.error < 0) {
         ERROR("failed to suspend hart %d", cpu()->id);
     }
     __asm__ volatile("mv sp, %0\n\r"
-                     "j cpu_idle_wakeup\n\r" ::"r"(&cpu()->stack[STACK_SIZE]));
-    ERROR("returned from idle wake up");
+                     "j cpu_standby_wakeup\n\r" ::"r"(&cpu()->stack[STACK_SIZE]));
+    ERROR("returned from standby wake up");
+}
+
+void cpu_arch_powerdown(void)
+{
+    __asm__ volatile("wfi\n\t" ::: "memory");
+    __asm__ volatile("mv sp, %0\n\r"
+                     "j cpu_powerdown_wakeup\n\r" ::"r"(&cpu()->stack[STACK_SIZE]));
+    ERROR("returned from powerdown wake up");
 }

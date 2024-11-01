@@ -89,18 +89,29 @@ void cpu_msg_handler(void)
     cpu()->handling_msgs = false;
 }
 
-void cpu_idle(void)
+void cpu_standby(void)
 {
-    cpu_arch_idle();
+    cpu_arch_standby();
 
     /**
-     * Should not return here. cpu should "wake up" from idle in cpu_idle_wakeup with a rewinded
-     * stack.
+     * Should not return here. cpu should "wake up" from standby in cpu_standby_wakeup with a
+     * rewinded stack.
      */
-    ERROR("Spurious idle wake up");
+    ERROR("Spurious standby wake up");
 }
 
-void cpu_idle_wakeup(void)
+void cpu_powerdown(void)
+{
+    cpu_arch_powerdown();
+
+    /**
+     * Should not return here. cpu should "wake up" from powerdown in cpu_powerdown_wakeup with a
+     * rewinded stack.
+     */
+    ERROR("Spurious powerdown wake up");
+}
+
+void cpu_standby_wakeup(void)
 {
     if (interrupts_check(interrupts_ipi_id)) {
         interrupts_clear(interrupts_ipi_id);
@@ -110,6 +121,15 @@ void cpu_idle_wakeup(void)
     if (cpu()->vcpu != NULL) {
         vcpu_run(cpu()->vcpu);
     } else {
-        cpu_idle();
+        cpu_standby();
+    }
+}
+
+void cpu_powerdown_wakeup(void)
+{
+    if (cpu()->vcpu != NULL) {
+        vcpu_run(cpu()->vcpu);
+    } else {
+        cpu_powerdown();
     }
 }
