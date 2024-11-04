@@ -58,9 +58,10 @@ static void ipc_handler(uint32_t event, uint64_t data)
 }
 CPU_MSG_HANDLER(ipc_handler, IPC_CPUMSG_ID)
 
-long int ipc_hypercall(unsigned long ipc_id, unsigned long ipc_event, unsigned long arg2)
+long int ipc_hypercall(void)
 {
-    UNUSED_ARG(arg2);
+    unsigned long ipc_id = hypercall_get_arg(cpu()->vcpu, 0);
+    unsigned long ipc_event = hypercall_get_arg(cpu()->vcpu, 1);
 
     long int ret = -HC_E_SUCCESS;
 

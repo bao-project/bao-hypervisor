@@ -19,7 +19,7 @@ struct ipc {
 
 struct vm_config;
 
-long int ipc_hypercall(unsigned long arg0, unsigned long arg1, unsigned long arg2);
+long int ipc_hypercall(void);
 void ipc_init(void);
 
 #endif /* IPC_H */
