@@ -4,21 +4,14 @@
  */
 
 #include <hypercall.h>
-#include <cpu.h>
-#include <vm.h>
-#include <ipc.h>
 
 long int hypercall(unsigned long id)
 {
     long int ret = -HC_E_INVAL_ID;
 
-    unsigned long arg0 = vcpu_readreg(cpu()->vcpu, HYPCALL_IN_ARG_REG(0));
-    unsigned long arg1 = vcpu_readreg(cpu()->vcpu, HYPCALL_IN_ARG_REG(1));
-    unsigned long arg2 = vcpu_readreg(cpu()->vcpu, HYPCALL_IN_ARG_REG(2));
-
     switch (id) {
         case HC_IPC:
-            ret = ipc_hypercall(arg0, arg1, arg2);
+            ret = ipc_hypercall();
             break;
         default:
             WARNING("Unknown hypercall id %d", id);
