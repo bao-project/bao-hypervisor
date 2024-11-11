@@ -206,7 +206,7 @@ static inline struct remio_request* remio_get_request(struct remio_device* devic
  */
 static inline bool remio_has_pending_request(struct remio_device* device)
 {
-    return list_empty(&device->pending_requests_list);
+    return !list_empty(&device->pending_requests_list);
 }
 
 /**
