@@ -89,7 +89,12 @@ SECTIONS
 	
 	. = ALIGN(PAGE_SIZE);
 	_image_end = ABSOLUTE(.);
+
+#ifdef MEM_PROT_MMU
 	_dmem_phys_beg = ABSOLUTE(.) + extra_allocated_phys_mem;
+#else 
+	_dmem_phys_beg = ABSOLUTE(.);
+#endif 
 
 	. = ALIGN(PAGE_SIZE);
 	_dmem_beg = ABSOLUTE(.);
