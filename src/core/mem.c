@@ -14,7 +14,7 @@
 #include <fences.h>
 #include <config.h>
 
-extern uint8_t _image_start, _image_load_end, _image_end, _vm_image_start, _vm_image_end;
+extern uint8_t _image_start, _image_load_end, _image_end, _vm_image_start, _vm_image_end, _image_noload_start, _dmem_phys_beg;
 
 struct list page_pool_list;
 
@@ -138,16 +138,14 @@ void* mem_alloc_page(size_t num_pages, enum AS_SEC sec, bool phys_aligned)
 
 static bool root_pool_set_up_bitmap(paddr_t load_addr, struct page_pool* root_pool)
 {
-    size_t image_size = (size_t)(&_image_end - &_image_start);
-    size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);
     size_t cpu_size = platform.cpu_num * mem_cpu_boot_alloc_size();
+    paddr_t bitmap_base = load_addr + (paddr_t)(&_dmem_phys_beg - &_image_start) + cpu_size;
 
     size_t bitmap_num_pages =
         root_pool->size / (8 * PAGE_SIZE) + ((root_pool->size % (8 * PAGE_SIZE) != 0) ? 1 : 0);
     if (root_pool->size <= bitmap_num_pages) {
         return false;
     }
-    size_t bitmap_base = load_addr + image_size + vm_image_size + cpu_size;
 
     struct ppages bitmap_pp = mem_ppages_get(bitmap_base, bitmap_num_pages);
     bitmap_t* root_bitmap = (bitmap_t*)mem_alloc_map(&cpu()->as, SEC_HYP_GLOBAL, &bitmap_pp,
@@ -160,11 +158,10 @@ static bool root_pool_set_up_bitmap(paddr_t load_addr, struct page_pool* root_po
 
 static bool pp_root_reserve_hyp_mem(paddr_t load_addr, struct page_pool* root_pool)
 {
-    size_t image_load_size = (size_t)(&_image_load_end - &_image_start);
-    size_t image_noload_size = (size_t)(&_image_end - &_image_load_end);
-    size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);
+    size_t image_load_size = (size_t)(&_image_load_end - &_image_start);     
+    size_t image_noload_size = (size_t)(&_image_end - &_image_noload_start);    
     size_t cpu_size = platform.cpu_num * mem_cpu_boot_alloc_size();
-    paddr_t image_noload_addr = load_addr + image_load_size + vm_image_size;
+    paddr_t image_noload_addr = load_addr + (paddr_t)(&_image_noload_start- &_image_start); 
     paddr_t cpu_base_addr = image_noload_addr + image_noload_size;
 
     struct ppages images_load_ppages = mem_ppages_get(load_addr, NUM_PAGES(image_load_size));
