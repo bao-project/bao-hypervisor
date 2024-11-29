@@ -59,8 +59,7 @@ SECTIONS
 		KEEP(*(.vm_image*))
 	}
 	. = ALIGN(PAGE_SIZE);
-	_vm_image_end = .;
-    _image_noload_start = .;
+	_vm_image_end = .;    
     extra_allocated_phys_mem = _image_noload_start - _image_load_end;
 
 #ifdef MEM_PROT_MMU
@@ -73,6 +72,7 @@ SECTIONS
 #endif
 
 	/* Only no load regions below */
+	_image_noload_start = .;
 	
 	.bss (NOLOAD) :  {	
 		_bss_start = .;
