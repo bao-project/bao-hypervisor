@@ -53,7 +53,7 @@ static void psci_wake_from_powerdown(void)
 
     vcpu_arch_reset(cpu()->vcpu, cpu()->vcpu->arch.psci_ctx.entrypoint);
     vcpu_writereg(cpu()->vcpu, 0, cpu()->vcpu->arch.psci_ctx.context_id);
-    vcpu_run(cpu()->vcpu);
+    cpu_powerdown_wakeup();
 }
 
 void psci_wake_from_off(void);
