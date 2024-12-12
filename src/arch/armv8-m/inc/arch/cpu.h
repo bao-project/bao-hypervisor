@@ -40,8 +40,8 @@ struct cpu_arch {
 
 static inline struct cpu* cpu(void)
 {
-    register unsigned long a8 __asm__("r8");
-    return (struct cpu*)a8;
+    register unsigned long r10 __asm__("r10");
+    return (struct cpu*)r10;
 }
 
 #endif /* __ARCH_CPU_H__ */
