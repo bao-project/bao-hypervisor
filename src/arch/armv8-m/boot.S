@@ -82,6 +82,12 @@ _reset_handler:
     bic r5, r5, r4
     str r5, [r3]
 
+    /* Enable Fault Handlers */
+    ldr r3, =SCB_BASE
+    ldr r4, [r3, #SCB_SHCSR_OFF]
+    orr r4, r4, #(SCB_ENABLE_ALL_FAULTS)
+    str r4, [r3, #SCB_SHCSR_OFF]
+
     /*
      * TODO:ARMV8M
      * In Armv8-M, the stack pointer is initialized by the processor at reset. Therefore, we don't
@@ -118,6 +124,10 @@ _reset_handler:
     /* r5 contains the secure MPU based address */
     ldr r5, =MPU_BASE
 
+    /* Configure MPU MAIR */
+    ldr r6, =MAIR_SEC_PLVL_DFLT
+    str r6, [r5, #MPU_MAIR0_OFF]
+
     /**
      * Map loadable image (and possibly unloadable)
      * If the vm image section is used and has built-in vm images, we need to map the loadable and
@@ -127,7 +137,7 @@ _reset_handler:
     str r4, [r5, #MPU_RNR_OFF]
     ldr r6, =_image_start
     and r6, r6, #MPU_RBAR_BASE_MSK      /* TODO:ARMV8M - I suppose it should be Non shareable? */
-    orr r6, r6, #MPU_RBAR_AP_RW_PVL
+    orr r6, r6, #MPU_RBAR_AP_RW_PLVL
     str r6, [r5, #MPU_RBAR_OFF]
     ldr r10, =_image_load_end
     ldr r11, =_image_noload_start
@@ -137,7 +147,7 @@ _reset_handler:
     ldrne r6, =_image_load_end
     sub r6, r6, #1
     and r6, r6, #MPU_RLAR_LIMIT_MSK
-    orr r6, r6, #MPU_RLAR_EN               /* TODO:ARMV8M - What should be done here */
+    orr r6, r6, #(MPU_RLAR_ATTR(0) | MPU_RLAR_EN)               /* TODO:ARMV8M - What should be done here */
     str r6, [r5, #MPU_RLAR_OFF]
 
     /* Map Image Non-loadable if needed */
@@ -150,12 +160,12 @@ _reset_handler:
     str r4, [r6]
     ldr r6, =_image_noload_start
     and r6, r6, #MPU_RBAR_BASE_MSK      /* TODO:ARMV8M - I suppose it should be Non shareable? */
-    orr r6, r6, #MPU_RBAR_AP_RW_PVL
+    orr r6, r6, #MPU_RBAR_AP_RW_PLVL
     str r6, [r5, #MPU_RBAR_OFF]
     ldr r6, =_image_end
     sub r6, r6, #1
     and r6, r6, #MPU_RLAR_LIMIT_MSK
-    orr r6, r6, #MPU_RLAR_EN               /* TODO:ARMV8M - What should be done here */
+    orr r6, r6, #(MPU_RLAR_ATTR(0) | MPU_RLAR_EN)               /* TODO:ARMV8M - What should be done here */
     str r6, [r5, #MPU_RLAR_OFF]
 
 skip_non_loadable:
@@ -165,22 +175,25 @@ skip_non_loadable:
     str r4, [r5, #MPU_RNR_OFF]
     mov r6, r3                          /* TODO:ARMV8M - Auxiliary since we dont have an HTPIDR */
     and r6, r6, #MPU_RBAR_BASE_MSK      /* TODO:ARMV8M - I suppose it should be Non shareable? */
-    orr r6, r6, #MPU_RBAR_AP_RW_PVL
+    orr r6, r6, #MPU_RBAR_AP_RW_PLVL
     str r6, [r5, #MPU_RBAR_OFF]
     add r6, r3, #CPU_SIZE
     sub r6, r6, #1
     and r6, r6, #MPU_RLAR_LIMIT_MSK
-    orr r6, r6, #MPU_RLAR_EN               /* TODO:ARMV8M - What should be done here */
+    orr r6, r6, #(MPU_RLAR_ATTR(0) | MPU_RLAR_EN)               /* TODO:ARMV8M - What should be done here */
     str r6, [r5, #MPU_RLAR_OFF]
+
+    /* Clear remaining regions */
+    bl clear_mpu
 
     dsb
     isb
 
     /* Enable MPU */
-    mov r4, #MPU_CTRL_ENABLE
-    ldr r6, [r5]
+    mov r4, #(MPU_CTRL_ENABLE)
+    ldr r6, [r5, #MPU_CTRL_OFF]
     orr r4, r4, r6
-    str r4, [r5]
+    str r4, [r5, #MPU_CTRL_OFF]
 
     dsb
     isb
@@ -236,4 +249,16 @@ copy_data:
     str r8, [r11], #4
     cmp r11, r12
     bne 1b
+    bx lr
+
+/* Clear all remaining MPU regions (r5 contains MPU_BASE, r4 the region number) */
+.global clear_mpu
+clear_mpu:
+    add r4, r4, #1
+    mov r6, #0
+    str r4, [r5, #MPU_RNR_OFF]
+    str r6, [r5, #MPU_RBAR_OFF]
+    str r6, [r5, #MPU_RLAR_OFF]
+    cmp r4, #7
+    bne clear_mpu
     bx lr

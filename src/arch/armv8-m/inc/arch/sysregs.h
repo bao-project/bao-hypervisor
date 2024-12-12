@@ -10,9 +10,18 @@
 #include <bit.h>
 
 /* System Control Block */
-#define SCB_BASE    (0xE000ECFCUL)
-#define SCB_BASE_NS (SCB_BASE + 0x20000UL)
-#define SCB         ((struct scb*)SCB_BASE)
+#define SCB_BASE                 (0xE000ECFCUL)
+#define SCB_BASE_NS              (SCB_BASE + 0x20000UL)
+#define SCB                      ((struct scb*)SCB_BASE)
+
+#define SCB_SHCSR_MEMFAULTENA    (1 << 16)
+#define SCB_SHCSR_BUSFAULTENA    (1 << 17)
+#define SCB_SHCSR_USGFAULTENA    (1 << 18)
+#define SCB_SHCSR_SECUREFAULTEMA (1 << 19)
+
+#define SCB_ENABLE_ALL_FAULTS                                                \
+    (SCB_SHCSR_MEMFAULTENA | SCB_SHCSR_BUSFAULTENA | SCB_SHCSR_USGFAULTENA | \
+        SCB_SHCSR_SECUREFAULTEMA)
 
 #ifndef __ASSEMBLER__
 
@@ -95,9 +104,9 @@ struct sau {
 #define MPU_RBAR_SH_NS        (0 << 1)
 #define MPU_RBAR_SH_OS        (2 << 1)
 #define MPU_RBAR_SH_IS        (3 << 1)
-#define MPU_RBAR_AP_RW_PVL    (0 << 3) // Priv: Read/Write, Unpriv: No access
+#define MPU_RBAR_AP_RW_PLVL   (0 << 3) // Priv: Read/Write, Unpriv: No access
 #define MPU_RBAR_AP_RW_ALL    (1 << 3) // Priv: Read/Write, Unpriv: Read/Write
-#define MPU_RBAR_AP_RO_PVL    (2 << 3) // Priv: Read-Only, Unpriv: No access
+#define MPU_RBAR_AP_RO_PLVL   (2 << 3) // Priv: Read-Only, Unpriv: No access
 #define MPU_RBAR_AP_RO_ALL    (3 << 3) // Priv: Read-Only, Unpriv: Read-Only
 #define MPU_RBAR_FLAGS_MSK    (0x3FUL)
 #define MPU_RBAR_FLAGS(RBAR)  ((RBAR) & MPU_RBAR_FLAGS_MSK)
@@ -108,10 +117,37 @@ struct sau {
 #define MPU_RLAR_ATTR_MSK     (0x3UL << 1)
 #define MPU_RLAR_ATTR(N)      (((N) << 1) & MPU_RLAR_ATTR_MSK)
 #define MPU_RLAR_PXN          (1 << 4)
-#define MPU_RLAR_FLAGS_MSK    (0x3FUL)
+#define MPU_RLAR_FLAGS_MSK    (0x1FUL)
 #define MPU_RLAR_FLAGS(RLAR)  ((RLAR) & MPU_RLAR_FLAGS_MSK)
 #define MPU_RLAR_LIMIT_MSK    (~MPU_RLAR_FLAGS_MSK)
 #define MPU_RLAR_LIMIT(LIMIT) (((LIMIT) & MPU_RLAR_LIMIT_MSK) | 0x1FUL)
+
+#define MPU_MAIR_ATTR_WIDTH   (8)
+#define MPU_MAIR_ATTR_NUM     (8)
+
+#define MPU_MAIR_DEV_nGnRnE   (0x0 << 2)
+#define MPU_MAIR_DEV_nGnRE    (0x1 << 2)
+#define MPU_MAIR_DEV_nGRE     (0x2 << 2)
+#define MPU_MAIR_DEV_GRE      (0x3 << 2)
+
+#define MPU_MAIR_OWTT         (0x0 << 6)
+#define MPU_MAIR_ONC          (0x1 << 6)
+#define MPU_MAIR_OWBT         (0x1 << 6)
+#define MPU_MAIR_OWTNT        (0x2 << 6)
+#define MPU_MAIR_OWBNT        (0x3 << 6)
+
+#define MPU_MAIR_IWTT         (0x0 << 2)
+#define MPU_MAIR_INC          (0x1 << 2)
+#define MPU_MAIR_IWBT         (0x1 << 2)
+#define MPU_MAIR_IWTNT        (0x2 << 2)
+#define MPU_MAIR_IWBNT        (0x3 << 2)
+
+/**
+ * Default hypervisor memory attributes 0 -> Device-nGnRnE 1 -> Normal, Inner/Outer  WB/WA/RA 2 ->
+ * Device-nGnRE
+ */
+#define MAIR_SEC_PLVL_DFLT \
+    (MPU_MAIR_ONC | MPU_MAIR_INC) | (MPU_MAIR_DEV_nGnRnE << MPU_MAIR_ATTR_WIDTH)
 
 #ifndef __ASSEMBLER__
 

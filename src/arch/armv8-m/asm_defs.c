@@ -12,9 +12,14 @@
 __attribute__((used)) static void sysregs_defines(void)
 {
     DEFINE_OFFSET(SCB_VTOR_OFF, struct scb, vtor);
+
+    DEFINE_OFFSET(MPU_CTRL_OFF, struct mpu, ctrl);
     DEFINE_OFFSET(MPU_RNR_OFF, struct mpu, rnr);
     DEFINE_OFFSET(MPU_RBAR_OFF, struct mpu, rbar);
     DEFINE_OFFSET(MPU_RLAR_OFF, struct mpu, rlar);
+    DEFINE_OFFSET(MPU_MAIR0_OFF, struct mpu, mair0);
+
+    DEFINE_OFFSET(SCB_SHCSR_OFF, struct scb, shcsr);
 }
 
 __attribute__((used)) static void cpu_defines(void)
