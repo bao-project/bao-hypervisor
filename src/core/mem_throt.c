@@ -81,7 +81,7 @@ void mem_throt_config(size_t period_us, size_t vm_budget, size_t* cpu_ratio) {
         vm_budget = vm_budget / cpu()->vcpu->vm->cpu_num;
         cpu()->vcpu->vm->mem_throt.throttled = false;
         cpu()->vcpu->vm->mem_throt.period_us = period_us;
-        cpu()->vcpu->vm->mem_throt.budget = vm_budget * cpu()->vcpu->vm->cpu_num ;
+        cpu()->vcpu->vm->mem_throt.budget = vm_budget ;
         cpu()->vcpu->vm->mem_throt.budget_left = cpu()->vcpu->vm->mem_throt.budget;
         cpu()->vcpu->vm->mem_throt.is_initialized = true;
     }
@@ -90,13 +90,17 @@ void mem_throt_config(size_t period_us, size_t vm_budget, size_t* cpu_ratio) {
 
     spin_lock(&lock);
 
+    if (cpu_ratio[cpu()->vcpu->id] == 0) {
+        cpu_ratio[cpu()->vcpu->id] = vm_budget / cpu()->vcpu->vm->cpu_num;
+    }
+
     cpu()->vcpu->mem_throt.assign_ratio = cpu_ratio[cpu()->vcpu->id]; 
     cpu()->vcpu->mem_throt.budget = vm_budget * (cpu()->vcpu->mem_throt.assign_ratio) / 100;
     cpu()->vcpu->vm->mem_throt.budget -= cpu()->vcpu->mem_throt.budget;
     cpu()->vcpu->vm->mem_throt.budget_left -= cpu()->vcpu->mem_throt.budget;
     cpu()->vcpu->vm->mem_throt.assign_ratio += cpu()->vcpu->mem_throt.assign_ratio;
     cpu()->vcpu->vm->mem_throt.counter_id = 1;
-    
+
     spin_unlock(&lock);
 
 
