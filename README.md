@@ -127,3 +127,6 @@ In Embedded Open Source Summit 2023, Prague, Czech Republic, 2023. https://www.y
 
 8. David Cerdeira and José Martins. "**"Hello 'Bao' World" Tutorial**"
 In Bao Half-Day, Virtual Workshop, 2023. https://www.youtube.com/watch?v=6c8_MG-OHYo
+
+9. João Peixoto, José Martins, David Cerdeira and Sandro Pinto. "**BiRtIO: VirtIO for Real-Time Network Interface Sharing on the Bao Hypervisor**"
+In IEEE Access, 2024. https://ieeexplore.ieee.org/document/10781314
