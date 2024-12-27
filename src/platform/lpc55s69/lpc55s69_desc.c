@@ -16,8 +16,8 @@ struct platform platform = {
     .region_num = 2,
     .regions =  (struct mem_region[]) {
         {
-            .base = 0x30000000, //SRAM0+1 (64 + 64 KiB)
-            .size = 0x20000,    //128 KiB
+            .base = 0x10000000, //Flash
+            .size = 0x9D800,    //630 KiB
             .perms = RX,
         },
         {
