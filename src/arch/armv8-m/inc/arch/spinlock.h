@@ -1,65 +1,68 @@
 /**
- * baohu separation kernel
- *
- * Copyright (c) Jose Martins, Sandro Pinto
- *
- * Authors:
- *      Jose Martins <josemartins90@gmail.com>
- *
- * baohu is free software; you can redistribute it and/or modify it under the
- * terms of the GNU General Public License version 2 as published by the Free
- * Software Foundation, with a special exception exempting guest code from such
- * license. See the COPYING file in the top-level directory for details.
- *
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
 #ifndef __ARCH_SPINLOCK__
 #define __ARCH_SPINLOCK__
 
+#include <bao.h>
+
 typedef struct {
-    uint32_t spinlock_t;
+    uint32_t ticket;
+    uint32_t next;
 } spinlock_t;
 
-static const spinlock_t SPINLOCK_INITVAL = { 0 };
+static const spinlock_t SPINLOCK_INITVAL = { 0, 0 };
 
-/*static inline unsigned int cmpAndSwap (unsigned int volatile *address,
-           unsigned int value, unsigned int condition)
+static inline void spinlock_init(spinlock_t* lock)
 {
-  unsigned long long reg64;
+    lock->ticket = 0;
+    lock->next = 0;
+}
 
-  __asm__ volatile (
-    "mov        %A[reg], %[cond], %[val]\n\t"
-    "cmpswap.w [%[addr]]0, %A[reg]" :
-    [reg] "=d" (reg64) :
-    [addr] "a" (address),
-    [cond] "d" (condition),
-    [val] "d" (value) :
-    "memory");
-  return reg64;
-}*/
+/**
+ * This lock follows the ticket lock algorithm described in Arm's ARM DDI0487I.a
+ * Appendix K13.
+ */
 
-/* TODO: ticket lock */
 static inline void spin_lock(spinlock_t* lock)
 {
-    volatile long unsigned spinLockVal;
+    uint32_t ticket;
+    uint32_t next;
+    uint32_t temp;
 
-    bool retVal = false;
-
-    do {
-        spinLockVal = 1UL;
-        // spinLockVal = cmpAndSwap(((unsigned int volatile *)lock), spinLockVal, 0);
-        UNUSED_ARG(lock);
-
-        /* Check if the SpinLock WAS set before the attempt to acquire spinlock */
-        if (spinLockVal == false) {
-            retVal = true;
-        }
-    } while (retVal == false);
+    (void)lock;
+    __asm__ volatile(
+        /* Get ticket */
+        "1:\n\t"
+        "ldaex  %0, %3\n\t"
+        "add    %1, %0, #1\n\t"
+        "strex  %2, %1, %3\n\t"
+        "cmp  %2, #0\n\t"
+        "bne 1b \n\t"
+        /* Wait for your turn */
+        "2:\n\t"
+        "ldr    %1, %4\n\t"
+        "cmp    %0, %1\n\t"
+        "beq   3f\n\t"
+        "wfe \n\t"
+        "b 2b\n\t"
+        "3:\n\t" : "=&r"(ticket), "=&r"(next), "=&r"(temp) : "Q"(lock->ticket), "Q"(lock->next)
+        : "memory");
 }
 
 static inline void spin_unlock(spinlock_t* lock)
 {
-    *lock = SPINLOCK_INITVAL;
+    uint32_t temp;
+
+    __asm__ volatile(
+        /* increment to next ticket */
+        "ldr    %0, %1\n\t"
+        "add    %0, %0, #1\n\t"
+        "stl    %0, %1\n\t"
+        "dsb ish\n\t"
+        "sev\n\t" : "=&r"(temp) : "Q"(lock->next) : "memory");
 }
 
 #endif /* __ARCH_SPINLOCK__ */
