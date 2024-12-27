@@ -20,22 +20,7 @@ struct cpu_arch {
          * A locked region means that it can never be removed from the MPU. For example,
          */
         BITMAP_ALLOC(locked, MPU_ARCH_MAX_NUM_ENTRIES);
-        struct mpu_perms {
-            perms_t el2; // HV
-            perms_t el1; // user0, user1
-        } perms[MPU_ARCH_MAX_NUM_ENTRIES];
-        /**
-         * We maintain an ordered list of the regions currently in the mpu to simplify the merging
-         * algorithm when mapping an overllaping region.
-         */
-        struct {
-            struct list list;
-            struct mpu_node {
-                node_t node;
-                mpid_t mpid;
-            } node[MPU_ARCH_MAX_NUM_ENTRIES];
-        } order;
-    } mpu;
+    } mpu_hyp;
 };
 
 static inline struct cpu* cpu(void)

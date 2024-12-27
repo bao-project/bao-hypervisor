@@ -86,6 +86,14 @@ struct vm_arch {
 struct vcpu_arch {
     vcpuid_t core_id;
     /* TODO CPU power state ctx */
+
+    struct {
+        BITMAP_ALLOC(bitmap, SAU_ARCH_MAX_NUM_ENTRIES);
+        /**
+         * A locked region means that it can never be removed from the MPU. For example,
+         */
+        BITMAP_ALLOC(locked, SAU_ARCH_MAX_NUM_ENTRIES);
+    } sau_vm;
 };
 
 struct arch_regs {
