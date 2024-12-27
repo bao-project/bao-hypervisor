@@ -7,5 +7,5 @@ arch-cflags+=-march=armv8-m.main
 arch-cflags+=-ffixed-r10
 arch-ldflags=
 
-arch_mem_prot:=mpu
+arch_mem_prot:=mpu sau
 PAGE_SIZE:=64

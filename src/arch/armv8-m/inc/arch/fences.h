@@ -5,34 +5,38 @@
 #ifndef __FENCES_ARCH_H__
 #define __FENCES_ARCH_H__
 
+#define ISB() __asm__ volatile("isb 0xF" ::: "memory");
+#define DSB() __asm__ volatile("dsb 0xF" ::: "memory");
+#define DMB() __asm__ volatile("dmb 0xF" ::: "memory");
+
 static inline void fence_ord_write(void)
 {
-    //__asm__ volatile("isync\n\t" ::: "memory");
+    DMB();
 }
 
 static inline void fence_ord_read(void)
 {
-    //__asm__ volatile("isync\n\t" ::: "memory");
+    DMB();
 }
 
 static inline void fence_ord(void)
 {
-    //__asm__ volatile("isync\n\t" ::: "memory");
+    DMB();
 }
 
 static inline void fence_sync_write(void)
 {
-    //__asm__ volatile("isync\n\t" ::: "memory");
+    DSB();
 }
 
 static inline void fence_sync_read(void)
 {
-    //__asm__ volatile("isync\n\t" ::: "memory");
+    DSB();
 }
 
 static inline void fence_sync(void)
 {
-    //__asm__ volatile("isync\n\t" ::: "memory");
+    DSB();
 }
 
 #endif /* __FENCES_ARCH_H__ */
