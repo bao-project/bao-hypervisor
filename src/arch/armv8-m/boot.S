@@ -29,6 +29,7 @@ _reset_handler:
      *     r0 -> contains cpu id
      *     r1 -> contains image base load address
      *     r2 -> contains config binary load address (passed in r0)
+     *     r10-> fixed in the compiler to be used as the CPU struct pointer
      * Register r9 is reserved to indicate if the current CPU is master (negated)
 	 */
 
@@ -82,12 +83,6 @@ _reset_handler:
     bic r5, r5, r4
     str r5, [r3]
 
-    /* Enable Fault Handlers */
-    ldr r3, =SCB_BASE
-    ldr r4, [r3, #SCB_SHCSR_OFF]
-    orr r4, r4, #(SCB_ENABLE_ALL_FAULTS)
-    str r4, [r3, #SCB_SHCSR_OFF]
-
     /*
      * TODO:ARMV8M
      * In Armv8-M, the stack pointer is initialized by the processor at reset. Therefore, we don't
@@ -98,26 +93,21 @@ _reset_handler:
     //bl boot_arch_profile_init
 
     /* CPU physical based address */
-    ldr r3, =_dmem_phys_beg
+    ldr r10, =_dmem_beg
 
-    /* CPU_X physical base address */
+    /* CPU_X physical base address
+     * In Armv8-M there is not scratch register, so we use r10 as the scratch register by setting
+     * -ffixed-r10 in the compiler.
+     */
     mov r7, #CPU_SIZE
-    mla r3, r0, r7, r3      //TODO:ARMV8M - We are running in single-core, so this is not needed?!
+    mla r10, r0, r7, r10      //TODO:ARMV8M - We are running in single-core, so this is not needed?!
 
     /* Clear the CPU struct */
-    mov r11, r3
-    add r12, r3, r7
-    mov r10, lr
+    mov r11, r10
+    add r12, r10, r7
+    mov r3, lr
     bl boot_clear
-    mov lr, r10
-
-    /*
-     * TODO:ARMV8M
-     * Here, we should save the CPU_X phys base address on  Thread ID register, not present in
-     * Armv8-M. What should we do?
-     */
-     /*
-    //mcr p15, 4, r3, c13, c0, 2 // write HTPIDR
+    mov lr, r3
 
     /* r4 contains the id of the MPU entry being used */
     mov r4, #(-1)
@@ -128,37 +118,23 @@ _reset_handler:
     ldr r6, =MAIR_SEC_PLVL_DFLT
     str r6, [r5, #MPU_MAIR0_OFF]
 
-    /**
-     * Map loadable image (and possibly unloadable)
-     * If the vm image section is used and has built-in vm images, we need to map the loadable and
-     * non-loadable region of the image separately. Otherwise we can map it as a single region.
-     */
+    /* Region 0 - Map LMA sections */
     add r4, r4, #1
     str r4, [r5, #MPU_RNR_OFF]
     ldr r6, =_image_start
     and r6, r6, #MPU_RBAR_BASE_MSK      /* TODO:ARMV8M - I suppose it should be Non shareable? */
     orr r6, r6, #MPU_RBAR_AP_RW_PLVL
     str r6, [r5, #MPU_RBAR_OFF]
-    ldr r10, =_image_load_end
-    ldr r11, =_image_noload_start
-    cmp r10, r11
-    ite eq
-    ldreq r6, =_image_end
-    ldrne r6, =_image_load_end
+    ldr r6, =_image_load_end
     sub r6, r6, #1
     and r6, r6, #MPU_RLAR_LIMIT_MSK
     orr r6, r6, #(MPU_RLAR_ATTR(0) | MPU_RLAR_EN)               /* TODO:ARMV8M - What should be done here */
     str r6, [r5, #MPU_RLAR_OFF]
 
-    /* Map Image Non-loadable if needed */
-    ldr r10, =_image_load_end
-    ldr r11, =_image_noload_start
-    cmp r10, r11
-    beq skip_non_loadable
+    /* Region 1 - Map VMA sections */
     add r4, r4, #1
-    ldr r6, [r5, #MPU_RNR_OFF]
-    str r4, [r6]
-    ldr r6, =_image_noload_start
+    str r4, [r5, #MPU_RNR_OFF]
+    ldr r6, =_data_vma_start
     and r6, r6, #MPU_RBAR_BASE_MSK      /* TODO:ARMV8M - I suppose it should be Non shareable? */
     orr r6, r6, #MPU_RBAR_AP_RW_PLVL
     str r6, [r5, #MPU_RBAR_OFF]
@@ -168,26 +144,40 @@ _reset_handler:
     orr r6, r6, #(MPU_RLAR_ATTR(0) | MPU_RLAR_EN)               /* TODO:ARMV8M - What should be done here */
     str r6, [r5, #MPU_RLAR_OFF]
 
-skip_non_loadable:
-
     /* Region 2 - CPU */
     add r4, r4, #1
     str r4, [r5, #MPU_RNR_OFF]
-    mov r6, r3                          /* TODO:ARMV8M - Auxiliary since we dont have an HTPIDR */
-    and r6, r6, #MPU_RBAR_BASE_MSK      /* TODO:ARMV8M - I suppose it should be Non shareable? */
+    ldr r6, =_dmem_beg
+    and r6, r10, #MPU_RBAR_BASE_MSK      /* TODO:ARMV8M - I suppose it should be Non shareable? */
     orr r6, r6, #MPU_RBAR_AP_RW_PLVL
     str r6, [r5, #MPU_RBAR_OFF]
-    add r6, r3, #CPU_SIZE
+    add r6, r10, #CPU_SIZE
     sub r6, r6, #1
     and r6, r6, #MPU_RLAR_LIMIT_MSK
-    orr r6, r6, #(MPU_RLAR_ATTR(0) | MPU_RLAR_EN)               /* TODO:ARMV8M - What should be done here */
+    orr r6, r6, #(MPU_RLAR_ATTR(0) | MPU_RLAR_EN | MPU_RLAR_PXN)               /* TODO:ARMV8M - What should be done here */
     str r6, [r5, #MPU_RLAR_OFF]
 
     /* Clear remaining regions */
     bl clear_mpu
 
+    /* Read MPU regions */
+    mov r4, #0
+1:
+    str r4, [r5, #MPU_RNR_OFF]
+    ldr r6, [r5, #MPU_RBAR_OFF]
+    ldr r7, [r5, #MPU_RLAR_OFF]
+    add r4, r4, #1
+    cmp r4, #8
+    bne 1b
+
     dsb
     isb
+
+    /* Enable Fault Handlers */
+    ldr r3, =SCB_BASE
+    ldr r4, [r3, #SCB_SHCSR_OFF]
+    orr r4, r4, #(SCB_ENABLE_ALL_FAULTS)
+    str r4, [r3, #SCB_SHCSR_OFF]
 
     /* Enable MPU */
     mov r4, #(MPU_CTRL_ENABLE)
@@ -199,9 +189,9 @@ skip_non_loadable:
     isb
 
     /* Copy data from RX to RWX */
-    ldr r10, =_data_start       // LMA
-    ldr r11, =_vma_start        // VMA
-    ldr r12, =_image_load_end   // VMA end
+    ldr r7, =_data_lma_start        // LMA start
+    ldr r11, =_data_vma_start       // VMA start
+    ldr r12, =_image_noload_start   // VMA end
     bl copy_data
 
     /* Clear bss */
@@ -213,10 +203,10 @@ skip_non_loadable:
 
     /* Initialize stack pointer and stack limit */
     mov r4, #CPU_STACK_OFF
-    add r5, r3, r4
+    add r5, r10, r4
     msr msplim, r5
     add r4, r4, #CPU_STACK_SIZE
-    add r5, r3, r4
+    add r5, r10, r4
     msr msp, r5
 
     /* Enable interrupts */
@@ -241,11 +231,11 @@ boot_clear:
 1:
 	bx lr
 
-/* Copies data from r10 to r11 up to the r12 limit */
+/* Copies data from r7 to r11 up to the r12 limit */
 .global copy_data
 copy_data:
 1:
-    ldr r8, [r10], #4
+    ldr r8, [r7], #4
     str r8, [r11], #4
     cmp r11, r12
     bne 1b
@@ -254,11 +244,12 @@ copy_data:
 /* Clear all remaining MPU regions (r5 contains MPU_BASE, r4 the region number) */
 .global clear_mpu
 clear_mpu:
-    add r4, r4, #1
     mov r6, #0
+1:
+    add r4, r4, #1
     str r4, [r5, #MPU_RNR_OFF]
     str r6, [r5, #MPU_RBAR_OFF]
     str r6, [r5, #MPU_RLAR_OFF]
-    cmp r4, #7
-    bne clear_mpu
+    cmp r4, #7  //TODO:ARMV8M - This is implementation-def, should be changed
+    bne 1b
     bx lr
