@@ -30,19 +30,18 @@ SECTIONS
 	}
 
 	. = ALIGN(PAGE_SIZE); /* start RW sections in separate page */
-	_data_start = .;
+	_data_lma_start = .;
 
-#ifdef PLAT_MEM_RWX_ADDR
-	. = PLAT_MEM_RWX_ADDR;	/* Changed location counter to VMA address */
-	_vma_start = .;
+#ifdef PLAT_MEM_NON_UNIFIED
+	. = PLAT_MEM_NON_UNIFIED;	/* Changed location counter to VMA address */
+	_data_vma_start = .;
 #endif
 
-	.data : AT (_data_start){
+	.data : AT (_data_lma_start){
 		*(.data .data.*)
         PROVIDE(__global_pointer$ = . + 0x800);
 		*(.sdata .sdata.* .sdata2.*)
 	}
-
 
 	.ipi_cpumsg_handlers : {
 		ipi_cpumsg_handlers = .;
@@ -57,16 +56,20 @@ SECTIONS
 
     . = ALIGN(PAGE_SIZE);
     _image_load_end = .;
+#ifdef PLAT_MEM_NON_UNIFIED
+    _image_load_end = _data_lma_start + (_image_load_end - _data_vma_start);
+#endif
 
 	/* Sections to be allocated only in physical memory, not in VA space */
 
 	.vm_images : SUBALIGN(PAGE_SIZE) {
-		_vm_image_start = .;
+		_vm_image_start = LOADADDR(.vm_images);
 		KEEP(*(.vm_image*))
 	}
 	. = ALIGN(PAGE_SIZE);
-	_vm_image_end = .;
+	_vm_image_end = _vm_image_start + SIZEOF(.vm_images);
     _image_noload_start = .;
+
     extra_allocated_phys_mem = _image_noload_start - _image_load_end;
 
 #ifdef MEM_PROT_MMU
