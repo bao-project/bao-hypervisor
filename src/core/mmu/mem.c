@@ -134,8 +134,6 @@ bool pp_alloc_clr(struct page_pool* pool, size_t n, colormap_t colors, struct pp
                 allocated++;
                 index = pp_next_clr(pool->base, ++index, colors);
             }
-
-            index++;
         }
 
         if (allocated == n) {
@@ -158,7 +156,7 @@ bool pp_alloc_clr(struct page_pool* pool, size_t n, colormap_t colors, struct pp
              * If this is the first iteration, setup index and top to search from base of the page
              * pool until the previous iteration start point
              */
-            index = 0;
+            index = pp_next_clr(pool->base, 0, colors);
         }
     }
 
