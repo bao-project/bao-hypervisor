@@ -27,7 +27,7 @@ _reset_handler:
      * The following registers are however reserved to be passed to main
      * as arguments:
      *     r0 -> contains cpu id
-     *     r1 -> contains image base load address
+     *     r1 -> contains vma data load address
      *     r2 -> contains config binary load address (passed in r0)
      *     r10-> fixed in the compiler to be used as the CPU struct pointer
      * Register r9 is reserved to indicate if the current CPU is master (negated)
@@ -43,11 +43,6 @@ _reset_handler:
      * how we can distinguish between CPU0 and CPU1. For now just use #0 for CPU0
      */
     mov r0, #0
-
-    /**
-     * Get base image load address.
-     */
-    adr r1, _reset_handler
 
     /*
      * Install vector table physical address early, in case exception occurs during this
@@ -160,7 +155,7 @@ _reset_handler:
     /* Clear remaining regions */
     bl clear_mpu
 
-    /* Read MPU regions */
+    /* TODO:ARMV8M - Temporary/To be removed. Read MPU regions */
     mov r4, #0
 1:
     str r4, [r5, #MPU_RNR_OFF]
@@ -191,7 +186,7 @@ _reset_handler:
     /* Copy data from RX to RWX */
     ldr r7, =_data_lma_start        // LMA start
     ldr r11, =_data_vma_start       // VMA start
-    ldr r12, =_image_noload_start   // VMA end
+    ldr r12, =_image_load_end       // LMA end
     bl copy_data
 
     /* Clear bss */
@@ -212,6 +207,12 @@ _reset_handler:
     /* Enable interrupts */
     cpsie i
 
+    /**
+     * Get vma data load address
+     */
+    //ldr r1, =data_addr   //TODO:ARMV8M - This can be removed since we have two global variables for load and data base addr
+    //ldr r1, [r1]
+
     b init
 
     /* This point should never be reached */
@@ -231,13 +232,18 @@ boot_clear:
 1:
 	bx lr
 
+
+    ldr r7, =_data_lma_start        // LMA start
+    ldr r11, =_data_vma_start       // VMA start
+    ldr r12, =_image_load_end       // LMA end
+
 /* Copies data from r7 to r11 up to the r12 limit */
 .global copy_data
 copy_data:
 1:
     ldr r8, [r7], #4
     str r8, [r11], #4
-    cmp r11, r12
+    cmp r7, r12
     bne 1b
     bx lr
 
@@ -253,3 +259,14 @@ clear_mpu:
     cmp r4, #7  //TODO:ARMV8M - This is implementation-def, should be changed
     bne 1b
     bx lr
+
+.section ".data"
+.align 2
+.global load_addr
+.global data_addr
+
+load_addr:
+    .word _image_start
+
+data_addr:
+    .word _data_vma_start
