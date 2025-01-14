@@ -8,6 +8,7 @@
 
 #include <bao.h>
 #include <bitmap.h>
+#include <list.h>
 #include <arch/mem.h>
 #include <arch/spinlock.h>
 
@@ -26,10 +27,15 @@ struct addr_space {
     enum AS_TYPE type;
     cpumap_t cpus;
     colormap_t colors;
-    struct mpe {
-        enum { MPE_S_FREE, MPE_S_INVALID, MPE_S_VALID } state;
-        struct mp_region region;
-    } vmpu[VMPU_NUM_ENTRIES];
+    struct {
+        struct list ordered_list;
+        struct mpe {
+            node_t node;
+            enum { MPE_S_FREE, MPE_S_INVALID, MPE_S_VALID } state;
+            struct mp_region region;
+            mpid_t mpid;
+        } node[VMPU_NUM_ENTRIES];
+    } vmpu;
     spinlock_t lock;
 };
 

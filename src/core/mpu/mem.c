@@ -33,7 +33,7 @@ OBJPOOL_ALLOC(shared_region_pool, struct shared_region, SHARED_REGION_POOL_SIZE)
 static inline struct mpe* mem_vmpu_get_entry(struct addr_space* as, mpid_t mpid)
 {
     if (mpid < VMPU_NUM_ENTRIES) {
-        return &as->vmpu[mpid];
+        return &as->vmpu.node[mpid];
     }
     return NULL;
 }
@@ -47,6 +47,9 @@ static void mem_vmpu_set_entry(struct addr_space* as, mpid_t mpid, struct mp_reg
     mpe->region.mem_flags = mpr->mem_flags;
     mpe->region.as_sec = mpr->as_sec;
     mpe->state = MPE_S_VALID;
+
+    list_insert_ordered(&cpu()->as.vmpu.ordered_list, (node_t*)&cpu()->as.vmpu.node[mpid],
+        vmpu_node_cmp);
 }
 
 static void mem_vmpu_clear_entry(struct addr_space* as, mpid_t mpid)
@@ -65,6 +68,8 @@ static void mem_vmpu_free_entry(struct addr_space* as, mpid_t mpid)
     mem_vmpu_clear_entry(as, mpid);
     struct mpe* mpe = mem_vmpu_get_entry(as, mpid);
     mpe->state = MPE_S_FREE;
+
+    list_rm(&cpu()->as.vmpu.ordered_list, (node_t*)&cpu()->as.vmpu.node[mpid]);
 }
 
 static mpid_t mem_vmpu_allocate_entry(struct addr_space* as)
@@ -187,7 +192,7 @@ size_t mem_cpu_boot_alloc_size()
     return size;
 }
 
-void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, cpumap_t cpus,colormap_t colors)
+void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, cpumap_t cpus, colormap_t colors)
 {
     UNUSED_ARG(colors);
 
@@ -201,6 +206,7 @@ void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, cpumap_t cpus,
         mem_vmpu_free_entry(as, i);
     }
 
+    list_init(&cpu()->as.vmpu.ordered_list);
     as_arch_init(as);
 }
 
