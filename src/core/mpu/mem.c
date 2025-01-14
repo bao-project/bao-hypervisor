@@ -165,7 +165,7 @@ static void mem_init_boot_regions(void)
     vaddr_t image_end = (vaddr_t)&_image_end;
 
 #ifdef MEM_NON_UNIFIED
-    extern _data_vma_start;
+    extern uint8_t _data_vma_start;
     vaddr_t data_vma_start = (vaddr_t)&_data_vma_start;
 #endif
 
@@ -449,7 +449,6 @@ bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast)
     spin_lock(&as->lock);
 
     if (mem_vmpu_find_overlapping_region(as, mpr) == INVALID_MPID) {
-        // TODO: check if it possible to merge with another region
         mpid_t mpid = mem_vmpu_allocate_entry(as);
         if (mpid != INVALID_MPID) {
             mapped = mem_vmpu_insert_region(as, mpid, mpr, broadcast);
