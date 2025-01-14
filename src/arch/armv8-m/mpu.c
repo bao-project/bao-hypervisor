@@ -53,6 +53,15 @@ bool mpu_add_region(struct mp_region* reg)
     return !failed;
 }
 
+bool mpu_perms_comptible(uint8_t perms1, uint8_t perms2)
+{
+    // TODO:ARMV8M - IMPLEMENT on all archs
+    // uint8_t perms_mask = SPMPCFG_S_BIT | SPMPCFG_R_BIT | SPMPCFG_W_BIT | SPMPCFG_X_BIT;
+    // return (perms1 & perms_mask) == (perms2 & perms_mask);
+
+    return 1;
+}
+
 static void mpu_entry_get_region(mpid_t mpid, struct mp_region* mpe)
 {
     MPU->rnr = mpid;
