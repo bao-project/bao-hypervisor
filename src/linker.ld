@@ -32,8 +32,8 @@ SECTIONS
 	. = ALIGN(PAGE_SIZE); /* start RW sections in separate page */
 	_data_lma_start = .;
 
-#ifdef PLAT_MEM_NON_UNIFIED
-	. = PLAT_MEM_NON_UNIFIED;	/* Changed location counter to VMA address */
+#ifdef MEM_NON_UNIFIED
+	. = PLAT_DATA_MEM;	/* Changed location counter to VMA address */
 	_data_vma_start = .;
 #endif
 
@@ -56,16 +56,25 @@ SECTIONS
 
     . = ALIGN(PAGE_SIZE);
     _image_load_end = .;
-#ifdef PLAT_MEM_NON_UNIFIED
+#ifdef MEM_NON_UNIFIED
+	/* Save the current location counter (VMA) and switch to LMA for .vm_images */
+	_vma_before_vm_images = .;
     _image_load_end = _data_lma_start + (_image_load_end - _data_vma_start);
+	. = _image_load_end;
 #endif
 
 	/* Sections to be allocated only in physical memory, not in VA space */
 
-	.vm_images : SUBALIGN(PAGE_SIZE) {
-		_vm_image_start = LOADADDR(.vm_images);
-		KEEP(*(.vm_image*))
-	}
+    .vm_images : AT(_image_load_end) SUBALIGN(PAGE_SIZE) {
+        _vm_image_start = .;
+        KEEP(*(.vm_image*))
+    }
+
+#ifdef MEM_NON_UNIFIED
+    /* Restore the location counter (VMA) */
+    . = _vma_before_vm_images;
+#endif
+
 	. = ALIGN(PAGE_SIZE);
 	_vm_image_end = _vm_image_start + SIZEOF(.vm_images);
     _image_noload_start = .;

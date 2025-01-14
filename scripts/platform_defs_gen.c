@@ -19,7 +19,7 @@ int main() {
     {
         if(platform.regions[i].perms == RWX)
         {
-            printf("#define PLAT_MEM_NON_UNIFIED (0x%lx)\n", platform.regions[i].base);
+            printf("#define PLAT_DATA_MEM (0x%lx)\n", platform.regions[i].base);
             break;
         }
     }
