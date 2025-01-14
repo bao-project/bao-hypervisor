@@ -11,6 +11,7 @@
 #include <platform_defs.h>
 #include <objpool.h>
 #include <config.h>
+#include <arch/mpu.h>
 
 struct shared_region {
     enum AS_TYPE as_type;
@@ -36,6 +37,25 @@ static inline struct mpe* mem_vmpu_get_entry(struct addr_space* as, mpid_t mpid)
         return &as->vmpu.node[mpid];
     }
     return NULL;
+}
+
+static int vmpu_node_cmp(node_t* _n1, node_t* _n2)
+{
+    struct mpe* n1 = (struct mpe*)_n1;
+    struct mpe* n2 = (struct mpe*)_n2;
+    struct mp_region r1;
+    struct mp_region r2;
+
+    r1 = n1->region;
+    r2 = n2->region;
+
+    if (r1.base > r2.base) {
+        return 1;
+    } else if (r1.base < r2.base) {
+        return -1;
+    } else {
+        return 0;
+    }
 }
 
 static void mem_vmpu_set_entry(struct addr_space* as, mpid_t mpid, struct mp_region* mpr)
@@ -360,6 +380,51 @@ static mpid_t mem_vmpu_find_overlapping_region(struct addr_space* as, struct mp_
     return mpid;
 }
 
+void mem_vmpu_coalesce_contiguous(struct addr_space* as, bool broadcast)
+{
+    while (true) {
+        bool merge = false;
+        mpid_t cur_mpid = INVALID_MPID;
+        mpid_t prev_mpid = INVALID_MPID;
+        struct mpe* prev_reg;
+        struct mpe* cur_reg;
+        list_foreach_tail(cpu()->as.vmpu.ordered_list, struct mpe, cur, prev)
+        {
+            if (prev == NULL) {
+                continue;
+            }
+            cur_reg = mem_vmpu_get_entry(as, cur->mpid);
+            prev_reg = mem_vmpu_get_entry(as, prev->mpid);
+
+            bool contigous = prev_reg->region.base + prev_reg->region.size == cur_reg->region.base;
+            bool perms_compatible =
+                mpu_perms_comptible(prev_reg->region.mem_flags.raw, cur_reg->region.mem_flags.raw);
+            if (contigous && perms_compatible) {
+                cur_mpid = cur->mpid;
+                prev_mpid = prev->mpid;
+                merge = true;
+                break;
+            }
+        }
+
+        if (merge) {
+            mem_vmpu_remove_region(as, cur_mpid, broadcast);
+            mem_vmpu_remove_region(as, prev_mpid, broadcast);
+            struct mp_region merged_reg = {
+                .base = prev_reg->region.base,
+                .size = prev_reg->region.size + cur_reg->region.size,
+                .mem_flags = cur_reg->region.mem_flags,
+            };
+            mpid_t mpid = mem_vmpu_allocate_entry(as);
+            if (mpid != INVALID_MPID) {
+                mem_vmpu_insert_region(as, mpid, &merged_reg, broadcast);
+            }
+        } else {
+            break;
+        }
+    }
+}
+
 bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast)
 {
     bool mapped = false;
@@ -381,6 +446,10 @@ bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast)
         if (mpid != INVALID_MPID) {
             mapped = mem_vmpu_insert_region(as, mpid, mpr, broadcast);
         }
+    }
+
+    if (mapped) {
+        mem_vmpu_coalesce_contiguous(as, broadcast);
     }
 
     spin_unlock(&as->lock);
