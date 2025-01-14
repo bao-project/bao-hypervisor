@@ -204,6 +204,7 @@ void mem_prot_init()
     mpu_init();
     as_init(&cpu()->as, AS_HYP, HYP_ASID, BIT_MASK(0, PLAT_CPU_NUM), 0);
     as_init_boot_regions();
+    mpu_enable();
 }
 
 size_t mem_cpu_boot_alloc_size()
