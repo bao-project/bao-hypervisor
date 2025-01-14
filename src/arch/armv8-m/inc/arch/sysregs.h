@@ -68,10 +68,27 @@ struct scb {
 #endif
 
 /* Security Attribution Unit */
-#define SAU_BASE        (0xE000EDD0UL)
-#define SAU             ((struct sau*)SAU_BASE)
+#define SAU_BASE              (0xE000EDD0UL)
+#define SAU                   ((struct sau*)SAU_BASE)
 
-#define SAU_CTRL_ENABLE (1 << 0)
+#define SAU_CTRL_ENABLE       (1 << 0)
+#define SAU_CTRL_ALLNS        (1 << 1)
+
+#define SAU_TYPE_RNR_MSK      (0xFFUL)
+#define SAU_TYPE_N_RGN(REG)   (REG & SAU_TYPE_RNR_MSK)
+
+#define SAU_RNR_REGION_MSK    (0xFFUL)
+
+#define SAU_RBAR_RES_MSK      (0x1FUL)
+#define SAU_RBAR_BADDR_MSK    (~SAU_RBAR_RES_MSK)
+#define SAU_RBAR_BASE(BASE)   ((BASE) & SAU_RBAR_BADDR_MSK)
+
+#define SAU_RLAR_EN           (1 << 0)
+#define SAU_NSC               (1 << 1)
+#define SAU_RLAR_FLAGS_MSK    (0x1FUL)
+#define SAU_RLAR_FLAGS(RLAR)  ((RLAR) & SAU_RLAR_FLAGS_MSK)
+#define SAU_RLAR_LADDR_MSK    (~SAU_RLAR_FLAGS_MSK)
+#define SAU_RLAR_LIMIT(LIMIT) (((LIMIT) & SAU_RLAR_LADDR_MSK) | SAU_RLAR_FLAGS_MSK)
 
 #ifndef __ASSEMBLER__
 
@@ -97,6 +114,9 @@ struct sau {
 #define MPU_CTRL_HFNMIENA     (1 << 1)
 #define MPU_CTRL_PRIVDEFENA   (1 << 2)
 
+#define MPU_TYPE_N_RGN_MSK    (0xFF00UL)
+#define MPU_TYPE_N_RGN(REG)   ((REG & MPU_TYPE_N_RGN_MSK) >> 8)
+
 #define MPU_RNR_REGION_MSK    (0xFFUL)
 
 #define MPU_RBAR_XN           (1 << 0)
@@ -108,7 +128,7 @@ struct sau {
 #define MPU_RBAR_AP_RW_ALL    (1 << 3) // Priv: Read/Write, Unpriv: Read/Write
 #define MPU_RBAR_AP_RO_PLVL   (2 << 3) // Priv: Read-Only, Unpriv: No access
 #define MPU_RBAR_AP_RO_ALL    (3 << 3) // Priv: Read-Only, Unpriv: Read-Only
-#define MPU_RBAR_FLAGS_MSK    (0x3FUL)
+#define MPU_RBAR_FLAGS_MSK    (0x1FUL)
 #define MPU_RBAR_FLAGS(RBAR)  ((RBAR) & MPU_RBAR_FLAGS_MSK)
 #define MPU_RBAR_BASE_MSK     (~MPU_RBAR_FLAGS_MSK)
 #define MPU_RBAR_BASE(BASE)   ((BASE) & MPU_RBAR_BASE_MSK)
@@ -120,7 +140,7 @@ struct sau {
 #define MPU_RLAR_FLAGS_MSK    (0x1FUL)
 #define MPU_RLAR_FLAGS(RLAR)  ((RLAR) & MPU_RLAR_FLAGS_MSK)
 #define MPU_RLAR_LIMIT_MSK    (~MPU_RLAR_FLAGS_MSK)
-#define MPU_RLAR_LIMIT(LIMIT) (((LIMIT) & MPU_RLAR_LIMIT_MSK) | 0x1FUL)
+#define MPU_RLAR_LIMIT(LIMIT) (((LIMIT) & MPU_RLAR_LIMIT_MSK) | MPU_RLAR_FLAGS_MSK)
 
 #define MPU_MAIR_ATTR_WIDTH   (8)
 #define MPU_MAIR_ATTR_NUM     (8)
