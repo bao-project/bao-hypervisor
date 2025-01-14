@@ -127,6 +127,11 @@ void cpu_standby_wakeup(void)
 
 void cpu_powerdown_wakeup(void)
 {
+    if (interrupts_check(interrupts_ipi_id)) {
+        interrupts_clear(interrupts_ipi_id);
+        cpu_msg_handler();
+    }
+
     if (cpu()->vcpu != NULL) {
         vcpu_run(cpu()->vcpu);
     } else {
