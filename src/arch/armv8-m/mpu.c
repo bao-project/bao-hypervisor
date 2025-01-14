@@ -136,12 +136,6 @@ static inline bool mpu_entry_locked(mpid_t mpid)
     return !!bitmap_get(cpu()->arch.mpu_hyp.locked, mpid);
 }
 
-void mpu_disable_background_region(void)
-{
-    MPU->ctrl &= ~MPU_CTRL_PRIVDEFENA;
-    ISB();
-}
-
 void mpu_arch_init(void)
 {
     bitmap_clear_consecutive(cpu()->arch.mpu_hyp.bitmap, 0, mpu_num_entries());

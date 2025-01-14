@@ -111,6 +111,7 @@ static mpid_t mem_vmpu_allocate_entry(struct addr_space* as)
 static mpid_t mem_vmpu_get_entry_by_addr(struct addr_space* as, vaddr_t addr)
 {
     mpid_t mpid = INVALID_MPID;
+    struct mpe* mpe;
 
     for (mpid_t i = 0; i < VMPU_NUM_ENTRIES; i++) {
         struct mpe* mpe = mem_vmpu_get_entry(as, i);
