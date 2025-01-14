@@ -153,3 +153,11 @@ void mpu_arch_init(void)
         }
     }
 }
+
+void mpu_arch_enable(void)
+{
+    MPU->ctrl |= MPU_CTRL_ENABLE;
+    /* Enable background region */
+    MPU->ctrl &= ~MPU_CTRL_PRIVDEFENA;
+    ISB();
+}

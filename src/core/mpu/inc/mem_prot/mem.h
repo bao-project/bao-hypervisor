@@ -56,6 +56,7 @@ bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast);
  * success value.
  */
 void mpu_init(void);
+void mpu_enable(void);
 bool mpu_map(struct addr_space* as, struct mp_region* mem);
 bool mpu_unmap(struct addr_space* as, struct mp_region* mem);
 

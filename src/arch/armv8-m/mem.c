@@ -69,3 +69,8 @@ void mpu_init(void)
 {
     mpu_arch_init();
 }
+
+void mpu_enable(void)
+{
+    mpu_arch_enable();
+}
