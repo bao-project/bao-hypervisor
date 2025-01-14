@@ -167,7 +167,7 @@ static mpid_t mpu_entry_allocate(void)
     return reg_num;
 }
 
-static priv_t mpu_as_priv(struct addr_space *as)
+static priv_t mpu_as_priv(struct addr_space* as)
 {
     priv_t priv;
 
@@ -180,7 +180,7 @@ static priv_t mpu_as_priv(struct addr_space *as)
     return priv;
 }
 
-bool mpu_map(struct addr_space *as, struct mp_region* mpr)
+bool mpu_map(struct addr_space* as, struct mp_region* mpr)
 {
     size_t size_left = mpr->size;
     bool failed = false;
@@ -460,7 +460,7 @@ bool mpu_map(struct addr_space *as, struct mp_region* mpr)
     return !failed;
 }
 
-bool mpu_unmap(struct addr_space *as, struct mp_region* mpr)
+bool mpu_unmap(struct addr_space* as, struct mp_region* mpr)
 {
     size_t size_left = mpr->size;
     priv_t priv = mpu_as_priv(as);

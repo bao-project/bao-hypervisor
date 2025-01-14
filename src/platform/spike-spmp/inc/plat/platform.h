@@ -8,11 +8,11 @@
 
 #include <drivers/sbi_uart.h>
 
-#define CPU_EXT_SSTC 1
+#define CPU_EXT_SSTC    1
 
-#define IPIC_SBI     (1)
-#define IPIC_ACLINT  (2)
+#define IPIC_SBI        (1)
+#define IPIC_ACLINT     (2)
 
-#define PLAT_TIMER_FREQ (10000000ull) //10 MHz
+#define PLAT_TIMER_FREQ (10000000ull) // 10 MHz
 
 #endif
