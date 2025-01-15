@@ -393,6 +393,101 @@ static mpid_t mem_vmpu_find_overlapping_region(struct addr_space* as, struct mp_
     return mpid;
 }
 
+
+static bool mem_vmpu_add_region(struct addr_space* as, struct mp_region* mpr, bool broadcast)
+{
+    /* We should try to update before modifying the cur_reg->region
+       maybe use a temporary variable? */
+    bool ret = false;
+    bool merge = false;
+    mpid_t cur_mpid = INVALID_MPID;
+    mpid_t prev_mpid = INVALID_MPID;
+    struct mpe* prev_reg;
+    struct mpe* cur_reg;
+
+    /* first case / empty list */
+    if (cpu()->as.vmpu.ordered_list.head == NULL) {
+        mpid_t mpid = mem_vmpu_allocate_entry(as);
+        if (mpid != INVALID_MPID) {
+                struct mpe* mpe = mem_vmpu_get_entry(as, mpid);
+
+                mpe->region.base = mpr->base;
+                mpe->region.size = mpr->size;
+                mpe->region.mem_flags = mpr->mem_flags;
+                mpe->region.as_sec = mpr->as_sec;
+                mpe->state = MPE_S_VALID;
+                mpe->mpid = mpid;
+
+                list_push(&cpu()->as.vmpu.ordered_list,(node_t*)&cpu()->as.vmpu.node[mpid]);
+                ret = true;
+                return ret;
+        }
+    }
+
+    /* Why use cpu()->as and not the as argument? */
+    /* Missing a list_foreach_head to have the next node available*/
+    list_foreach(cpu()->as.vmpu.ordered_list, struct mpe, cur)
+    {
+        cur_reg = mem_vmpu_get_entry(as, cur->mpid);
+        bool compat_perms = mpu_perms_comptible(mpr->mem_flags, cur_reg->region.mem_flags);
+        if(mpr->base == cur_reg->region.base + cur_reg->region.size && compat_perms)
+        {
+            /* coalesce top of current region*/
+            cur_reg->region.size = cur_reg->region.size + mpr->size;
+
+            compat_perms = mpu_perms_comptible(mpr->mem_flags,((struct mpe *)cur_reg->node)->region.mem_flags);
+            if((cur_reg->region.base + cur_reg->region.size) == ((struct mpe *)cur_reg->node)->region.base && compat_perms)
+            {
+                /* coalesce top of the inserted region*/
+                cur_reg->region.size = cur_reg->region.size + ((struct mpe *)cur_reg->node)->region.size;
+                mpu_unmap(as,&((struct mpe *)cur_reg->node)->region); //missing broadcast
+            }
+            mpu_update(as,cur_reg->region,broadcast);
+
+            ret = true;
+            break;
+        }
+
+        else if(mpr->base + mpr->size == cur_reg->region.base && compat_perms)
+        {
+            /* coalesce bottom of current region*/
+            cur_reg->region.size = cur_reg->region.size + mpr->size;
+            cur_reg->region.base = mpr->base;
+
+            mpu_update(as,cur_reg->region,broadcast); 
+            ret = true;
+            break;
+        }
+        else
+        {
+            /* No coalescing needed*/
+            if(cur_reg->region.base > mpr->base)
+                continue;
+            
+            else {
+                mpid_t mpid = mem_vmpu_allocate_entry(as);
+                if (mpid != INVALID_MPID) {
+                    struct mpe* mpe = mem_vmpu_get_entry(as, mpid);
+
+                    mpe->region.base = mpr->base;
+                    mpe->region.size = mpr->size;
+                    mpe->region.mem_flags = mpr->mem_flags;
+                    mpe->region.as_sec = mpr->as_sec;
+                    mpe->state = MPE_S_VALID;
+                    mpe->mpid = mpid;
+
+                    mpe->node = cur_reg->node;  
+                    cur_reg = mpe;
+                    
+                    ret = true;
+                    break;
+                }
+            }
+        }
+    }
+    return ret;
+}
+
 bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool locked)
 {
     bool mapped = false;
@@ -409,10 +504,7 @@ bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool 
     spin_lock(&as->lock);
 
     if (mem_vmpu_find_overlapping_region(as, mpr) == INVALID_MPID) {
-        mpid_t mpid = mem_vmpu_allocate_entry(as);
-        if (mpid != INVALID_MPID) {
-            mapped = mem_vmpu_insert_region(as, mpid, mpr, broadcast, locked);
-        }
+        mapped =  mem_vmpu_add_region(as, mpr, broadcast);
     }
 
     spin_unlock(&as->lock);
