@@ -109,61 +109,8 @@ _reset_handler:
     /* r5 contains the secure MPU based address */
     ldr r5, =MPU_BASE
 
-    /* Configure MPU MAIR */
-    ldr r6, =MAIR_SEC_PLVL_DFLT
-    str r6, [r5, #MPU_MAIR0_OFF]
-
-    /* Region 0 - Map LMA sections */
-    add r4, r4, #1
-    str r4, [r5, #MPU_RNR_OFF]
-    ldr r6, =_image_start
-    and r6, r6, #MPU_RBAR_BASE_MSK      /* TODO:ARMV8M - I suppose it should be Non shareable? */
-    orr r6, r6, #MPU_RBAR_AP_RW_PLVL
-    str r6, [r5, #MPU_RBAR_OFF]
-    ldr r6, =_image_load_end
-    sub r6, r6, #1
-    and r6, r6, #MPU_RLAR_LIMIT_MSK
-    orr r6, r6, #(MPU_RLAR_ATTR(0) | MPU_RLAR_EN)               /* TODO:ARMV8M - What should be done here */
-    str r6, [r5, #MPU_RLAR_OFF]
-
-    /* Region 1 - Map VMA sections */
-    add r4, r4, #1
-    str r4, [r5, #MPU_RNR_OFF]
-    ldr r6, =_data_vma_start
-    and r6, r6, #MPU_RBAR_BASE_MSK      /* TODO:ARMV8M - I suppose it should be Non shareable? */
-    orr r6, r6, #MPU_RBAR_AP_RW_PLVL
-    str r6, [r5, #MPU_RBAR_OFF]
-    ldr r6, =_image_end
-    sub r6, r6, #1
-    and r6, r6, #MPU_RLAR_LIMIT_MSK
-    orr r6, r6, #(MPU_RLAR_ATTR(0) | MPU_RLAR_EN)               /* TODO:ARMV8M - What should be done here */
-    str r6, [r5, #MPU_RLAR_OFF]
-
-    /* Region 2 - CPU */
-    add r4, r4, #1
-    str r4, [r5, #MPU_RNR_OFF]
-    ldr r6, =_dmem_beg
-    and r6, r10, #MPU_RBAR_BASE_MSK      /* TODO:ARMV8M - I suppose it should be Non shareable? */
-    orr r6, r6, #MPU_RBAR_AP_RW_PLVL
-    str r6, [r5, #MPU_RBAR_OFF]
-    add r6, r10, #CPU_SIZE
-    sub r6, r6, #1
-    and r6, r6, #MPU_RLAR_LIMIT_MSK
-    orr r6, r6, #(MPU_RLAR_ATTR(0) | MPU_RLAR_EN | MPU_RLAR_PXN)               /* TODO:ARMV8M - What should be done here */
-    str r6, [r5, #MPU_RLAR_OFF]
-
     /* Clear remaining regions */
     bl clear_mpu
-
-    /* TODO:ARMV8M - Temporary/To be removed. Read MPU regions */
-    mov r4, #0
-1:
-    str r4, [r5, #MPU_RNR_OFF]
-    ldr r6, [r5, #MPU_RBAR_OFF]
-    ldr r7, [r5, #MPU_RLAR_OFF]
-    add r4, r4, #1
-    cmp r4, #8
-    bne 1b
 
     dsb
     isb
@@ -173,15 +120,6 @@ _reset_handler:
     ldr r4, [r3, #SCB_SHCSR_OFF]
     orr r4, r4, #(SCB_ENABLE_ALL_FAULTS)
     str r4, [r3, #SCB_SHCSR_OFF]
-
-    /* Enable MPU */
-    mov r4, #(MPU_CTRL_ENABLE)
-    ldr r6, [r5, #MPU_CTRL_OFF]
-    orr r4, r4, r6
-    str r4, [r5, #MPU_CTRL_OFF]
-
-    dsb
-    isb
 
     /* Copy data from RX to RWX */
     ldr r7, =_data_lma_start        // LMA start
