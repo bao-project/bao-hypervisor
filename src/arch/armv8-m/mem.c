@@ -15,13 +15,13 @@ void as_arch_init(struct addr_space* as)
     UNUSED_ARG(as);
 }
 
-bool mpu_map(struct addr_space* as, struct mp_region* mpr)
+bool mpu_map(struct addr_space* as, struct mp_region* mpr, bool locked)
 {
     bool failed = true;
 
     if (as == &cpu()->as) {
         /* Add region to MPU */
-        if (!mpu_add_region(mpr)) {
+        if (!mpu_add_region(mpr, locked)) {
             ERROR("failed to register mpu entry");
         } else {
             failed = false;

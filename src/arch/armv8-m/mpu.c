@@ -14,6 +14,16 @@ static inline size_t mpu_num_entries(void)
     return (size_t)MPU_TYPE_N_RGN(MPU->type);
 }
 
+static inline void mpu_lock_entry(mpid_t mpid)
+{
+    bitmap_set(cpu()->arch.mpu_hyp.locked, mpid);
+}
+
+static inline bool mpu_entry_locked(mpid_t mpid)
+{
+    return !!bitmap_get(cpu()->arch.mpu_hyp.locked, mpid);
+}
+
 static void mpu_entry_set(mpid_t mpid, struct mp_region* mpr)
 {
     unsigned long lim = mpr->base + mpr->size - 1;
@@ -37,7 +47,7 @@ static mpid_t mpu_entry_allocate(void)
     return reg_num;
 }
 
-bool mpu_add_region(struct mp_region* reg)
+bool mpu_add_region(struct mp_region* reg, bool locked)
 {
     bool failed = true;
 
@@ -47,13 +57,17 @@ bool mpu_add_region(struct mp_region* reg)
         if (mpid != INVALID_MPID) {
             failed = false;
             mpu_entry_set(mpid, reg);
+            if (locked) {
+                mpu_lock_entry(mpid);
+            }
         }
+
     }
 
     return !failed;
 }
 
-bool mpu_perms_comptible(uint8_t perms1, uint8_t perms2)
+bool mpu_perms_compatible(uint8_t perms1, uint8_t perms2)
 {
     // TODO:ARMV8M - IMPLEMENT on all archs
     // uint8_t perms_mask = SPMPCFG_S_BIT | SPMPCFG_R_BIT | SPMPCFG_W_BIT | SPMPCFG_X_BIT;
@@ -131,10 +145,6 @@ static inline bool mpu_entry_valid(mpid_t mpid)
     return !!(MPU->rlar & MPU_RLAR_EN);
 }
 
-static inline bool mpu_entry_locked(mpid_t mpid)
-{
-    return !!bitmap_get(cpu()->arch.mpu_hyp.locked, mpid);
-}
 
 void mpu_arch_init(void)
 {

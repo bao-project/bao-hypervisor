@@ -18,6 +18,7 @@ struct shared_region {
     asid_t asid;
     struct mp_region region;
     cpumap_t sharing_cpus;
+    bool lock;
 };
 
 void mem_handle_broadcast_region(uint32_t event, uint64_t data);
@@ -58,7 +59,7 @@ static int vmpu_node_cmp(node_t* _n1, node_t* _n2)
     }
 }
 
-static void mem_vmpu_set_entry(struct addr_space* as, mpid_t mpid, struct mp_region* mpr)
+static void mem_vmpu_set_entry(struct addr_space* as, mpid_t mpid, struct mp_region* mpr, bool locked)
 {
     struct mpe* mpe = mem_vmpu_get_entry(as, mpid);
 
@@ -68,6 +69,7 @@ static void mem_vmpu_set_entry(struct addr_space* as, mpid_t mpid, struct mp_reg
     mpe->region.as_sec = mpr->as_sec;
     mpe->state = MPE_S_VALID;
     mpe->mpid = mpid;
+    mpe->lock = locked;
 
     list_insert_ordered(&cpu()->as.vmpu.ordered_list, (node_t*)&cpu()->as.vmpu.node[mpid],
         vmpu_node_cmp);
@@ -82,6 +84,7 @@ static void mem_vmpu_clear_entry(struct addr_space* as, mpid_t mpid)
     mpe->region.mem_flags = PTE_INVALID;
     mpe->region.as_sec = SEC_UNKNOWN;
     mpe->state = MPE_S_INVALID;
+    mpe->lock = false;
 }
 
 static void mem_vmpu_free_entry(struct addr_space* as, mpid_t mpid)
@@ -181,7 +184,7 @@ static void mem_init_boot_regions(void)
         .mem_flags = PTE_HYP_FLAGS,
         .as_sec = SEC_HYP_IMAGE,
     };
-    mem_map(&cpu()->as, &mpr, true);
+    mem_map(&cpu()->as, &mpr, true, true);
 
     if (separate_noload_region) {
         mpr = (struct mp_region){
@@ -195,7 +198,7 @@ static void mem_init_boot_regions(void)
             .mem_flags = PTE_HYP_FLAGS,
             .as_sec = SEC_HYP_IMAGE,
         };
-        mem_map(&cpu()->as, &mpr, true);
+        mem_map(&cpu()->as, &mpr, true, true);
     }
 
     mpr = (struct mp_region){
@@ -204,7 +207,7 @@ static void mem_init_boot_regions(void)
         .mem_flags = PTE_HYP_FLAGS,
         .as_sec = SEC_HYP_PRIVATE,
     };
-    mem_map(&cpu()->as, &mpr, true);
+    mem_map(&cpu()->as, &mpr, true, true);
 }
 
 void mem_prot_init()
@@ -257,7 +260,7 @@ static void mem_msg_handler(uint32_t event, uint64_t data)
 }
 CPU_MSG_HANDLER(mem_msg_handler, MEM_PROT_SYNC)
 
-static void mem_region_broadcast(struct addr_space* as, struct mp_region* mpr, uint32_t op)
+static void mem_region_broadcast(struct addr_space* as, struct mp_region* mpr, uint32_t op, bool locked)
 {
     cpumap_t shared_cpus = as->cpus;
 
@@ -269,6 +272,7 @@ static void mem_region_broadcast(struct addr_space* as, struct mp_region* mpr, u
         .as_type = as->type,
         .asid = as->id,
         .region = *mpr,
+        .lock = locked,
     };
 
     for (cpuid_t cpuid = 0; cpuid < PLAT_CPU_NUM; cpuid++) {
@@ -285,16 +289,16 @@ static void mem_region_broadcast(struct addr_space* as, struct mp_region* mpr, u
 }
 
 static bool mem_vmpu_insert_region(struct addr_space* as, mpid_t mpid, struct mp_region* mpr,
-    bool broadcast)
+    bool broadcast, bool locked)
 {
     if (mpid == INVALID_MPID) {
         return false;
     }
 
-    if (mpu_map(as, mpr)) {
-        mem_vmpu_set_entry(as, mpid, mpr);
+    if (mpu_map(as, mpr, locked)) {
+        mem_vmpu_set_entry(as, mpid, mpr, locked);
         if (broadcast) {
-            mem_region_broadcast(as, mpr, MEM_INSERT_REGION);
+            mem_region_broadcast(as, mpr, MEM_INSERT_REGION, locked);
         }
         return true;
     }
@@ -310,7 +314,7 @@ static bool mem_vmpu_remove_region(struct addr_space* as, mpid_t mpid, bool broa
 
     if ((mpe != NULL) && (mpe->state == MPE_S_VALID)) {
         if (broadcast) {
-            mem_region_broadcast(as, &mpe->region, MEM_REMOVE_REGION);
+            mem_region_broadcast(as, &mpe->region, MEM_REMOVE_REGION, mpe->lock);
         }
         mpu_unmap(as, &mpe->region);
         mem_vmpu_free_entry(as, mpid);
@@ -320,12 +324,12 @@ static bool mem_vmpu_remove_region(struct addr_space* as, mpid_t mpid, bool broa
     return removed;
 }
 
-static void mem_handle_broadcast_insert(struct addr_space* as, struct mp_region* mpr)
+static void mem_handle_broadcast_insert(struct addr_space* as, struct mp_region* mpr, bool locked)
 {
     if (as->type == AS_HYP) {
-        mem_map(&cpu()->as, mpr, false);
+        mem_map(&cpu()->as, mpr, false, locked);
     } else {
-        mpu_map(as, mpr);
+        mpu_map(as, mpr, locked);
     }
 }
 
@@ -356,7 +360,7 @@ void mem_handle_broadcast_region(uint32_t event, uint64_t data)
 
         switch (event) {
             case MEM_INSERT_REGION:
-                mem_handle_broadcast_insert(as, &sh_reg->region);
+                mem_handle_broadcast_insert(as, &sh_reg->region, sh_reg->lock);
                 break;
             case MEM_REMOVE_REGION:
                 mem_handle_broadcast_remove(as, &sh_reg->region);
@@ -389,52 +393,7 @@ static mpid_t mem_vmpu_find_overlapping_region(struct addr_space* as, struct mp_
     return mpid;
 }
 
-void mem_vmpu_coalesce_contiguous(struct addr_space* as, bool broadcast)
-{
-    while (true) {
-        bool merge = false;
-        mpid_t cur_mpid = INVALID_MPID;
-        mpid_t prev_mpid = INVALID_MPID;
-        struct mpe* prev_reg;
-        struct mpe* cur_reg;
-        list_foreach_tail(cpu()->as.vmpu.ordered_list, struct mpe, cur, prev)
-        {
-            if (prev == NULL) {
-                continue;
-            }
-            cur_reg = mem_vmpu_get_entry(as, cur->mpid);
-            prev_reg = mem_vmpu_get_entry(as, prev->mpid);
-
-            bool contigous = prev_reg->region.base + prev_reg->region.size == cur_reg->region.base;
-            bool perms_compatible =
-                mpu_perms_comptible(prev_reg->region.mem_flags.raw, cur_reg->region.mem_flags.raw);
-            if (contigous && perms_compatible) {
-                cur_mpid = cur->mpid;
-                prev_mpid = prev->mpid;
-                merge = true;
-                break;
-            }
-        }
-
-        if (merge) {
-            struct mp_region merged_reg = {
-                .base = prev_reg->region.base,
-                .size = prev_reg->region.size + cur_reg->region.size,
-                .mem_flags = cur_reg->region.mem_flags,
-            };
-            mem_vmpu_remove_region(as, cur_mpid, broadcast);
-            mem_vmpu_remove_region(as, prev_mpid, broadcast);
-            mpid_t mpid = mem_vmpu_allocate_entry(as);
-            if (mpid != INVALID_MPID) {
-                mem_vmpu_insert_region(as, mpid, &merged_reg, broadcast);
-            }
-        } else {
-            break;
-        }
-    }
-}
-
-bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast)
+bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool locked)
 {
     bool mapped = false;
 
@@ -452,12 +411,8 @@ bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast)
     if (mem_vmpu_find_overlapping_region(as, mpr) == INVALID_MPID) {
         mpid_t mpid = mem_vmpu_allocate_entry(as);
         if (mpid != INVALID_MPID) {
-            mapped = mem_vmpu_insert_region(as, mpid, mpr, broadcast);
+            mapped = mem_vmpu_insert_region(as, mpid, mpr, broadcast, locked);
         }
-    }
-
-    if (mapped) {
-        mem_vmpu_coalesce_contiguous(as, broadcast);
     }
 
     spin_unlock(&as->lock);
@@ -490,6 +445,8 @@ bool mem_unmap_range(struct addr_space* as, vaddr_t vaddr, size_t size, bool bro
         struct mpe* mpe = mem_vmpu_get_entry(as, mpid);
         reg = mpe->region;
 
+        bool locked = mpe->lock;
+
         vaddr_t limit = vaddr + size;
         vaddr_t r_limit = reg.base + reg.size;
         vaddr_t r_base = reg.base;
@@ -504,14 +461,14 @@ bool mem_unmap_range(struct addr_space* as, vaddr_t vaddr, size_t size, bool bro
             top.base = limit;
             top.size = top_size;
             mpid_t top_mpid = mem_vmpu_allocate_entry(as);
-            mem_vmpu_insert_region(as, top_mpid, &top, true);
+            mem_vmpu_insert_region(as, top_mpid, &top, true, locked);
         }
 
         if (bottom_size > 0) {
             struct mp_region bottom = reg;
             bottom.size = bottom_size;
             mpid_t bottom_mpid = mem_vmpu_allocate_entry(as);
-            mem_vmpu_insert_region(as, bottom_mpid, &bottom, true);
+            mem_vmpu_insert_region(as, bottom_mpid, &bottom, true, locked);
         }
 
         size_t overlap_size = reg.size - top_size - bottom_size;
@@ -552,7 +509,7 @@ vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, vaddr_t vas,
         mpr = mpe->region;
         spin_unlock(&ass->lock);
 
-        if (mem_map(asd, &mpr, true)) {
+        if (mem_map(asd, &mpr, true, false)) {
             va_res = vas;
         } else {
             INFO("failed mem map on mem map cpy");
@@ -604,7 +561,7 @@ vaddr_t mem_alloc_map(struct addr_space* as, as_sec_t section, struct ppages* pp
         .mem_flags = flags,
     };
 
-    mem_map(as, &mpr, true);
+    mem_map(as, &mpr, true, false);
 
     return at;
 }
