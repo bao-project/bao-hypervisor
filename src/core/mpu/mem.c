@@ -67,6 +67,7 @@ static void mem_vmpu_set_entry(struct addr_space* as, mpid_t mpid, struct mp_reg
     mpe->region.mem_flags = mpr->mem_flags;
     mpe->region.as_sec = mpr->as_sec;
     mpe->state = MPE_S_VALID;
+    mpe->mpid = mpid;
 
     list_insert_ordered(&cpu()->as.vmpu.ordered_list, (node_t*)&cpu()->as.vmpu.node[mpid],
         vmpu_node_cmp);
@@ -409,13 +410,13 @@ void mem_vmpu_coalesce_contiguous(struct addr_space* as, bool broadcast)
         }
 
         if (merge) {
-            mem_vmpu_remove_region(as, cur_mpid, broadcast);
-            mem_vmpu_remove_region(as, prev_mpid, broadcast);
             struct mp_region merged_reg = {
                 .base = prev_reg->region.base,
                 .size = prev_reg->region.size + cur_reg->region.size,
                 .mem_flags = cur_reg->region.mem_flags,
             };
+            mem_vmpu_remove_region(as, cur_mpid, broadcast);
+            mem_vmpu_remove_region(as, prev_mpid, broadcast);
             mpid_t mpid = mem_vmpu_allocate_entry(as);
             if (mpid != INVALID_MPID) {
                 mem_vmpu_insert_region(as, mpid, &merged_reg, broadcast);
