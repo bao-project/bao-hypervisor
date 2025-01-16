@@ -112,8 +112,8 @@ static void mpu_entry_clear(mpid_t mpid)
 {
     MPU->rnr = mpid;
     ISB();
-    MPU->rbar = 0;
     MPU->rlar = 0;
+    MPU->rbar = 0;
 }
 
 static inline void mpu_entry_free(mpid_t mpid)
@@ -138,13 +138,32 @@ bool mpu_remove_region(struct mp_region* reg)
     return !failed;
 }
 
+bool mpu_update_region(struct mp_region* mpr)
+{
+    bool failed = true;
+
+    for (mpid_t mpid = 0; mpid < (mpid_t)mpu_num_entries(); mpid++) {
+        if (bitmap_get(cpu()->arch.mpu_hyp.bitmap, mpid) == 0) {
+            continue;
+        }
+        struct mp_region mpe_cmp;
+        mpu_entry_get_region(mpid, &mpe_cmp);
+
+        if (mpe_cmp.base == mpr->base) {
+            mpu_entry_set(mpid, mpr);
+            failed = false;
+            break;
+        }
+    }
+    return !failed;
+}
+
 static inline bool mpu_entry_valid(mpid_t mpid)
 {
     MPU->rnr = mpid;
     ISB();
     return !!(MPU->rlar & MPU_RLAR_EN);
 }
-
 
 void mpu_arch_init(void)
 {

@@ -65,6 +65,31 @@ bool mpu_unmap(struct addr_space* as, struct mp_region* mpr)
     return !failed;
 }
 
+bool mpu_update(struct addr_space* as, struct mp_region* mpr)
+{
+    bool failed = true;
+
+    if (as == &cpu()->as) {
+        /* Remove region */
+        if (!mpu_update_region(mpr)) {
+            ERROR("failed to register mpu entry");
+        } else {
+            failed = false;
+        }
+    } else {
+        if (as == &cpu()->vcpu->vm->as) {
+            /* Remove region */
+            /*if (!sau_update_region(mpr)) {
+                ERROR("failed to register sau entry");
+            } else {
+                failed = false;
+            }*/
+        }
+    }
+
+    return !failed;
+}
+
 void mpu_init(void)
 {
     mpu_arch_init();

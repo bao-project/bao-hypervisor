@@ -14,6 +14,7 @@ void mpu_arch_init(void);
 void mpu_arch_enable(void);
 bool mpu_add_region(struct mp_region* reg, bool locked);
 bool mpu_remove_region(struct mp_region* reg);
+bool mpu_update_region(struct mp_region* reg);
 bool mpu_perms_compatible(uint8_t perms1, uint8_t perms2);
 
 #endif /* __ARCH_MPU_H__ */
