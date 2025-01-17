@@ -129,8 +129,3 @@ We welcome contributions! Please submit pull requests or open issues for:
 - Documentation updates
 - Platform support extensions
 - Test case additions
-
-## Contact
-
-- **Authors**: Afonso Oliveira, Diogo Costa, Gonçalo Moreira, José Martins, Sandro Pinto
-- **Institution**: Centro ALGORITMI / LASI, Universidade do Minho, Portugal
