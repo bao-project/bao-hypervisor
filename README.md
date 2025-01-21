@@ -1,128 +1,131 @@
-# Bao - a lightweight static partitioning hypervisor
+# H-MBR: Hypervisor-level Memory Bandwidth Reservation for Mixed-Criticality Systems
 
-![code quality workflow](https://github.com/bao-project/bao-hypervisor/actions/workflows/code-quality.yaml/badge.svg)
-![arm build workflow](https://github.com/bao-project/bao-hypervisor/actions/workflows/build-arm.yaml/badge.svg)
-![riscv build workflow](https://github.com/bao-project/bao-hypervisor/actions/workflows/build-riscv.yaml/badge.svg)
+## Overview
 
-Introduction
-------------
+H-MBR (Hypervisor-level Memory Bandwidth Reservation) is a VM-centric memory bandwidth reservation mechanism built on the [Bao hypervisor](https://github.com/bao-project/bao-hypervisor). It enables robust memory bandwidth isolation among virtual machines (VMs) on shared multicore platforms, making it particularly valuable for Mixed-Criticality Systems (MCS).
 
-**Bao** (from Mandarin Chinese “bǎohù”, meaning “to protect”) is a lightweight, 
-open-source embedded hypervisor which aims at providing strong isolation and 
-real-time guarantees. Bao provides a minimal, from-scratch implementation of 
-the partitioning hypervisor architecture. 
+### What is H-MBR?
 
-Designed mainly for targeting mixed-criticality systems, Bao strongly focuses 
-on isolation for fault-containment and real-time behavior. Its implementation 
-comprises only a minimal, thin-layer of privileged software leveraging ISA 
-virtualization support to implement the static partitioning hypervisor architecture: 
-resources are statically partitioned and assigned at VM instantiation time; 
-memory is statically assigned using 2-stage translation; IO is pass-through only; 
-virtual interrupts are directly mapped to physical ones; and it implements a 1-1 
-mapping of virtual to physical CPUs, with no need for a scheduler. 
+H-MBR provides fine-grained control over memory bandwidth allocation at the VM level, ensuring critical VMs maintain predictable performance while coexisting with non-critical VMs. The mechanism leverages hardware Performance Monitoring Units (PMU) and generic timers to enforce bandwidth limits with minimal overhead.
 
-Bao has no external dependencies, such as on privileged VMs running untrustable, 
-large monolithic general-purpose operating systems (e.g., Linux), and, as such, 
-encompasses a much smaller TCB.
+### Key Features
 
-**NOTE**: This is work in progress! Don't expect things to be complete. 
-Use at your own risk.
+- **VM-Centric Bandwidth Allocation**
+  - Configure memory bandwidth budgets per VM rather than per CPU
+  - Ideal for mixed-criticality workloads with varying bandwidth requirements
+  - Supports both balanced and unbalanced distribution across vCPUs
 
+- **Architecture & OS Support**
+  - OS-Agnostic: Compatible with Linux, FreeRTOS, Zephyr, and other operating systems
+  - Platform-Agnostic: Supports ARMv8-A, ARMv8-R, and RISC-V architectures
+  - Built on Bao's minimal hypervisor design
 
-Supported Platforms
--------------------
+- **Performance**
+  - Zero overhead on unregulated (critical) workloads
+  - <1% overhead for regulated workloads with periods ≥2 µs
+  - Efficient interrupt handling through Bao's optimized design
 
-The full list of supported (and work in progress) 
-platforms is presented below:
+## Implementation Details
 
-**Armv8-A AArch64**
-- [x] Xilinx Zynq UltraScale+ MPSoC ZCU102/4
-- [x] Ultra96 Zynq UltraScale+ ZU3EG
-- [x] NXP MCIMX8QM-CPU
-- [x] NVIDIA Jetson TX2
-- [x] 96Boards HiKey 960
-- [x] Raspberry Pi 4
-- [x] QEMU virt
-- [x] Arm Fixed Virtual Platforms
-- [ ] BeagleBone AI-64
-- [ ] NXP MCIMX8M-EVK
-- [ ] 96Boards ROCK960
+### Memory Bandwidth Control
 
-**Armv7-A / Armv8-A AArch32**
-- [x] Arm Fixed Virtual Platforms
-- [ ] QEMU virt
-- [ ] STM32MP157-DK2
+H-MBR uses two key hardware components:
+1. **PMU (Performance Monitoring Unit)**
+   - Tracks memory access activities
+   - Triggers overflow interrupts when budget is exceeded
+   - Provides per-CPU monitoring capabilities
 
-**Armv8-R AArch64**
-- [x] Arm Fixed Virtual Platforms
+2. **Generic Timer**
+   - Manages regulation periods
+   - Resets bandwidth budgets periodically
+   - Controls VM execution based on budget consumption
 
-**Armv8-R AArch32**
-- [x] Arm Fixed Virtual Platforms
-- [ ] NXP S32Z/E
-- [ ] Renesas RZT2M
+### Budget Calculation
 
-**RISC-V RV64**
-- [x] QEMU virt 
-- [ ] Rocket w/ H-extension 
-- [ ] CVA6 w/ H-extension 
+The effective memory bandwidth is determined by:
+```
+Bandwidth = Budget / Period
+```
+where:
+- `Budget`: Maximum allowed memory accesses per period
+- `Period`: Time interval in microseconds
 
-**RISC-V RV32**
-- [ ] QEMU virt
+## Getting Started
 
-Community Resources
--------------------
+### Hardware Requirements
 
-Project website:
+- **Tested Platform**: Xilinx Zynq UltraScale+ ZCU104
+  - ARM Cortex-A53 quad-core processor
+  - Integrated PMU and timer support
+  - 1MB unified L2 cache
 
- - http://www.bao-project.org/ 
+### Configuration Guide
 
-Source code:
+1. **VM Configuration**
+   Add the following to your VM description in Bao:
+   ```c
+   .mem_throth = {
+       .period_us = x,  // Period in microseconds (e.g., 1000 for 1ms)
+       .budget = y,     // Maximum memory accesses per period per VM
+   },
+   ```
 
- - https://github.com/bao-project/bao-hypervisor.git
- - git@github.com:bao-project/bao-hypervisor.git
+2. **Recommended Settings**
+   - For critical VMs: Leave unregulated
+   - For non-critical VMs:
+     - Minimum period: 2 µs (to maintain <1% overhead)
+     - Budget: Tune based on workload requirements
+     - Start with larger periods (e.g., 100 µs) and adjust based on performance
 
- Contributing:
- 
- - Please get in touch (info@bao-project.org)
+### Building the System
 
+1. **Repository Setup**
+   ```bash
+   git clone https://github.com/<user>/H-MBR.git
+   cd H-MBR/
+   ```
 
+2. **Configuration**
+   - Configure MBR parameters in your VM description
+   - Adjust settings based on your specific mixed-criticality requirements
 
-Demos
-------------
+3. **Deployment**
+   - Copy hypervisor binary (`build/bao.elf`) to boot medium
+   - Boot the system
+   - Monitor initialization through console output
 
-For a step-by-step guide on how to run different demo configurations 
-of the Bao hypervisor featuring multiple guest operating systems and 
-targeting several platforms please refer to:
-[**Bao Hypervisor Demo Guide**](https://github.com/bao-project/bao-demos)
+## Performance Tuning
 
+### Best Practices
 
+1. **Period Selection**
+   - Longer periods (>2 µs) minimize overhead
+   - Shorter periods provide finer-grained control
+   - Consider workload characteristics when choosing periods
 
-References
-------------
+2. **Budget Allocation**
+   - Start conservative with non-critical VM budgets
+   - Monitor critical VM performance
+   - Gradually adjust based on system requirements
 
-1. José Martins, Adriano Tavares, Marco Solieri, Marko Bertogna, and Sandro Pinto. 
-"**Bao: A Lightweight Static Partitioning Hypervisor for Modern Multi-Core Embedded 
-Systems**". In Workshop on Next Generation Real-Time Embedded Systems (NG-RES 2020). 
-Schloss Dagstuhl-Leibniz-Zentrum für Informatik. 2020.
-https://drops.dagstuhl.de/opus/volltexte/2020/11779/
+3. **Monitoring**
+   - Use console output to verify initialization
+   - Monitor PMU events for bandwidth usage
+   - Check for budget overflow interrupts
 
-2. José Martins and Sandro Pinto. "**Bao: a modern lightweight embedded hypervisor**".
-In Proceedings of the Embedded World Conference, Nuremberg, Germany, 2020. 
+## Publications
 
-3. José Martins and Sandro Pinto. "**Static Partitioning Virtualization on RISC-V**".
-In RISC-V Summit, virtual, 2020. https://www.youtube.com/watch?v=yuxMn4ZApEM
+If you use H-MBR in your research, please cite our paper:
 
-4. Bruno Sá, José Martins and Sandro Pinto. "**A First Look at RISC-V Virtualization from an Embedded Systems Perspective**".
-In IEEE Transactions on Computers, doi: 10.1109/TC.2021.3124320.
+> **H-MBR: Hypervisor-level Memory Bandwidth Reservation for Mixed-Criticality Systems**  
+> Afonso Oliveira, Diogo Costa, Gonçalo Moreira, José Martins, Sandro Pinto  
+> Workshop on Next Generation Real-Time Embedded Systems (NG-RES 2025)
 
-5. Samuel Pereira, João Sousa, Sandro Pinto, José Martins, David Cerdeira "**Bao-Enclave: Virtualization-based Enclaves for Arm**.
-In https://arxiv.org/abs/2209.05572
+## Contributing
 
-6. José Martins and Sandro Pinto. "**Shedding Light on Static Partitioning Hypervisors for Arm-based Mixed-Criticality Systems**".
-In RTAS 2023, San Antonio, Texas, 2023. https://arxiv.org/abs/2303.11186
-
-7. José Martins and Sandro Pinto. "**Porting of a Static Partitioning Hypervisor to Arm’s Cortex-R52**"
-In Embedded Open Source Summit 2023, Prague, Czech Republic, 2023. https://www.youtube.com/watch?v=GmeOikZJRas
-
-8. David Cerdeira and José Martins. "**"Hello 'Bao' World" Tutorial**"
-In Bao Half-Day, Virtual Workshop, 2023. https://www.youtube.com/watch?v=6c8_MG-OHYo
+We welcome contributions! Please submit pull requests or open issues for:
+- Bug fixes and performance improvements
+- Feature enhancements
+- Documentation updates
+- Platform support extensions
+- Test case additions
