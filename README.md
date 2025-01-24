@@ -130,3 +130,6 @@ In Bao Half-Day, Virtual Workshop, 2023. https://www.youtube.com/watch?v=6c8_MG-
 
 9. João Peixoto, José Martins, David Cerdeira and Sandro Pinto. "**BiRtIO: VirtIO for Real-Time Network Interface Sharing on the Bao Hypervisor**"
 In IEEE Access, 2024. https://ieeexplore.ieee.org/document/10781314
+
+10. Hidemasa Kawasaki and Soramichi Akiyama. "**Running Bao Hypervisor on gem5**"
+In gem5 blog, 2024. https://www.gem5.org/2024/11/12/bao-on-gem5.html
