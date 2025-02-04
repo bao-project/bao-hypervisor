@@ -4,9 +4,7 @@
  */
 
 #include <asm_defs.h>
-#include <arch/csfrs.h>
-#include <arch/csa.h>
-
+#include <arch/sysregs.h>
 /*
  * TODO:ARMV8M
  * In Armv8-M the vector table is naturally aligned to a power of two, with an alignment value that
@@ -27,143 +25,60 @@
 .syntax unified
 .text
 
-.macro SAVE_HYP_GPRS
-    @ st.w [%a10]0x0, %d0
-    @ st.w [%a10]0x4, %d1
-    @ st.w [%a10]0x8, %d2
-    @ st.w [%a10]0xc, %d3
-    @ st.w [%a10]0x10, %d4
-    @ st.w [%a10]0x14, %d5
-    @ st.w [%a10]0x18, %d6
-    @ st.w [%a10]0x1c, %d7
-    @ st.w [%a10]0x20, %d8
-    @ st.w [%a10]0x24, %d9
-    @ st.w [%a10]0x28, %d10
-    @ st.w [%a10]0x2c, %d11
-    @ st.w [%a10]0x30, %d12
-    @ st.w [%a10]0x34, %d13
-    @ st.w [%a10]0x38, %d14
-    @ st.w [%a10]0x3c, %d15
-
-    @ st.a [%a10]0x40, %a0
-    @ st.a [%a10]0x44, %a1
-    @ st.a [%a10]0x48, %a2
-    @ st.a [%a10]0x4c, %a3
-    @ st.a [%a10]0x50, %a4
-    @ st.a [%a10]0x54, %a5
-    @ st.a [%a10]0x58, %a6
-    @ st.a [%a10]0x5c, %a7
-    @ st.a [%a10]0x60, %a8
-    @ st.a [%a10]0x64, %a9
-    @ mov.d %d0, %a10
-    @ mov.a %a9, %d0
-    @ st.a [%a10]0x68, %a9
-    @ st.a [%a10]0x6c, %a11
-    @ st.a [%a10]0x70, %a12
-    @ st.a [%a10]0x74, %a13
-    @ st.a [%a10]0x78, %a14
-    @ st.a [%a10]0x7c, %a15
-.endm
-
-.macro GET_CPU_PTR
-    @ movh    %d9,hi:_dmem_phys_beg
-    @ addi    %d9,%d9,lo:_dmem_phys_beg
-
-    @ mfcr    %d8,$core_id
-    @ and     %d8,%d8,7
-    @ /* CPU_X physical base address */
-    @ mov     %d10, CPU_SIZE
-    @ madd    %d8, %d9, %d8, %d10
-    @ mov.a   %a10, %d0
-.endm
-
-.macro GET_VCPU_REGS_PTR
-    @ mov.d   %d8, %a8    
-    @ mov     %d10, CPU_VCPU_OFF
-    @ add     %d8, %d8, %d10
-    @ mov.a   %a11, %d8
-    @ ld.w    %d8, [%a11]
-    @ mov     %d11, VCPU_REGS_OFF
-    @ add     %d8, %d8, %d11
-    @ mov.a   %a10, %d8
-.endm
-
-.macro GET_VCPU_LOWER_CTX_PTR
-    @ mov.d   %d8, %a8    
-    @ mov     %d10, CPU_VCPU_OFF
-    @ add     %d8, %d8, %d10
-    @ mov.a   %a11, %d8
-    @ ld.w    %d8, [%a11]
-    @ mov     %d11, VCPU_REGS_LOWER_CTX_OFF
-    @ add     %d8, %d8, %d11
-    @ mov.a   %a10, %d8
-.endm
-
 .macro VM_EXIT
-    @ /*Upper context was saved by hardware*/
+    /* Read CPU pointer (psp) to r0 */
+    mrs r1, psp
+    ldr r0, [r1, #CPU_VCPU_OFF]
 
-    @ /*Save lower context*/
-    @ svlcx 
+    //TODO:ARMV8M - This should be done only if we are scheduling another VM
+    /* Save all special registers */
 
-    @ /* Save a0, a1, a8, a9 */
-    @ GET_VCPU_REGS_PTR
-
-    @ mfcr %d0, 0xFF81
-    @ st.w [%a10] REGS_A0_OFF, %d0    
-
-    @ mfcr %d0, 0xFF85
-    @ st.w [%a10] REGS_A1_OFF, %d0 
-
-    @ mfcr %d0, 0xFFA1
-    @ st.w [%a10] REGS_A8_OFF, %d0 
-
-    @ mfcr %d0, 0xFFA5
-    @ st.w [%a10] REGS_A8_OFF, %d0 
-
-    
+    /* Save all registers */
+    add r0, (VCPU_REGS_OFF+VCPU_GP_REGS_SIZE)      /* Point to R14 */
+    stmdb r0!, {r1-r12, lr}                     /* R1-R12, R14 */
+    add r0, #-4
+    str r0, [r0]                                /* R0 */
 .endm
 
 .macro VM_ENTRY
-    @     /* d8 and A10 contains the pointer to vcpu->regs (same as lower_ctx) */
-    @     GET_VCPU_REGS_PTR
-    @     /*
-    @         CPU_HVHRA_A0 0x0FF81
-    @         CPU_HVHRA_A1 0x0FF85
-    @         CPU_HVHRA_A8 0x0FFA1
-    @         CPU_HVHRA_A9 0x0FFA5
-    @     */
-    @     /*restore a0, a1, a8, a9*/
-    @     ld.w %d0, [%a10] REGS_A0_OFF
-    @     mtcr 0xFF81, %d0
+    /* Read CPU pointer (psp) to r0 */
+    mrs r1, psp
+    ldr r0, [r1, #CPU_VCPU_OFF]
 
-    @     ld.w %d0, [%a10] REGS_A1_OFF
-    @     mtcr 0xFF85, %d0
+    //TODO:ARMV8M - This should be done only if we are scheduling another VM
+    @ ldr r0, [r0,#CPU_VCPU_OFF]
+    @ add r0, #(VCPU_SPREGS_OFF+VCPU_SPREGS_SIZE)
+    @ /* Restore sp_regs */
+    @ ldmdb r0!, {r1-r8}
 
-    @     ld.w %d0, [%a10] REGS_A8_OFF
-    @     mtcr 0xFFA1, %d0
+    @ msr msp_ns,       r1  /* r1 (MSP)         */
+    @ msr psp_ns,       r2  /* r2 (PSP)         */
+    @ msr msplim_ns,    r3  /* r3 (MSPLIM)      */
+    @ msr psplim_ns,    r4  /* r4 (PSPLIM)      */
+    @ msr basepri_ns,   r5  /* r5 (BASEPRI)     */
+    @ msr primask_ns,   r6  /* r6 (PRIMASK)     */
+    @ msr faultmask_ns, r7  /* r7 (FAULTMASK)   */
+    @ msr control_ns,   r8  /* r8 (CONTROL)     */
+    @ //msr xpsr,         r9  /* r9 (xPSR)        */
 
-    @     ld.w %d0, [%a10] REGS_A9_OFF
-    @     mtcr 0xFFA5, %d0
+1:
+    /* Restore all registers */
+    add r0, (VCPU_REGS_OFF+VCPU_GP_REGS_SIZE)      /* Point to R14 */
+    ldmdb r0!, {r1-r12, lr}                     /* R1-R12, R14 */
+    add r0, #-4
+    ldr r0, [r0]                                /* R0 */
 
-    @     //movh %d0, hi:0x90000200
-    @     //addi %d0, %d0, lo:0x90000200
-    @     //mtcr 0xFE25, %d0
+    //TODO:ARMV8-M - Still missing some procedures (Security Extensions on Dev Tools)
 
-    @     isync
-    @     /* Restore lower context */
-    @     rslcx
-
-    @     /* Return from hypervisor (Restore upper context) */ 
-    @     rfh
-
-    @ 1:
-    @     j   1b
+    /* Jump to VM */
+    bxns lr
+    b   .
 .endm
 
 
 .balign VECTTBL_ALIGN
-.global _sec_vector_table
-_sec_vector_table:
+.global _hyp_vector_table
+_hyp_vector_table:
     /* Exceptions */
     /*
      * In Armv8-M, the processor fetches the first two words of the vector table at each power-on/
@@ -237,61 +152,10 @@ define_handler _irq_handler
 _irq_handler:
     b   .
 
+.global _hyp_trap_vector
+_hyp_trap_vector:
+    VM_EXIT
+
 .global vcpu_arch_entry
 vcpu_arch_entry:
-/*
-    TODO: 
-    Setup PCX for the guest.
-*/
-/*
-    The last in the CSA array is the 1st context used. 
-    We are sure of this, because this code only executes in the boot sequence.
-    We need to re-establish the CSA list. To do it, we have to point the FCX
-    to the current PCXI, and point the 1st context to the current FCX.
-*/
-    @ mfcr %d0, $pcxi
-    @ mfcr %d1, $fcx 
-    @ mtcr $fcx, %d0
-    @ movh %d0, hi:csa_array
-    @ addi %d0, %d0, lo:csa_array
-    @ mov %d2, CSA_ARRAY_SIZE-(16*4)  
-    @ add %d0, %d0, %d2
-    @ mov.a %a2, %d0
-    @ st.w [%a2], %d1
-
-    @ /* Invalidate the PCXI register */
-    @ GET_VCPU_REGS_PTR
-    @ /* convert the vcpu->regs to pcx format */    
-    @ extr.u %d1, %d8, 28, 4
-    @ extr.u %d2, %d8, 6, 16
-    @ sh %d1, %d1, 16
-    @ or %d2, %d2, %d1
-    @ /* point pcxi to the vcpu->regs->lower_ctx*/
-    @ mtcr $pcxi, %d2
-
-
-    @ /* Clear CDC before jumping to guest */
-    @ mfcr %d0, $psw
-    @ movh %d1, hi:0xFFFFF80
-    @ addi %d1, %d1, lo:0xFFFFF80
-    @ and %d0, %d0, %d1
-    @ mtcr $psw, %d0
-
-    @ /* Enable VCON2 l2_prs */
-    @ mfcr %d0, 0xB008
-    @ or %d0, %d0, 0x000000100
-    @ mtcr 0xB008, %d0
-
-    @ /* Enable VCON0 NMI handled by HV */
-    @ mfcr %d0, 0xB000
-    @ or %d0, %d0, 0x02
-    @ mtcr 0xB000, %d0
-
-
-    /*
-    Init VCPU lower -> upper
-    PCXi -> vcpu.lower
-    restore lower context inst
-    rfh
-    */
     VM_ENTRY
