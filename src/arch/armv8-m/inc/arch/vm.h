@@ -14,41 +14,44 @@
 #include <emul.h>
 #include <vm.h>
 #include <arch/csa.h>
+#include <arch/vfp.h>
 
-#define REG_D0  (1)
-#define REG_D1  (2)
-#define REG_D2  (3)
-#define REG_D3  (4)
-#define REG_D4  (5)
-#define REG_D5  (6)
-#define REG_D6  (7)
-#define REG_D7  (8)
-#define REG_D8  (9)
-#define REG_D9  (10)
-#define REG_D10 (11)
-#define REG_D11 (12)
-#define REG_D12 (13)
-#define REG_D13 (14)
-#define REG_D14 (15)
-#define REG_A0  (16)
-#define REG_A1  (17)
-#define REG_A2  (18)
-#define REG_A3  (19)
-#define REG_A4  (20)
-#define REG_A5  (21)
-#define REG_A6  (22)
-#define REG_A7  (23)
-#define REG_A8  (24)
-#define REG_A9  (25)
-#define REG_A10 (26)
-#define REG_SP  (26)
-#define REG_A11 (27)
-#define REG_RA  (27)
-#define REG_A12 (28)
-#define REG_A13 (29)
-#define REG_A14 (30)
-#define REG_A15 (31)
+#define REG_D0                 (1)
+#define REG_D1                 (2)
+#define REG_D2                 (3)
+#define REG_D3                 (4)
+#define REG_D4                 (5)
+#define REG_D5                 (6)
+#define REG_D6                 (7)
+#define REG_D7                 (8)
+#define REG_D8                 (9)
+#define REG_D9                 (10)
+#define REG_D10                (11)
+#define REG_D11                (12)
+#define REG_D12                (13)
+#define REG_D13                (14)
+#define REG_D14                (15)
+#define REG_A0                 (16)
+#define REG_A1                 (17)
+#define REG_A2                 (18)
+#define REG_A3                 (19)
+#define REG_A4                 (20)
+#define REG_A5                 (21)
+#define REG_A6                 (22)
+#define REG_A7                 (23)
+#define REG_A8                 (24)
+#define REG_A9                 (25)
+#define REG_A10                (26)
+#define REG_SP                 (26)
+#define REG_A11                (27)
+#define REG_RA                 (27)
+#define REG_A12                (28)
+#define REG_A13                (29)
+#define REG_A14                (30)
+#define REG_A15                (31)
 
+#define EXC_RETURN_RESET_VALUE (0xFFFFFFFF)
+#define xPSR_RESET_VALUE       (0x01000000)
 struct vnvic_src {
     node_t node;
     struct vcpu* owner;
@@ -96,16 +99,44 @@ struct vcpu_arch {
     } sau_vm;
 };
 
+struct special_regs {
+    unsigned long msp;
+    unsigned long psp;
+    unsigned long msp_lim;
+    unsigned long psp_lim;
+    unsigned long basepri;
+    unsigned long primask;
+    unsigned long faultmask;
+    unsigned long control;
+    unsigned long xpsr;
+};
+
 struct arch_regs {
-    struct lower_context lower_ctx;
-    struct upper_context upper_ctx;
+    union {
+        unsigned long gp_regs[14];
+        struct {
+            unsigned long r0;
+            unsigned long r1;
+            unsigned long r2;
+            unsigned long r3;
+            unsigned long r4;
+            unsigned long r5;
+            unsigned long r6;
+            unsigned long r7;
+            unsigned long r8;
+            unsigned long r9;
+            unsigned long r10;
+            unsigned long r11;
+            unsigned long r12;
+            // unsigned long sp; /* r13 */
+            unsigned long lr; /* r14 */
+            // unsigned long pc; /* r15 */
+        };
+    };
+    struct special_regs sp_regs;
+    struct vfp vfp_regs;
 
-    unsigned long a0; /* System global register: not saved accross calls traps and irqs */
-    unsigned long a1; /* System global register: not saved accross calls traps and irqs */
-    unsigned long a8; /* System global register: not saved accross calls traps and irqs */
-    unsigned long a9; /* System global register: not saved accross calls traps and irqs */
-
-} __attribute__((__packed__, aligned(64)));
+} __attribute__((__packed__, aligned(sizeof(unsigned long))));
 
 void vcpu_arch_entry(void);
 

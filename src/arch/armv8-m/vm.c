@@ -39,15 +39,23 @@ void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm)
 
 void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
 {
-    UNUSED_ARG(vcpu);
-    UNUSED_ARG(entry);
+    memset(&vcpu->regs, 0, sizeof(struct arch_regs));
+
+    // TODO:ARMV8-M - to we need replicate the warm reset sequence? (TakeReset - page 1919)
+    // msp = vector[0]
+    // If so, we do this:
+    // Set gp and sp regs to reset values
+    vcpu->regs.lr = entry;
+    vcpu->regs.sp_regs.xpsr = xPSR_RESET_VALUE;
+
+    vfp_reset(&vcpu->regs.vfp_regs);
 }
 
 bool vcpu_arch_is_on(struct vcpu* vcpu)
 {
     UNUSED_ARG(vcpu);
 
-    return false;
+    return true;
 }
 
 unsigned long vcpu_readreg(struct vcpu* vcpu, unsigned long reg)
