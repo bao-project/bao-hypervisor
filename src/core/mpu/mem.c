@@ -72,8 +72,7 @@ static void mem_vmpu_set_entry(struct addr_space* as, mpid_t mpid, struct mp_reg
     mpe->mpid = mpid;
     mpe->lock = locked;
 
-    list_insert_ordered(&cpu()->as.vmpu.ordered_list, (node_t*)&cpu()->as.vmpu.node[mpid],
-        vmpu_node_cmp);
+    list_insert_ordered(&as->vmpu.ordered_list, (node_t*)&as->vmpu.node[mpid], vmpu_node_cmp);
 }
 
 static void mem_vmpu_clear_entry(struct addr_space* as, mpid_t mpid)
@@ -94,7 +93,7 @@ static void mem_vmpu_free_entry(struct addr_space* as, mpid_t mpid)
     struct mpe* mpe = mem_vmpu_get_entry(as, mpid);
     mpe->state = MPE_S_FREE;
 
-    list_rm(&cpu()->as.vmpu.ordered_list, (node_t*)&cpu()->as.vmpu.node[mpid]);
+    list_rm(&as->vmpu.ordered_list, (node_t*)&as->vmpu.node[mpid]);
 }
 
 static mpid_t mem_vmpu_allocate_entry(struct addr_space* as)
@@ -185,7 +184,7 @@ static void mem_init_boot_regions(void)
         .mem_flags = PTE_HYP_FLAGS,
         .as_sec = SEC_HYP_IMAGE,
     };
-    mem_map(&cpu()->as, &mpr, true, true);
+    mem_map(&cpu()->as, &mpr, false, true);
 
     if (separate_noload_region) {
         mpr = (struct mp_region){
@@ -199,7 +198,7 @@ static void mem_init_boot_regions(void)
             .mem_flags = PTE_HYP_FLAGS,
             .as_sec = SEC_HYP_IMAGE,
         };
-        mem_map(&cpu()->as, &mpr, true, true);
+        mem_map(&cpu()->as, &mpr, false, true);
     }
 
     mpr = (struct mp_region){
@@ -208,7 +207,7 @@ static void mem_init_boot_regions(void)
         .mem_flags = PTE_HYP_FLAGS,
         .as_sec = SEC_HYP_PRIVATE,
     };
-    mem_map(&cpu()->as, &mpr, true, true);
+    mem_map(&cpu()->as, &mpr, false, true);
 }
 
 void mem_prot_init()
@@ -239,7 +238,9 @@ void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, cpumap_t cpus,
         mem_vmpu_free_entry(as, i);
     }
 
-    list_init(&cpu()->as.vmpu.ordered_list);
+    list_init(&(as->vmpu.ordered_list));
+    // TODO:ARMV8M - makes sense to init all nodes on list here?
+
     as_arch_init(as);
 }
 
@@ -313,7 +314,7 @@ static bool mem_vmpu_update_region(struct addr_space* as, mpid_t mpid, struct mp
 {
     bool merged = false;
 
-    if(mpu_update(as, &merge_reg)) {
+    if (mpu_update(as, &merge_reg)) {
         struct mpe* mpe = mem_vmpu_get_entry(as, mpid);
         mpe->region = merge_reg;
         if (broadcast) {
@@ -321,6 +322,7 @@ static bool mem_vmpu_update_region(struct addr_space* as, mpid_t mpid, struct mp
         }
         merged = true;
     }
+    return merged;
 }
 
 static bool mem_vmpu_remove_region(struct addr_space* as, mpid_t mpid, bool broadcast)
@@ -359,12 +361,11 @@ static void mem_handle_broadcast_remove(struct addr_space* as, struct mp_region*
     }
 }
 
-static void mem_handle_broadcast_update(struct addr_space* as, struct mp_region* mpr)
+static void mem_handle_broadcast_update(struct addr_space* as, struct mp_region* mpr, bool locked)
 {
-    //TODO:ARMV8M - check if this makes sense
+    // TODO:ARMV8M - check if this makes sense
     if (as->type == AS_HYP) {
-        mem_unmap_range(&cpu()->as, mpr->base, mpr->size, false);
-        mem_map(&cpu()->as, mpr, false, false);
+        mem_update(as, mpr, false, locked);
     } else {
         mpu_update(as, mpr);
     }
@@ -394,7 +395,7 @@ void mem_handle_broadcast_region(uint32_t event, uint64_t data)
                 mem_handle_broadcast_remove(as, &sh_reg->region);
                 break;
             case MEM_UPDATE_REGION:
-                mem_handle_broadcast_update(as, &sh_reg->region);
+                mem_handle_broadcast_update(as, &sh_reg->region, sh_reg->lock);
                 break;
             default:
                 ERROR("unknown mem broadcast msg");
@@ -432,7 +433,7 @@ void mem_vmpu_coalesce_contiguous(struct addr_space* as, bool broadcast, bool lo
         mpid_t prev_mpid = INVALID_MPID;
         struct mpe* prev_reg;
         struct mpe* cur_reg;
-        list_foreach_tail(cpu()->as.vmpu.ordered_list, struct mpe, cur, prev)
+        list_foreach_tail(as->vmpu.ordered_list, struct mpe, cur, prev)
         {
             if (prev == NULL) {
                 continue;
@@ -441,8 +442,8 @@ void mem_vmpu_coalesce_contiguous(struct addr_space* as, bool broadcast, bool lo
             prev_reg = mem_vmpu_get_entry(as, prev->mpid);
 
             bool contiguous = prev_reg->region.base + prev_reg->region.size == cur_reg->region.base;
-            bool perms_compatible =
-                mpu_perms_compatible(prev_reg->region.mem_flags.raw, cur_reg->region.mem_flags.raw);
+            bool perms_compatible = mpu_perms_compatible(as, prev_reg->region.mem_flags.raw,
+                cur_reg->region.mem_flags.raw);
             bool lock_compatible = prev_reg->lock == cur_reg->lock;
             if (contiguous && perms_compatible && lock_compatible) {
                 cur_mpid = cur->mpid;
@@ -458,13 +459,29 @@ void mem_vmpu_coalesce_contiguous(struct addr_space* as, bool broadcast, bool lo
                 .size = prev_reg->region.size + cur_reg->region.size,
                 .mem_flags = cur_reg->region.mem_flags,
             };
-            if(mem_vmpu_update_region(as, prev_mpid, merged_reg, broadcast, locked)) {
+            if (mem_vmpu_update_region(as, prev_mpid, merged_reg, broadcast, locked)) {
                 mem_vmpu_remove_region(as, cur_mpid, broadcast);
             }
         } else {
             break;
         }
     }
+}
+
+bool mem_update(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool locked)
+{
+    mpid_t update_mpid = INVALID_MPID;
+    struct mpe* reg;
+    list_foreach (as->vmpu.ordered_list, struct mpe, cur) {
+        if (cur->region.base == mpr->base) {
+            update_mpid = cur->mpid;
+            break;
+        }
+    }
+    if (update_mpid != INVALID_MPID) {
+        return mem_vmpu_update_region(as, update_mpid, *mpr, broadcast, locked);
+    }
+    return false;
 }
 
 bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool locked)
