@@ -4,7 +4,9 @@
 CROSS_COMPILE ?= arm-none-eabi-
 
 arch-cflags+=-march=armv8-m.main
-arch-cflags+=-ffixed-r10
+arch-cflags+=-mfloat-abi=hard
+arch-cflags+=-mfpu=fpv5-sp-d16
+arch-cflags+=-mthumb
 arch-ldflags=
 
 arch_mem_prot:=mpu
