@@ -26,10 +26,10 @@ _reset_handler:
      * Not following any ABI for registers in this boot code.
      * The following registers are however reserved to be passed to main
      * as arguments:
-     *     r0 -> contains cpu id
-     *     r1 -> contains vma data load address
-     *     r2 -> contains config binary load address (passed in r0)
-     *     r10-> fixed in the compiler to be used as the CPU struct pointer
+     *     r0  -> contains cpu id
+     *     r1  -> contains vma data load address
+     *     r2  -> contains config binary load address (passed in r0)
+     *     psp -> unpriv sp to obe used as a pointer to cpu structs
      * Register r9 is reserved to indicate if the current CPU is master (negated)
 	 */
 
@@ -50,7 +50,7 @@ _reset_handler:
      */
     ldr r3, =SCB_BASE
     add r4, r3, SCB_VTOR_OFF
-    ldr r3, =_sec_vector_table
+    ldr r3, =_hyp_vector_table
     str r3, [r4]
 
     /*
@@ -73,6 +73,7 @@ _reset_handler:
 
     /* Disable MPU */
     ldr r3, =MPU_BASE
+    add r3, r3, MPU_CTRL_OFF
     mov r4, #MPU_CTRL_ENABLE
     ldr r5, [r3]
     bic r5, r5, r4
@@ -91,11 +92,12 @@ _reset_handler:
     ldr r10, =_dmem_beg
 
     /* CPU_X physical base address
-     * In Armv8-M there is not scratch register, so we use r10 as the scratch register by setting
-     * -ffixed-r10 in the compiler.
+     * In Armv8-M there is not scratch register, so we use the unpriv sp (psp) as the scratch
+       register.
      */
     mov r7, #CPU_SIZE
     mla r10, r0, r7, r10      //TODO:ARMV8M - We are running in single-core, so this is not needed?!
+    msr psp, r10
 
     /* Clear the CPU struct */
     mov r11, r10
@@ -109,8 +111,20 @@ _reset_handler:
     /* r5 contains the secure MPU based address */
     ldr r5, =MPU_BASE
 
-    /* Clear remaining regions */
+    /* Clear MPU regions */
     bl clear_mpu
+
+    dsb
+    isb
+
+    /* r4 contains the id of the SAU entry being used */
+    mov r4, #(-1)
+    /* r5 contains the secure SAU based address */
+    ldr r5, =SAU_BASE
+
+    /* Clear SAU regions */
+    //TODO:ARMV8M - should this be done here?
+    bl clear_sau
 
     dsb
     isb
@@ -157,7 +171,7 @@ _reset_handler:
     b .
 
 /*****  Helper functions for boot code. ******/
-
+/* Clear .bss section */
 .global boot_clear
 boot_clear:
 2:
@@ -170,11 +184,6 @@ boot_clear:
 1:
 	bx lr
 
-
-    ldr r7, =_data_lma_start        // LMA start
-    ldr r11, =_data_vma_start       // VMA start
-    ldr r12, =_image_load_end       // LMA end
-
 /* Copies data from r7 to r11 up to the r12 limit */
 .global copy_data
 copy_data:
@@ -185,7 +194,7 @@ copy_data:
     bne 1b
     bx lr
 
-/* Clear all remaining MPU regions (r5 contains MPU_BASE, r4 the region number) */
+/* Clear all MPU regions (r5 contains MPU_BASE, r4 the region number) */
 .global clear_mpu
 clear_mpu:
     mov r6, #0
@@ -194,6 +203,19 @@ clear_mpu:
     str r4, [r5, #MPU_RNR_OFF]
     str r6, [r5, #MPU_RBAR_OFF]
     str r6, [r5, #MPU_RLAR_OFF]
+    cmp r4, #7  //TODO:ARMV8M - This is implementation-def, should be changed
+    bne 1b
+    bx lr
+
+/* Clear all SAU regions (r5 contains SAU_BASE, r4 the region number) */
+.global clear_sau
+clear_sau:
+    mov r6, #0
+1:
+    add r4, r4, #1
+    str r4, [r5, #SAU_RNR_OFF]
+    str r6, [r5, #SAU_RBAR_OFF]
+    str r6, [r5, #SAU_RLAR_OFF]
     cmp r4, #7  //TODO:ARMV8M - This is implementation-def, should be changed
     bne 1b
     bx lr
