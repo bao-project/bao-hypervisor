@@ -29,7 +29,7 @@ bool mpu_map(struct addr_space* as, struct mp_region* mpr, bool locked)
     } else {
         if (as == &cpu()->vcpu->vm->as) {
             /* Add region to SAU  */
-            if (!sau_add_region(mpr)) {
+            if (!sau_add_region(mpr, locked)) {
                 ERROR("failed to register sau entry");
             } else {
                 failed = false;
@@ -79,11 +79,32 @@ bool mpu_update(struct addr_space* as, struct mp_region* mpr)
     } else {
         if (as == &cpu()->vcpu->vm->as) {
             /* Remove region */
-            /*if (!sau_update_region(mpr)) {
+            if (!sau_update_region(mpr)) {
                 ERROR("failed to register sau entry");
             } else {
                 failed = false;
-            }*/
+            }
+        }
+    }
+
+    return !failed;
+}
+
+bool mpu_perms_compatible(struct addr_space* as, uint8_t perms1, uint8_t perms2)
+{
+    bool failed = true;
+
+    if (as == &cpu()->as) {
+        if (!mpu_arch_perms_compatible(perms1, perms2)) {
+        } else {
+            failed = false;
+        }
+    } else {
+        if (as == &cpu()->vcpu->vm->as) {
+            if (!sau_perms_compatible(perms1, perms2)) {
+            } else {
+                failed = false;
+            }
         }
     }
 
@@ -95,7 +116,7 @@ void mpu_init(void)
     mpu_arch_init();
 }
 
-void mpu_enable(void)
+void mpu_enable()
 {
     mpu_arch_enable();
 }

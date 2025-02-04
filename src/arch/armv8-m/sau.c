@@ -15,6 +15,16 @@ static inline size_t sau_num_entries(void)
     return (size_t)SAU_TYPE_N_RGN(SAU->type);
 }
 
+static inline void sau_lock_entry(mpid_t mpid)
+{
+    bitmap_set(cpu()->vcpu->arch.sau_vm.locked, mpid);
+}
+
+static inline bool sau_entry_locked(mpid_t mpid)
+{
+    return !!bitmap_get(cpu()->vcpu->arch.sau_vm.locked, mpid);
+}
+
 static void sau_entry_set(mpid_t mpid, struct mp_region* mpr)
 {
     unsigned long lim = mpr->base + mpr->size - 1;
@@ -38,7 +48,7 @@ static mpid_t sau_entry_allocate(void)
     return reg_num;
 }
 
-bool sau_add_region(struct mp_region* reg)
+bool sau_add_region(struct mp_region* reg, bool locked)
 {
     bool failed = true;
 
@@ -48,10 +58,22 @@ bool sau_add_region(struct mp_region* reg)
         if (mpid != INVALID_MPID) {
             failed = false;
             sau_entry_set(mpid, reg);
+            if (locked) {
+                sau_lock_entry(mpid);
+            }
         }
     }
 
     return !failed;
+}
+
+bool sau_perms_compatible(uint8_t perms1, uint8_t perms2)
+{
+    // TODO:ARMV8M - IMPLEMENT on all archs
+    // uint8_t perms_mask = SPMPCFG_S_BIT | SPMPCFG_R_BIT | SPMPCFG_W_BIT | SPMPCFG_X_BIT;
+    // return (perms1 & perms_mask) == (perms2 & perms_mask);
+
+    return 1;
 }
 
 static void sau_entry_get_region(mpid_t mpid, struct mp_region* mpe)
@@ -89,8 +111,8 @@ static void sau_entry_clear(mpid_t mpid)
 {
     SAU->rnr = mpid;
     ISB();
-    SAU->rbar = 0;
     SAU->rlar = 0;
+    SAU->rbar = 0;
 }
 
 static inline void sau_entry_free(mpid_t mpid)
@@ -115,16 +137,32 @@ bool sau_remove_region(struct mp_region* reg)
     return !failed;
 }
 
+bool sau_update_region(struct mp_region* mpr)
+{
+    bool failed = true;
+
+    for (mpid_t mpid = 0; mpid < (mpid_t)sau_num_entries(); mpid++) {
+        if (bitmap_get(cpu()->vcpu->arch.sau_vm.bitmap, mpid) == 0) {
+            continue;
+        }
+        struct mp_region mpe_cmp;
+        sau_entry_get_region(mpid, &mpe_cmp);
+
+        if (mpe_cmp.base == mpr->base) {
+            sau_entry_set(mpid, mpr);
+            failed = false;
+            break;
+        }
+    }
+
+    return !failed;
+}
+
 static inline bool sau_entry_valid(mpid_t mpid)
 {
     SAU->rnr = mpid;
     ISB();
     return !!(SAU->rlar & SAU_RLAR_EN);
-}
-
-static inline bool sau_entry_locked(mpid_t mpid)
-{
-    return !!bitmap_get(cpu()->vcpu->arch.sau_vm.locked, mpid);
 }
 
 void sau_arch_init(void)
@@ -137,4 +175,11 @@ void sau_arch_init(void)
             bitmap_set(cpu()->vcpu->arch.sau_vm.locked, mpid);
         }
     }
+}
+
+void sau_arch_enable(void)
+{
+    SAU->ctrl |= SAU_CTRL_ENABLE;
+    ISB();
+
 }

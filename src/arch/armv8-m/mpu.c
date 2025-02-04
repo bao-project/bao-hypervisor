@@ -67,7 +67,7 @@ bool mpu_add_region(struct mp_region* reg, bool locked)
     return !failed;
 }
 
-bool mpu_perms_compatible(uint8_t perms1, uint8_t perms2)
+bool mpu_arch_perms_compatible(uint8_t perms1, uint8_t perms2)
 {
     // TODO:ARMV8M - IMPLEMENT on all archs
     // uint8_t perms_mask = SPMPCFG_S_BIT | SPMPCFG_R_BIT | SPMPCFG_W_BIT | SPMPCFG_X_BIT;
