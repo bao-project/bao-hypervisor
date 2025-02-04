@@ -25,8 +25,7 @@ struct cpu_arch {
 
 static inline struct cpu* cpu(void)
 {
-    register unsigned long r10 __asm__("r10");
-    return (struct cpu*)r10;
+    return (struct cpu*)sysreg_psp_s_read();
 }
 
 #endif /* __ARCH_CPU_H__ */

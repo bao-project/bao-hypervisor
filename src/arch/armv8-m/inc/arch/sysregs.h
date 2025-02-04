@@ -189,6 +189,25 @@ struct mpu {
 };
 
 #endif
+
+#ifndef __ASSEMBLER__
+
+#define SYSREG_GEN_ACCESSORS(name, reg)                              \
+    static inline unsigned long sysreg_##name##_read(void)           \
+    {                                                                \
+        unsigned long _temp;                                         \
+        __asm__ volatile("mrs %0, " XSTR(reg) "\n\r" : "=r"(_temp)); \
+        return _temp;                                                \
+    }                                                                \
+    static inline void sysreg_##name##_write(unsigned long val)      \
+    {                                                                \
+        __asm__ volatile("msr " XSTR(reg) ", %0\n\r" : : "r"(val));  \
+    }
+
+SYSREG_GEN_ACCESSORS(psp_s, psp)
+
+#endif /* |__ASSEMBLER__ */
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /* ID_AA64MMFR0_EL1, AArch64 Memory Model Feature Register 0 */
