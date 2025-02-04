@@ -84,7 +84,7 @@ struct scb {
 #define SAU_RBAR_BASE(BASE)   ((BASE) & SAU_RBAR_BADDR_MSK)
 
 #define SAU_RLAR_EN           (1 << 0)
-#define SAU_NSC               (1 << 1)
+#define SAU_RLAR_NSC          (1 << 1)
 #define SAU_RLAR_FLAGS_MSK    (0x1FUL)
 #define SAU_RLAR_FLAGS(RLAR)  ((RLAR) & SAU_RLAR_FLAGS_MSK)
 #define SAU_RLAR_LADDR_MSK    (~SAU_RLAR_FLAGS_MSK)
@@ -108,7 +108,7 @@ struct sau {
 #define MPU_BASE              (0xE000ED90UL)
 #define MPU_NS_BASE           (0xE002ED90UL)
 #define MPU                   ((struct mpu*)MPU_BASE)
-#define MPU_NS                ((struct mpu_ns*)MPU_NS_BASE)
+#define MPU_NS                ((struct mpu*)MPU_NS_BASE)
 
 #define MPU_CTRL_ENABLE       (1 << 0)
 #define MPU_CTRL_HFNMIENA     (1 << 1)

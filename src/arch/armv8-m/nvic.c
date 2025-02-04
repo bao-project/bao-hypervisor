@@ -13,9 +13,6 @@
 
 #include <vm.h>
 
-volatile struct nvic_int_hw* nvic_int;
-volatile struct nvic_src_hw* nvic_src;
-
 BITMAP_ALLOC(valid, NVIC_MAX_INTERRUPTS);
 
 void nvic_init_ipi(void) { }
@@ -27,46 +24,125 @@ void nvic_cpu_init(void)
     /* Nothing to do */
 }
 
-void nvic_set_enbl(irqid_t int_id, bool en)
+void nvic_set_enbl(struct nvic* ic, irqid_t int_id, bool en)
 {
-    UNUSED_ARG(int_id);
-    UNUSED_ARG(en);
+    if (int_id >= 0) {
+        if (en) {
+            ic->iser[((int_id) >> 5UL)] = (uint32_t)(1UL << (((uint32_t)int_id) & 0x1FUL));
+        } else {
+            ic->icer[((int_id) >> 5UL)] = (uint32_t)(1UL << (((uint32_t)int_id) & 0x1FUL));
+        }
+        DSB();
+        ISB();
+    } else {
+        ERROR("Invalid interrupt id %d", int_id);
+    }
 }
 
-bool nvic_get_enbl(irqid_t int_id)
+bool nvic_get_enbl(struct nvic* ic, irqid_t int_id)
 {
-    UNUSED_ARG(int_id);
-    return false;
+    if ((int32_t)(int_id) >= 0) {
+        return ((uint32_t)(((ic->iser[(((uint32_t)int_id) >> 5UL)] &
+                                (1UL << (((uint32_t)int_id) & 0x1FUL))) != 0UL) ?
+                true :
+                false));
+    } else {
+        ERROR("Invalid interrupt id %d", int_id);
+    }
 }
 
-void nvic_set_prio(irqid_t int_id, uint32_t prio)
+void nvic_set_prio(struct nvic* ic, irqid_t int_id, uint32_t prio)
 {
-    UNUSED_ARG(int_id);
-    UNUSED_ARG(prio);
+    if ((int32_t)(int_id) >= 0) {
+        ic->ipr[((uint32_t)int_id)] = (uint8_t)((prio << (8U - NVIC_PRIO_BITS)) & (uint32_t)0xFFUL);
+    } else {
+        ERROR("Invalid interrupt id %d", int_id);
+    }
 }
 
-uint32_t nvic_get_prio(irqid_t int_id)
+uint32_t nvic_get_prio(struct nvic* ic, irqid_t int_id)
 {
-    UNUSED_ARG(int_id);
-    return 0;
+    if ((int32_t)(int_id) >= 0) {
+        return ((uint32_t)ic->ipr[((uint32_t)int_id)] >> (8U - NVIC_PRIO_BITS));
+    } else {
+        ERROR("Invalid interrupt id %d", int_id);
+    }
 }
 
-bool nvic_get_pend(irqid_t int_id)
+bool nvic_get_pend(struct nvic* ic, irqid_t int_id)
 {
-    UNUSED_ARG(int_id);
-    return false;
+    if ((int32_t)(int_id) >= 0) {
+        return ((uint32_t)(((ic->ispr[(((uint32_t)int_id) >> 5UL)] &
+                                (1UL << (((uint32_t)int_id) & 0x1FUL))) != 0UL) ?
+                true :
+                false));
+    } else {
+        ERROR("Invalid interrupt id %d", int_id);
+    }
 }
 
-bool nvic_set_pend(irqid_t int_id)
+void nvic_set_pend(struct nvic* ic, irqid_t int_id)
 {
-    UNUSED_ARG(int_id);
-    return false;
+    if ((int32_t)(int_id) >= 0) {
+        ic->ispr[(((uint32_t)int_id) >> 5UL)] = (uint32_t)(1UL << (((uint32_t)int_id) & 0x1FUL));
+    } else {
+        ERROR("Invalid interrupt id %d", int_id);
+    }
 }
 
-bool nvic_clr_pend(irqid_t int_id)
+void nvic_clr_pend(struct nvic* ic, irqid_t int_id)
 {
-    UNUSED_ARG(int_id);
-    return false;
+    if ((int32_t)(int_id) >= 0) {
+        ic->icpr[(((uint32_t)int_id) >> 5UL)] = (uint32_t)(1UL << (((uint32_t)int_id) & 0x1FUL));
+    } else {
+        ERROR("Invalid interrupt id %d", int_id);
+    }
+}
+
+bool nvic_get_target(irqid_t int_id)
+{
+    if ((int32_t)(int_id) >= 0) {
+        return ((uint32_t)(((NVIC->itns[(((uint32_t)int_id) >> 5UL)] &
+                                (1UL << (((uint32_t)int_id) & 0x1FUL))) != 0UL) ?
+                true :
+                false));
+    } else {
+        ERROR("Invalid interrupt id %d", int_id);
+    }
+}
+
+void nvic_set_target(irqid_t int_id)
+{
+    if ((int32_t)(int_id) >= 0) {
+        // Sets to NS
+        NVIC->itns[(((uint32_t)int_id) >> 5UL)] |=
+            ((uint32_t)(1UL << (((uint32_t)int_id) & 0x1FUL)));
+    } else {
+        ERROR("Invalid interrupt id %d", int_id);
+    }
+}
+
+void nvic_clear_target(irqid_t int_id)
+{
+    if ((int32_t)(int_id) >= 0) {
+        // Clears to S
+        NVIC->itns[(((uint32_t)int_id) >> 5UL)] &=
+            ~((uint32_t)(1UL << (((uint32_t)int_id) & 0x1FUL)));
+    } else {
+        ERROR("Invalid interrupt id %d", int_id);
+    }
+}
+
+bool nvic_get_active(struct nvic* ic, irqid_t int_id)
+{
+    if ((int32_t)(int_id) >= 0) {
+        return ((uint32_t)(((ic->iabr[(((uint32_t)int_id) >> 5UL)] &
+                                (1UL << (((uint32_t)int_id) & 0x1FUL))) != 0UL) ?
+                true :
+                false));
+    } else {
+        ERROR("Invalid interrupt id %d", int_id);
+    }
 }
 
 void nvic_handle(void) { }
