@@ -182,6 +182,7 @@ static priv_t mpu_as_priv(struct addr_space *as)
 
 bool mpu_map(struct addr_space* as, struct mp_region* mpr, bool locked)
 {
+    UNUSED_ARG(locked);
     size_t size_left = mpr->size;
     bool failed = false;
     struct mp_region reg1 = *mpr;
@@ -562,3 +563,13 @@ void mpu_init(void)
         }
     }
 }
+
+bool mpu_update(struct addr_space* as, struct mp_region* mpr)
+{
+    UNUSED_ARG(as);
+    UNUSED_ARG(mpr);
+    return true;
+}
+
+void mpu_enable(void)
+{}
