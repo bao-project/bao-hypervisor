@@ -72,8 +72,7 @@ static void mem_vmpu_set_entry(struct addr_space* as, mpid_t mpid, struct mp_reg
     mpe->mpid = mpid;
     mpe->lock = locked;
 
-    list_insert_ordered(&cpu()->as.vmpu.ordered_list, (node_t*)&cpu()->as.vmpu.node[mpid],
-        vmpu_node_cmp);
+    list_insert_ordered(&as->vmpu.ordered_list, (node_t*)&as->vmpu.node[mpid], vmpu_node_cmp);
 }
 
 static void mem_vmpu_clear_entry(struct addr_space* as, mpid_t mpid)
@@ -94,7 +93,7 @@ static void mem_vmpu_free_entry(struct addr_space* as, mpid_t mpid)
     struct mpe* mpe = mem_vmpu_get_entry(as, mpid);
     mpe->state = MPE_S_FREE;
 
-    list_rm(&cpu()->as.vmpu.ordered_list, (node_t*)&cpu()->as.vmpu.node[mpid]);
+    list_rm(&as->vmpu.ordered_list, (node_t*)&as->vmpu.node[mpid]);
 }
 
 static mpid_t mem_vmpu_allocate_entry(struct addr_space* as)
@@ -239,7 +238,7 @@ void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, cpumap_t cpus,
         mem_vmpu_free_entry(as, i);
     }
 
-    list_init(&cpu()->as.vmpu.ordered_list);
+    list_init(&(as->vmpu.ordered_list));
     as_arch_init(as);
 }
 
@@ -432,7 +431,7 @@ void mem_vmpu_coalesce_contiguous(struct addr_space* as, bool broadcast, bool lo
         mpid_t prev_mpid = INVALID_MPID;
         struct mpe* prev_reg;
         struct mpe* cur_reg;
-        list_foreach_tail(cpu()->as.vmpu.ordered_list, struct mpe, cur, prev)
+        list_foreach_tail(as->vmpu.ordered_list, struct mpe, cur, prev)
         {
             if (prev == NULL) {
                 continue;
