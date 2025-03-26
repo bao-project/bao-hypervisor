@@ -164,7 +164,7 @@ static void mem_init_boot_regions(void)
         .mem_flags = PTE_HYP_FLAGS,
         .as_sec = SEC_HYP_IMAGE,
     };
-    mem_map(&cpu()->as, &mpr, true, true);
+    mem_map(&cpu()->as, &mpr, false, true);
 
     if (separate_noload_region) {
         mpr = (struct mp_region){
@@ -178,7 +178,7 @@ static void mem_init_boot_regions(void)
             .mem_flags = PTE_HYP_FLAGS,
             .as_sec = SEC_HYP_IMAGE,
         };
-        mem_map(&cpu()->as, &mpr, true, true);
+        mem_map(&cpu()->as, &mpr, false, true);
     }
 
     mpr = (struct mp_region){
@@ -187,7 +187,7 @@ static void mem_init_boot_regions(void)
         .mem_flags = PTE_HYP_FLAGS,
         .as_sec = SEC_HYP_PRIVATE,
     };
-    mem_map(&cpu()->as, &mpr, true, true);
+    mem_map(&cpu()->as, &mpr, false, true);
 }
 
 void mem_prot_init()
