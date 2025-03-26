@@ -32,6 +32,7 @@ struct addr_space {
         struct mpe {
             node_t node;
             enum { MPE_S_FREE, MPE_S_INVALID, MPE_S_VALID } state;
+            bool lock;
             struct mp_region region;
             mpid_t mpid;
         } node[VMPU_NUM_ENTRIES];
@@ -46,7 +47,7 @@ static inline bool mem_regions_overlap(struct mp_region* reg1, struct mp_region*
     return range_in_range(reg1->base, reg1->size, reg2->base, reg2->size);
 }
 
-bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast);
+bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool locked);
 
 /**
  * This functions must be defined for the physical MPU. The abstraction provided by the physical
@@ -57,7 +58,11 @@ bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast);
  */
 void mpu_init(void);
 void mpu_enable(void);
-bool mpu_map(struct addr_space* as, struct mp_region* mem);
+bool mpu_map(struct addr_space* as, struct mp_region* mem, bool locked);
 bool mpu_unmap(struct addr_space* as, struct mp_region* mem);
-bool mpu_update(struct addr_space* as, struct mp_region* mem);
+
+void mem_vmpu_coalesce_contiguous(struct addr_space* as, bool broadcast, bool locked);
+bool mem_update(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool locked);
+bool mpu_update(struct addr_space* as, struct mp_region* mpr);
+
 #endif /* __MEM_PROT_H__ */
