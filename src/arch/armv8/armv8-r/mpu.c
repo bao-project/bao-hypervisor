@@ -180,7 +180,7 @@ static priv_t mpu_as_priv(struct addr_space *as)
     return priv;
 }
 
-bool mpu_map(struct addr_space *as, struct mp_region* mpr)
+bool mpu_map(struct addr_space* as, struct mp_region* mpr, bool locked)
 {
     size_t size_left = mpr->size;
     bool failed = false;
