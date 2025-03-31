@@ -10,6 +10,7 @@
 #include <bit.h>
 #include <fences.h>
 #include <hypercall.h>
+#include <interrupts.h>
 
 #define SBI_EXTID_BASE                  (0x10)
 #define SBI_GET_SBI_SPEC_VERSION_FID    (0)
@@ -499,7 +500,8 @@ void sbi_init()
         }
     }
 
-    if (!interrupts_reserve(TIMR_INT_ID, (irq_handler_t)sbi_timer_irq_handler)) {
+    irqc_timer_int_id = interrupts_reserve(TIMR_INT_ID, (irq_handler_t)sbi_timer_irq_handler);
+    if (irqc_timer_int_id == INVALID_IRQID) {
         ERROR("Failed to reserve SBI TIMR_INT_ID interrupt");
     }
 }
