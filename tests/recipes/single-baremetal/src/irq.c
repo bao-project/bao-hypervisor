@@ -20,23 +20,23 @@ void test_interrupt_timer_callback();
 void uart_rx_handler();
 
 
-bool irq_en_timer = false;
-bool irq_en_uart = false;
+volatile bool irq_en_timer = false;
+volatile bool irq_en_uart = false;
 
 #define TIMER_INTERVAL  (TIME_MS(100))
 #define TEST_TIME_WAIT  (TIME_MS(100))
 #define TEST_TIMEOUT    "200"
 
-BAO_TEST(IRQ_CHECK, TIMER)
+BAO_TEST(IRQ_CHECK1, TIMER)
 {
     COMMAND_SEND_TIMEOUT(TEST_TIMEOUT);
 
     irq_set_handler(TIMER_IRQ_ID, test_interrupt_timer_callback);
-    irq_enable(TIMER_IRQ_ID);
     timer_set(TIMER_INTERVAL);
+    irq_enable(TIMER_IRQ_ID);
     irq_set_prio(TIMER_IRQ_ID, IRQ_MAX_PRIO);
 
-    timer_wait(TEST_TIME_WAIT);
+    while(!irq_en_timer);
     EXPECTED_TRUE(irq_en_timer);
 }
 
