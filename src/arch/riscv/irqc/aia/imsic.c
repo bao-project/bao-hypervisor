@@ -87,14 +87,11 @@ void imsic_send_msi(cpuid_t target_cpu, irqid_t ipi_id)
 
 void imsic_handle(void)
 {
-    uint32_t intp_identity = (uint32_t)(csrs_stopei_read() >> STOPEI_EEID);
+    /* Read STOPEI and write to it to claim the interrupt */
+    uint32_t intp_identity = (uint32_t)(csrs_stopei_swap(0) >> STOPEI_EEID);
 
     if (intp_identity != 0) {
-        enum irq_res res = interrupts_handle(intp_identity);
-        if (res == HANDLED_BY_HYP) {
-            /* Write to STOPEI to clear the interrupt */
-            csrs_stopei_write(0);
-        }
+        interrupts_handle(intp_identity);
     };
 }
 
