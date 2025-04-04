@@ -228,24 +228,31 @@
 
 #ifndef __ASSEMBLER__
 
-#define CSRS_GEN_ACCESSORS_NAMED(csr_name, csr_id)                                \
-    static inline unsigned long csrs_##csr_name##_read(void)                      \
-    {                                                                             \
-        unsigned long csr_value;                                                  \
-        __asm__ volatile("csrr %0," XSTR(csr_id) : "=r"(csr_value)::"memory");    \
-        return csr_value;                                                         \
-    }                                                                             \
-    static inline void csrs_##csr_name##_write(unsigned long csr_value)           \
-    {                                                                             \
-        __asm__ volatile("csrw " XSTR(csr_id) ",%0" ::"r"(csr_value) : "memory"); \
-    }                                                                             \
-    static inline void csrs_##csr_name##_set(unsigned long csr_value)             \
-    {                                                                             \
-        __asm__ volatile("csrs " XSTR(csr_id) ",%0" ::"r"(csr_value) : "memory"); \
-    }                                                                             \
-    static inline void csrs_##csr_name##_clear(unsigned long csr_value)           \
-    {                                                                             \
-        __asm__ volatile("csrc " XSTR(csr_id) ",%0" ::"r"(csr_value) : "memory"); \
+#define CSRS_GEN_ACCESSORS_NAMED(csr_name, csr_id)                                        \
+    static inline unsigned long csrs_##csr_name##_read(void)                              \
+    {                                                                                     \
+        unsigned long csr_value;                                                          \
+        __asm__ volatile("csrr %0," XSTR(csr_id) : "=r"(csr_value)::"memory");            \
+        return csr_value;                                                                 \
+    }                                                                                     \
+    static inline void csrs_##csr_name##_write(unsigned long csr_value)                   \
+    {                                                                                     \
+        __asm__ volatile("csrw " XSTR(csr_id) ",%0" ::"r"(csr_value) : "memory");         \
+    }                                                                                     \
+    static inline void csrs_##csr_name##_set(unsigned long csr_value)                     \
+    {                                                                                     \
+        __asm__ volatile("csrs " XSTR(csr_id) ",%0" ::"r"(csr_value) : "memory");         \
+    }                                                                                     \
+    static inline void csrs_##csr_name##_clear(unsigned long csr_value)                   \
+    {                                                                                     \
+        __asm__ volatile("csrc " XSTR(csr_id) ",%0" ::"r"(csr_value) : "memory");         \
+    }                                                                                     \
+    static inline unsigned long csrs_##csr_name##_swap(unsigned long csr_value)           \
+    {                                                                                     \
+        unsigned long reg_val;                                                            \
+        __asm__ volatile("csrrw %0," XSTR(csr_id) ",%1" : "=r"(reg_val) : "rK"(csr_value) \
+                         : "memory");                                                     \
+        return reg_val;                                                                   \
     }
 
 #define CSRS_GEN_ACCESSORS(csr) CSRS_GEN_ACCESSORS_NAMED(csr, csr)
