@@ -64,13 +64,12 @@ static inline irqid_t irqc_reserve(irqid_t pintp_id)
 #endif
 }
 
-static inline void irqc_send_ipi(cpuid_t target_cpu, irqid_t ipi_id)
+static inline void irqc_send_ipi(cpuid_t target_cpu)
 {
 #if (IRQC == APLIC)
-    UNUSED_ARG(ipi_id);
     sbi_send_ipi(1UL << target_cpu, 0);
 #elif (IRQC == AIA)
-    imsic_send_msi(target_cpu, ipi_id);
+    imsic_send_msi(target_cpu);
 #endif
 }
 

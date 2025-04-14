@@ -80,9 +80,9 @@ void imsic_inject_pend(size_t guest_file, irqid_t intp_id)
     csrs_vsireg_clear(1UL << imsic_eie_bit(intp_id));
 }
 
-void imsic_send_msi(cpuid_t target_cpu, irqid_t ipi_id)
+void imsic_send_msi(cpuid_t target_cpu)
 {
-    imsic[target_cpu]->s_file.seteipnum_le = ipi_id;
+    imsic[target_cpu]->s_file.seteipnum_le = interrupts_ipi_id;
 }
 
 void imsic_handle(void)
