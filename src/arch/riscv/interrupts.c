@@ -42,12 +42,10 @@ void interrupts_arch_init()
 
 void interrupts_arch_ipi_send(cpuid_t target_cpu, irqid_t ipi_id)
 {
-    UNUSED_ARG(ipi_id);
-
     if (USE_ACLINT_IPI()) {
         aclint_send_ipi(target_cpu);
     } else {
-        sbi_send_ipi(1UL << target_cpu, 0);
+        irqc_send_ipi(target_cpu, ipi_id);
     }
 }
 
