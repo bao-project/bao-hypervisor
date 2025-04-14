@@ -85,6 +85,11 @@ void interrupts_arch_handle(void)
     stopi = stopi >> TOPI_IID_SHIFT;
     switch (stopi) {
         case IRQ_S_SOFT:
+            /**
+             * This case is executed only by APLIC configuration,
+             * IPIs sent through IMSIC are handled as external
+             * interrupts.
+             */
             interrupts_handle(interrupts_ipi_id);
             csrs_sip_clear(SIP_SSIP);
             break;
