@@ -59,7 +59,7 @@ void imsic_set_enbl(irqid_t intp_id)
 bool imsic_get_pend(irqid_t intp_id)
 {
     csrs_siselect_write(IMSIC_EIP + imsic_eie_index(intp_id));
-    return csrs_siselect_read() && (1ULL << imsic_eie_bit(intp_id));
+    return csrs_sireg_read() && (1ULL << imsic_eie_bit(intp_id));
 }
 
 void imsic_clr_pend(irqid_t intp_id)
