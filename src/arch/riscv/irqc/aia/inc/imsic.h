@@ -71,12 +71,8 @@ void imsic_set_enbl(irqid_t intp_id);
  *        Only little endian is supported.
  *
  * @param target_cpu The ID of the target CPU
- * @param imsic_file the target interrupt file.
- *                   0 is the hypervisor interrupt file;
- *                   N is for guest N;
- * @param ipi_id The ID of the IPI to send.
  */
-void imsic_send_msi(cpuid_t target_cpu, irqid_t ipi_id);
+void imsic_send_msi(cpuid_t target_cpu);
 
 /**
  * @brief Inject an interrupt into a guest.
