@@ -6,7 +6,7 @@
 #ifndef __ARCH_BAO_H__
 #define __ARCH_BAO_H__
 
-#define BAO_VAS_BASE CONFIG_HYP_BASE_ADDR
+#define BAO_VAS_BASE 0x20000000 // CONFIG_HYP_BASE_ADDR
 #define PAGE_SIZE    (64)
 #define STACK_SIZE   (0x1000)
 
