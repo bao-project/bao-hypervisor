@@ -27,6 +27,7 @@ struct addr_space {
     enum AS_TYPE type;
     cpumap_t cpus;
     colormap_t colors;
+    struct addr_space_arch arch;
     struct {
         struct list ordered_list;
         struct mpe {
@@ -64,5 +65,6 @@ bool mpu_unmap(struct addr_space* as, struct mp_region* mem);
 void mem_vmpu_coalesce_contiguous(struct addr_space* as, bool broadcast, bool locked);
 bool mem_update(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool locked);
 bool mpu_update(struct addr_space* as, struct mp_region* mpr);
+void mpu_temp_update(void);
 
 #endif /* __MEM_PROT_H__ */
