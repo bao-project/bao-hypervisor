@@ -297,17 +297,28 @@ static bool mem_broadcast(struct addr_space* as, struct mp_region* mpr, bool bro
     return broadcast;
 }
 
+static bool mem_locked(struct mp_region* mpr, bool broadcast)
+{
+    if (mpr->as_sec == SEC_HYP_PRIVATE || mpr->as_sec == SEC_HYP_VM ||
+        mpr->as_sec == SEC_HYP_IMAGE) {
+        return true;
+    }
+
+    return broadcast;
+}
+
 static bool mem_vmpu_insert_region(struct addr_space* as, mpid_t mpid, struct mp_region* mpr,
     bool broadcast, bool locked)
 {
+    bool lock = mem_locked(mpr, locked);
     if (mpid == INVALID_MPID) {
         return false;
     }
 
-    if (mpu_map(as, mpr, locked)) {
-        mem_vmpu_set_entry(as, mpid, mpr, locked);
+    if (mpu_map(as, mpr, lock)) {
+        mem_vmpu_set_entry(as, mpid, mpr, lock);
         if (mem_broadcast(as, mpr, broadcast)) {
-            mem_region_broadcast(as, mpr, MEM_INSERT_REGION, locked);
+            mem_region_broadcast(as, mpr, MEM_INSERT_REGION, lock);
         }
         return true;
     }
@@ -323,8 +334,9 @@ static bool mem_vmpu_update_region(struct addr_space* as, mpid_t mpid, struct mp
     if (mpu_update(as, &merge_reg)) {
         struct mpe* mpe = mem_vmpu_get_entry(as, mpid);
         mpe->region = merge_reg;
+        bool lock = mem_locked(&mpe->region, locked);
         if (mem_broadcast(as, &mpe->region, broadcast)) {
-            mem_region_broadcast(as, &mpe->region, MEM_UPDATE_REGION, locked);
+            mem_region_broadcast(as, &mpe->region, MEM_UPDATE_REGION, lock);
         }
         merged = true;
     }
@@ -338,8 +350,9 @@ static bool mem_vmpu_remove_region(struct addr_space* as, mpid_t mpid, bool broa
     struct mpe* mpe = mem_vmpu_get_entry(as, mpid);
 
     if ((mpe != NULL) && (mpe->state == MPE_S_VALID)) {
+        bool lock = mem_locked(&mpe->region, mpe->lock);
         if (mem_broadcast(as, &mpe->region, broadcast)) {
-            mem_region_broadcast(as, &mpe->region, MEM_REMOVE_REGION, mpe->lock);
+            mem_region_broadcast(as, &mpe->region, MEM_REMOVE_REGION, lock);
         }
         mpu_unmap(as, &mpe->region);
         mem_vmpu_free_entry(as, mpid);
@@ -351,10 +364,11 @@ static bool mem_vmpu_remove_region(struct addr_space* as, mpid_t mpid, bool broa
 
 static void mem_handle_broadcast_insert(struct addr_space* as, struct mp_region* mpr, bool locked)
 {
+    bool lock = mem_locked(mpr, locked);
     if (as->type == AS_HYP) {
-        mem_map(&cpu()->as, mpr, false, locked);
+        mem_map(&cpu()->as, mpr, false, lock);
     } else {
-        mpu_map(as, mpr, locked);
+        mpu_map(as, mpr, lock);
     }
 }
 
@@ -370,8 +384,9 @@ static void mem_handle_broadcast_remove(struct addr_space* as, struct mp_region*
 static void mem_handle_broadcast_update(struct addr_space* as, struct mp_region* mpr, bool locked)
 {
     // TODO:ARMV8M - check if this makes sense
+    bool lock = mem_locked(mpr, locked);
     if (as->type == AS_HYP) {
-        mem_update(&cpu()->as, mpr, false, locked);
+        mem_update(&cpu()->as, mpr, false, lock);
     } else {
         mpu_update(as, mpr);
     }
@@ -448,9 +463,7 @@ void mem_vmpu_coalesce_contiguous(struct addr_space* as, bool broadcast, bool lo
             prev_reg = mem_vmpu_get_entry(as, prev->mpid);
 
             bool contiguous = prev_reg->region.base + prev_reg->region.size == cur_reg->region.base;
-            bool perms_compatible = true;
-                //LINE COMMENTED TO COMPILE BEFORE ARMV8-R REWORK
-                //mpu_perms_compatible(prev_reg->region.mem_flags.raw, cur_reg->region.mem_flags.raw);
+            bool perms_compatible = mpu_perms_compatible(prev_reg->region.mem_flags.raw, cur_reg->region.mem_flags.raw);
             bool lock_compatible = prev_reg->lock == cur_reg->lock;
             if (contiguous && perms_compatible && lock_compatible) {
                 cur_mpid = cur->mpid;
@@ -512,7 +525,7 @@ bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool 
         }
     }
 
-    if (mapped) {
+    if (mapped && !locked) {
         mem_vmpu_coalesce_contiguous(as, broadcast, locked);
     }
 
