@@ -239,13 +239,13 @@ bool mpu_update(struct addr_space* as, struct mp_region* mpr)
     return true;
 }
 
-
-bool mpu_perms_compatible(uint32_t perms1, uint32_t perms2) {
-    //TODO
+bool mpu_perms_compatible(uint32_t perms1, uint32_t perms2)
+{
+    // TODO
     UNUSED_ARG(perms1);
     UNUSED_ARG(perms2);
     return true;
- }
+}
 
 void mpu_enable(void) { }
 
