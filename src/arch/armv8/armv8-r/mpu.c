@@ -16,21 +16,21 @@ struct cpu* CPU_TEMP;
 
 struct MPU_TEMP {
     // regs
-    uint32_t HMPUIR;
-    uint32_t HPRBAR[NUM_ENTRIES];
-    uint32_t HPRENR;
-    uint32_t HPRLAR[NUM_ENTRIES];
-    uint32_t HPRSELR;
-    uint32_t MPUIR;
-    uint32_t PRBAR[NUM_ENTRIES];
-    uint32_t PRENR;
-    uint32_t PRLAR[NUM_ENTRIES];
-    uint32_t PRSELR;
-    uint32_t VSCTLR;
+    unsigned long HMPUIR;
+    unsigned long HPRBAR[NUM_ENTRIES];
+    unsigned long HPRENR;
+    unsigned long HPRLAR[NUM_ENTRIES];
+    unsigned long HPRSELR;
+    unsigned long MPUIR;
+    unsigned long PRBAR[NUM_ENTRIES];
+    unsigned long PRENR;
+    unsigned long PRLAR[NUM_ENTRIES];
+    unsigned long PRSELR;
+    unsigned long VSCTLR;
 
-    uint32_t EL2_EN;
-    uint32_t EL1_EN;
-    uint32_t EL2_LOCKED;
+    unsigned long EL2_EN;
+    unsigned long EL1_EN;
+    unsigned long EL2_LOCKED;
 } mpu_temp;
 
 void mpu_temp_update(void)
@@ -69,10 +69,10 @@ static mpid_t mpu_find_region(struct mp_region* mpr)
         if (cpu()->arch.profile.mpu.bitmap & BIT(i)) {
             sysreg_prselr_el2_write(i);
             ISB();
-            uint32_t hw_base = (sysreg_prbar_el2_read() & PRBAR_BASE_MSK);
-            uint32_t hw_limit = (sysreg_prlar_el2_read() & PRLAR_LIMIT_MSK);
-            uint32_t sw_base = (mpr->base & PRBAR_BASE_MSK);
-            uint32_t sw_limit = ((mpr->base + mpr->size - 1) & PRLAR_LIMIT_MSK);
+            unsigned long hw_base = (sysreg_prbar_el2_read() & PRBAR_BASE_MSK);
+            unsigned long hw_limit = (sysreg_prlar_el2_read() & PRLAR_LIMIT_MSK);
+            unsigned long sw_base = (mpr->base & PRBAR_BASE_MSK);
+            unsigned long sw_limit = ((mpr->base + mpr->size - 1) & PRLAR_LIMIT_MSK);
             if ((hw_base == sw_base) && (hw_limit == sw_limit)) {
                 reg_num = i;
                 break;
@@ -216,13 +216,13 @@ bool mpu_update(struct addr_space* as, struct mp_region* mpr)
     return true;
 }
 
-
-bool mpu_perms_compatible(uint32_t perms1, uint32_t perms2) {
-    //TODO
+bool mpu_perms_compatible(unsigned long perms1, unsigned long perms2)
+{
+    // TODO
     UNUSED_ARG(perms1);
     UNUSED_ARG(perms2);
     return true;
- }
+}
 
 void mpu_enable(void) { }
 

@@ -29,6 +29,6 @@ struct mpu_arch {
 // bool mpu_add_region(struct mp_region* reg, bool locked);
 // bool mpu_remove_region(struct mp_region* reg);
 // bool mpu_update_region(struct mp_region* reg);
-bool mpu_perms_compatible(uint32_t perms1, uint32_t perms2);
+bool mpu_perms_compatible(unsigned long perms1, unsigned long perms2);
 
 #endif /* __ARCH_MPU_H__ */
