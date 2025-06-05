@@ -15,6 +15,11 @@
 
 #ifndef __ASSEMBLER__
 
+enum MEM_PERMISSIONS {
+    RWX,
+    RX,
+};
+
 struct ppages {
     paddr_t base;
     size_t num_pages;
@@ -34,6 +39,7 @@ struct page_pool {
 struct mem_region {
     paddr_t base;
     size_t size;
+    enum MEM_PERMISSIONS perms;
     struct page_pool page_pool;
 };
 
