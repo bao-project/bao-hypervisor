@@ -71,6 +71,10 @@ _extra_allocated_phys_mem_sym: .8byte extra_allocated_phys_mem
  */
 _barrier: .8byte 0		
 
+.balign 4
+.global img_addr
+img_addr: .8byte 0
+
 /**
  * 	The following code MUST be at the base of the image, as this is bao's entrypoint. Therefore
  * .boot section must also be the first in the linker script. DO NOT implement any code before the
@@ -97,6 +101,10 @@ _reset_handler:
 
     mv      a2, a1
     la      a1, _image_start
+
+    LD_SYM  a3, img_addr
+    STORE   a1, 0(a3) // store image load address in img_addr
+
     LD_SYM  s6, _extra_allocated_phys_mem_sym
 
     /**

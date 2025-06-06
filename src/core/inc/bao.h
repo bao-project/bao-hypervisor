@@ -22,7 +22,12 @@
     console_printk("BAO ERROR: " __VA_ARGS__); \
     while (true) { };
 
-void init(cpuid_t cpu_id, paddr_t load_addr);
+void init(cpuid_t cpu_id);
+
+/* The address where the Bao image is loaded in memory */
+extern const uintptr_t img_addr;
+/* The address where the data section is loaded in memory */
+extern const uintptr_t data_addr;
 
 #endif /* __ASSEMBLER__ */
 
