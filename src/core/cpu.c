@@ -31,13 +31,13 @@ static size_t ipi_cpumsg_handler_num;
 
 struct cpuif cpu_interfaces[PLAT_CPU_NUM];
 
-void cpu_init(cpuid_t cpu_id, paddr_t load_addr)
+void cpu_init(cpuid_t cpu_id)
 {
     cpu()->id = cpu_id;
     cpu()->handling_msgs = false;
     cpu()->interface = cpu_if(cpu()->id);
 
-    cpu_arch_init(cpu_id, load_addr);
+    cpu_arch_init(cpu_id, img_addr);
 
     list_init(&cpu()->interface->event_list);
 
