@@ -268,7 +268,7 @@ $(bin_dir)/$(PROJECT_NAME).elf: $(gens) $(objs-y) $(ld_script_temp)
 	@$(readelf) -a --wide $@ > $@.txt
 
 ifneq ($(DEBUG), y)
-	@echo "Striping	$@"
+	@echo "Striping		$(patsubst $(cur_dir)/%, %, $@)"
 	@$(sstrip) -s $@
 endif
 
