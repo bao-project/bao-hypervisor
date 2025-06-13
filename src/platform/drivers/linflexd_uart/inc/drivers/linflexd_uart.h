@@ -713,6 +713,24 @@ void uart_init(volatile struct LINFlexD_Type * ptr_uart);
 uint32_t uart_getc(volatile struct LINFlexD_Type * ptr_uart);
 void uart_putc(volatile struct LINFlexD_Type * ptr_uart, int8_t c);
 void uart_puts(volatile struct LINFlexD_Type * ptr_uart,const char *s);
+void LINFLEXD_UART_DRV_SetBaudRate(volatile struct LINFlexD_Type * base, uint32_t baudrate);
+void LINFLEXD_UART_DRV_SendData(volatile struct LINFlexD_Type* instance, const int8_t* txBuff);
+void LINFLEXD_SetTxDataBuffer1Byte(volatile struct LINFlexD_Type * base, int8_t data);
+void LINFLEXD_SetTransmitterState(volatile struct LINFlexD_Type *base, bool enable);
+void LINFLEXD_SetInterruptMode(volatile struct LINFlexD_Type * base, uint32_t intSrc, bool enable);
+void LINFLEXD_SetRxEnable(volatile struct LINFlexD_Type *base, uint32_t enable);
+void LINFLEXD_SetRxMode(volatile struct LINFlexD_Type *base, linflexd_uart_rxtx_mode_t mode);
+void LINFLEXD_SetTxMode(volatile struct LINFlexD_Type *base, linflexd_uart_rxtx_mode_t mode);
+uint8_t LINFLEXD_GetRxDataBuffer1Byte(volatile struct LINFlexD_Type * base);
+void LINFLEXD_SetParityControl(volatile struct LINFlexD_Type *base, bool enable);
+void LINFLEXD_SetRxDataFieldLength(volatile struct LINFlexD_Type *base, uint8_t length);
+void LINFLEXD_SetTxDataFieldLength(volatile struct LINFlexD_Type *base, uint8_t length);
+void LINFLEXD_SetUartWordLength(volatile struct LINFlexD_Type *base, linflexd_uart_word_length_t length);
+
+void PINS_Init(const pin_settings_config_t * config);
+void PINS_WritePin(GPIO_Type * const base, pins_channel_type_t pin, pins_level_type_t value);
+
+void clock_init(volatile struct LINFlexD_Type * base);
 
 
 #endif /* __LINFLEXD_UART_H_ */
