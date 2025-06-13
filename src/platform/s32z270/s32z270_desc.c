@@ -7,28 +7,28 @@
 
 struct platform platform = {
 
-    .cpu_num = 4,
+    .cpu_num = 2,
     .region_num = 1,
     .regions =  (struct mem_region[]) {
         {
             // DRAM, 256KB
-            .base = 0x31780000,        // SRAM0
-            .size = 0x40000,
+            //.base = 0x34800000,        // SRAM0
+            //.size = 0x40000,
             // CRAM, 1MB
-            // .base = 0x32100000,     // CRAM0
-            // .size = 0x100000
+            .base = 0x32100000,     // CRAM0
+            .size = 0x100000
         }
     },
 
     .console = {
         .base = 0x42980000          // Linflexd_9
-        // .base = 0x40170000          // Linflexd_0
+        //.base = 0x40170000          // Linflexd_0
     },
 
     .arch = {
         .clusters =  {
             .num = 1,
-            .core_num = (size_t[]) {4}
+            .core_num = (size_t[]) {2}
         },
 
         .gic = {
