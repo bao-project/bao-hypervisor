@@ -13,8 +13,8 @@
 
 #define LIN_9_TX 0
 #define LIN_9_RX 1
-#define LIN_0_TX 2
-#define LIN_0_RX 3
+//#define LIN_0_TX 2
+//#define LIN_0_RX 3
 
 linflexd_uart_user_config_t linflexdUartInitConfig0 = {
     .transferType = LINFLEXD_UART_USING_INTERRUPTS,
@@ -280,7 +280,7 @@ void PINS_Init(const pin_settings_config_t * config)
     if ((PORT_MUX_AS_GPIO == config->mux) && (PORT_OUTPUT_BUFFER_ENABLED == config->outputBuffer))
     {
         PINS_WritePin((GPIO_Type *) config->base->MSCR[config->pinPortIdx], 
-                        (pins_channel_type_t)(config->pinPortIdx % SIUL2_NUM_OF_PIN_PORT), pin_values);
+                        (pins_channel_type_t)(config->pinPortIdx % SIUL2_NUM_OF_PIN_PORT), (pins_level_type_t)pin_values);
     }
 
     /* Write to Multiplexed Signal Configuration Register register */
@@ -306,6 +306,7 @@ void PINS_Init(const pin_settings_config_t * config)
 
 void uart_disable(volatile struct LINFlexD_Type * ptr_uart)
 {
+    UNUSED_ARG(ptr_uart);
 /*	uint32_t ctrl_reg = ptr_uart->control;					
 	ctrl_reg &= ((~UART_CR_UARTEN) | (~UART_CR_TXE) | (~UART_CR_RXE));	
 	ptr_uart->control = ctrl_reg;						
@@ -313,7 +314,9 @@ void uart_disable(volatile struct LINFlexD_Type * ptr_uart)
 }
 
 void uart_enable(volatile struct LINFlexD_Type * ptr_uart)
-{/*
+{
+    UNUSED_ARG(ptr_uart);
+    /*
 	uint32_t ctrl_reg = ptr_uart->control;				
 	ctrl_reg |= (UART_CR_UARTEN | UART_CR_TXE | UART_CR_RXE);	
 	ptr_uart->control = ctrl_reg;		*/
@@ -496,7 +499,7 @@ void uart_puts(volatile struct LINFlexD_Type * ptr_uart,const char *s)
 {
 	while (*s)
 	{
-		uart_putc(ptr_uart,*s++);
+		uart_putc(ptr_uart,(int8_t)*s++);
 	}
 }
 
