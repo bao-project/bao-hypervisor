@@ -15,6 +15,11 @@
 
 #ifndef __ASSEMBLER__
 
+enum MEM_PERMISSIONS {
+    RWX,
+    RX,
+};
+
 struct ppages {
     paddr_t base;
     size_t num_pages;
@@ -34,6 +39,7 @@ struct page_pool {
 struct mem_region {
     paddr_t base;
     size_t size;
+    enum MEM_PERMISSIONS perms;
     struct page_pool page_pool;
 };
 
@@ -61,7 +67,7 @@ static inline bool all_clrs(colormap_t clrs)
     return (masked_colors == 0) || (masked_colors == mask);
 }
 
-void mem_init(paddr_t load_addr);
+void mem_init(void);
 void* mem_alloc_page(size_t num_pages, enum AS_SEC sec, bool phys_aligned);
 struct ppages mem_alloc_ppages(colormap_t colors, size_t num_pages, bool aligned);
 vaddr_t mem_alloc_map(struct addr_space* as, enum AS_SEC section, struct ppages* page, vaddr_t at,
