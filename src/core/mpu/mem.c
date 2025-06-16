@@ -157,7 +157,7 @@ static void as_init_boot_regions(void)
     if (separate_noload_region) {
         mpr = (struct mp_region){
             .base = image_noload_start,
-            .size = (size_t)image_end - image_noload_start,
+            .size = (size_t)(image_end - image_noload_start),
             .mem_flags = PTE_HYP_FLAGS,
             .as_sec = SEC_HYP_IMAGE,
         };
