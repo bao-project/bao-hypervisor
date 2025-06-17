@@ -452,6 +452,49 @@ static mpid_t mem_vmpu_find_overlapping_region(struct addr_space* as, struct mp_
     return mpid;
 }
 
+static void mem_vmpu_coalesce_contiguous(struct addr_space* as, bool broadcast)
+{
+    while (true) {
+        bool merge = false;
+        mpid_t cur_mpid = INVALID_MPID;
+        mpid_t prev_mpid = INVALID_MPID;
+        struct mpe* prev_reg;
+        struct mpe* cur_reg;
+        list_foreach_tail(as->vmpu.ordered_list, struct mpe, cur, prev)
+        {
+            if (prev == NULL) {
+                continue;
+            }
+            cur_reg = mem_vmpu_get_entry(as, cur->mpid);
+            prev_reg = mem_vmpu_get_entry(as, prev->mpid);
+
+            bool contiguous = prev_reg->region.base + prev_reg->region.size == cur_reg->region.base;
+            bool perms_compatible =
+                mpu_perms_compatible(prev_reg->region.mem_flags.raw, cur_reg->region.mem_flags.raw);
+            bool lock_compatible = !prev_reg->lock && !cur_reg->lock;
+            if (contiguous && perms_compatible && lock_compatible) {
+                cur_mpid = cur->mpid;
+                prev_mpid = prev->mpid;
+                merge = true;
+                break;
+            }
+        }
+
+        if (merge) {
+            struct mp_region merged_reg = {
+                .base = prev_reg->region.base,
+                .size = prev_reg->region.size + cur_reg->region.size,
+                .mem_flags = cur_reg->region.mem_flags,
+            };
+            if (mem_vmpu_update_region(as, prev_mpid, merged_reg, broadcast, prev_reg->lock)) {
+                mem_vmpu_remove_region(as, cur_mpid, broadcast);
+            }
+        } else {
+            break;
+        }
+    }
+}
+
 bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool locked)
 {
     bool mapped = false;
@@ -472,6 +515,10 @@ bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool 
         if (mpid != INVALID_MPID) {
             mapped = mem_vmpu_insert_region(as, mpid, mpr, broadcast, locked);
         }
+    }
+
+    if (mapped && !locked) {
+        mem_vmpu_coalesce_contiguous(as, broadcast);
     }
 
     spin_unlock(&as->lock);
