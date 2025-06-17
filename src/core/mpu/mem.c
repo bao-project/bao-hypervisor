@@ -614,10 +614,16 @@ vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, vaddr_t vas,
         mpr = mpe->region;
         spin_unlock(&ass->lock);
 
-        if (mem_map(asd, &mpr, true)) {
-            va_res = vas;
+        if (num_pages * PAGE_SIZE > mpr.size) {
+            va_res = INVALID_VA;
         } else {
-            INFO("failed mem map on mem map cpy");
+            mpr.size = num_pages * PAGE_SIZE;
+            bool broadcast = mem_broadcast(asd, &mpr, true);
+            if (mem_map(asd, &mpr, broadcast, false)) {
+                va_res = vas;
+            } else {
+                INFO("failed mem map on mem map cpy");
+            }
         }
     } else {
         INFO("failed mem map cpy");
