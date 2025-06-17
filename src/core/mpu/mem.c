@@ -33,9 +33,28 @@ OBJPOOL_ALLOC(shared_region_pool, struct shared_region, SHARED_REGION_POOL_SIZE)
 static inline struct mpe* mem_vmpu_get_entry(struct addr_space* as, mpid_t mpid)
 {
     if (mpid < VMPU_NUM_ENTRIES) {
-        return &as->vmpu[mpid];
+        return &as->vmpu.node[mpid];
     }
     return NULL;
+}
+
+static int vmpu_node_cmp(node_t* _n1, node_t* _n2)
+{
+    struct mpe* n1 = (struct mpe*)_n1;
+    struct mpe* n2 = (struct mpe*)_n2;
+    struct mp_region r1;
+    struct mp_region r2;
+
+    r1 = n1->region;
+    r2 = n2->region;
+
+    if (r1.base > r2.base) {
+        return 1;
+    } else if (r1.base < r2.base) {
+        return -1;
+    } else {
+        return 0;
+    }
 }
 
 static void mem_vmpu_set_entry(struct addr_space* as, mpid_t mpid, struct mp_region* mpr)
@@ -47,6 +66,9 @@ static void mem_vmpu_set_entry(struct addr_space* as, mpid_t mpid, struct mp_reg
     mpe->region.mem_flags = mpr->mem_flags;
     mpe->region.as_sec = mpr->as_sec;
     mpe->state = MPE_S_VALID;
+    mpe->mpid = mpid;
+
+    list_insert_ordered(&as->vmpu.ordered_list, (node_t*)&as->vmpu.node[mpid], vmpu_node_cmp);
 }
 
 static void mem_vmpu_clear_entry(struct addr_space* as, mpid_t mpid)
@@ -65,6 +87,8 @@ static void mem_vmpu_free_entry(struct addr_space* as, mpid_t mpid)
     mem_vmpu_clear_entry(as, mpid);
     struct mpe* mpe = mem_vmpu_get_entry(as, mpid);
     mpe->state = MPE_S_FREE;
+
+    list_rm(&as->vmpu.ordered_list, (node_t*)&as->vmpu.node[mpid]);
 }
 
 static mpid_t mem_vmpu_allocate_entry(struct addr_space* as)
@@ -180,6 +204,8 @@ void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, cpumap_t cpus,
     for (size_t i = 0; i < VMPU_NUM_ENTRIES; i++) {
         mem_vmpu_free_entry(as, i);
     }
+
+    list_init(&(as->vmpu.ordered_list));
 }
 
 static void mem_free_ppages(struct ppages* ppages)
