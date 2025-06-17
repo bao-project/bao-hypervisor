@@ -11,6 +11,7 @@
 #include <platform_defs.h>
 #include <objpool.h>
 #include <config.h>
+#include <arch/mpu.h>
 
 struct shared_region {
     enum AS_TYPE as_type;
