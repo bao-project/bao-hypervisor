@@ -50,68 +50,8 @@ boot_arch_profile_init:
     /* r4 contains the id of the MPU entry being used */
     mov r4, #(-1)
 
-    /**
-     * Map loadable image (and possibly unloadable)
-     * If the vm image section is used and has built-in vm images, we need to map the loadble and
-     * non-loadble region of the image separately. Otherwise we can map it as a single region.
-     */
-    add r4, r4, #1
-    mcr p15, 4, r4, c6, c2, 1   // HPRSELR
-    ldr r3, =_image_start
-    and r3, r3, #PRBAR_BASE_MSK
-    orr r3, r3, #PRBAR_SH_IS
-    orr r3, r3, #PRBAR_AP_RW_EL2
-    mcr p15, 4, r3, c6, c3, 0   // HPRBAR
-    ldr r10, =_image_load_end
-    ldr r11, =_image_noload_start
-    cmp r10, r11
-    ldreq r3, =_image_end
-    ldrne r3, =_image_load_end
-    sub r3, r3, #1
-    and r3, r3, #PRLAR_LIMIT_MSK
-    orr r3, r3, #(PRLAR_ATTR(1) | PRLAR_EN)
-    mcr p15, 4, r3, c6, c3, 1   // HPRLAR
-
-    /* Map Image Non-loadable if needed */
-    ldr r10, =_image_load_end
-    ldr r11, =_image_noload_start
-    cmp r10, r11
-    beq skip_non_loadable
-    add r4, r4, #1
-    mcr p15, 4, r4, c6, c2, 1   // HPRSELR
-    ldr r3, =_image_noload_start
-    and r3, r3, #PRBAR_BASE_MSK
-    orr r3, r3, #PRBAR_SH_IS
-    orr r3, r3, #PRBAR_AP_RW_EL2
-    mcr p15, 4, r3, c6, c3, 0   // HPRBAR
-    ldr r3, =_image_end
-    sub r3, r3, #1
-    and r3, r3, #PRLAR_LIMIT_MSK
-    orr r3, r3, #(PRLAR_ATTR(1) | PRLAR_EN)
-    mcr p15, 4, r3, c6, c3, 1   // HPRLAR
-
-skip_non_loadable:
-
-    /* Region 2 - CPU */
-    add r4, r4, #1
-    mcr p15, 4, r4, c6, c2, 1   // HPRSELR
-    mrc p15, 4, r3, c13, c0, 2  // HTPIDR (read CPU base addr)
-    and r3, r3, #PRBAR_BASE_MSK
-    orr r3, r3, #PRBAR_SH_IS
-    orr r3, r3, #PRBAR_AP_RW_EL2
-    mcr p15, 4, r3, c6, c3, 0   // HPRBAR
-    mrc p15, 4, r3, c13, c0, 2  // HTPIDR (read CPU base addr)
-    add r3, r3, #CPU_SIZE
-    sub r3, r3, #1
-    and r3, r3, #PRLAR_LIMIT_MSK
-    orr r3, #(PRLAR_ATTR(1) | PRLAR_EN)
-    mcr p15, 4, r3, c6, c3, 1   // HPRLAR
-
-    dsb
-    isb
-
     /* Enable caches and MPU */
-    ldr r4, =(SCTLR_RES1_AARCH32 | SCTLR_C | SCTLR_I | SCTLR_M)
+    ldr r4, =(SCTLR_RES1_AARCH32 | SCTLR_C | SCTLR_I)
     mcr p15, 4, r4, c1, c0, 0 // HSCTLR
 
     dsb
