@@ -59,5 +59,6 @@ bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool 
 void mpu_init(void);
 bool mpu_map(struct addr_space* as, struct mp_region* mem, bool locked);
 bool mpu_unmap(struct addr_space* as, struct mp_region* mem);
+bool mpu_update(struct addr_space* as, struct mp_region* mpr);
 
 #endif /* __MEM_PROT_H__ */
