@@ -468,7 +468,6 @@ bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool 
     spin_lock(&as->lock);
 
     if (mem_vmpu_find_overlapping_region(as, mpr) == INVALID_MPID) {
-        // TODO: check if it possible to merge with another region
         mpid_t mpid = mem_vmpu_allocate_entry(as);
         if (mpid != INVALID_MPID) {
             mapped = mem_vmpu_insert_region(as, mpid, mpr, broadcast, locked);
