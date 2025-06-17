@@ -47,7 +47,7 @@ static inline bool mem_regions_overlap(struct mp_region* reg1, struct mp_region*
     return range_in_range(reg1->base, reg1->size, reg2->base, reg2->size);
 }
 
-bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast);
+bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool locked);
 
 /**
  * This functions must be defined for the physical MPU. The abstraction provided by the physical
@@ -57,7 +57,7 @@ bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast);
  * success value.
  */
 void mpu_init(void);
-bool mpu_map(struct addr_space* as, struct mp_region* mem);
+bool mpu_map(struct addr_space* as, struct mp_region* mem, bool locked);
 bool mpu_unmap(struct addr_space* as, struct mp_region* mem);
 
 #endif /* __MEM_PROT_H__ */
