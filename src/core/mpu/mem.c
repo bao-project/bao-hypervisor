@@ -127,7 +127,7 @@ static mpid_t mem_vmpu_get_entry_by_addr(struct addr_space* as, vaddr_t addr)
     return mpid;
 }
 
-static void as_init_boot_regions(void)
+static void mem_init_boot_regions(void)
 {
     /**
      * Add hypervisor mpu entries set up during boot to the vmpu:
@@ -142,7 +142,6 @@ static void as_init_boot_regions(void)
     vaddr_t image_end = (vaddr_t)&_image_end;
 
     struct mp_region mpr;
-    mpid_t mpid = 0;
 
     bool separate_noload_region = image_load_end != image_noload_start;
     vaddr_t first_region_end = separate_noload_region ? image_load_end : image_end;
@@ -153,8 +152,7 @@ static void as_init_boot_regions(void)
         .mem_flags = PTE_HYP_FLAGS,
         .as_sec = SEC_HYP_IMAGE,
     };
-    mem_vmpu_set_entry(&cpu()->as, mpid, &mpr);
-    mpid++;
+    mem_map(&cpu()->as, &mpr, false, true);
 
     if (separate_noload_region) {
         mpr = (struct mp_region){
@@ -163,8 +161,7 @@ static void as_init_boot_regions(void)
             .mem_flags = PTE_HYP_FLAGS,
             .as_sec = SEC_HYP_IMAGE,
         };
-        mem_vmpu_set_entry(&cpu()->as, mpid, &mpr);
-        mpid++;
+        mem_map(&cpu()->as, &mpr, false, true);
     }
 
     mpr = (struct mp_region){
@@ -173,15 +170,15 @@ static void as_init_boot_regions(void)
         .mem_flags = PTE_HYP_FLAGS,
         .as_sec = SEC_HYP_PRIVATE,
     };
-    mem_vmpu_set_entry(&cpu()->as, mpid, &mpr);
-    mpid++;
+    mem_map(&cpu()->as, &mpr, false, true);
 }
 
 void mem_prot_init()
 {
     mpu_init();
     as_init(&cpu()->as, AS_HYP, HYP_ASID, BIT_MASK(0, PLAT_CPU_NUM), 0);
-    as_init_boot_regions();
+    mem_init_boot_regions();
+    mpu_enable();
 }
 
 size_t mem_cpu_boot_alloc_size()
