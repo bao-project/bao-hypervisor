@@ -10,10 +10,10 @@
 #include <cpu.h>
 #include <fences.h>
 
-#if (CPU == cortex-r52)
+#if (CPU == cortex - r52)
 #define static_init 1
-#define timer_freq 8450000
-#else 
+#define timer_freq  8450000
+#else
 static uint32_t timer_freq = 0;
 #endif
 
@@ -38,7 +38,7 @@ void vmm_arch_profile_init()
         mem_unmap(&cpu()->as, (vaddr_t)timer_ctl, sizeof(struct generic_timer_cntctrl), false);
     }
 #endif
-    
+
     cpu_sync_barrier(&cpu_glb_sync);
 
     sysreg_cntfrq_el0_write(timer_freq);

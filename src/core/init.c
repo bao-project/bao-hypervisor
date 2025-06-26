@@ -24,10 +24,10 @@ void init(cpuid_t cpu_id)
 
     /* -------------------------------------------------------------- */
 
-    //console_init();
+    // console_init();
 
     if (cpu_is_master()) {
-        //console_printk("Bao Hypervisor\n\r");
+        // console_printk("Bao Hypervisor\n\r");
     }
 
     interrupts_init();
