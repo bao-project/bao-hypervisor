@@ -51,8 +51,8 @@ boot_arch_profile_init:
     mov r4, #(-1)
 
     /* Enable caches and MPU */
-    ldr r4, =(SCTLR_RES1_AARCH32 | SCTLR_C | SCTLR_I)
-    mcr p15, 4, r4, c1, c0, 0 // HSCTLR
+    /*ldr r4, =(SCTLR_RES1_AARCH32 | SCTLR_C | SCTLR_I)
+    mcr p15, 4, r4, c1, c0, 0 // HSCTLR*/
 
     dsb
     isb

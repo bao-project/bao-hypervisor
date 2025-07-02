@@ -8,7 +8,7 @@
 struct platform platform = {
 
     .cpu_num = 2,
-    .region_num = 1,
+    .region_num = 2,
     .regions =  (struct mem_region[]) {
         {
             // DRAM, 256KB
@@ -16,7 +16,13 @@ struct platform platform = {
             //.size = 0x40000,
             // CRAM, 1MB
             .base = 0x32100000,     // CRAM0
-            .size = 0x100000
+            .size = 0x200000,
+            .perms = RX,
+        },
+        {
+            .base = 0x34800000,     // CRAM0
+            .size = 0x40000,
+            .perms = RWX,
         }
     },
 
