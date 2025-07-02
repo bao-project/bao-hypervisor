@@ -25,7 +25,7 @@ _barrier: .4byte 0
 
 .balign 4
 .global img_addr
-img_addr: .4byte 0
+img_addr: .4byte BAO_VAS_BASE
 
 /**
  *  The following code MUST be at the base of the image, as this is bao's entry point. Therefore
@@ -182,9 +182,23 @@ _set_master_cpu:
     /* If this is the cpu master, clear bss */
     cmp r9, #0
     bne 1f
+
+
+#ifndef MEM_NON_UNIFIED
     ldr r11, =_bss_start
     ldr r12, =_bss_end
     bl boot_clear
+#else
+    /* Copy data from RX to RWX */
+
+    get_label_addr    %d3, _data_lma_start // LMA start
+    get_label_addr    %d4, _data_vma_start // VMA start
+    get_label_addr    %d5, _image_load_end // LMA end
+    jl copy_data
+
+#endif
+
+
 
     ldr r5, =_barrier
     mov r7, #2
