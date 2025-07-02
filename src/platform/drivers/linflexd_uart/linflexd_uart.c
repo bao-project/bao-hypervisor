@@ -11,10 +11,10 @@
 #define LINFlexD_BUFFER_OVERRUN_INT (0x80U)
 #define clk_freq                    (48000000U)
 
-#define LIN_9_TX                    0
-#define LIN_9_RX                    1
-// #define LIN_0_TX 2
-// #define LIN_0_RX 3
+//#define LIN_9_TX                    0
+//#define LIN_9_RX                    1
+#define LIN_0_TX 2
+#define LIN_0_RX 3
 
 linflexd_uart_user_config_t linflexdUartInitConfig0 = { .transferType =
                                                             LINFLEXD_UART_USING_INTERRUPTS,
@@ -350,39 +350,41 @@ static inline void LINFLEXD_SetMode(volatile struct LINFlexD_Type* base, linflex
 
 void clock_init(volatile struct LINFlexD_Type* base)
 {
-    uint32_t* clock_mux = 0;
+    uint32_t* clock_mux = 0, *clock_mux_base = 0;
     switch ((uint32_t)base) {
         case LINFlexD_0_BASE:
         case LINFlexD_1_BASE:
         case LINFlexD_2_BASE:
-            clock_mux = (uint32_t*)(MC_CGM_0 + MUX_CSC_4_OFFSET);
+            clock_mux_base = (uint32_t*)(MC_CGM_0 + MUX_CSC_4_OFFSET);
             break;
         case LINFlexD_3_BASE:
         case LINFlexD_4_BASE:
         case LINFlexD_5_BASE:
-            clock_mux = (uint32_t*)(MC_CGM_1 + MUX_CSC_4_OFFSET);
+            clock_mux_base = (uint32_t*)(MC_CGM_1 + MUX_CSC_4_OFFSET);
             break;
         case LINFlexD_6_BASE:
         case LINFlexD_7_BASE:
         case LINFlexD_8_BASE:
-            clock_mux = (uint32_t*)(MC_CGM_4 + MUX_CSC_8_OFFSET);
+            clock_mux_base = (uint32_t*)(MC_CGM_4 + MUX_CSC_8_OFFSET);
             break;
         case LINFlexD_9_BASE:
         case LINFlexD_10_BASE:
         case LINFlexD_11_BASE:
-            clock_mux = (uint32_t*)(MC_CGM_5 + MUX_CSC_2_OFFSET);
+            clock_mux_base = (uint32_t*)(MC_CGM_5 + MUX_CSC_2_OFFSET);
             break;
         default:
             break;
     }
 
-    mem_alloc_map_dev(&cpu()->as, SEC_HYP_PRIVATE, (uint32_t)INVALID_VA, (paddr_t)clock_mux,
+    mem_alloc_map_dev(&cpu()->as, SEC_HYP_PRIVATE, (uint32_t)INVALID_VA, (paddr_t)clock_mux_base,
         NUM_PAGES(MUX_SIZE));
+
+    clock_mux = clock_mux_base;
     *clock_mux = 0x00000000;
     *clock_mux |= SAFE_CLK_MASK(1);
     clock_mux = clock_mux + MUX_DIV0_OFFSET;
     *clock_mux = 0x80000000;
-    mem_unmap(&cpu()->as, (paddr_t)clock_mux, NUM_PAGES(MUX_SIZE), false);
+    mem_unmap(&cpu()->as, (paddr_t)clock_mux_base, NUM_PAGES(MUX_SIZE), false);
 }
 
 void LINFLEXD_UART_DRV_SetBaudRate(volatile struct LINFlexD_Type* base, uint32_t baudrate)
@@ -414,18 +416,18 @@ void uart_init(volatile struct LINFlexD_Type* ptr_uart)
     linflexd_uart_user_config_t* uartUserConfig = &linflexdUartInitConfig0;
 
     mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, (uint32_t)INVALID_VA,
-        (uint32_t)g_pin_mux_InitConfigArr0->base, NUM_PAGES(sizeof(SIUL2_Type)));
+        (uint32_t)SIUL2_0_BASE, NUM_PAGES(sizeof(SIUL2_Type)));
 
-    PINS_Init(&g_pin_mux_InitConfigArr0[LIN_9_TX]);
-    PINS_Init(&g_pin_mux_InitConfigArr0[LIN_9_RX]);
+    PINS_Init(&g_pin_mux_InitConfigArr0[LIN_0_TX]);
+    PINS_Init(&g_pin_mux_InitConfigArr0[LIN_0_RX]);
 
     /* unmap SIUL2_x region */
-    mem_unmap(&cpu()->as, (uint32_t)g_pin_mux_InitConfigArr0->base, NUM_PAGES(sizeof(SIUL2_Type)),
+    mem_unmap(&cpu()->as, SIUL2_0_BASE, NUM_PAGES(sizeof(SIUL2_Type)),
         false);
 
     /* init uart clock */
     clock_init(ptr_uart);
-    clock_init(LINFlexD_9);
+    //clock_init(LINFlexD_9);
     clock_init(LINFlexD_0);
 
     /* Request init mode and wait until the mode entry is complete */
