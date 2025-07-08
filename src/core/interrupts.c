@@ -27,6 +27,16 @@ void interrupts_cpu_enable(irqid_t int_id, bool en)
     interrupts_arch_enable(int_id, en);
 }
 
+/*
+    The following APIs are implemented with the weak attribute since they
+    can be used for platforms and architectures that use a single unique ID
+    for the hypervisor APIs.
+
+    Other architectures, like TC4, that use different mechanisms for IPIs
+    resulting in different ID per core or VM, should implement these APIs
+    at the architectural level.
+*/
+
 __attribute__((weak)) bool interrupts_ipi_check(void)
 {
     return interrupts_arch_check(interrupts_ipi_id);
