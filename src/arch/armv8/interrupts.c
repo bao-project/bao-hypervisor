@@ -22,10 +22,11 @@ void interrupts_arch_init()
     gic_init();
 }
 
-void interrupts_arch_ipi_send(cpuid_t target_cpu, irqid_t ipi_id)
+void interrupts_arch_ipi_send(cpuid_t target_cpu)
 {
-    if (ipi_id < GIC_MAX_SGIS) {
-        gic_send_sgi(target_cpu, ipi_id);
+    // This check may be removed? Might be an assert or something
+    if (interrupts_ipi_id < GIC_MAX_SGIS) {
+        gic_send_sgi(target_cpu, interrupts_ipi_id);
     }
 }
 

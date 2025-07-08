@@ -17,9 +17,9 @@ irq_handler_t interrupt_handlers[MAX_INTERRUPT_HANDLERS];
 
 irqid_t interrupts_ipi_id;
 
-void interrupts_cpu_sendipi(cpuid_t target_cpu, irqid_t ipi_id)
+void interrupts_cpu_sendipi(cpuid_t target_cpu)
 {
-    interrupts_arch_ipi_send(target_cpu, ipi_id);
+    interrupts_arch_ipi_send(target_cpu);
 }
 
 void interrupts_cpu_enable(irqid_t int_id, bool en)
@@ -27,26 +27,33 @@ void interrupts_cpu_enable(irqid_t int_id, bool en)
     interrupts_arch_enable(int_id, en);
 }
 
-bool interrupts_check(irqid_t int_id)
+__attribute__((weak)) bool interrupts_ipi_check(void)
 {
-    return interrupts_arch_check(int_id);
+    return interrupts_arch_check(interrupts_ipi_id);
 }
 
-void interrupts_clear(irqid_t int_id)
+__attribute__((weak)) void interrupts_ipi_clear(void)
 {
-    interrupts_arch_clear(int_id);
+    interrupts_arch_clear(interrupts_ipi_id);
 }
 
-void interrupts_init(void)
+#ifdef IPI_CPU_MSG
+__attribute__((weak)) void interrupts_arch_ipi_init(void)
 {
-    interrupts_arch_init();
-
     if (cpu_is_master()) {
         interrupts_ipi_id = interrupts_reserve(IPI_CPU_MSG, (irq_handler_t)cpu_msg_handler);
         if (interrupts_ipi_id == INVALID_IRQID) {
             ERROR("Failed to reserve IPI_CPU_MSG interrupt");
         }
     }
+}
+#endif
+
+void interrupts_init(void)
+{
+    interrupts_arch_init();
+
+    interrupts_arch_ipi_init();
 
     cpu_sync_barrier(&cpu_glb_sync);
 
