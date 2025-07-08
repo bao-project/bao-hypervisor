@@ -40,10 +40,8 @@ void interrupts_arch_init()
     csrs_sie_set(SIE_SEIE);
 }
 
-void interrupts_arch_ipi_send(cpuid_t target_cpu, irqid_t ipi_id)
+void interrupts_arch_ipi_send(cpuid_t target_cpu)
 {
-    UNUSED_ARG(ipi_id);
-
     if (USE_ACLINT_IPI()) {
         aclint_send_ipi(target_cpu);
     } else {
