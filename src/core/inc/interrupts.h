@@ -32,11 +32,11 @@ void interrupts_init(void);
  */
 irqid_t interrupts_reserve(irqid_t pint_id, irq_handler_t handler);
 
-void interrupts_cpu_sendipi(cpuid_t target_cpu, irqid_t ipi_id);
+void interrupts_cpu_sendipi(cpuid_t target_cpu);
 void interrupts_cpu_enable(irqid_t int_id, bool en);
 
-bool interrupts_check(irqid_t int_id);
-void interrupts_clear(irqid_t int_id);
+bool interrupts_ipi_check(void);
+void interrupts_ipi_clear(void);
 
 enum irq_res { HANDLED_BY_HYP, FORWARD_TO_VM };
 enum irq_res interrupts_handle(irqid_t int_id);
@@ -50,8 +50,8 @@ irqid_t interrupts_arch_reserve(irqid_t pint_id);
 void interrupts_arch_enable(irqid_t int_id, bool en);
 bool interrupts_arch_check(irqid_t int_id);
 void interrupts_arch_clear(irqid_t int_id);
-void interrupts_arch_ipi_send(cpuid_t cpu_target, irqid_t ipi_id);
+void interrupts_arch_ipi_send(cpuid_t cpu_target);
 void interrupts_arch_vm_assign(struct vm* vm, irqid_t id);
 bool interrupts_arch_conflict(bitmap_t* interrupt_bitmap, irqid_t id);
-
+void interrupts_arch_ipi_init(void);
 #endif /* __INTERRUPTS_H__ */
