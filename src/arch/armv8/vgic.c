@@ -968,7 +968,7 @@ bool vgicd_emul_handler(struct emul_access* acc)
 
     if (vgic_check_reg_alignment(acc, handler_info)) {
         spin_lock(&cpu()->vcpu->vm->arch.vgicd.lock);
-        handler_info->reg_access(acc, handler_info, false, cpu()->vcpu->id);
+        handler_info->reg_access(acc, handler_info, VGIC_NOT_GICR_ACCESS, cpu()->vcpu->id);
         spin_unlock(&cpu()->vcpu->vm->arch.vgicd.lock);
         return true;
     } else {

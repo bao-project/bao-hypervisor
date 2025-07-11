@@ -12,6 +12,12 @@
 #include <objpool.h>
 #include <config.h>
 
+#define MEM_BROADCAST      (true)
+#define MEM_DONT_BROADCAST (false)
+
+#define MEM_LOCKED         (true)
+#define MEM_NOT_LOCKED     (false)
+
 struct shared_region {
     enum AS_TYPE as_type;
     asid_t asid;
@@ -173,7 +179,7 @@ static void mem_init_boot_regions(void)
 #endif
         .as_sec = SEC_HYP_IMAGE,
     };
-    mem_map(&cpu()->as, &mpr, false, true);
+    mem_map(&cpu()->as, &mpr, MEM_DONT_BROADCAST, MEM_LOCKED);
 
     if (separate_noload_region) {
         mpr = (struct mp_region){
@@ -187,7 +193,7 @@ static void mem_init_boot_regions(void)
             .mem_flags = PTE_HYP_FLAGS,
             .as_sec = SEC_HYP_IMAGE,
         };
-        mem_map(&cpu()->as, &mpr, false, true);
+        mem_map(&cpu()->as, &mpr, MEM_DONT_BROADCAST, MEM_LOCKED);
     }
 
     mpr = (struct mp_region){
@@ -196,7 +202,7 @@ static void mem_init_boot_regions(void)
         .mem_flags = PTE_HYP_FLAGS,
         .as_sec = SEC_HYP_PRIVATE,
     };
-    mem_map(&cpu()->as, &mpr, false, true);
+    mem_map(&cpu()->as, &mpr, MEM_DONT_BROADCAST, MEM_LOCKED);
 }
 
 void mem_prot_init()
@@ -407,7 +413,7 @@ static bool mem_vmpu_remove_region(struct addr_space* as, mpid_t mpid, bool broa
 static void mem_handle_broadcast_insert(struct addr_space* as, struct mp_region* mpr, bool locked)
 {
     if (as->type == AS_HYP) {
-        mem_map(&cpu()->as, mpr, false, locked);
+        mem_map(&cpu()->as, mpr, MEM_DONT_BROADCAST, locked);
     } else {
         mpu_map(as, mpr, locked);
     }
@@ -421,7 +427,7 @@ static void mem_handle_broadcast_remove(struct addr_space* as, struct mp_region*
             During the handle of a broadcast we don't want that, to avoid
             a chain of broadcasts
         */
-        mem_unmap_range(&cpu()->as, mpr->base, mpr->size, false);
+        mem_unmap_range(&cpu()->as, mpr->base, mpr->size, MEM_DONT_BROADCAST);
     } else {
         mpu_unmap(as, mpr);
     }
@@ -445,7 +451,7 @@ static bool mem_update(struct addr_space* as, struct mp_region* mpr, bool broadc
 static void mem_handle_broadcast_update(struct addr_space* as, struct mp_region* mpr, bool locked)
 {
     if (as->type == AS_HYP) {
-        mem_update(&cpu()->as, mpr, false, locked);
+        mem_update(&cpu()->as, mpr, MEM_DONT_BROADCAST, locked);
     } else {
         mpu_update(as, mpr);
     }
@@ -646,7 +652,7 @@ bool mem_unmap_range(struct addr_space* as, vaddr_t vaddr, size_t size, bool bro
 
 void mem_unmap(struct addr_space* as, vaddr_t at, size_t num_pages, bool free_ppages)
 {
-    if (mem_unmap_range(as, at, num_pages * PAGE_SIZE, true) && free_ppages) {
+    if (mem_unmap_range(as, at, num_pages * PAGE_SIZE, MEM_BROADCAST) && free_ppages) {
         struct ppages ppages = mem_ppages_get(at, num_pages);
         mem_free_ppages(&ppages);
     }
@@ -677,8 +683,8 @@ vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, vaddr_t vas,
             va_res = INVALID_VA;
         } else {
             mpr.size = num_pages * PAGE_SIZE;
-            bool broadcast = mem_broadcast(asd, &mpr, true);
-            if (mem_map(asd, &mpr, broadcast, false)) {
+            bool broadcast = mem_broadcast(asd, &mpr, MEM_BROADCAST);
+            if (mem_map(asd, &mpr, broadcast, MEM_NOT_LOCKED)) {
                 va_res = vas;
             } else {
                 INFO("failed mem map on mem map cpy");
@@ -731,7 +737,7 @@ vaddr_t mem_alloc_map(struct addr_space* as, as_sec_t section, struct ppages* pp
         .mem_flags = flags,
     };
 
-    mem_map(as, &mpr, true, false);
+    mem_map(as, &mpr, MEM_BROADCAST, MEM_NOT_LOCKED);
 
     return at;
 }

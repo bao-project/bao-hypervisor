@@ -89,7 +89,8 @@ bool pp_alloc(struct page_pool* pool, size_t num_pages, bool aligned, struct ppa
      */
     for (size_t i = 0; i < 2 && !ok; i++) {
         while (pool->free != 0) {
-            ssize_t bit = bitmap_find_consec(pool->bitmap, pool->num_pages, curr, num_pages, false);
+            ssize_t bit =
+                bitmap_find_consec(pool->bitmap, pool->num_pages, curr, num_pages, BITMAP_NOT_SET);
 
             if (bit < 0) {
                 /**

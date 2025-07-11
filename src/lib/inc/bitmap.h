@@ -27,6 +27,9 @@ static const bitmap_granule_t ONE = 1;
 
 #define BITMAP_ALLOC_ARRAY(NAME, SIZE, NUM) bitmap_granule_t NAME[NUM][BITMAP_SIZE_IN_GRANULE(SIZE)]
 
+#define BITMAP_SET                          (true)
+#define BITMAP_NOT_SET                      (false)
+
 static inline void bitmap_set(bitmap_t* map, size_t bit)
 {
     map[bit / BITMAP_GRANULE_LEN] |= ONE << (bit % BITMAP_GRANULE_LEN);

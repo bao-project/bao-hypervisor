@@ -16,7 +16,7 @@ static void shmem_alloc(void)
         shmem->lock = SPINLOCK_INITVAL;
         if (!shmem->place_phys) {
             size_t n_pg = NUM_PAGES(shmem->size);
-            struct ppages ppages = mem_alloc_ppages(shmem->colors, n_pg, false);
+            struct ppages ppages = mem_alloc_ppages(shmem->colors, n_pg, MEM_ALIGN_NOT_REQ);
             if (ppages.num_pages < n_pg) {
                 ERROR("failed to allocate shared memory");
             }

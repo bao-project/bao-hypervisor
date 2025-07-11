@@ -15,6 +15,12 @@
 
 #ifndef __ASSEMBLER__
 
+#define MEM_ALIGN_REQ       (true)
+#define MEM_ALIGN_NOT_REQ   (false)
+
+#define MEM_FREE_PAGES      (true)
+#define MEM_DONT_FREE_PAGES (false)
+
 enum MEM_PERMISSIONS {
     MEM_RWX = 0, // This variant always has to be zero and therefore the first one
     MEM_RX,
