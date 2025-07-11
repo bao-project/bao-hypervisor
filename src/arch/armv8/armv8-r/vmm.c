@@ -35,7 +35,8 @@ void vmm_arch_profile_init()
 
             timer_freq = (uint32_t)timer_ctl->CNTDIF0;
 
-            mem_unmap(&cpu()->as, (vaddr_t)timer_ctl, sizeof(struct generic_timer_cntctrl), false);
+            mem_unmap(&cpu()->as, (vaddr_t)timer_ctl, sizeof(struct generic_timer_cntctrl),
+                MEM_DONT_FREE_PAGES);
         }
     }
 

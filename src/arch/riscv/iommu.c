@@ -274,7 +274,7 @@ static void rv_iommu_init(void)
 
     // Allocate memory for FQ (aligned to 4kiB)
     vaddr_t fq_vaddr = (vaddr_t)mem_alloc_page(NUM_PAGES(sizeof(struct fq_entry) * FQ_N_ENTRIES),
-        SEC_HYP_GLOBAL, true);
+        SEC_HYP_GLOBAL, MEM_ALIGN_REQ);
     memset((void*)fq_vaddr, 0, sizeof(struct fq_entry) * FQ_N_ENTRIES);
     rv_iommu.hw.fq = (struct fq_entry*)fq_vaddr;
 
@@ -302,7 +302,7 @@ static void rv_iommu_init(void)
 
     // Allocate a page of memory (aligned) for the DDT
     vaddr_t ddt_vaddr = (vaddr_t)mem_alloc_page(NUM_PAGES(sizeof(struct ddt_entry) * DDT_N_ENTRIES),
-        SEC_HYP_GLOBAL, true);
+        SEC_HYP_GLOBAL, MEM_ALIGN_REQ);
     // Clear entries
     memset((void*)ddt_vaddr, 0, sizeof(struct ddt_entry) * DDT_N_ENTRIES);
     rv_iommu.hw.ddt = (struct ddt_entry*)ddt_vaddr;

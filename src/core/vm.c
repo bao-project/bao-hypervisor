@@ -135,8 +135,8 @@ static void vm_install_image(struct vm* vm, struct vm_mem_region* reg)
         mem_map_cpy(&vm->as, &cpu()->as, vm->config->image.base_addr, INVALID_VA, img_num_pages);
     memcpy((void*)dst_va, (void*)src_va, vm->config->image.size);
     cache_flush_range((vaddr_t)dst_va, vm->config->image.size);
-    mem_unmap(&cpu()->as, src_va, img_num_pages, false);
-    mem_unmap(&cpu()->as, dst_va, img_num_pages, false);
+    mem_unmap(&cpu()->as, src_va, img_num_pages, MEM_DONT_FREE_PAGES);
+    mem_unmap(&cpu()->as, dst_va, img_num_pages, MEM_DONT_FREE_PAGES);
 }
 
 static void vm_map_img_rgn(struct vm* vm, const struct vm_config* vm_config,
