@@ -12,6 +12,9 @@
 #include <objpool.h>
 #include <config.h>
 
+#define MEM_BROADCAST      true
+#define MEM_DONT_BROADCAST false
+
 struct shared_region {
     enum AS_TYPE as_type;
     asid_t asid;
@@ -309,7 +312,7 @@ static bool mem_vmpu_remove_region(struct addr_space* as, mpid_t mpid, bool broa
 static void mem_handle_broadcast_insert(struct addr_space* as, struct mp_region* mpr)
 {
     if (as->type == AS_HYP) {
-        mem_map(&cpu()->as, mpr, false);
+        mem_map(&cpu()->as, mpr, MEM_DONT_BROADCAST);
     } else {
         mpu_map(as_priv(as), mpr);
     }
@@ -318,7 +321,7 @@ static void mem_handle_broadcast_insert(struct addr_space* as, struct mp_region*
 static void mem_handle_broadcast_remove(struct addr_space* as, struct mp_region* mpr)
 {
     if (as->type == AS_HYP) {
-        mem_unmap_range(&cpu()->as, mpr->base, mpr->size, false);
+        mem_unmap_range(&cpu()->as, mpr->base, mpr->size, MEM_DONT_BROADCAST);
     } else {
         mpu_unmap(as_priv(as), mpr);
     }
@@ -435,21 +438,21 @@ bool mem_unmap_range(struct addr_space* as, vaddr_t vaddr, size_t size, bool bro
         size_t top_size = limit >= r_limit ? 0 : r_limit - limit;
         size_t bottom_size = vaddr <= r_base ? 0 : vaddr - r_base;
 
-        mem_vmpu_remove_region(as, mpid, true);
+        mem_vmpu_remove_region(as, mpid, MEM_BROADCAST);
 
         if (top_size > 0) {
             struct mp_region top = reg;
             top.base = limit;
             top.size = top_size;
             mpid_t top_mpid = mem_vmpu_allocate_entry(as);
-            mem_vmpu_insert_region(as, top_mpid, &top, true);
+            mem_vmpu_insert_region(as, top_mpid, &top, MEM_BROADCAST);
         }
 
         if (bottom_size > 0) {
             struct mp_region bottom = reg;
             bottom.size = bottom_size;
             mpid_t bottom_mpid = mem_vmpu_allocate_entry(as);
-            mem_vmpu_insert_region(as, bottom_mpid, &bottom, true);
+            mem_vmpu_insert_region(as, bottom_mpid, &bottom, MEM_BROADCAST);
         }
 
         size_t overlap_size = reg.size - top_size - bottom_size;
@@ -463,7 +466,7 @@ bool mem_unmap_range(struct addr_space* as, vaddr_t vaddr, size_t size, bool bro
 
 void mem_unmap(struct addr_space* as, vaddr_t at, size_t num_pages, bool free_ppages)
 {
-    if (mem_unmap_range(as, at, num_pages * PAGE_SIZE, true) && free_ppages) {
+    if (mem_unmap_range(as, at, num_pages * PAGE_SIZE, MEM_BROADCAST) && free_ppages) {
         struct ppages ppages = mem_ppages_get(at, num_pages);
         mem_free_ppages(&ppages);
     }
@@ -490,7 +493,7 @@ vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, vaddr_t vas,
         mpr = mpe->region;
         spin_unlock(&ass->lock);
 
-        if (mem_map(asd, &mpr, true)) {
+        if (mem_map(asd, &mpr, MEM_BROADCAST)) {
             va_res = vas;
         } else {
             INFO("failed mem map on mem map cpy");
@@ -542,7 +545,7 @@ vaddr_t mem_alloc_map(struct addr_space* as, as_sec_t section, struct ppages* pp
         .mem_flags = flags,
     };
 
-    mem_map(as, &mpr, true);
+    mem_map(as, &mpr, MEM_BROADCAST);
 
     return at;
 }

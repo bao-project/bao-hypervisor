@@ -49,6 +49,12 @@ struct shmem {
     spinlock_t lock;
 };
 
+#define MEM_ALIGN_PPAGES      true
+#define MEM_DONT_ALIGN_PPAGES false
+
+#define MEM_FREE_PAGES        true
+#define MEM_DONT_FREE_PAGES   false
+
 static inline struct ppages mem_ppages_get(paddr_t base, size_t num_pages)
 {
     return (struct ppages){ .colors = 0, .base = base, .num_pages = num_pages };
