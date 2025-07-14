@@ -34,7 +34,7 @@ static inline irqid_t irqc_reserve(irqid_t pintp_id)
 static inline void irqc_send_ipi(cpuid_t target_cpu, irqid_t ipi_id)
 {
     UNUSED_ARG(ipi_id);
-    sbi_send_ipi(1ULL << target_cpu, 0);
+    sbi_send_ipi(1UL << target_cpu, 0);
 }
 
 static inline void irqc_cpu_init(void)
