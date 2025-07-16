@@ -89,7 +89,7 @@ static bool vmm_alloc_vm(struct vm_allocation* vm_alloc, struct vm_config* vm_co
     total_size = vcpus_offset + (vm_config->platform.cpu_num * sizeof(struct vcpu));
     total_size = ALIGN(total_size, PAGE_SIZE);
 
-    void* allocation = mem_alloc_page(NUM_PAGES(total_size), SEC_HYP_VM, false);
+    void* allocation = mem_alloc_page(NUM_PAGES(total_size), SEC_HYP_VM, MEM_DONT_ALIGN_PPAGES);
     if (allocation == NULL) {
         return false;
     }

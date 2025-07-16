@@ -276,7 +276,7 @@ static bool vgicr_emul_handler(struct emul_access* acc)
         struct vcpu* vcpu =
             vgicr_id == cpu()->vcpu->id ? cpu()->vcpu : vm_get_vcpu(cpu()->vcpu->vm, vgicr_id);
         spin_lock(&vcpu->arch.vgic_priv.vgicr.lock);
-        handler_info->reg_access(acc, handler_info, true, vgicr_id);
+        handler_info->reg_access(acc, handler_info, VGIC_GICR_ACCESS, vgicr_id);
         spin_unlock(&vcpu->arch.vgic_priv.vgicr.lock);
         return true;
     } else {
@@ -330,7 +330,8 @@ void vgic_init(struct vm* vm, const struct vgic_dscrp* vgic_dscrp)
     vm->arch.vgicd.IIDR = gicd->IIDR;
 
     size_t vgic_int_size = vm->arch.vgicd.int_num * sizeof(struct vgic_int);
-    vm->arch.vgicd.interrupts = mem_alloc_page(NUM_PAGES(vgic_int_size), SEC_HYP_VM, false);
+    vm->arch.vgicd.interrupts =
+        mem_alloc_page(NUM_PAGES(vgic_int_size), SEC_HYP_VM, MEM_DONT_ALIGN_PPAGES);
     if (vm->arch.vgicd.interrupts == NULL) {
         ERROR("failed to alloc vgic");
     }
