@@ -13,6 +13,7 @@
 #include <types.h>
 #include <console.h>
 #include <util.h>
+#include <mmio.h>
 
 #define INFO(...)    console_printk("BAO INFO: " __VA_ARGS__);
 
