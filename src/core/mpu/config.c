@@ -6,10 +6,8 @@
 #include <bao.h>
 #include <config.h>
 
-void config_mem_prot_init(paddr_t load_addr)
+void config_mem_prot_init(void)
 {
-    UNUSED_ARG(load_addr);
-
     for (size_t i = 0; i < config.vmlist_size; i++) {
         for (size_t j = 0; j < config.vmlist[i].platform.region_num; j++) {
             /**

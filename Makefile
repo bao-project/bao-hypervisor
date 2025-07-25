@@ -201,6 +201,9 @@ endif
 ifeq ($(arch_mem_prot),mpu)
 	build_macros+=-DMEM_PROT_MPU
 endif
+ifeq ($(plat_mem),non_unified)
+	build_macros+=-DMEM_NON_UNIFIED
+endif
 
 ifeq ($(CC_IS_GCC),y)
 	build_macros+=-DCC_IS_GCC
