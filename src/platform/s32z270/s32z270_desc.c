@@ -7,34 +7,35 @@
 
 struct platform platform = {
 
-    .cpu_num = 2,
+    .cpu_num = 4,
     .region_num = 2,
     .regions =  (struct mem_region[]) {
         {
-            // DRAM, 256KB
-            //.base = 0x34800000,        // SRAM0
-            //.size = 0x40000,
-            // CRAM, 1MB
-            .base = 0x32100000,     // CRAM0
+            /* CRAM0 (Code SRAM) - Optimized for low-latency code accesses. Can be used for data,
+            but we restrict it to code only. */
+            .base = 0x32100000,
             .size = 0x200000,
             .perms = RX,
         },
         {
-            .base = 0x34800000,     // CRAM0
+            /* DRAM0 (Data RAM) - Optimized for low-latency data accesses. Can be used for code,
+            but we restrict it to data only. "plat_mem" build macro must be equal to "non_unified"
+            */
+            .base = 0x34800000,
             .size = 0x40000,
             .perms = RWX,
         }
     },
 
     .console = {
-        .base = 0x42980000          // Linflexd_9
-        //.base = 0x40170000          // Linflexd_0
+        /* LINFlexD 9 */
+        .base = 0x42980000
     },
 
     .arch = {
         .clusters =  {
             .num = 1,
-            .core_num = (size_t[]) {2}
+            .core_num = (size_t[]) {4}
         },
 
         .gic = {
