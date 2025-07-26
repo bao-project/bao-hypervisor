@@ -11,4 +11,6 @@
 
 void plat_cpu_init(cpuid_t cpuid, paddr_t load_addr);
 
+void plat_init(void);
+
 #endif
