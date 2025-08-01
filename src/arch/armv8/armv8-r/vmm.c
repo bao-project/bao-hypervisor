@@ -19,6 +19,12 @@ static uint32_t timer_freq = 0;
 
 void vmm_arch_profile_init()
 {
+    //TODO:S32Z270 - Needs to be implemented based on the core implementation e.g.,
+    //vmm_cpu_impl_init();
+    uint64_t actlr = sysreg_actlr_el2_read();
+    actlr |= ACTLR_PERIPHPREGIONR;
+    sysreg_actlr_el2_write(actlr);
+
 #ifndef static_init
     if (cpu_is_master()) {
         /**
