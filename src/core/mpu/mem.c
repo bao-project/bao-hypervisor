@@ -505,8 +505,6 @@ bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool 
 
 bool mem_unmap_range(struct addr_space* as, vaddr_t vaddr, size_t size, bool broadcast)
 {
-    UNUSED_ARG(broadcast);
-
     spin_lock(&as->lock);
 
     size_t size_left = size;
