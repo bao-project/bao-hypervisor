@@ -18,10 +18,10 @@ __attribute__((used)) static void cpu_defines(void)
 
     DEFINE_OFFSET(CPU_VCPU_OFF, struct cpu, vcpu);
 
-#ifndef MEM_PROT_MMU
+#ifdef MEM_PROT_MPU
     DEFINE_OFFSET(CPU_AS_ARCH_MASK_OFF, struct cpu, as.arch.entry_mask);
     DEFINE_OFFSET(CPU_ARCH_PROFILE_MPU_LOCKED_OFF, struct cpu, arch.profile.mpu.locked);
-#endif
+#endif /* MEM_PROT_MPU */
 }
 
 __attribute__((used)) static void vcpu_defines(void)
@@ -31,9 +31,9 @@ __attribute__((used)) static void vcpu_defines(void)
     DEFINE_OFFSET(VCPU_VM_OFF, struct vcpu, vm);
     DEFINE_SIZE(VCPU_REGS_SIZE, struct arch_regs);
 
-#ifndef MEM_PROT_MMU
+#ifdef MEM_PROT_MPU
     DEFINE_OFFSET(VM_AS_ARCH_MASK_OFF, struct vm, as.arch.entry_mask);
-#endif
+#endif /* MEM_PROT_MPU */
 }
 
 __attribute__((used)) static void platform_defines(void)
