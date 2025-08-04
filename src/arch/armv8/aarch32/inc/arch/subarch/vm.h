@@ -12,6 +12,7 @@ struct arch_regs {
     uint32_t elr_hyp;
     uint32_t spsr_hyp;
     uint32_t x[15];
+    uint32_t lr_usr;
 };
 
 #endif /* VM_SUBARCH_H */

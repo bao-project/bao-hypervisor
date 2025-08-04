@@ -46,14 +46,14 @@
 .macro VM_EXIT
 
     push {r14}
-    SAVE_SP
+    SAVE_LR_SP
     push {r0-r12}
     SAVE_ELR_SPSR
 
 .endm
 
 
-.macro SAVE_SP
+.macro SAVE_LR_SP
 
     mrs r14, SPSR_hyp
     and r14, r14, #0x1F
@@ -70,29 +70,39 @@
     beq 5f
     
     1:  //read_usr:
+        mrs r14,  lr_usr
+        push {r14}
         mrs r14,  sp_usr
         push {r14}
         b 6f
     2:  //read_irq:
+        mrs r14,  lr_irq
+        push {r14}
         mrs r14,  sp_irq
         push {r14}
         b 6f
     3:  //read_hvc:
+        mrs r14,  lr_svc
+        push {r14}
         mrs r14,  sp_svc
         push {r14}
         b 6f
     4:  //read_abt:
+        mrs r14,  lr_abt
+        push {r14}
         mrs r14,  sp_abt
         push {r14}
         b 6f
     5:  //read_und:
+        mrs r14,  lr_und
+        push {r14}
         mrs r14,  sp_und
         push {r14}
     6:
 
 .endm
 
-.macro LOAD_SP
+.macro LOAD_SP_LR
 
     mrs r14, SPSR_hyp
     and r14, r14, #0x1F
@@ -111,22 +121,32 @@
     1:  
         pop {r14}
         msr sp_usr, r14
+        pop {r14}
+        msr lr_usr, r14
         b 6f
     2:
         pop {r14}
         msr sp_irq, r14
+        pop {r14}
+        msr lr_irq, r14
         b 6f
     3:
         pop {r14}
         msr sp_svc, r14
+        pop {r14}
+        msr lr_svc, r14
         b 6f
     4:
         pop {r14}
         msr sp_abt, r14
+        pop {r14}
+        msr lr_abt, r14
         b 6f
     5:
         pop {r14}
         msr sp_und, r14
+        pop {r14}
+        msr lr_und, r14
     6:
 
 .endm
@@ -140,7 +160,7 @@
 
     LOAD_ELR_SPSR
     pop {r0-r12}
-    LOAD_SP
+    LOAD_SP_LR
     pop {r14}
     
     eret
