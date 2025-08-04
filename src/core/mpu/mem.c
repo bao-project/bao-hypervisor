@@ -429,7 +429,7 @@ static mpid_t mem_vmpu_find_overlapping_region(struct addr_space* as, struct mp_
     return mpid;
 }
 
-static void mem_vmpu_coalesce_contiguous(struct addr_space* as, bool broadcast, bool locked)
+static void mem_vmpu_coalesce_contiguous(struct addr_space* as, bool broadcast)
 {
     while (true) {
         bool merge = false;
@@ -463,7 +463,7 @@ static void mem_vmpu_coalesce_contiguous(struct addr_space* as, bool broadcast, 
                 .size = prev_reg->region.size + cur_reg->region.size,
                 .mem_flags = cur_reg->region.mem_flags,
             };
-            if (mem_vmpu_update_region(as, prev_mpid, merged_reg, broadcast, locked)) {
+            if (mem_vmpu_update_region(as, prev_mpid, merged_reg, broadcast, prev_reg->lock)) {
                 mem_vmpu_remove_region(as, cur_mpid, broadcast);
             }
         } else {
@@ -495,7 +495,7 @@ bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool 
     }
 
     if (mapped && !locked) {
-        mem_vmpu_coalesce_contiguous(as, broadcast, locked);
+        mem_vmpu_coalesce_contiguous(as, broadcast);
     }
 
     spin_unlock(&as->lock);
