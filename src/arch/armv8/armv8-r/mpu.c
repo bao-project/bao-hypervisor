@@ -65,6 +65,7 @@ static void mpu_entry_set(mpid_t mpid, struct mp_region* mpr)
     ISB();
     sysreg_prbar_el2_write((mpr->base & PRBAR_BASE_MSK) | mpr->mem_flags.prbar);
     sysreg_prlar_el2_write((lim & PRLAR_LIMIT_MSK) | mpr->mem_flags.prlar);
+    ISB();
 }
 
 static void mpu_entry_update(mpid_t mpid, struct mp_region* mpr)
@@ -74,6 +75,7 @@ static void mpu_entry_update(mpid_t mpid, struct mp_region* mpr)
     sysreg_prselr_el2_write(mpid);
     ISB();
     sysreg_prlar_el2_write((lim & PRLAR_LIMIT_MSK) | mpr->mem_flags.prlar);
+    ISB();
 }
 
 static bool mpu_entry_clear(mpid_t mpid)
@@ -82,6 +84,7 @@ static bool mpu_entry_clear(mpid_t mpid)
     ISB();
     sysreg_prlar_el2_write(0);
     sysreg_prbar_el2_write(0);
+    ISB();
     return true;
 }
 
