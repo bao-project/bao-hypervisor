@@ -279,7 +279,7 @@ static bool mem_broadcast(struct addr_space* as, struct mp_region* mpr, bool bro
     return broadcast;
 }
 
-static bool mem_locked(struct mp_region* mpr, bool locked)
+static bool mem_check_forced_locked(struct mp_region* mpr, bool locked)
 {
     if (mpr->as_sec == SEC_HYP_PRIVATE || mpr->as_sec == SEC_HYP_VM ||
         mpr->as_sec == SEC_HYP_IMAGE) {
@@ -292,7 +292,7 @@ static bool mem_locked(struct mp_region* mpr, bool locked)
 static bool mem_vmpu_insert_region(struct addr_space* as, mpid_t mpid, struct mp_region* mpr,
     bool broadcast, bool locked)
 {
-    bool lock = mem_locked(mpr, locked);
+    bool lock = mem_check_forced_locked(mpr, locked);
     if (mpid == INVALID_MPID) {
         return false;
     }
@@ -316,7 +316,7 @@ static bool mem_vmpu_update_region(struct addr_space* as, mpid_t mpid, struct mp
     if (mpu_update(as, &merge_reg)) {
         struct mpe* mpe = mem_vmpu_get_entry(as, mpid);
         mpe->region = merge_reg;
-        bool lock = mem_locked(&mpe->region, locked);
+        bool lock = mem_check_forced_locked(&mpe->region, locked);
         if (mem_broadcast(as, &mpe->region, broadcast)) {
             mem_region_broadcast(as, &mpe->region, MEM_UPDATE_REGION, lock);
         }
@@ -332,7 +332,7 @@ static bool mem_vmpu_remove_region(struct addr_space* as, mpid_t mpid, bool broa
     struct mpe* mpe = mem_vmpu_get_entry(as, mpid);
 
     if ((mpe != NULL) && (mpe->state == MPE_S_VALID)) {
-        bool lock = mem_locked(&mpe->region, mpe->lock);
+        bool lock = mem_check_forced_locked(&mpe->region, mpe->lock);
         if (mem_broadcast(as, &mpe->region, broadcast)) {
             mem_region_broadcast(as, &mpe->region, MEM_REMOVE_REGION, lock);
         }
@@ -346,7 +346,7 @@ static bool mem_vmpu_remove_region(struct addr_space* as, mpid_t mpid, bool broa
 
 static void mem_handle_broadcast_insert(struct addr_space* as, struct mp_region* mpr, bool locked)
 {
-    bool lock = mem_locked(mpr, locked);
+    bool lock = mem_check_forced_locked(mpr, locked);
     if (as->type == AS_HYP) {
         mem_map(&cpu()->as, mpr, false, lock);
     } else {
@@ -380,7 +380,7 @@ static bool mem_update(struct addr_space* as, struct mp_region* mpr, bool broadc
 
 static void mem_handle_broadcast_update(struct addr_space* as, struct mp_region* mpr, bool locked)
 {
-    bool lock = mem_locked(mpr, locked);
+    bool lock = mem_check_forced_locked(mpr, locked);
     if (as->type == AS_HYP) {
         mem_update(&cpu()->as, mpr, false, lock);
     } else {
