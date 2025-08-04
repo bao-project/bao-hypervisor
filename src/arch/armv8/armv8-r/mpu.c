@@ -177,11 +177,7 @@ bool mpu_update(struct addr_space* as, struct mp_region* mpr)
 
 bool mpu_perms_compatible(unsigned long perms1, unsigned long perms2)
 {
-    if (perms1 == perms2) {
-        return true;
-    }
-
-    return false;
+    return perms1 == perms2;
 }
 
 void mpu_enable(void)
