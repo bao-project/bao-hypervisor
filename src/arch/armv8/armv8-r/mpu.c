@@ -122,7 +122,7 @@ bool mpu_map(struct addr_space* as, struct mp_region* mpr, bool locked)
 
             perms_t perms;
             perms = mem_vmpu_entry_perms(mpr);
-            as->arch.entry_mask |= BIT(mpid);
+            as->arch.mpu_entry_mask |= BIT(mpid);
             if (priv == PRIV_VM) {
                 mpr->mem_flags.prlar &= (uint16_t)~PRLAR_EN;
                 cpu()->arch.profile.mpu.entry_perms[mpid].el1 = perms; // WRONG?

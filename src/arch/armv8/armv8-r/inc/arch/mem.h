@@ -37,7 +37,7 @@ typedef union {
 } mem_flags_t;
 
 struct addr_space_arch {
-    unsigned long entry_mask;
+    unsigned long mpu_entry_mask;
 };
 
 #define PTE_FLAGS(_prbar, _prlar) \
