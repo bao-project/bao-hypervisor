@@ -45,8 +45,8 @@ static mpid_t mpu_find_region(struct mp_region* mpr)
 static mpid_t mpu_entry_allocate(void)
 {
     mpid_t reg_num = INVALID_MPID;
-    reg_num = (mpid_t)bitmap_find_nth(cpu()->arch.profile.mpu.allocated_entries, 
-        MPU_ARCH_MAX_NUM_ENTRIES, 1, 0 , false);
+    reg_num = (mpid_t)bitmap_find_nth(cpu()->arch.profile.mpu.allocated_entries,
+        MPU_ARCH_MAX_NUM_ENTRIES, 1, 0, false);
 
     bitmap_set(cpu()->arch.profile.mpu.allocated_entries, reg_num);
 
@@ -55,17 +55,17 @@ static mpid_t mpu_entry_allocate(void)
 
 static inline void mpu_entry_deallocate(mpid_t mpid)
 {
-    bitmap_clear(cpu()->arch.profile.mpu.allocated_entries,mpid);
+    bitmap_clear(cpu()->arch.profile.mpu.allocated_entries, mpid);
 }
 
 static inline void mpu_entry_lock(mpid_t mpid)
 {
-    bitmap_set(cpu()->arch.profile.mpu.locked_entries,mpid);
+    bitmap_set(cpu()->arch.profile.mpu.locked_entries, mpid);
 }
 
 static inline void mpu_entry_unlock(mpid_t mpid)
 {
-    bitmap_clear(cpu()->arch.profile.mpu.locked_entries,mpid);
+    bitmap_clear(cpu()->arch.profile.mpu.locked_entries, mpid);
 }
 
 static void mpu_entry_set(mpid_t mpid, struct mp_region* mpr)
@@ -127,7 +127,7 @@ bool mpu_map(struct addr_space* as, struct mp_region* mpr, bool locked)
             if (locked) {
                 mpu_entry_lock(mpid);
             }
-            bitmap_set((bitmap_t *)&as->arch.mpu_entry_mask, mpid);
+            bitmap_set((bitmap_t*)&as->arch.mpu_entry_mask, mpid);
             if (priv == PRIV_VM) {
                 mpr->mem_flags.prlar &= (uint16_t)~PRLAR_EN;
             }
@@ -137,7 +137,6 @@ bool mpu_map(struct addr_space* as, struct mp_region* mpr, bool locked)
 
     return true;
 }
-
 
 bool mpu_unmap(struct addr_space* as, struct mp_region* mpr)
 {
@@ -160,7 +159,7 @@ bool mpu_update(struct addr_space* as, struct mp_region* mpr)
     unsigned long prbar = 0;
     unsigned long base = 0;
     for (mpid_t i = 0; i < MPU_ARCH_MAX_NUM_ENTRIES; i++) {
-        if (bitmap_get(cpu()->arch.profile.mpu.allocated_entries,i)) {
+        if (bitmap_get(cpu()->arch.profile.mpu.allocated_entries, i)) {
             sysreg_prselr_el2_write(i);
             ISB();
             prbar = sysreg_prbar_el2_read();
@@ -188,7 +187,7 @@ void mpu_enable(void)
 void mpu_init()
 {
     for (mpid_t mpid = 0; mpid < MPU_ARCH_MAX_NUM_ENTRIES; mpid++) {
-        bitmap_clear(cpu()->arch.profile.mpu.allocated_entries,mpid);
-        bitmap_clear(cpu()->arch.profile.mpu.locked_entries,mpid);
+        bitmap_clear(cpu()->arch.profile.mpu.allocated_entries, mpid);
+        bitmap_clear(cpu()->arch.profile.mpu.locked_entries, mpid);
     }
 }

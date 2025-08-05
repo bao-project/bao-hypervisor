@@ -124,7 +124,6 @@ static void mem_vmpu_deallocate_entry(struct addr_space* as, mpid_t mpid)
     mpe->lock = false;
 }
 
-
 static mpid_t mem_vmpu_get_entry_by_addr(struct addr_space* as, vaddr_t addr)
 {
     mpid_t mpid = INVALID_MPID;
@@ -504,8 +503,9 @@ bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool 
         mpid_t mpid = mem_vmpu_allocate_entry(as);
         if (mpid != INVALID_MPID) {
             mapped = mem_vmpu_insert_region(as, mpid, mpr, broadcast, locked);
+        } else {
+            mem_vmpu_deallocate_entry(as, mpid);
         }
-        else mem_vmpu_deallocate_entry(as, mpid);
     }
 
     if (mapped && !locked) {
