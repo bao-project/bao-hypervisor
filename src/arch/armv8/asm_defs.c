@@ -20,7 +20,7 @@ __attribute__((used)) static void cpu_defines(void)
 
 #ifdef MEM_PROT_MPU
     DEFINE_OFFSET(CPU_AS_ARCH_MASK_OFF, struct cpu, as.arch.mpu_entry_mask);
-    DEFINE_OFFSET(CPU_ARCH_PROFILE_MPU_LOCKED_OFF, struct cpu, arch.profile.mpu.locked);
+    DEFINE_OFFSET(CPU_ARCH_PROFILE_MPU_LOCKED_OFF, struct cpu, arch.profile.mpu.locked_entries);
 #endif /* MEM_PROT_MPU */
 }
 

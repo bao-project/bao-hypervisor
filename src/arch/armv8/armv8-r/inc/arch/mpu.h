@@ -17,10 +17,10 @@ struct mpu_perms {
 };
 
 struct mpu_arch {
-    unsigned long bitmap;
-    unsigned long locked;
+    BITMAP_ALLOC(allocated_entries, MPU_ARCH_MAX_NUM_ENTRIES);
+    BITMAP_ALLOC(locked_entries, MPU_ARCH_MAX_NUM_ENTRIES);
 
-    struct mpu_perms entry_perms[MPU_ARCH_MAX_NUM_ENTRIES];
+    //struct mpu_perms entry_perms[MPU_ARCH_MAX_NUM_ENTRIES];
 };
 
 bool mpu_perms_compatible(unsigned long perms1, unsigned long perms2);

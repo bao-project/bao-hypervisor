@@ -9,8 +9,6 @@
 #include <arch/sysregs.h>
 #include <arch/fences.h>
 
-#define BIT(x) ((unsigned long)(1 << (x)))
-
 static priv_t mpu_as_priv(struct addr_space* as)
 {
     priv_t priv;
@@ -28,7 +26,7 @@ static mpid_t mpu_find_region(struct mp_region* mpr)
 {
     mpid_t reg_num = INVALID_MPID;
     for (mpid_t i = 0; i < MPU_ARCH_MAX_NUM_ENTRIES; i++) {
-        if (cpu()->arch.profile.mpu.bitmap & BIT(i)) {
+        if (bitmap_get(cpu()->arch.profile.mpu.allocated_entries, i)) {
             sysreg_prselr_el2_write(i);
             ISB();
             unsigned long hw_base = (sysreg_prbar_el2_read() & PRBAR_BASE_MSK);
@@ -47,14 +45,27 @@ static mpid_t mpu_find_region(struct mp_region* mpr)
 static mpid_t mpu_entry_allocate(void)
 {
     mpid_t reg_num = INVALID_MPID;
-    for (mpid_t i = 0; i < MPU_ARCH_MAX_NUM_ENTRIES; i++) {
-        if (!(cpu()->arch.profile.mpu.bitmap & BIT(i))) {
-            cpu()->arch.profile.mpu.bitmap |= BIT(i);
-            reg_num = i;
-            break;
-        }
-    }
+    reg_num = (mpid_t)bitmap_find_nth(cpu()->arch.profile.mpu.allocated_entries, 
+        MPU_ARCH_MAX_NUM_ENTRIES, 1, 0 , false);
+
+    bitmap_set(cpu()->arch.profile.mpu.allocated_entries, reg_num);
+
     return reg_num;
+}
+
+static inline void mpu_entry_deallocate(mpid_t mpid)
+{
+    bitmap_clear(cpu()->arch.profile.mpu.allocated_entries,mpid);
+}
+
+static inline void mpu_entry_lock(mpid_t mpid)
+{
+    bitmap_set(cpu()->arch.profile.mpu.locked_entries,mpid);
+}
+
+static inline void mpu_entry_unlock(mpid_t mpid)
+{
+    bitmap_clear(cpu()->arch.profile.mpu.locked_entries,mpid);
 }
 
 static void mpu_entry_set(mpid_t mpid, struct mp_region* mpr)
@@ -98,9 +109,6 @@ static inline perms_t mem_vmpu_entry_perms(struct mp_region* mpr)
 
 bool mpu_map(struct addr_space* as, struct mp_region* mpr, bool locked)
 {
-    // check if there is a region with same base and size
-    // check if it is a sub region?
-
     mpid_t mpid = INVALID_MPID;
     priv_t priv = mpu_as_priv(as);
     mpid_t existing = mpu_find_region(mpr);
@@ -110,9 +118,6 @@ bool mpu_map(struct addr_space* as, struct mp_region* mpr, bool locked)
     }
 
     if (existing != INVALID_MPID) {
-        // What to do when there is region already in the mpu?
-        // Check the permissions? Shouldn't those be on the update?
-        // el1 vs el2
         return false;
     }
 
@@ -120,19 +125,11 @@ bool mpu_map(struct addr_space* as, struct mp_region* mpr, bool locked)
         mpid = mpu_entry_allocate();
         if (mpid != INVALID_MPID) {
             if (locked) {
-                cpu()->arch.profile.mpu.locked |= BIT(mpid);
+                mpu_entry_lock(mpid);
             }
-
-            perms_t perms;
-            perms = mem_vmpu_entry_perms(mpr);
-            as->arch.mpu_entry_mask |= BIT(mpid);
+            bitmap_set((bitmap_t *)&as->arch.mpu_entry_mask, mpid);
             if (priv == PRIV_VM) {
                 mpr->mem_flags.prlar &= (uint16_t)~PRLAR_EN;
-                cpu()->arch.profile.mpu.entry_perms[mpid].el1 = perms; // WRONG?
-                cpu()->arch.profile.mpu.entry_perms[mpid].el2 = PERM_NONE;
-            } else {
-                cpu()->arch.profile.mpu.entry_perms[mpid].el1 = PERM_NONE;
-                cpu()->arch.profile.mpu.entry_perms[mpid].el2 = perms;
             }
             mpu_entry_set(mpid, mpr);
         }
@@ -141,16 +138,16 @@ bool mpu_map(struct addr_space* as, struct mp_region* mpr, bool locked)
     return true;
 }
 
+
 bool mpu_unmap(struct addr_space* as, struct mp_region* mpr)
 {
     UNUSED_ARG(as);
     mpid_t mpid = mpu_find_region(mpr);
 
     if (mpid != INVALID_MPID) {
-        cpu()->arch.profile.mpu.bitmap &= ~BIT(mpid);
-        cpu()->arch.profile.mpu.locked &= ~BIT(mpid);
-        cpu()->arch.profile.mpu.entry_perms[mpid].el1 = PERM_NONE;
-        cpu()->arch.profile.mpu.entry_perms[mpid].el2 = PERM_NONE;
+        mpu_entry_deallocate(mpid);
+        mpu_entry_unlock(mpid);
+        
         mpu_entry_clear(mpid);
     }
 
@@ -163,19 +160,19 @@ bool mpu_update(struct addr_space* as, struct mp_region* mpr)
     unsigned long prbar = 0;
     unsigned long base = 0;
     for (mpid_t i = 0; i < MPU_ARCH_MAX_NUM_ENTRIES; i++) {
-        if (cpu()->arch.profile.mpu.bitmap & BIT(i)) {
+        if (bitmap_get(cpu()->arch.profile.mpu.allocated_entries,i)) {
             sysreg_prselr_el2_write(i);
             ISB();
             prbar = sysreg_prbar_el2_read();
             base = PRBAR_BASE(prbar);
             if (base == mpr->base) {
                 mpu_entry_update(i, mpr);
-                break;
+                return true;
             }
         }
     }
 
-    return true;
+    return false;
 }
 
 bool mpu_perms_compatible(unsigned long perms1, unsigned long perms2)
@@ -190,11 +187,8 @@ void mpu_enable(void)
 
 void mpu_init()
 {
-    cpu()->arch.profile.mpu.bitmap = 0;
-    cpu()->arch.profile.mpu.locked = 0;
-
     for (mpid_t mpid = 0; mpid < MPU_ARCH_MAX_NUM_ENTRIES; mpid++) {
-        cpu()->arch.profile.mpu.entry_perms[mpid].el1 = 0;
-        cpu()->arch.profile.mpu.entry_perms[mpid].el2 = 0;
+        bitmap_clear(cpu()->arch.profile.mpu.allocated_entries,mpid);
+        bitmap_clear(cpu()->arch.profile.mpu.locked_entries,mpid);
     }
 }
