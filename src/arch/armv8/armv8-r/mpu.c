@@ -79,7 +79,7 @@ static void mpu_entry_set(mpid_t mpid, struct mp_region* mpr)
     ISB();
 }
 
-static void mpu_entry_update(mpid_t mpid, struct mp_region* mpr)
+static void mpu_entry_update_limit(mpid_t mpid, struct mp_region* mpr)
 {
     unsigned long lim = mpr->base + mpr->size - 1;
 
@@ -167,7 +167,7 @@ bool mpu_update(struct addr_space* as, struct mp_region* mpr)
             prbar = sysreg_prbar_el2_read();
             base = PRBAR_BASE(prbar);
             if (base == mpr->base) {
-                mpu_entry_update(i, mpr);
+                mpu_entry_update_limit(i, mpr);
                 return true;
             }
         }
