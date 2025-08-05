@@ -148,6 +148,8 @@ bool mpu_unmap(struct addr_space* as, struct mp_region* mpr)
         mpu_entry_unlock(mpid);
         
         mpu_entry_clear(mpid);
+
+        bitmap_clear((bitmap_t*)&as->arch.mpu_entry_mask, mpid);
     }
 
     return true;
