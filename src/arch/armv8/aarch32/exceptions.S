@@ -54,7 +54,7 @@
     mrc p15, 4, r0, c13, c0, 2  // Read HTPIDR (CPU base address)
     add r0, r0, #CPU_AS_ARCH_MASK_OFF
     ldr r0, [r0]
-    mcr p15, 4, r0, c6, c1, 1 //HPRENR
+    mcr p15, 4, r0, c6, c1, 1
 #endif /* MEM_PROT_MPU */
 
 .endm
@@ -154,7 +154,7 @@
     ldr r2, [r2]
 
     orr r1, r1, r2
-    mcr p15, 4, r1, c6, c1, 1 //HPRENR
+    mcr p15, 4, r1, c6, c1, 1
 #endif /* MEM_PROT_MPU */
 
     ldr r0, [r0, #CPU_VCPU_OFF]
