@@ -90,7 +90,7 @@ vcpu_arch_entry:
 
     orr x1, x1, x2
     
-    msr prenr_el2, x0
+    msr prenr_el2, x1
     #endif /* MEM_PROT_MPU */
 
     ldr x0, [x0, #CPU_VCPU_OFF]
