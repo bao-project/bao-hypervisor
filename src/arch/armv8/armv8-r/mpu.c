@@ -99,14 +99,6 @@ static bool mpu_entry_clear(mpid_t mpid)
     return true;
 }
 
-static inline perms_t mem_vmpu_entry_perms(struct mp_region* mpr)
-{
-    perms_t perms = PERM_R;
-    perms |= !(mpr->mem_flags.prbar & PRBAR_XN) ? PERM_X : 0;
-    perms |= !(mpr->mem_flags.prbar & PRBAR_NWR_BIT) ? PERM_W : 0;
-    return perms;
-}
-
 bool mpu_map(struct addr_space* as, struct mp_region* mpr, bool locked)
 {
     mpid_t mpid = INVALID_MPID;
@@ -146,7 +138,7 @@ bool mpu_unmap(struct addr_space* as, struct mp_region* mpr)
     if (mpid != INVALID_MPID) {
         mpu_entry_deallocate(mpid);
         mpu_entry_unlock(mpid);
-        
+
         mpu_entry_clear(mpid);
 
         bitmap_clear((bitmap_t*)&as->arch.mpu_entry_mask, mpid);
