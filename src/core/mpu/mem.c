@@ -315,9 +315,8 @@ static bool mem_vmpu_update_region(struct addr_space* as, mpid_t mpid, struct mp
     if (mpu_update(as, &merge_reg)) {
         struct mpe* mpe = mem_vmpu_get_entry(as, mpid);
         mpe->region = merge_reg;
-        bool lock = mem_check_forced_locked(&mpe->region, locked);
         if (mem_broadcast(as, &mpe->region, broadcast)) {
-            mem_region_broadcast(as, &mpe->region, MEM_UPDATE_REGION, lock);
+            mem_region_broadcast(as, &mpe->region, MEM_UPDATE_REGION, locked);
         }
         merged = true;
     }
@@ -331,7 +330,7 @@ static bool mem_vmpu_remove_region(struct addr_space* as, mpid_t mpid, bool broa
     struct mpe* mpe = mem_vmpu_get_entry(as, mpid);
 
     if ((mpe != NULL) && (mpe->state == MPE_S_VALID)) {
-        bool lock = mem_check_forced_locked(&mpe->region, mpe->lock);
+        bool lock = mpe->lock;
         if (mem_broadcast(as, &mpe->region, broadcast)) {
             mem_region_broadcast(as, &mpe->region, MEM_REMOVE_REGION, lock);
         }
@@ -345,11 +344,10 @@ static bool mem_vmpu_remove_region(struct addr_space* as, mpid_t mpid, bool broa
 
 static void mem_handle_broadcast_insert(struct addr_space* as, struct mp_region* mpr, bool locked)
 {
-    bool lock = mem_check_forced_locked(mpr, locked);
     if (as->type == AS_HYP) {
-        mem_map(&cpu()->as, mpr, false, lock);
+        mem_map(&cpu()->as, mpr, false, locked);
     } else {
-        mpu_map(as, mpr, lock);
+        mpu_map(as, mpr, locked);
     }
 }
 
@@ -379,9 +377,8 @@ static bool mem_update(struct addr_space* as, struct mp_region* mpr, bool broadc
 
 static void mem_handle_broadcast_update(struct addr_space* as, struct mp_region* mpr, bool locked)
 {
-    bool lock = mem_check_forced_locked(mpr, locked);
     if (as->type == AS_HYP) {
-        mem_update(&cpu()->as, mpr, false, lock);
+        mem_update(&cpu()->as, mpr, false, locked);
     } else {
         mpu_update(as, mpr);
     }
