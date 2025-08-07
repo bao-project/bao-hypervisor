@@ -1373,6 +1373,7 @@ void vaplic_init(struct vm* vm, const union vm_irqc_dscrp* vm_irqc_dscrp)
     if (cpu()->id == vm->master) {
         /* 1 IDC per hart */
         vm->arch.vaplic.idc_num = vm->cpu_num;
+        vm->arch.vaplic.lock = SPINLOCK_INITVAL;
 
         vm->arch.vaplic.aplic_domain_emul =
             (struct emul_mem){ .va_base = vm_irqc_dscrp->aia.aplic.base,

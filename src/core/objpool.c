@@ -10,6 +10,7 @@ void objpool_init(struct objpool* objpool)
 {
     memset(objpool->pool, 0, objpool->objsize * objpool->num);
     memset(objpool->bitmap, 0, BITMAP_SIZE(objpool->num));
+    objpool->lock = SPINLOCK_INITVAL;
 }
 
 void* objpool_alloc_with_id(struct objpool* objpool, objpool_id_t* id)
