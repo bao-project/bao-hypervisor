@@ -229,6 +229,7 @@ static void pp_init(struct page_pool* pool, paddr_t base, size_t size)
 
     pool->last = 0;
     pool->free = pool->size;
+    pool->lock = SPINLOCK_INITVAL;
 }
 
 static bool mem_vm_img_in_phys_rgn(struct vm_config* vm_config)

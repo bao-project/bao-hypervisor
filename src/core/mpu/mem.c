@@ -195,6 +195,7 @@ void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, colormap_t col
     as->type = type;
     as->colors = 0;
     as->id = id;
+    as->lock = SPINLOCK_INITVAL;
     as_arch_init(as);
 
     for (size_t i = 0; i < VMPU_NUM_ENTRIES; i++) {

@@ -17,6 +17,7 @@ static void vm_master_init(struct vm* vm, const struct vm_config* vm_config, vmi
     vm->config = vm_config;
     vm->cpu_num = vm_config->platform.cpu_num;
     vm->id = vm_id;
+    vm->lock = SPINLOCK_INITVAL;
 
     cpu_sync_init(&vm->sync, vm->cpu_num);
 

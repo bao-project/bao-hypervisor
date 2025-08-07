@@ -387,5 +387,6 @@ void vplic_init(struct vm* vm, const union vm_irqc_dscrp* vm_irqc_dscrp)
 
         /* assumes 2 contexts per hart */
         vm->arch.vplic.cntxt_num = vm->cpu_num * 2;
+        vm->arch.vplic.lock = SPINLOCK_INITVAL;
     }
 }

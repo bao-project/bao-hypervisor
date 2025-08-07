@@ -29,6 +29,7 @@ static bool vmm_assign_vcpu(bool* master, vmid_t* vm_id)
     /* Assign cpus according to vm affinity. */
     for (size_t i = 0; i < config.vmlist_size && !assigned; i++) {
         if (config.vmlist[i].cpu_affinity & (1UL << cpu()->id)) {
+            vm_assign[i].lock = SPINLOCK_INITVAL;
             spin_lock(&vm_assign[i].lock);
             if (!vm_assign[i].master) {
                 vm_assign[i].master = true;

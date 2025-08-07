@@ -13,6 +13,7 @@ static void shmem_alloc(void)
 {
     for (size_t i = 0; i < shmem_table_size; i++) {
         struct shmem* shmem = &shmem_table[i];
+        shmem->lock = SPINLOCK_INITVAL;
         if (!shmem->place_phys) {
             size_t n_pg = NUM_PAGES(shmem->size);
             struct ppages ppages = mem_alloc_ppages(shmem->colors, n_pg, false);
