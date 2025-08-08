@@ -23,7 +23,7 @@ struct shared_region {
 void mem_handle_broadcast_region(uint32_t event, uint64_t data);
 bool mem_unmap_range(struct addr_space* as, vaddr_t vaddr, size_t size, bool broadcast);
 
-enum { MEM_INSERT_REGION, MEM_REMOVE_REGION };
+enum { MEM_INSERT_REGION, MEM_REMOVE_REGION, MEM_UPDATE_REGION };
 
 #define SHARED_REGION_POOL_SIZE_DEFAULT (128)
 #ifndef SHARED_REGION_POOL_SIZE
@@ -277,6 +277,16 @@ static void mem_region_broadcast(struct addr_space* as, struct mp_region* mpr, u
         }
     }
 }
+
+static bool mem_broadcast(struct addr_space* as, struct mp_region* mpr, bool broadcast)
+{
+    if (as->type == AS_HYP && mpr->as_sec == SEC_HYP_PRIVATE) {
+        return false;
+    }
+
+    return broadcast;
+}
+
 static bool mem_check_forced_locked(struct mp_region* mpr, bool locked)
 {
     if (mpr->as_sec == SEC_HYP_PRIVATE || mpr->as_sec == SEC_HYP_VM ||
@@ -297,13 +307,29 @@ static bool mem_vmpu_insert_region(struct addr_space* as, mpid_t mpid, struct mp
 
     if (mpu_map(as, mpr, lock)) {
         mem_vmpu_set_entry(as, mpid, mpr, lock);
-        if (broadcast) {
+        if (mem_broadcast(as, mpr, broadcast)) {
             mem_region_broadcast(as, mpr, MEM_INSERT_REGION, lock);
         }
         return true;
     }
 
     return false;
+}
+
+static bool mem_vmpu_update_region(struct addr_space* as, mpid_t mpid, struct mp_region merge_reg,
+    bool broadcast, bool locked)
+{
+    bool merged = false;
+
+    if (mpu_update(as, &merge_reg)) {
+        struct mpe* mpe = mem_vmpu_get_entry(as, mpid);
+        mpe->region = merge_reg;
+        if (mem_broadcast(as, &mpe->region, broadcast)) {
+            mem_region_broadcast(as, &mpe->region, MEM_UPDATE_REGION, locked);
+        }
+        merged = true;
+    }
+    return merged;
 }
 
 static bool mem_vmpu_remove_region(struct addr_space* as, mpid_t mpid, bool broadcast)
@@ -314,7 +340,7 @@ static bool mem_vmpu_remove_region(struct addr_space* as, mpid_t mpid, bool broa
 
     if ((mpe != NULL) && (mpe->state == MPE_S_VALID)) {
         bool lock = mpe->lock;
-        if (broadcast) {
+        if (mem_broadcast(as, &mpe->region, broadcast)) {
             mem_region_broadcast(as, &mpe->region, MEM_REMOVE_REGION, lock);
         }
         mpu_unmap(as, &mpe->region);
@@ -337,9 +363,38 @@ static void mem_handle_broadcast_insert(struct addr_space* as, struct mp_region*
 static void mem_handle_broadcast_remove(struct addr_space* as, struct mp_region* mpr)
 {
     if (as->type == AS_HYP) {
+        /*
+            We don't use mpu_unmap because that API forces a broadcast.
+            During the handle of a broadcast we don't want that, to avoid
+            a chain of broadcasts
+        */
         mem_unmap_range(&cpu()->as, mpr->base, mpr->size, false);
     } else {
         mpu_unmap(as, mpr);
+    }
+}
+
+static bool mem_update(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool locked)
+{
+    mpid_t update_mpid = INVALID_MPID;
+    list_foreach (as->vmpu.ordered_list, struct mpe, cur) {
+        if (cur->region.base == mpr->base && cur->region.size != mpr->size) {
+            update_mpid = cur->mpid;
+            break;
+        }
+    }
+    if (update_mpid != INVALID_MPID) {
+        return mem_vmpu_update_region(as, update_mpid, *mpr, broadcast, locked);
+    }
+    return false;
+}
+
+static void mem_handle_broadcast_update(struct addr_space* as, struct mp_region* mpr, bool locked)
+{
+    if (as->type == AS_HYP) {
+        mem_update(&cpu()->as, mpr, false, locked);
+    } else {
+        mpu_update(as, mpr);
     }
 }
 
@@ -365,6 +420,9 @@ void mem_handle_broadcast_region(uint32_t event, uint64_t data)
                 break;
             case MEM_REMOVE_REGION:
                 mem_handle_broadcast_remove(as, &sh_reg->region);
+                break;
+            case MEM_UPDATE_REGION:
+                mem_handle_broadcast_update(as, &sh_reg->region, sh_reg->lock);
                 break;
             default:
                 ERROR("unknown mem broadcast msg");
@@ -424,8 +482,6 @@ bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool 
 
 bool mem_unmap_range(struct addr_space* as, vaddr_t vaddr, size_t size, bool broadcast)
 {
-    UNUSED_ARG(broadcast);
-
     spin_lock(&as->lock);
 
     size_t size_left = size;
@@ -456,21 +512,25 @@ bool mem_unmap_range(struct addr_space* as, vaddr_t vaddr, size_t size, bool bro
         size_t top_size = limit >= r_limit ? 0 : r_limit - limit;
         size_t bottom_size = vaddr <= r_base ? 0 : vaddr - r_base;
 
-        mem_vmpu_remove_region(as, mpid, true);
+        mem_vmpu_remove_region(as, mpid, broadcast);
 
         if (top_size > 0) {
             struct mp_region top = reg;
             top.base = limit;
             top.size = top_size;
             mpid_t top_mpid = mem_vmpu_allocate_entry(as);
-            mem_vmpu_insert_region(as, top_mpid, &top, true, locked);
+            if (!mem_vmpu_insert_region(as, top_mpid, &top, broadcast, locked)) {
+                return false;
+            }
         }
 
         if (bottom_size > 0) {
             struct mp_region bottom = reg;
             bottom.size = bottom_size;
             mpid_t bottom_mpid = mem_vmpu_allocate_entry(as);
-            mem_vmpu_insert_region(as, bottom_mpid, &bottom, true, locked);
+            if (!mem_vmpu_insert_region(as, bottom_mpid, &bottom, broadcast, locked)) {
+                return false;
+            }
         }
 
         size_t overlap_size = reg.size - top_size - bottom_size;
