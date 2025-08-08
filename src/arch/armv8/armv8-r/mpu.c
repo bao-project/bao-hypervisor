@@ -153,6 +153,7 @@ bool mpu_update(struct addr_space* as, struct mp_region* mpr)
     UNUSED_ARG(as);
     unsigned long prbar = 0;
     unsigned long base = 0;
+    
     for (mpid_t i = 0; i < MPU_ARCH_MAX_NUM_ENTRIES; i++) {
         if (bitmap_get(cpu()->arch.profile.mpu.allocated_entries, i)) {
             sysreg_prselr_el2_write(i);

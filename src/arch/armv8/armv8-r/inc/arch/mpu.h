@@ -11,11 +11,6 @@
 #include <bitmap.h>
 #include <mem.h>
 
-struct mpu_perms {
-    perms_t el2;
-    perms_t el1;
-};
-
 struct mpu_arch {
     BITMAP_ALLOC(allocated_entries, MPU_ARCH_MAX_NUM_ENTRIES);
     BITMAP_ALLOC(locked_entries, MPU_ARCH_MAX_NUM_ENTRIES);
