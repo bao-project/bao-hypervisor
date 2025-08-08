@@ -15,12 +15,6 @@ typedef struct {
 
 static const spinlock_t SPINLOCK_INITVAL = { 0, 0 };
 
-static inline void spinlock_init(spinlock_t* lock)
-{
-    lock->ticket = 0;
-    lock->next = 0;
-}
-
 /**
  * This lock follows the ticket lock algorithm described in Arm's ARM DDI0487I.a Appendix K13.
  */
