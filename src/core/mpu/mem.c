@@ -211,11 +211,11 @@ void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, cpumap_t cpus,
     as->lock = SPINLOCK_INITVAL;
     as_arch_init(as);
 
+    list_init(&(as->vmpu.ordered_list));
+
     for (size_t i = 0; i < VMPU_NUM_ENTRIES; i++) {
         mem_vmpu_free_entry(as, i);
     }
-
-    list_init(&(as->vmpu.ordered_list));
 }
 
 static void mem_free_ppages(struct ppages* ppages)
