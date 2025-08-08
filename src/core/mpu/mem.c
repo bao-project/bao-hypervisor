@@ -349,6 +349,11 @@ static void mem_handle_broadcast_insert(struct addr_space* as, struct mp_region*
 static void mem_handle_broadcast_remove(struct addr_space* as, struct mp_region* mpr)
 {
     if (as->type == AS_HYP) {
+        /*
+            We don't use mpu_unmap because that API forces a broadcast.
+            During the handle of a broadcast we don't want that, to avoid
+            a chain of broadcasts
+        */
         mem_unmap_range(&cpu()->as, mpr->base, mpr->size, false);
     } else {
         mpu_unmap(as, mpr);
