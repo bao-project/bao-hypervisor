@@ -103,15 +103,16 @@ bool mpu_map(struct addr_space* as, struct mp_region* mpr, bool locked)
 {
     mpid_t mpid = INVALID_MPID;
     priv_t priv = mpu_as_priv(as);
-    mpid_t existing = mpu_find_region(mpr);
 
     if (mpr->size == 0) {
         return false;
     }
 
-    if (existing != INVALID_MPID) {
-        return false;
-    }
+    /* We don't check if there is an existing region because bao ensure that 
+    there is only 1 address space active at the same time, and as such, only a 
+    single set of mpu entries are enabled.
+    Furthermore, the same check is done at the vMPU level.
+    */
 
     else {
         mpid = mpu_entry_allocate();
