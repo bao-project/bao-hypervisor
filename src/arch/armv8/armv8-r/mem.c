@@ -7,5 +7,5 @@
 
 void as_arch_init(struct addr_space* as)
 {
-    UNUSED_ARG(as);
+    as->arch.mpu_entry_mask = 0;
 }

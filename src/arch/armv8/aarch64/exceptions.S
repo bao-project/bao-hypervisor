@@ -64,11 +64,35 @@
     add x0, x0, x1
     mov sp, x0
 
+    #ifdef MEM_PROT_MPU
+    mrs x0, tpidr_el2
+    add x0, x0, #CPU_AS_ARCH_MASK_OFF
+    ldr x0, [x0]
+    msr prenr_el2, x0
+    #endif /* MEM_PROT_MPU */
+
 .endm
 
 .global vcpu_arch_entry
 vcpu_arch_entry:
     mrs x0, tpidr_el2
+
+    #ifdef MEM_PROT_MPU
+    ldr x1, [x0, #CPU_VCPU_OFF]
+    mov x2, #VCPU_VM_OFF
+    add x1, x1, x2
+    ldr x1, [x1]
+    ldr x1, [x1, #VM_AS_ARCH_MASK_OFF]
+
+    mov x2, #CPU_ARCH_PROFILE_MPU_LOCKED_OFF
+    add x2, x2, x0
+    ldr x2, [x2]
+
+    orr x1, x1, x2
+    
+    msr prenr_el2, x1
+    #endif /* MEM_PROT_MPU */
+
     ldr x0, [x0, #CPU_VCPU_OFF]
     add x0, x0, #VCPU_REGS_OFF
     mov sp, x0
