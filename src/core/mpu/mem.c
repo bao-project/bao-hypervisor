@@ -44,15 +44,10 @@ static int vmpu_node_cmp(node_t* _n1, node_t* _n2)
 {
     struct mpe* n1 = (struct mpe*)_n1;
     struct mpe* n2 = (struct mpe*)_n2;
-    struct mp_region r1;
-    struct mp_region r2;
 
-    r1 = n1->region;
-    r2 = n2->region;
-
-    if (r1.base > r2.base) {
+    if (n1->region.base > n2->region.base) {
         return 1;
-    } else if (r1.base < r2.base) {
+    } else if (n1->region.base < n2->region.base) {
         return -1;
     } else {
         return 0;
