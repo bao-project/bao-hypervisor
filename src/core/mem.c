@@ -44,7 +44,8 @@ bool pp_alloc(struct page_pool* pool, size_t num_pages, bool aligned, struct ppa
      */
     for (size_t i = 0; i < 2 && !ok; i++) {
         while (pool->free != 0) {
-            ssize_t bit = bitmap_find_consec(pool->bitmap, pool->size, curr, num_pages, false);
+            ssize_t bit =
+                bitmap_find_consec(pool->bitmap, pool->size, curr, num_pages, BITMAP_DONT_SET);
 
             if (bit < 0) {
                 /**
@@ -215,7 +216,7 @@ static void pp_init(struct page_pool* pool, paddr_t base, size_t size)
         return;
     }
 
-    pages = mem_alloc_ppages(cpu()->as.colors, bitmap_size, false);
+    pages = mem_alloc_ppages(cpu()->as.colors, bitmap_size, MEM_DONT_ALIGN_PPAGES);
     if (pages.num_pages != bitmap_size) {
         return;
     }
