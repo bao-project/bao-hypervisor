@@ -34,8 +34,15 @@ bool pp_alloc(struct page_pool* pool, size_t num_pages, bool aligned, struct ppa
     /**
      * If we need a contigous segment aligned to its size, lets start at an already aligned index.
      */
-    size_t start = aligned ? pool->base / PAGE_SIZE % num_pages : 0;
-    size_t curr = pool->last + ((pool->last + start) % num_pages);
+    size_t start;
+    size_t curr;
+    if (aligned) {
+        start = pool->base / PAGE_SIZE % num_pages;
+        curr = pool->last + ((pool->last + start) % num_pages);
+    } else {
+        start = 0;
+        curr = pool->last;
+    }
 
     /**
      * Lets make two searches:
