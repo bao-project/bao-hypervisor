@@ -14,9 +14,11 @@ void cache_arch_enumerate(struct cache* dscrp)
     if (platform.cache.lvls != 0) {
         /**
          * No need to probe cache registers, cache topology is described in the platform
-         * descrption.
+         * description.
          */
         *dscrp = platform.cache;
+
+        return;
     }
 
     uint64_t clidr = 0;
