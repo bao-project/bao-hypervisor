@@ -149,9 +149,11 @@ static bool root_pool_set_up_bitmap(paddr_t load_addr, struct page_pool* root_po
     size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);
     size_t cpu_size = platform.cpu_num * mem_cpu_boot_alloc_size();
 
-    size_t bitmap_num_pages =
+    size_t bitmap_size =
         root_pool->size / (8 * PAGE_SIZE) + ((root_pool->size % (8 * PAGE_SIZE) != 0) ? 1 : 0);
-    if (root_pool->size <= bitmap_num_pages) {
+    size_t bitmap_num_pages = NUM_PAGES(bitmap_size);
+
+    if (root_pool->size <= bitmap_size) {
         return false;
     }
     size_t bitmap_base = load_addr + image_size + vm_image_size + cpu_size;
