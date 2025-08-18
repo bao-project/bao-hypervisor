@@ -173,9 +173,11 @@ static bool root_pool_set_up_bitmap(struct page_pool* root_pool)
 {
     size_t bitmap_base = get_root_pool_bitmap_base();
 
-    size_t bitmap_num_pages =
+    size_t bitmap_size =
         root_pool->size / (8 * PAGE_SIZE) + ((root_pool->size % (8 * PAGE_SIZE) != 0) ? 1 : 0);
-    if (root_pool->size <= bitmap_num_pages) {
+    size_t bitmap_num_pages = NUM_PAGES(bitmap_size);
+
+    if (root_pool->size <= bitmap_size) {
         return false;
     }
 
