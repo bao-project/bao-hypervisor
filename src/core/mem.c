@@ -18,6 +18,28 @@ extern uint8_t _image_start, _image_load_end, _image_end, _vm_image_start, _vm_i
 
 struct list page_pool_list;
 
+static bool pp_bitmap_alloc(size_t pool_num_pages, bitmap_t** bitmap)
+{
+    static uint8_t bitmap_pool[PLAT_BITMAP_POOL_SIZE];
+    static spinlock_t bitmap_lock = SPINLOCK_INITVAL;
+    static size_t last_index = 0;
+    bool allocated = false;
+
+    spin_lock(&bitmap_lock);
+
+    if (((PLAT_BITMAP_POOL_SIZE - last_index) * 8) >= pool_num_pages) {
+        size_t prev_last_index = last_index;
+
+        last_index += BITMAP_SIZE_IN_BYTES(pool_num_pages);
+        allocated = true;
+        *bitmap = (bitmap_t*)&bitmap_pool[prev_last_index];
+    }
+
+    spin_unlock(&bitmap_lock);
+
+    return allocated;
+}
+
 bool pp_alloc(struct page_pool* pool, size_t num_pages, bool aligned, struct ppages* ppages)
 {
     ppages->colors = 0;
@@ -145,25 +167,9 @@ void* mem_alloc_page(size_t num_pages, enum AS_SEC sec, bool phys_aligned)
 
 static bool root_pool_set_up_bitmap(paddr_t load_addr, struct page_pool* root_pool)
 {
-    size_t image_size = (size_t)(&_image_end - &_image_start);
-    size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);
-    size_t cpu_size = platform.cpu_num * mem_cpu_boot_alloc_size();
+    UNUSED_ARG(load_addr);
 
-    size_t bitmap_size = root_pool->num_pages / 8 + ((root_pool->num_pages % 8 != 0) ? 1 : 0);
-    size_t bitmap_num_pages = NUM_PAGES(bitmap_size);
-
-    if (root_pool->num_pages <= bitmap_num_pages) {
-        return false;
-    }
-    size_t bitmap_base = load_addr + image_size + vm_image_size + cpu_size;
-
-    struct ppages bitmap_pp = mem_ppages_get(bitmap_base, bitmap_num_pages);
-    bitmap_t* root_bitmap = (bitmap_t*)mem_alloc_map(&cpu()->as, SEC_HYP_GLOBAL, &bitmap_pp,
-        INVALID_VA, bitmap_num_pages, PTE_HYP_FLAGS);
-    root_pool->bitmap = root_bitmap;
-    memset((void*)root_pool->bitmap, 0, bitmap_num_pages * PAGE_SIZE);
-
-    return mem_reserve_ppool_ppages(root_pool, &bitmap_pp);
+    return pp_bitmap_alloc(root_pool->num_pages, &root_pool->bitmap);
 }
 
 static bool pp_root_reserve_hyp_mem(paddr_t load_addr, struct page_pool* root_pool)
@@ -206,39 +212,25 @@ static bool pp_root_init(paddr_t load_addr, struct mem_region* root_region)
     return true;
 }
 
-static void pp_init(struct page_pool* pool, paddr_t base, size_t size)
+static bool pp_init(struct page_pool* pool, paddr_t base, size_t size)
 {
-    struct ppages pages;
-
     if (pool == NULL) {
-        return;
+        return false;
     }
 
     memset((void*)pool, 0, sizeof(struct page_pool));
     pool->base = ALIGN(base, PAGE_SIZE);
     pool->num_pages = NUM_PAGES(size);
-    size_t bitmap_size = pool->num_pages / 8 + !!(pool->num_pages % 8 != 0);
-    size_t bitmap_num_pages = NUM_PAGES(bitmap_size);
 
-    if (size <= bitmap_num_pages) {
-        return;
+    if (!pp_bitmap_alloc(pool->num_pages, &pool->bitmap)) {
+        return false;
     }
-
-    pages = mem_alloc_ppages(cpu()->as.colors, bitmap_num_pages, false);
-    if (pages.num_pages != bitmap_num_pages) {
-        return;
-    }
-
-    if ((pool->bitmap = (bitmap_t*)mem_alloc_map(&cpu()->as, SEC_HYP_GLOBAL, &pages, INVALID_VA,
-             bitmap_size, PTE_HYP_FLAGS)) == NULL) {
-        return;
-    }
-
-    memset((void*)pool->bitmap, 0, bitmap_num_pages * PAGE_SIZE);
 
     pool->last = 0;
     pool->free = pool->num_pages;
     pool->lock = SPINLOCK_INITVAL;
+
+    return true;
 }
 
 static bool mem_vm_img_in_phys_rgn(struct vm_config* vm_config)
@@ -324,7 +316,9 @@ static bool mem_create_ppools(struct mem_region* root_mem_region)
             struct mem_region* reg = &platform.regions[i];
             struct page_pool* pool = &reg->page_pool;
             if (pool != NULL) {
-                pp_init(pool, reg->base, reg->size);
+                if (!pp_init(pool, reg->base, reg->size)) {
+                    return false;
+                }
                 if (!mem_reserve_physical_memory(pool)) {
                     return false;
                 }
