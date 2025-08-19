@@ -32,4 +32,6 @@ struct platform {
 
 extern struct platform platform;
 
+void platform_init(void);
+
 #endif /* __PLATFORM_H__ */

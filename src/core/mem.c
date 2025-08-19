@@ -174,10 +174,10 @@ static bool root_pool_set_up_bitmap(struct page_pool* root_pool)
     size_t bitmap_base = get_root_pool_bitmap_base();
 
     size_t bitmap_size =
-        root_pool->size / (8 * PAGE_SIZE) + ((root_pool->size % (8 * PAGE_SIZE) != 0) ? 1 : 0);
+        root_pool->size / 8 + ((root_pool->size % 8 != 0) ? 1 : 0);
     size_t bitmap_num_pages = NUM_PAGES(bitmap_size);
 
-    if (root_pool->size <= bitmap_size) {
+    if (root_pool->size <= bitmap_num_pages) {
         return false;
     }
 
@@ -285,14 +285,15 @@ static void pp_init(struct page_pool* pool, paddr_t base, size_t size)
     memset((void*)pool, 0, sizeof(struct page_pool));
     pool->base = ALIGN(base, PAGE_SIZE);
     pool->size = NUM_PAGES(size);
-    size_t bitmap_size = pool->size / (8 * PAGE_SIZE) + !!(pool->size % (8 * PAGE_SIZE) != 0);
+    size_t bitmap_size = pool->size / 8 + !!(pool->size % 8 != 0);
+    size_t bitmap_num_pages = NUM_PAGES(bitmap_size);
 
-    if (size <= bitmap_size) {
+    if (size <= bitmap_num_pages) {
         return;
     }
 
-    pages = mem_alloc_ppages(cpu()->as.colors, bitmap_size, false);
-    if (pages.num_pages != bitmap_size) {
+    pages = mem_alloc_ppages(cpu()->as.colors, bitmap_num_pages, false);
+    if (pages.num_pages != bitmap_num_pages) {
         return;
     }
 
@@ -301,7 +302,7 @@ static void pp_init(struct page_pool* pool, paddr_t base, size_t size)
         return;
     }
 
-    memset((void*)pool->bitmap, 0, bitmap_size * PAGE_SIZE);
+    memset((void*)pool->bitmap, 0, bitmap_num_pages * PAGE_SIZE);
 
     pool->last = 0;
     pool->free = pool->size;

@@ -24,6 +24,8 @@ void init(cpuid_t cpu_id)
 
     /* -------------------------------------------------------------- */
 
+    platform_init();
+
     console_init();
 
     if (cpu_is_master()) {

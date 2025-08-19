@@ -149,10 +149,16 @@ static void mem_init_boot_regions(void)
      */
 
     extern uint8_t _image_start, _image_load_end, _image_noload_start, _image_end;
+#ifdef MEM_NON_UNIFIED
+    extern uint8_t _data_vma_start;
+#endif
     vaddr_t image_start = (vaddr_t)&_image_start;
     vaddr_t image_load_end = (vaddr_t)&_image_load_end;
     vaddr_t image_noload_start = (vaddr_t)&_image_noload_start;
     vaddr_t image_end = (vaddr_t)&_image_end;
+#ifdef MEM_NON_UNIFIED
+    vaddr_t data_vma_start = (vaddr_t)&_data_vma_start;
+#endif
 
     struct mp_region mpr;
 
@@ -169,8 +175,13 @@ static void mem_init_boot_regions(void)
 
     if (separate_noload_region) {
         mpr = (struct mp_region){
+#ifdef MEM_NON_UNIFIED
+            .base = data_vma_start,
+            .size = ALIGN((size_t)(image_end - data_vma_start), PAGE_SIZE),
+#else
             .base = image_noload_start,
             .size = (size_t)image_end - image_noload_start,
+#endif
             .mem_flags = PTE_HYP_FLAGS,
             .as_sec = SEC_HYP_IMAGE,
         };
