@@ -431,6 +431,6 @@ void vcpu_run(struct vcpu* vcpu)
 __attribute__((weak)) void vm_arch_allow_mmio_access(struct vm_dev_region* dev)
 {
     UNUSED_ARG(dev);
-    ERROR("vm_arch_allow_mmio_access must be implemented by the arch!")
+    //ERROR("vm_arch_allow_mmio_access must be implemented by the arch!")
     return;
 }
