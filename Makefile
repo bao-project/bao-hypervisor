@@ -237,7 +237,8 @@ ifeq ($(CC_IS_GCC),y)
 		-Wmissing-prototypes -Wmissing-declarations  \
 		-Wswitch-default -Wshadow -Wshadow=global \
 		-Wcast-qual -Wunused-macros \
-		-Wstrict-prototypes -Wunused-but-set-variable
+		-Wstrict-prototypes -Wunused-but-set-variable \
+		-Wno-multistatement-macros
 
 	override CFLAGS+=-Wno-unused-command-line-argument \
 		-pedantic -pedantic-errors
