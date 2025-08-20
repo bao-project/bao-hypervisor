@@ -4,6 +4,7 @@
 ![arm build workflow](https://github.com/bao-project/bao-hypervisor/actions/workflows/build-arm.yaml/badge.svg)
 ![riscv build workflow](https://github.com/bao-project/bao-hypervisor/actions/workflows/build-riscv.yaml/badge.svg)
 ![rh850 build workflow](https://github.com/bao-project/bao-hypervisor/actions/workflows/build-v850.yaml/badge.svg)
+![tricore build workflow](https://github.com/bao-project/bao-hypervisor/actions/workflows/build-tricore.yaml/badge.svg)
 
 Introduction
 ------------
@@ -69,7 +70,7 @@ platforms is presented below:
 - [x] QEMU virt
 
 **Infineon Tricore 1.8**
-- [ ] TC4x Communication Board  ([WiP branch](https://github.com/bao-project/bao-hypervisor/tree/feat/tricore))
+- [x] TC4x Communication Board
 
 **Renesas RH850**
 - [x] RH850 U2A16
