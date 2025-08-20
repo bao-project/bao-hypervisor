@@ -5,6 +5,10 @@
 
 #include <vm.h>
 
+#ifndef VM_TO_AS_ID
+#define VM_TO_AS_ID(x) (x)
+#endif
+
 void vm_mem_prot_init(struct vm* vm, const struct vm_config* config)
 {
     UNUSED_ARG(config);
