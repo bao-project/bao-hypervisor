@@ -209,7 +209,7 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* vm_config)
         struct vm_dev_region* dev = &vm_config->platform.devs[i];
 
         if (DEFINED(MMIO_SLAVE_SIDE_PROT)) {
-            vm_arch_allow_mmio_access(dev);
+            vm_arch_allow_mmio_access(vm, dev);
         } else if (dev->va != INVALID_VA) {
             size_t n = ALIGN(dev->size, PAGE_SIZE) / PAGE_SIZE;
             mem_alloc_map_dev(&vm->as, SEC_VM_ANY, (vaddr_t)dev->va, dev->pa, n);
@@ -430,9 +430,10 @@ void vcpu_run(struct vcpu* vcpu)
     }
 }
 
-__attribute__((weak)) void vm_arch_allow_mmio_access(struct vm_dev_region* dev)
+__attribute__((weak)) void vm_arch_allow_mmio_access(struct vm* vm, struct vm_dev_region* dev)
 {
     UNUSED_ARG(dev);
-    ERROR("vm_arch_allow_mmio_access must be implemented by the arch!")
+    UNUSED_ARG(vm);
+    //ERROR("vm_arch_allow_mmio_access must be implemented by the arch!")
     return;
 }
