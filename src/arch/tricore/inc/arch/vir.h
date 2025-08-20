@@ -1,0 +1,37 @@
+/**
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright (c) Bao Project and Contributors. All rights reserved.
+ */
+
+#ifndef __VIR_H__
+#define __VIR_H__
+
+#include <bao.h>
+#include <arch/ir.h>
+#include <arch/spinlock.h>
+#include <bitmap.h>
+#include <emul.h>
+
+#define IR_MAX_INTERRUPTS (2048U) /* TODO */
+
+struct vir {
+    spinlock_t lock;
+    BITMAP_ALLOC(pend, IR_MAX_INTERRUPTS);
+    BITMAP_ALLOC(act, IR_MAX_INTERRUPTS);
+    uint32_t prio[IR_MAX_INTERRUPTS];
+    BITMAP_ALLOC(enbl, IR_MAX_INTERRUPTS);
+    struct emul_mem ir_src_emul;
+};
+
+struct vir_reg_handler_info {
+    void (*reg_access)(struct emul_access*, cpuid_t vgicr_id);
+    size_t alignment;
+};
+
+struct vm;
+struct vcpu;
+void vir_init(struct vm* vm); //, const struct vir_dscrp* vm_vir_dscrp);
+void vir_inject(struct vcpu* vcpu, irqid_t id);
+void vir_set_hw(struct vm* vm, irqid_t id);
+
+#endif //__VIR_H__
