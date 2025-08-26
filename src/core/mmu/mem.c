@@ -78,7 +78,7 @@ static void mem_free_ppages(struct ppages* ppages)
 {
     list_foreach (page_pool_list, struct page_pool, pool) {
         spin_lock(&pool->lock);
-        if (in_range(ppages->base, pool->base, pool->size * PAGE_SIZE)) {
+        if (in_range(ppages->base, pool->base, pool->num_pages * PAGE_SIZE)) {
             size_t index = (ppages->base - pool->base) / PAGE_SIZE;
             if (!all_clrs(ppages->colors)) {
                 for (size_t i = 0; i < ppages->num_pages; i++) {
@@ -110,7 +110,7 @@ bool pp_alloc_clr(struct page_pool* pool, size_t n, colormap_t colors, struct pp
      * top of the pool.
      */
     size_t index = pp_next_clr(pool->base, pool->last, colors);
-    size_t top = pool->size;
+    size_t top = pool->num_pages;
 
     /**
      * Two iterations. One starting from the last known free page, other starting from the
@@ -748,7 +748,7 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
     size_t cpu_boot_size = mem_cpu_boot_alloc_size();
     struct page_pool* root_pool = &root_region->page_pool;
     size_t bitmap_size =
-        (root_pool->size / (8 * PAGE_SIZE) + !!(root_pool->size % (8 * PAGE_SIZE) != 0)) *
+        (root_pool->num_pages / (8 * PAGE_SIZE) + !!(root_pool->num_pages % (8 * PAGE_SIZE) != 0)) *
         PAGE_SIZE;
     colormap_t colors = config.hyp.colors;
 

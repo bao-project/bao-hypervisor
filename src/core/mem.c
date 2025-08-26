@@ -51,7 +51,7 @@ bool pp_alloc(struct page_pool* pool, size_t num_pages, bool aligned, struct ppa
      */
     for (size_t i = 0; i < 2 && !ok; i++) {
         while (pool->free != 0) {
-            ssize_t bit = bitmap_find_consec(pool->bitmap, pool->size, curr, num_pages, false);
+            ssize_t bit = bitmap_find_consec(pool->bitmap, pool->num_pages, curr, num_pages, false);
 
             if (bit < 0) {
                 /**
@@ -93,14 +93,14 @@ static bool mem_are_ppages_reserved_in_pool(struct page_pool* ppool, struct ppag
 {
     bool reserved = false;
     bool rgn_found = range_in_range(ppages->base, ppages->num_pages * PAGE_SIZE, ppool->base,
-        ppool->size * PAGE_SIZE);
+        ppool->num_pages * PAGE_SIZE);
     if (rgn_found) {
         size_t pageoff = NUM_PAGES(ppages->base - ppool->base);
 
         // verify these pages arent allocated yet
         bool is_alloced = bitmap_get(ppool->bitmap, pageoff);
         size_t avlbl_contig_pp =
-            bitmap_count_consecutive(ppool->bitmap, ppool->size, pageoff, ppages->num_pages);
+            bitmap_count_consecutive(ppool->bitmap, ppool->num_pages, pageoff, ppages->num_pages);
 
         if (is_alloced || avlbl_contig_pp < ppages->num_pages) {
             reserved = true;
@@ -113,7 +113,7 @@ static bool mem_are_ppages_reserved_in_pool(struct page_pool* ppool, struct ppag
 static bool mem_reserve_ppool_ppages(struct page_pool* pool, struct ppages* ppages)
 {
     bool is_in_rgn = range_in_range(ppages->base, ppages->num_pages * PAGE_SIZE, pool->base,
-        pool->size * PAGE_SIZE);
+        pool->num_pages * PAGE_SIZE);
     if (!is_in_rgn) {
         return true;
     }
@@ -149,11 +149,10 @@ static bool root_pool_set_up_bitmap(paddr_t load_addr, struct page_pool* root_po
     size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);
     size_t cpu_size = platform.cpu_num * mem_cpu_boot_alloc_size();
 
-    size_t bitmap_size =
-        root_pool->size / (8 * PAGE_SIZE) + ((root_pool->size % (8 * PAGE_SIZE) != 0) ? 1 : 0);
+    size_t bitmap_size = root_pool->num_pages / 8 + ((root_pool->num_pages % 8 != 0) ? 1 : 0);
     size_t bitmap_num_pages = NUM_PAGES(bitmap_size);
 
-    if (root_pool->size <= bitmap_size) {
+    if (root_pool->num_pages <= bitmap_num_pages) {
         return false;
     }
     size_t bitmap_base = load_addr + image_size + vm_image_size + cpu_size;
@@ -192,9 +191,9 @@ static bool pp_root_init(paddr_t load_addr, struct mem_region* root_region)
 {
     struct page_pool* root_pool = &root_region->page_pool;
     root_pool->base = ALIGN(root_region->base, PAGE_SIZE);
-    root_pool->size = root_region->size / PAGE_SIZE; /* TODO: what if not
-                                                        aligned? */
-    root_pool->free = root_pool->size;
+    root_pool->num_pages = root_region->size / PAGE_SIZE; /* TODO: what if not
+                                                            aligned? */
+    root_pool->free = root_pool->num_pages;
 
     if (!root_pool_set_up_bitmap(load_addr, root_pool)) {
         return false;
@@ -217,15 +216,16 @@ static void pp_init(struct page_pool* pool, paddr_t base, size_t size)
 
     memset((void*)pool, 0, sizeof(struct page_pool));
     pool->base = ALIGN(base, PAGE_SIZE);
-    pool->size = NUM_PAGES(size);
-    size_t bitmap_size = pool->size / (8 * PAGE_SIZE) + !!(pool->size % (8 * PAGE_SIZE) != 0);
+    pool->num_pages = NUM_PAGES(size);
+    size_t bitmap_size = pool->num_pages / 8 + !!(pool->num_pages % 8 != 0);
+    size_t bitmap_num_pages = NUM_PAGES(bitmap_size);
 
-    if (size <= bitmap_size) {
+    if (size <= bitmap_num_pages) {
         return;
     }
 
-    pages = mem_alloc_ppages(cpu()->as.colors, bitmap_size, false);
-    if (pages.num_pages != bitmap_size) {
+    pages = mem_alloc_ppages(cpu()->as.colors, bitmap_num_pages, false);
+    if (pages.num_pages != bitmap_num_pages) {
         return;
     }
 
@@ -234,10 +234,10 @@ static void pp_init(struct page_pool* pool, paddr_t base, size_t size)
         return;
     }
 
-    memset((void*)pool->bitmap, 0, bitmap_size * PAGE_SIZE);
+    memset((void*)pool->bitmap, 0, bitmap_num_pages * PAGE_SIZE);
 
     pool->last = 0;
-    pool->free = pool->size;
+    pool->free = pool->num_pages;
     pool->lock = SPINLOCK_INITVAL;
 }
 

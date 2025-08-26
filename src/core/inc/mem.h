@@ -24,7 +24,7 @@ struct ppages {
 struct page_pool {
     node_t node;
     paddr_t base;
-    size_t size;
+    size_t num_pages;
     size_t free;
     size_t last;
     bitmap_t* bitmap;

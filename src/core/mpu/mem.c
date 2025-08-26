@@ -222,7 +222,7 @@ static void mem_free_ppages(struct ppages* ppages)
 {
     list_foreach (page_pool_list, struct page_pool, pool) {
         spin_lock(&pool->lock);
-        if (in_range(ppages->base, pool->base, pool->size * PAGE_SIZE)) {
+        if (in_range(ppages->base, pool->base, pool->num_pages * PAGE_SIZE)) {
             size_t index = (ppages->base - pool->base) / PAGE_SIZE;
             bitmap_clear_consecutive(pool->bitmap, index, ppages->num_pages);
         }
