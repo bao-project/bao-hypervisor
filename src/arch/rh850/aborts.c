@@ -5,9 +5,33 @@
 
 #include <emul.h>
 #include <hypercall.h>
+#include <fences.h>
 #include <vm.h>
 #include <arch/aborts.h>
+#include <arch/emul.h>
 #include <arch/srs.h>
+
+#define F8_OPCODE               (0x3EUL)
+#define F9_OPCODE               (0x3FUL)
+#define F9_SUBOPCODE            (0x1CUL)
+
+#define OPCODE_SHIFT            (5)
+#define OPCODE_MASK             (0x3FUL << OPCODE_SHIFT)
+
+#define SUBOPCODE_SHIFT         (19)
+#define SUBOPCODE_MASK          (0x1FFFUL << SUBOPCODE_SHIFT)
+
+#define SUB8_SHIFT              (14)
+#define SUB8_MASK               (0x3UL << SUB8_SHIFT)
+
+#define SUB9_SHIFT              (17)
+#define SUB9_MASK               (0x3UL << SUB9_SHIFT)
+
+#define BITIDX_SHIFT            (11)
+#define BITIDX_MASK             (0x7UL << BITIDX_SHIFT)
+
+#define REGIDX_SHIFT            (11)
+#define REGIDX_MASK             (0x1FUL << REGIDX_SHIFT)
 
 // LEN (Bits 31-28)
 #define MEI_LEN_MASK          (0xFUL << 28)
@@ -32,6 +56,28 @@
 #define MEI_RW_MASK         (1 << 0)
 #define MEI_GET_RW(val)     ((val) & MEI_RW_MASK)
 
+static unsigned long read_instruction(unsigned long pc)
+{
+    unsigned long inst = 0;
+    unsigned short* pc_ptr = (unsigned short*)(pc);
+
+    if (pc & 0x1) {
+        ERROR("Trying to read guest unaligned instruction");
+    }
+
+    /* Enable Hyp access to VM space */
+    set_mpid7(HYP_SPID);
+    fence_sync();
+
+    inst = (unsigned long)(*pc_ptr | (*(pc_ptr+1) << 16));
+
+    /* Disable Hyp access to VM space */
+    set_mpid7(AUX_SPID);
+    fence_sync();
+
+    return inst;
+}
+
 static void data_abort(void)
 {
     unsigned long mea = get_mea();
@@ -45,6 +91,24 @@ static void data_abort(void)
     unsigned int rw = MEI_GET_RW(mei);
     vaddr_t addr = mea;
 
+    /* Decode possible bitwise instruction */
+    unsigned long inst = read_instruction(vcpu_readpc(cpu()->vcpu));
+    unsigned long opcode = ((inst & OPCODE_MASK) >> OPCODE_SHIFT);
+    unsigned long subopcode = ((inst & SUBOPCODE_MASK) >> SUBOPCODE_SHIFT);
+    unsigned long bit_op = 0;
+    unsigned long mask = 0;
+    
+    if (opcode == F8_OPCODE) {
+        mask = 1UL << ((inst & BITIDX_MASK) >> BITIDX_SHIFT);
+        bit_op = ((inst & SUB8_MASK) >> SUB8_SHIFT) + 1;
+    }
+    else if (opcode == F9_OPCODE && subopcode == F9_SUBOPCODE) {
+        unsigned long reg_idx = (inst & REGIDX_MASK) >> REGIDX_SHIFT;
+        unsigned long bit_idx = vcpu_readreg(cpu()->vcpu, reg_idx);
+        mask = 1UL << (bit_idx & 0x7UL);
+        bit_op = ((inst & SUB9_MASK) >> SUB9_SHIFT) + 1;
+    }
+
     emul_handler_t handler = vm_emul_get_mem(cpu()->vcpu->vm, addr);
     if (handler != NULL) {
         struct emul_access emul;
@@ -55,14 +119,17 @@ static void data_abort(void)
         emul.reg_width = ds;
         emul.sign_ext = ~u;
 
+        emul.arch.op = (enum bitwise_op)bit_op;
+        emul.arch.byte_mask = mask;
+
         if (handler(&emul)) {
             unsigned long pc_step = len;
             vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + pc_step);
         } else {
-            ERROR("data abort emulation failed (0x%x)", addr);
+            ERROR("Data abort emulation failed (0x%x)", addr);
         }
     } else {
-        ERROR("no emulation handler for abort(0x%x at 0x%x)", addr, vcpu_readpc(cpu()->vcpu));
+        ERROR("No emulation handler for access to 0x%x, at 0x%x", addr, vcpu_readpc(cpu()->vcpu));
     }
 }
 
@@ -115,7 +182,6 @@ void abort(void)
             WARNING("Exception: MIP - Memory protection exception due to instruction fetching\n");
             break;
         case 0x91:
-            // WARNING("Exception: MDP - Memory protection exception due to operand access)\n");
             data_abort();
             break;
         case 0x95:
@@ -127,8 +193,6 @@ void abort(void)
                 "fetching\n");
             break;
         case 0x99:
-            // WARNING("Exception: MDP - Guest memory protection exception due to operand "
-            //     "access)\n");
             data_abort();
             break;
         case 0x9D:

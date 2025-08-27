@@ -11,20 +11,20 @@
 #define PRIVATE_IRQS_NUM 32
 
 struct intc1 {
-    uint16_t EIC[PRIVATE_IRQS_NUM];     /* 0x000 - 0x040 */
-    uint8_t  PAD0[176];                 /* 0x040 - 0x0F0 */
-    uint32_t IMR;                       /* 0x0F0 - 0x0F4 */
-    uint8_t  PAD1[12];                  /* 0x0F4 - 0x100 */
-    uint32_t EIBD[PRIVATE_IRQS_NUM];    /* 0x100 - 0x180 */
-    uint8_t  PAD2[64];                  /* 0x180 - 0x1C0 */
-    uint32_t FIBD;                      /* 0x1C0 - 0x1C4 */
-    uint8_t  PAD3[60];                  /* 0x1C4 - 0x200 */
-    uint32_t EEIC[PRIVATE_IRQS_NUM];    /* 0x200 - 0x280 */
-    uint32_t EIBG;                      /* 0x280 - 0x284 */
-    uint8_t  PAD4[60];                  /* 0x284 - 0x2C0 */
-    uint32_t FIBG;                      /* 0x2C0 - 0x2C4 */
-    uint8_t  PAD5[44];                  /* 0x2C4 - 0x2F0 */
-    uint32_t IHVCFG;                    /* 0x2F0 - 0x2F4 */
+    uint16_t EIC[PRIVATE_IRQS_NUM];
+    uint8_t  pad0[0xF0-0x40];
+    uint32_t IMR;
+    uint8_t  pad1[0x100-0xF4];
+    uint32_t EIBD[PRIVATE_IRQS_NUM];
+    uint8_t  pad2[0x1C0-0x180];
+    uint32_t FIBD;
+    uint8_t  pad3[0x200-0x1C4];
+    uint32_t EEIC[PRIVATE_IRQS_NUM];
+    uint32_t EIBG;
+    uint8_t  pad4[0x2C0-0x284];
+    uint32_t FIBG;
+    uint8_t  pad5[0x2F0-0x2C4];
+    uint32_t IHVCFG;
 };
 
 #define INTC2_IRQ_NUM (ARCH_MAX_INTERRUPTS - PRIVATE_IRQS_NUM)

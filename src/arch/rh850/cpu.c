@@ -23,8 +23,6 @@ void cpu_arch_init(cpuid_t cpuid, paddr_t load_addr)
             }
 
             // TODO: Manual recommends 100us wait time between each core
-            /* We don't have MPU setup yet so it's safe to use direct pointers */
-            // volatile unsigned int* bootcrl = BOOT_CTRL;
             (*bootcrl) |= (1UL << c);
         }
     }

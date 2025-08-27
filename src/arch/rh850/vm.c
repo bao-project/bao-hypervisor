@@ -4,44 +4,42 @@
  */
 
 #include <config.h>
-#include <list.h>
-#include <mem.h>
-#include <platform.h>
 #include <string.h>
 #include <vm.h>
-#include <arch/srs.h>
+#include <arch/ipir.h>
 #include <arch/vintc.h>
 
 void vm_arch_init(struct vm* vm, const struct vm_config* vm_config)
 {
-    UNUSED_ARG(vm);
-    /* set EIPC with VM entry address */
-    set_eipc((unsigned long)(vm_config->entry));
+    UNUSED_ARG(vm_config);
 
-    /* set xxPSW.EBV */
-    set_eipsw(0x8000);
-    set_fepsw(0x8000);
+    vintc_init(vm);
+    vipir_init(vm);
+    vbootctrl_init(vm);
 }
 
 void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm)
 {
-    vintc_init(vcpu);
-    vbootctrl_init(vcpu);
-    set_gmpeid(vcpu->id);
-    
-    /* set EIPSWH.GPID */
-    set_eipswh(get_eipswh() | (vm->id << 8));
-
-    // TODO: Need to set FEPSWH.GPID ?
+    UNUSED_ARG(vcpu);
+    UNUSED_ARG(vm);
 }
 
 void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
 {
+    struct vm* vm = vcpu->vm;
+    
     memset(&vcpu->regs, 0, sizeof(struct arch_regs));
 
     vcpu_writepc(vcpu, entry);
     set_eipc(entry);
     set_gmpeid(vcpu->id);
+
+    /* set xxPSW.EBV */
+    set_eipsw(0x8000);
+    set_fepsw(0x8000);
+
+    /* set EIPSWH.GPID */
+    set_eipswh(get_eipswh() | (vm->id << 8));
 
     vintc_vcpu_reset(vcpu);
 }
@@ -90,10 +88,4 @@ void vcpu_save_state(struct vcpu* vcpu)
 {
     UNUSED_ARG(vcpu);
     ERROR("%s not implemented", __func__);
-}
-
-bool vm_arch_reset(struct vm* vm)
-{
-    vintc_vm_reset(vm);
-    return true;
 }

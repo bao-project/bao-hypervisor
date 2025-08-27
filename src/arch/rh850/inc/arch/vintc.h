@@ -12,12 +12,13 @@
 struct vcpu;
 struct emul_access;
 
-void vintc_init(struct vcpu* vcpu);
+void vintc_init(struct vm* vm);
 void vintc_inject(struct vcpu* vcpu, irqid_t int_id);
 void vintc_vcpu_reset(struct vcpu* vcpu);
 void vintc_vm_reset(struct vm* vm);
-void vbootctrl_init(struct vcpu* vcpu);
+void vbootctrl_init(struct vm* vm);
 
+bool vintc1_emul_handler(struct emul_access* acc);
 bool vintc2_emul_handler(struct emul_access* acc);
 bool vintif_emul_handler(struct emul_access* acc);
 bool veint_emul_handler(struct emul_access* acc);

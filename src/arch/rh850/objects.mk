@@ -7,6 +7,7 @@ cpu-objs-y+=cache.o
 cpu-objs-y+=cpu.o
 cpu-objs-y+=exceptions.o
 cpu-objs-y+=intc.o
+cpu-objs-y+=ipir.o
 cpu-objs-y+=interrupts.o
 cpu-objs-y+=mem.o
 cpu-objs-y+=mpu.o

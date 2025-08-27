@@ -31,6 +31,7 @@ struct vm_arch {
     struct emul_mem eint_emul;
     struct emul_mem fenc_emul;
     struct emul_mem feinc_emul;
+    struct emul_mem ipir_emul;
     /* BOOTCTRL */
     struct emul_mem bootctrl_emul;
 };
@@ -84,7 +85,6 @@ struct arch_regs {
 void vcpu_arch_entry(void);
 void vcpu_restore_state(struct vcpu* vcpu);
 void vcpu_save_state(struct vcpu* vcpu);
-bool vm_arch_reset(struct vm* vm);
 
 static inline void vcpu_arch_inject_hw_irq(struct vcpu* vcpu, irqid_t id)
 {

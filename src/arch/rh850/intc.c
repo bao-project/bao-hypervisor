@@ -1,9 +1,9 @@
-#include <bao.h>
-#include <platform_defs.h>
-#include <platform.h>
+/**
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright (c) Bao Project and Contributors. All rights reserved.
+ */
+
 #include <interrupts.h>
-#include <mem.h>
-#include <cpu.h>
 #include <arch/intc.h>
 
 /* EIC */
@@ -158,6 +158,7 @@ static void intc_map_local_mmio(void)
     }
     intc1_hw = (struct intc1*)intc1_ptr;
 
+    // TODO: I'm mapping FEINC twice
     vaddr_t feinc_ptr;
     feinc_ptr = mem_alloc_map_dev(&cpu()->as, SEC_HYP_PRIVATE, INVALID_VA,
         platform.arch.intc.feinc_addr[cpu()->id], NUM_PAGES(sizeof(struct feinc)));
@@ -189,7 +190,7 @@ static void intc_map_global_mmio(void)
     feinc_hw[cpu()->id] = (struct feinc*)platform.arch.intc.feinc_addr[cpu()->id];
 }
 
-void intc_map_mmio(void)
+void intc_init()
 {
     intc_map_local_mmio();
     if (cpu_is_master()) {
@@ -197,14 +198,4 @@ void intc_map_mmio(void)
     }
 
     cpu_sync_and_clear_msgs(&cpu_glb_sync);
-}
-
-/* TODO needed? */
-/* void intc_clk_init() */
-/* { */
-/* } */
-
-void intc_init()
-{
-    intc_map_mmio();
 }
