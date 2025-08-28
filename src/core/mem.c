@@ -34,8 +34,6 @@ static bool mem_bitmap_pool_alloc(size_t bitmap_size, bitmap_t** bitmap)
         last_index += bitmap_size;
         allocated = true;
         *bitmap = (bitmap_t*)&bitmap_pool[prev_last_index];
-
-        return true;
     }
 
     spin_unlock(&bitmap_lock);
