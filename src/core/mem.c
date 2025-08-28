@@ -17,11 +17,12 @@
 extern uint8_t _image_start, _image_load_end, _image_end, _vm_image_start, _vm_image_end;
 
 struct list page_pool_list;
-uint8_t bitmap_pool[PLAT_BITMAP_POOL_SIZE];
-static spinlock_t bitmap_lock = SPINLOCK_INITVAL;
+
 
 static bool mem_bitmap_pool_alloc(size_t bitmap_size, bitmap_t** bitmap)
 {
+    static uint8_t bitmap_pool[PLAT_BITMAP_POOL_SIZE];
+    static spinlock_t bitmap_lock = SPINLOCK_INITVAL;
     static size_t last_index = 0;
     bool allocated = false;
 
