@@ -178,13 +178,9 @@ static bool root_pool_set_up_bitmap(paddr_t load_addr, struct page_pool* root_po
         return false;
     }
 
-    bitmap_t* root_bitmap = NULL;
-
-    if (!mem_bitmap_pool_alloc(bitmap_num_pages, &root_bitmap)) {
+    if (!mem_bitmap_pool_alloc(bitmap_num_pages, &root_pool->bitmap)) {
         return false;
     }
-
-    root_pool->bitmap = root_bitmap;
 
     memset((void*)root_pool->bitmap, 0, bitmap_num_pages * PAGE_SIZE);
 
@@ -233,8 +229,6 @@ static bool pp_root_init(paddr_t load_addr, struct mem_region* root_region)
 
 static void pp_init(struct page_pool* pool, paddr_t base, size_t size)
 {
-    struct ppages pages;
-
     if (pool == NULL) {
         return;
     }
@@ -249,15 +243,9 @@ static void pp_init(struct page_pool* pool, paddr_t base, size_t size)
         return;
     }
 
-    bitmap_t* pool_bitmap = NULL;
-
-    if (!mem_bitmap_pool_alloc(bitmap_num_pages, &pool_bitmap)) {
+    if (!mem_bitmap_pool_alloc(bitmap_num_pages, &pool->bitmap)) {
         return;
     }
-
-    pool->bitmap = pool_bitmap;
-
-    memset((void*)pool->bitmap, 0, bitmap_num_pages * PAGE_SIZE);
 
     pool->last = 0;
     pool->free = pool->num_pages;
