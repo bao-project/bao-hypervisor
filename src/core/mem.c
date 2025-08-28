@@ -19,7 +19,7 @@ extern uint8_t _image_start, _image_load_end, _image_end, _vm_image_start, _vm_i
 struct list page_pool_list;
 
 
-static bool mem_bitmap_pool_alloc(size_t bitmap_size, bitmap_t** bitmap)
+static bool mem_bitmap_pool_alloc(size_t bitmap_num_pages, bitmap_t** bitmap)
 {
     static uint8_t bitmap_pool[PLAT_BITMAP_POOL_SIZE];
     static spinlock_t bitmap_lock = SPINLOCK_INITVAL;
@@ -28,10 +28,10 @@ static bool mem_bitmap_pool_alloc(size_t bitmap_size, bitmap_t** bitmap)
 
     spin_lock(&bitmap_lock);
 
-    if (PLAT_BITMAP_POOL_SIZE - last_index * 8 * PAGE_SIZE > bitmap_size) {
+    if (((PLAT_BITMAP_POOL_SIZE - last_index) * 8) >= bitmap_num_pages) {
         size_t prev_last_index = last_index;
 
-        last_index += bitmap_size;
+        last_index += bitmap_num_pages / 8;
         allocated = true;
         *bitmap = (bitmap_t*)&bitmap_pool[prev_last_index];
     }
