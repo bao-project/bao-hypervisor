@@ -169,7 +169,6 @@ void* mem_alloc_page(size_t num_pages, enum AS_SEC sec, bool phys_aligned)
 static bool root_pool_set_up_bitmap(paddr_t load_addr, struct page_pool* root_pool)
 {
     UNUSED_ARG(load_addr);
-    bool bitmap_alloced = false;
 
     size_t bitmap_size =
         root_pool->num_pages / 8 + ((root_pool->num_pages % 8 != 0) ? 1 : 0);
@@ -182,14 +181,14 @@ static bool root_pool_set_up_bitmap(paddr_t load_addr, struct page_pool* root_po
     bitmap_t* root_bitmap = NULL;
 
     if (!mem_bitmap_pool_alloc(bitmap_num_pages, &root_bitmap)) {
-        return bitmap_alloced;
+        return false;
     }
 
     root_pool->bitmap = root_bitmap;
 
     memset((void*)root_pool->bitmap, 0, bitmap_num_pages * PAGE_SIZE);
 
-    return !bitmap_alloced;
+    return true;
 }
 
 static bool pp_root_reserve_hyp_mem(paddr_t load_addr, struct page_pool* root_pool)
