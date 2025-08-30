@@ -18,7 +18,6 @@ extern uint8_t _image_start, _image_load_end, _image_end, _vm_image_start, _vm_i
 
 struct list page_pool_list;
 
-
 static bool mem_bitmap_pool_alloc(size_t bitmap_num_pages, bitmap_t** bitmap)
 {
     static uint8_t bitmap_pool[PLAT_BITMAP_POOL_SIZE];
@@ -170,21 +169,7 @@ static bool root_pool_set_up_bitmap(paddr_t load_addr, struct page_pool* root_po
 {
     UNUSED_ARG(load_addr);
 
-    size_t bitmap_size =
-        root_pool->num_pages / 8 + ((root_pool->num_pages % 8 != 0) ? 1 : 0);
-    size_t bitmap_num_pages = NUM_PAGES(bitmap_size);
-
-    if (root_pool->num_pages <= bitmap_num_pages) {
-        return false;
-    }
-
-    if (!mem_bitmap_pool_alloc(bitmap_num_pages, &root_pool->bitmap)) {
-        return false;
-    }
-
-    memset((void*)root_pool->bitmap, 0, bitmap_num_pages * PAGE_SIZE);
-
-    return true;
+    return mem_bitmap_pool_alloc(root_pool->num_pages, &root_pool->bitmap);
 }
 
 static bool pp_root_reserve_hyp_mem(paddr_t load_addr, struct page_pool* root_pool)
