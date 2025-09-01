@@ -518,11 +518,9 @@ void mem_init(void)
 
     cpu_sync_and_clear_msgs(&cpu_glb_sync);
 
-#ifdef MEM_PROT_MMU
     if (!all_clrs(config.hyp.colors)) {
         mem_color_hypervisor(img_addr, root_mem_region);
     }
-#endif
 
     if (cpu_is_master()) {
         if (!mem_create_ppools(root_mem_region)) {
