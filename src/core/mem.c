@@ -234,14 +234,14 @@ static bool pp_reserve_cpus(struct page_pool* pool)
     return mem_reserve_ppool_ppages(pool, &cpu_ppages);
 }
 
-static bool pp_reserve_hyp_data(struct page_pool* root_pool)
+static bool pp_reserve_hyp_data(struct page_pool* pool)
 {
     size_t data_size = (size_t)(&_image_end - &_data_vma_start);
     paddr_t data_base_addr = (paddr_t)&_data_vma_start;
 
     struct ppages data_ppages = mem_ppages_get(data_base_addr, NUM_PAGES(data_size));
 
-    return mem_reserve_ppool_ppages(root_pool, &data_ppages);
+    return mem_reserve_ppool_ppages(pool, &data_ppages);
 }
 
 static bool pp_root_reserve_hyp_mem(struct page_pool* root_pool)
