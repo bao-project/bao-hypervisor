@@ -418,11 +418,13 @@ static struct mem_region* mem_find_root_region(void)
     for (size_t i = 0; i < platform.region_num; i++) {
         struct mem_region* region = &(platform.regions[i]);
         bool is_in_rgn;
+        vaddr_t root_base_addr;
         if (DEFINED(MEM_NON_UNIFIED)) {
-            is_in_rgn = range_in_range(data_addr, root_mem_size, region->base, region->size);
+            root_base_addr = data_addr;
         } else {
-            is_in_rgn = range_in_range(img_addr, root_mem_size, region->base, region->size);
+            root_base_addr = img_addr;
         }
+        is_in_rgn = range_in_range(root_base_addr, root_mem_size, region->base, region->size);
 
         if (is_in_rgn) {
             root_mem_region = region;
