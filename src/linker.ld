@@ -34,7 +34,7 @@ SECTIONS
 	_data_lma_start = .;
 
 #ifdef MEM_NON_UNIFIED
-	. = PLAT_DATA_MEM;	/* Changed location counter to VMA address */
+	. = CONFIG_HYP_DATA_ADDR;	/* Changed location counter to VMA address */
 #endif
 
 	_data_vma_start = .;
