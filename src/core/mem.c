@@ -219,8 +219,7 @@ static bool pp_reserve_cpus(struct page_pool* pool)
     if (DEFINED(MEM_NON_UNIFIED)) {
         size_t data_size = (size_t)(&_image_end - &_data_vma_start);
         cpu_base_addr = (paddr_t)&_data_vma_start + data_size;
-    }
-    else {
+    } else {
         size_t image_load_size = (size_t)(&_image_load_end - &_image_start);
         size_t image_noload_size = (size_t)(&_image_end - &_image_load_end);
         size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);
