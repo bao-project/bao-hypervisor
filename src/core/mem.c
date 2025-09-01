@@ -213,12 +213,21 @@ static bool pp_reserve_hyp_image_noload(struct page_pool* pool)
 
 static bool pp_reserve_cpus(struct page_pool* pool)
 {
-    size_t image_load_size = (size_t)(&_image_load_end - &_image_start);
-    size_t image_noload_size = (size_t)(&_image_end - &_image_load_end);
-    size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);
     size_t cpu_size = platform.cpu_num * mem_cpu_boot_alloc_size();
-    paddr_t image_noload_addr = img_addr + image_load_size + vm_image_size;
-    paddr_t cpu_base_addr = image_noload_addr + image_noload_size;
+    paddr_t cpu_base_addr;
+
+    if (DEFINED(MEM_NON_UNIFIED)) {
+        size_t data_size = (size_t)(&_image_end - &_data_vma_start);
+        cpu_base_addr = (paddr_t)&_data_vma_start + data_size;
+    }
+    else {
+        size_t image_load_size = (size_t)(&_image_load_end - &_image_start);
+        size_t image_noload_size = (size_t)(&_image_end - &_image_load_end);
+        size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);
+
+        paddr_t image_noload_addr = img_addr + image_load_size + vm_image_size;
+        cpu_base_addr = image_noload_addr + image_noload_size;
+    }
 
     struct ppages cpu_ppages = mem_ppages_get(cpu_base_addr, NUM_PAGES(cpu_size));
 
@@ -228,23 +237,19 @@ static bool pp_reserve_cpus(struct page_pool* pool)
 static bool pp_reserve_hyp_data(struct page_pool* root_pool)
 {
     size_t data_size = (size_t)(&_image_end - &_data_vma_start);
-    size_t cpu_size = platform.cpu_num * mem_cpu_boot_alloc_size();
     paddr_t data_base_addr = (paddr_t)&_data_vma_start;
-    paddr_t cpu_base_addr = data_base_addr + data_size;
 
     struct ppages data_ppages = mem_ppages_get(data_base_addr, NUM_PAGES(data_size));
-    struct ppages cpu_ppages = mem_ppages_get(cpu_base_addr, NUM_PAGES(cpu_size));
 
-    bool data_reserved = mem_reserve_ppool_ppages(root_pool, &data_ppages);
-    bool cpu_reserved = mem_reserve_ppool_ppages(root_pool, &cpu_ppages);
-
-    return data_reserved && cpu_reserved;
+    return mem_reserve_ppool_ppages(root_pool, &data_ppages);
 }
 
 static bool pp_root_reserve_hyp_mem(struct page_pool* root_pool)
 {
     if (DEFINED(MEM_NON_UNIFIED)) {
-        return pp_reserve_hyp_data(root_pool);
+        bool hyp_data_mem = pp_reserve_hyp_data(root_pool);
+        bool cpus_mem = pp_reserve_cpus(root_pool);
+        return hyp_data_mem && cpus_mem;
 
     } else {
         bool hyp_image_load_mem = pp_reserve_hyp_image_load(root_pool);
