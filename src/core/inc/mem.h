@@ -16,8 +16,8 @@
 #ifndef __ASSEMBLER__
 
 enum MEM_PERMISSIONS {
-    RWX,
-    RX,
+    MEM_RWX = 0, // This variant always has to be zero and therefore the first one
+    MEM_RX,
 };
 
 struct ppages {

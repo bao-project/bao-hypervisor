@@ -22,7 +22,7 @@ int main() {
          * it as PLAT_DATA_MEM. This region is considered the main data memory that Bao will use
          * for its own purposes.
          */
-        if(platform.regions[i].perms == RWX)
+        if(platform.regions[i].perms == MEM_RWX)
         {
             printf("#define PLAT_DATA_MEM (0x%lx)\n", platform.regions[i].base);
             break;
