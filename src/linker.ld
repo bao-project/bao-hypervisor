@@ -35,12 +35,9 @@ SECTIONS
 
 #ifdef MEM_NON_UNIFIED
 	. = PLAT_DATA_MEM;	/* Changed location counter to VMA address */
-	_data_vma_start = .;
-#else
-	/* Dummy initialization to avoid the compiler triggering an undefined reference to
-	 _data_vma_start with -O0, so we need to provide it even if MEM_NON_UNIFIED is not defined. */
-	_data_vma_start = _data_lma_start;
 #endif
+
+	_data_vma_start = .;
 
 	.data : AT (_data_lma_start){
 		*(.data .data.*)
