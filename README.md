@@ -45,14 +45,11 @@ platforms is presented below:
 - [x] QEMU virt
 - [x] Arm Fixed Virtual Platforms
 - [x] Toradex Verdin iMX8M Plus (w/ Dahlia Carrier Board)
-- [ ] BeagleBone AI-64
-- [ ] NXP MCIMX8M-EVK
-- [ ] 96Boards ROCK960
+- [ ] NXP S32G
 
 **Armv7-A / Armv8-A AArch32**
 - [x] Arm Fixed Virtual Platforms
 - [ ] QEMU virt
-- [ ] STM32MP157-DK2
 
 **Armv8-R AArch64**
 - [x] Arm Fixed Virtual Platforms
@@ -61,14 +58,21 @@ platforms is presented below:
 - [x] Arm Fixed Virtual Platforms
 - [ ] NXP S32Z/E
 - [ ] Renesas RZT2M
+- [ ] QEMU MPS3-AN536
 
 **RISC-V RV64**
 - [x] QEMU virt
-- [ ] Rocket w/ H-extension
-- [ ] CVA6 w/ H-extension
+- [ ] SiFive HiFive Premier P550
 
 **RISC-V RV32**
-- [ ] QEMU virt
+- [x] QEMU virt
+
+**Infineon Tricore 1.8**
+- [ ] TC4x Communication Board  ([WiP branch](https://github.com/bao-project/bao-hypervisor/tree/feat/tricore))
+
+**Renesas RH850**
+- [ ] RH850 U2A16 ([WiP branch](https://github.com/bao-project/bao-hypervisor/tree/wip/rh850-u2a16))
+
 
 Community Resources
 -------------------
