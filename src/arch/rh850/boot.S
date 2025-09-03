@@ -68,9 +68,9 @@ sync_loop:
     mov 2, r20
     cmp r10, r20
     be sync_loop
-    /* mov 1, r20
+    mov 1, r20
     cmp r10, r20
-    be sync_loop */
+    be sync_loop
 
     /* set PSW.EBV and PSW.ID */
     mov 0x8020, r20

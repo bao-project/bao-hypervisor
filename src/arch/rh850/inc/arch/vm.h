@@ -37,7 +37,7 @@ struct vm_arch {
 };
 
 struct vcpu_arch {
-    vcpuid_t vcpuid;
+    bool started;
 };
 
 struct arch_regs {
@@ -95,5 +95,8 @@ static inline void vcpu_arch_inject_irq(struct vcpu* vcpu, irqid_t id)
 {
     vintc_inject(vcpu, id);
 }
+
+void vbootctrl_init(struct vm* vm);
+bool vbootctrl_emul_handler(struct emul_access* acc);
 
 #endif /* __ARCH_VM_H__ */

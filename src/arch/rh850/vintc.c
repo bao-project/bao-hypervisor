@@ -555,40 +555,6 @@ void vintc_init(struct vm* vm)
     }
 }
 
-// TODO
-bool vbootctrl_emul_handler(struct emul_access* acc)
-{
-    UNUSED_ARG(acc);
-    struct vcpu* vcpu = cpu()->vcpu;
-    struct vm* vm = vcpu->vm;
-    bool ret;
-
-    if (vm->cpu_num > 1)
-    {
-        // Multi-core guest: check if the cores it is trying 
-        //                   to start belongs to that VM
-        ret = true;
-    }
-    else {
-        // Single-core guest: ignore? signal error? 
-        ret = true;
-    }
-
-    return ret;
-}
-
-void vbootctrl_init(struct vm* vm)
-{
-    if (cpu()->id == vm->master) {
-        vm->arch.bootctrl_emul = (struct emul_mem){
-            .va_base = platform.arch.bootctrl_addr,
-            .size = 0x10,
-            .handler = vbootctrl_emul_handler,
-        };
-        vm_emul_add_mem(vm, &vm->arch.bootctrl_emul);
-    }
-}
-
 void vintc_vcpu_reset(struct vcpu* vcpu) {
     for (size_t i = 0; i < PRIVATE_IRQS_NUM; i++) {
         if (vm_has_interrupt(vcpu->vm, i)) {

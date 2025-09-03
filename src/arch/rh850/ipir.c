@@ -181,7 +181,7 @@ bool vipir_emul_handler(struct emul_access* acc)
     /* Translate access */
     if (acc->arch.op != NO_OP) {
 
-        for (size_t i = 0; i < cpu()->vcpu->vm->cpu_num; i++) {
+        for (size_t i = 0; i < vcpu->vm->cpu_num; i++) {
             if ((1U << i) & acc->arch.byte_mask) {
                 size_t phys_id = vm->vcpus[i].phys_id;
                 bitop_mask = (uint8_t)(1U << phys_id);
@@ -214,9 +214,9 @@ bool vipir_emul_handler(struct emul_access* acc)
         }
     }
     else if (acc->write) {
-        unsigned long val = vcpu_readreg(cpu()->vcpu, acc->reg);
+        unsigned long val = vcpu_readreg(vcpu, acc->reg);
         unsigned long write_val = 0;
-        for (size_t i = 0; i < cpu()->vcpu->vm->cpu_num; i++) {
+        for (size_t i = 0; i < vcpu->vm->cpu_num; i++) {
             size_t virt_id = vm->vcpus[i].id;
             size_t phys_id = vm->vcpus[i].phys_id;
             if (phys_id >= virt_id)
@@ -229,7 +229,7 @@ bool vipir_emul_handler(struct emul_access* acc)
     else {
         unsigned long val = *tgt_reg;
         unsigned long read_val = 0;
-        for (size_t i = 0; i < cpu()->vcpu->vm->cpu_num; i++) {
+        for (size_t i = 0; i < vcpu->vm->cpu_num; i++) {
             size_t virt_id = vm->vcpus[i].id;
             size_t phys_id = vm->vcpus[i].phys_id;
             if (phys_id >= virt_id)

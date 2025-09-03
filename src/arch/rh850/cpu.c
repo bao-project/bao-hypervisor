@@ -34,20 +34,25 @@ void cpu_arch_init(cpuid_t cpuid, paddr_t load_addr)
     set_mei(0x0);
     set_eiic(0x0);
     set_feic(0x0);
+
+    /* Set snooze time */
+    set_snzcfg(SNZCFG_PERIOD);
 }
 
 static void reset_stack_and_jump(void* stack_base, void (*jmp_target)(void))
 {
-    UNUSED_ARG(stack_base);
-    UNUSED_ARG(jmp_target);
     __asm__ volatile(
-        "mov r6, sp\n\t"
+        "mov   %[stack], sp\n\t"
         "st.w  lp, -4[sp]\n\t"
         "add   -4, sp\n\t"
-        "jarl [r7], lp\n\t"
+        "jarl  %[target], lp\n\t"
         "ld.w  0[sp], lp\n\t"
         "add   4, sp\n\t"
-        "jmp [lp]"
+        "jmp   [lp]\n\t"
+        :
+        : [stack] "r" (stack_base),
+          [target] "r" (jmp_target)
+        : "lp", "memory"
     );
 }
 
