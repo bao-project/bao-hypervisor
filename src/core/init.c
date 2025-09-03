@@ -24,6 +24,8 @@ void init(cpuid_t cpu_id, paddr_t load_addr)
 
     /* -------------------------------------------------------------- */
 
+    platform_init();
+
     console_init();
 
     if (cpu_is_master()) {
