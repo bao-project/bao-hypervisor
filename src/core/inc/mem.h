@@ -96,9 +96,9 @@ bool mem_translate(struct addr_space* as, vaddr_t va, paddr_t* pa);
 extern struct list page_pool_list;
 
 /* The address where the Bao image is loaded in memory */
-extern const uintptr_t img_addr;
+extern uintptr_t img_addr;
 /* The address where the data section is loaded in memory */
-extern const uintptr_t data_addr;
+extern uintptr_t data_addr;
 
 #endif /* __ASSEMBLER__ */
 

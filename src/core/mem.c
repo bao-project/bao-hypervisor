@@ -19,6 +19,11 @@ extern uint8_t _image_start, _image_load_end, _image_end, _vm_image_start, _vm_i
 
 struct list page_pool_list;
 
+/* The address where the Bao image is loaded in memory */
+uintptr_t img_addr __attribute__((section(".data")));
+/* The address where the data section is loaded in memory */
+uintptr_t data_addr __attribute__((section(".data")));
+
 static size_t calc_root_mem_size(void)
 {
     if (DEFINED(MEM_NON_UNIFIED)) {
