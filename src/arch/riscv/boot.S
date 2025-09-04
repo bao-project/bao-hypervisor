@@ -71,10 +71,6 @@ _extra_allocated_phys_mem_sym: .8byte extra_allocated_phys_mem
  */
 _barrier: .8byte 0		
 
-.balign 4
-.global img_addr
-img_addr: .8byte 0
-
 /**
  * 	The following code MUST be at the base of the image, as this is bao's entrypoint. Therefore
  * .boot section must also be the first in the linker script. DO NOT implement any code before the
