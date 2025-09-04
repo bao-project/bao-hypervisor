@@ -17,10 +17,6 @@
  .global _boot_barrier
 _boot_barrier: .8byte 0
 
-.balign 8
-.global img_addr
-img_addr: .8byte 0
-
 /**
  * The following code MUST be at the base of the image, as this is bao's entry point. Therefore
  * .boot section must also be the first in the linker script. DO NOT implement any code before the
