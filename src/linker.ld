@@ -56,7 +56,11 @@ SECTIONS
         _ipi_cpumsg_handlers_id_end = .;
 	}
 
-    . = ALIGN(PAGE_SIZE);
+	.pad_load : {
+		/* This section pads the load size of the image to be multiple of PAGE_SIZE */
+		. = ALIGN(PAGE_SIZE);
+	}
+
     _image_load_end = .;
 #ifdef MEM_NON_UNIFIED
 	/* Save the current location counter (VMA) and switch to LMA for .vm_images */
