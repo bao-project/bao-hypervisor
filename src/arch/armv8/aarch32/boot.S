@@ -54,6 +54,8 @@ _reset_handler:
      * Get base image load address.
      */
     adr r1, _el2_entry
+    ldr r3, =img_addr
+    str r1, [r3] // store image load address in img_addr
 
     /**
      * Linearize cpu id according to the number of clusters and processors per cluster. We are only
@@ -227,4 +229,3 @@ set_loop:
     cmp r5, r3 // last way reached yet?
     ble way_loop // if not, iterate way_loop
     bx lr
-

@@ -30,9 +30,16 @@ SECTIONS
 		*(.rdata .rodata .rodata.*)
 	}
 
-    . = ALIGN(PAGE_SIZE); /* start RW sections in separate page */
-	
-	.data : {
+	. = ALIGN(PAGE_SIZE); /* start RW sections in separate page */
+	_data_lma_start = .;
+
+#ifdef MEM_NON_UNIFIED
+	. = CONFIG_HYP_DATA_ADDR;	/* Changed location counter to VMA address */
+#endif
+
+	_data_vma_start = .;
+
+	.data : AT (_data_lma_start){
 		*(.data .data.*)
         PROVIDE(__global_pointer$ = . + 0x800);
 		*(.sdata .sdata.* .sdata2.*)
@@ -49,17 +56,33 @@ SECTIONS
         _ipi_cpumsg_handlers_id_end = .;
 	}
 
-    . = ALIGN(PAGE_SIZE);
+	.pad_load : {
+		/* This section pads the load size of the image to be multiple of PAGE_SIZE */
+		. = ALIGN(PAGE_SIZE);
+	}
+
     _image_load_end = .;
+#ifdef MEM_NON_UNIFIED
+	/* Save the current location counter (VMA) and switch to LMA for .vm_images */
+	_vma_before_vm_images = .;
+    _image_load_end = _data_lma_start + (_image_load_end - _data_vma_start);
+	. = _image_load_end;
+#endif
 
 	/* Sections to be allocated only in physical memory, not in VA space */
 
-	.vm_images : SUBALIGN(PAGE_SIZE) {
-		_vm_image_start = .;
-		KEEP(*(.vm_image*))
-	}
+    .vm_images : AT(_image_load_end) SUBALIGN(PAGE_SIZE) {
+        _vm_image_start = .;
+        KEEP(*(.vm_image*))
+    }
+
+#ifdef MEM_NON_UNIFIED
+    /* Restore the location counter (VMA) */
+    . = _vma_before_vm_images;
+#endif
+
 	. = ALIGN(PAGE_SIZE);
-	_vm_image_end = .;
+	_vm_image_end = ALIGN(_vm_image_start + SIZEOF(.vm_images), PAGE_SIZE);
     _image_noload_start = .;
     extra_allocated_phys_mem = _image_noload_start - _image_load_end;
 

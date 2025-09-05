@@ -110,6 +110,15 @@ extern struct config {
         bool relocate;
         paddr_t base_addr;
 
+        /**
+         * Only meaningful for non-unified platforms. In such platforms, the hypervisor expects a
+         * base address for data memory and will default to the first RWX region defined in the
+         * target platform's description. If the user wishes to relocate it to another address,
+         * they must set data_relocate to true and provide the new base address.
+         */
+        bool data_relocate;
+        paddr_t data_addr;
+
         /* Hypervisor colors */
         colormap_t colors;
     } hyp;
@@ -126,7 +135,7 @@ extern struct config {
 
 } config;
 
-void config_init(paddr_t load_addr);
-void config_mem_prot_init(paddr_t load_addr);
+void config_init(void);
+void config_mem_prot_init(void);
 
 #endif /* __CONFIG_H__ */
