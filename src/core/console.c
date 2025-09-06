@@ -25,6 +25,9 @@ void console_init(void)
             WARNING("console base must be page aligned");
         }
 
+        // EW2025 DEMO
+        uart = (void*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA, 0xF003D400, 0x800);
+
         uart = (void*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
             platform.console.base, NUM_PAGES(sizeof(*uart)));
 
