@@ -16,14 +16,16 @@ typedef bitmap_granule_t bitmap_t;
 
 static const bitmap_granule_t ONE = 1;
 
-#define BITMAP_GRANULE_LEN                  (sizeof(bitmap_granule_t) * 8)
-#define BITMAP_GRANULE_MASK(O, L)           BIT32_MASK((O), (L))
+#define BITMAP_GRANULE_LEN        (sizeof(bitmap_granule_t) * 8)
+#define BITMAP_GRANULE_MASK(O, L) BIT32_MASK((O), (L))
 
-#define BITMAP_SIZE(SIZE)                   (((SIZE) / BITMAP_GRANULE_LEN) + ((SIZE) % BITMAP_GRANULE_LEN ? 1 : 0))
-#define BITMAP_SIZE_IN_BYTES(NUM_BITS)      (((NUM_BITS) / 8) + (((NUM_BITS) % 8) > 0 ? 1 : 0))
-#define BITMAP_ALLOC(NAME, SIZE)            bitmap_granule_t NAME[BITMAP_SIZE(SIZE)]
+#define BITMAP_SIZE(NUM_BITS, BITS_PER_UNIT) \
+    (((NUM_BITS) / (BITS_PER_UNIT)) + (((NUM_BITS) % (BITS_PER_UNIT)) ? 1 : 0))
+#define BITMAP_SIZE_IN_GRANULE(NUM_BITS)    (BITMAP_SIZE((NUM_BITS), (BITMAP_GRANULE_LEN)))
+#define BITMAP_SIZE_IN_BYTES(NUM_BITS)      (BITMAP_SIZE((NUM_BITS), 8))
+#define BITMAP_ALLOC(NAME, SIZE)            bitmap_granule_t NAME[BITMAP_SIZE_IN_GRANULE(SIZE)]
 
-#define BITMAP_ALLOC_ARRAY(NAME, SIZE, NUM) bitmap_granule_t NAME[NUM][BITMAP_SIZE(SIZE)]
+#define BITMAP_ALLOC_ARRAY(NAME, SIZE, NUM) bitmap_granule_t NAME[NUM][BITMAP_SIZE_IN_GRANULE(SIZE)]
 
 static inline void bitmap_set(bitmap_t* map, size_t bit)
 {
