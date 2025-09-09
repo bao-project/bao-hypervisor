@@ -9,7 +9,7 @@
 void objpool_init(struct objpool* objpool)
 {
     memset(objpool->pool, 0, objpool->objsize * objpool->num);
-    memset(objpool->bitmap, 0, BITMAP_SIZE(objpool->num));
+    memset(objpool->bitmap, 0, BITMAP_SIZE_IN_BYTES(objpool->num));
     objpool->lock = SPINLOCK_INITVAL;
 }
 

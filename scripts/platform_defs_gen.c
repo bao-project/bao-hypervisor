@@ -24,7 +24,7 @@ int main() {
 
         reg_size = platform.regions[i].size;
 
-        bitmap_array_size += reg_size / (8 * PAGE_SIZE) + ((reg_size % (8 * PAGE_SIZE) != 0) ? 1 : 0);
+        bitmap_array_size += BITMAP_SIZE_IN_BYTES(NUM_PAGES(reg_size));
     }
 
     printf("#define PLAT_BITMAP_POOL_SIZE (0x%lx)\n", bitmap_array_size);
