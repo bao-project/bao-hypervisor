@@ -49,22 +49,26 @@ volatile struct ipir_hw* ipir;
 
 extern irqid_t interrupts_ipi_id;
 
-static size_t decode_ipir_chann(size_t reg_idx, size_t offset, bool self) {
+static bool decode_ipir_chann(size_t* chann, size_t reg_idx, size_t offset, bool self) {
     
-    size_t chann = ~0U;
+    bool ret = false;
     
     if (self) {
         size_t delta = offset - ipir_reg_self_pat[reg_idx];
-        if (delta % 0x20 == 0)
-            chann = delta / 0x20;
+        if (delta % 0x20 == 0) {
+            *chann = delta / 0x20;
+            ret = true;
+        }
     }
     else {
         size_t delta = offset - ipir_reg_pem_pat[reg_idx];
         size_t rem = delta % 0x100;
-        if (rem % 0x20 == 0)
-            chann = rem / 0x20;
+        if (rem % 0x20 == 0) {
+            *chann = rem / 0x20;
+            ret = true;
+        }
     }
-    return chann;
+    return ret;
 }
 
 void ipir_handle(irqid_t int_id)
@@ -144,23 +148,23 @@ bool vipir_emul_handler(struct emul_access* acc)
     /* Determine target IPIR register */
     switch (acc->addr & IPIR_REGS_PAT_MASK) {
         case IPInENS_PAT:
-            chann_idx = decode_ipir_chann(IPInEN, acc_offset, self);
+            ignore = !decode_ipir_chann(&chann_idx, IPInEN, acc_offset, self);
             tgt_reg = &(ipir->pe[pe_idx].chann[chann_idx].IPInEN);
         break;
         case IPInFLGS_PAT:
-            chann_idx = decode_ipir_chann(IPInFLG, acc_offset, self);
+            ignore = !decode_ipir_chann(&chann_idx, IPInFLG, acc_offset, self);
             tgt_reg = &(ipir->pe[pe_idx].chann[chann_idx].IPInFLG);
             break;
         case IPInFCLRS_PAT:
-            chann_idx = decode_ipir_chann(IPInFCLR, acc_offset, self);
+            ignore = !decode_ipir_chann(&chann_idx, IPInFCLR, acc_offset, self);
             tgt_reg = &(ipir->pe[pe_idx].chann[chann_idx].IPInFCLR);
         break;
         case IPInREQS_PAT:
-            chann_idx = decode_ipir_chann(IPInREQ, acc_offset, self);
+            ignore = !decode_ipir_chann(&chann_idx, IPInREQ, acc_offset, self);
             tgt_reg = &(ipir->pe[pe_idx].chann[chann_idx].IPInREQ);
         break;
         case IPInRCLRS_PAT:
-            chann_idx = decode_ipir_chann(IPInRCLR, acc_offset, self);
+            ignore = !decode_ipir_chann(&chann_idx, IPInRCLR, acc_offset, self);
             tgt_reg = &(ipir->pe[pe_idx].chann[chann_idx].IPInRCLR);
         break;
         default:
@@ -168,7 +172,7 @@ bool vipir_emul_handler(struct emul_access* acc)
         break;
     }
 
-    if (chann_idx == IPI_HYP_IRQ_ID || chann_idx == ~0U)
+    if (chann_idx == IPI_HYP_IRQ_ID)
         ignore = true;
 
     /* Ignore access */

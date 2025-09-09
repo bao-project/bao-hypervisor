@@ -62,7 +62,7 @@ _reset_handler:
     This loop serves as a workaround for the fact that, when using e2studio to debug execution,
     all cores start executing simultaneously, instead of following the BOOTCTRL mechanism */
 sync_loop:
-    mov 3, r20
+    /* mov 3, r20
     cmp r10, r20
     be sync_loop
     mov 2, r20
@@ -70,7 +70,7 @@ sync_loop:
     be sync_loop
     mov 1, r20
     cmp r10, r20
-    be sync_loop
+    be sync_loop */
 
     /* set PSW.EBV and PSW.ID */
     mov 0x8020, r20
