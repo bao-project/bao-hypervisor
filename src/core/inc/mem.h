@@ -67,7 +67,7 @@ static inline bool all_clrs(colormap_t clrs)
     return (masked_colors == 0) || (masked_colors == mask);
 }
 
-void mem_init(paddr_t load_addr);
+void mem_init(void);
 void* mem_alloc_page(size_t num_pages, enum AS_SEC sec, bool phys_aligned);
 struct ppages mem_alloc_ppages(colormap_t colors, size_t num_pages, bool aligned);
 vaddr_t mem_alloc_map(struct addr_space* as, enum AS_SEC section, struct ppages* page, vaddr_t at,
@@ -95,6 +95,11 @@ bool mem_translate(struct addr_space* as, vaddr_t va, paddr_t* pa);
 
 extern struct list page_pool_list;
 
-#endif /* |__ASSEMBLER__ */
+/* The address where the Bao image is loaded in memory */
+extern vaddr_t img_addr;
+/* The address where the data section is loaded in memory */
+extern vaddr_t data_addr;
+
+#endif /* __ASSEMBLER__ */
 
 #endif /* __MEM_H__ */

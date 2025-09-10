@@ -13,14 +13,14 @@
 #include <platform.h>
 #include <vmm.h>
 
-void init(cpuid_t cpu_id, paddr_t load_addr)
+void init(cpuid_t cpu_id)
 {
     /**
      * These initializations must be executed first and in fixed order.
      */
 
-    cpu_init(cpu_id, load_addr);
-    mem_init(load_addr);
+    cpu_init(cpu_id);
+    mem_init();
 
     /* -------------------------------------------------------------- */
 
