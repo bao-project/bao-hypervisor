@@ -18,6 +18,11 @@ extern uint8_t _image_start, _image_load_end, _image_end, _vm_image_start, _vm_i
 
 struct list page_pool_list;
 
+/* The address where the Bao image is loaded in memory */
+vaddr_t img_addr __attribute__((section(".data")));
+/* The address where the data section is loaded in memory */
+vaddr_t data_addr __attribute__((section(".data")));
+
 static bool pp_bitmap_alloc(size_t pool_num_pages, bitmap_t** bitmap)
 {
     static uint8_t bitmap_pool[PLAT_BITMAP_POOL_SIZE];
@@ -165,14 +170,12 @@ void* mem_alloc_page(size_t num_pages, enum AS_SEC sec, bool phys_aligned)
     return (void*)vpage;
 }
 
-static bool root_pool_set_up_bitmap(paddr_t load_addr, struct page_pool* root_pool)
+static bool root_pool_set_up_bitmap(struct page_pool* root_pool)
 {
-    UNUSED_ARG(load_addr);
-
     return pp_bitmap_alloc(root_pool->num_pages, &root_pool->bitmap);
 }
 
-static bool pp_root_reserve_hyp_mem(paddr_t load_addr, struct page_pool* root_pool)
+static bool pp_root_reserve_hyp_image_load(struct page_pool* root_pool)
 {
     size_t image_load_size = (size_t)(&_image_load_end - &_image_start);
     size_t image_noload_size = (size_t)(&_image_end - &_image_load_end);
@@ -193,7 +196,7 @@ static bool pp_root_reserve_hyp_mem(paddr_t load_addr, struct page_pool* root_po
     return image_load_reserved && image_noload_reserved && cpu_reserved;
 }
 
-static bool pp_root_init(paddr_t load_addr, struct mem_region* root_region)
+static bool pp_root_reserve_hyp_mem(struct page_pool* root_pool)
 {
     struct page_pool* root_pool = &root_region->page_pool;
     root_pool->base = ALIGN(root_region->base, PAGE_SIZE);
@@ -201,10 +204,10 @@ static bool pp_root_init(paddr_t load_addr, struct mem_region* root_region)
                                                             aligned? */
     root_pool->free = root_pool->num_pages;
 
-    if (!root_pool_set_up_bitmap(load_addr, root_pool)) {
+    if (!root_pool_set_up_bitmap(root_pool)) {
         return false;
     }
-    if (!pp_root_reserve_hyp_mem(load_addr, root_pool)) {
+    if (!pp_root_reserve_hyp_mem(root_pool)) {
         return false;
     }
 
@@ -330,7 +333,7 @@ static bool mem_create_ppools(struct mem_region* root_mem_region)
     return true;
 }
 
-static struct mem_region* mem_find_root_region(paddr_t load_addr)
+static struct mem_region* mem_find_root_region(void)
 {
     size_t image_size = (size_t)(&_image_end - &_image_start);
 
@@ -348,14 +351,14 @@ static struct mem_region* mem_find_root_region(paddr_t load_addr)
     return root_mem_region;
 }
 
-static bool mem_setup_root_pool(paddr_t load_addr, struct mem_region** root_mem_region)
+static bool mem_setup_root_pool(struct mem_region** root_mem_region)
 {
     *root_mem_region = mem_find_root_region(load_addr);
     if (*root_mem_region == NULL) {
         return false;
     }
 
-    return pp_root_init(load_addr, *root_mem_region);
+    return pp_root_init(*root_mem_region);
 }
 
 __attribute__((weak)) void mem_color_hypervisor(const paddr_t load_addr,
@@ -407,7 +410,7 @@ struct ppages mem_alloc_ppages(colormap_t colors, size_t num_pages, bool aligned
     return pages;
 }
 
-void mem_init(paddr_t load_addr)
+void mem_init(void)
 {
     mem_prot_init();
 
@@ -416,7 +419,7 @@ void mem_init(paddr_t load_addr)
     if (cpu_is_master()) {
         cache_enumerate();
 
-        if (!mem_setup_root_pool(load_addr, &root_mem_region)) {
+        if (!mem_setup_root_pool(&root_mem_region)) {
             ERROR("couldn't not initialize root pool");
         }
 
@@ -424,7 +427,7 @@ void mem_init(paddr_t load_addr)
         list_init(&page_pool_list);
         list_push(&page_pool_list, &(root_mem_region->page_pool.node));
 
-        config_init(load_addr);
+        config_init();
 
         if (!mem_reserve_physical_memory(&root_mem_region->page_pool)) {
             ERROR("failed reserving memory in root pool");
@@ -434,7 +437,7 @@ void mem_init(paddr_t load_addr)
     cpu_sync_and_clear_msgs(&cpu_glb_sync);
 
     if (!all_clrs(config.hyp.colors)) {
-        mem_color_hypervisor(load_addr, root_mem_region);
+        mem_color_hypervisor(img_addr, root_mem_region);
     }
 
     if (cpu_is_master()) {
