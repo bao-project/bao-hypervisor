@@ -36,6 +36,12 @@ int main() {
         printf("#define CONFIG_HYP_BASE_ADDR PLAT_BASE_ADDR\n");
     }
 
+    if(config.hyp.data_relocate) {
+        printf("#define CONFIG_HYP_DATA_ADDR (0x%lx)\n", config.hyp.data_addr);
+    } else {
+        printf("#define CONFIG_HYP_DATA_ADDR PLAT_DATA_ADDR\n");
+    }
+
     printf("#define CONFIG_REMIO_DEV_NUM %ld\n", remio_dev_num());
 
     return 0;
