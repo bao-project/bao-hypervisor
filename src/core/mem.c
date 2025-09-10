@@ -14,7 +14,8 @@
 #include <fences.h>
 #include <config.h>
 
-extern uint8_t _image_start, _image_load_end, _image_end, _vm_image_start, _vm_image_end;
+extern uint8_t _image_start, _image_load_end, _image_end, _vm_image_start, _vm_image_end,
+    _data_vma_start;
 
 struct list page_pool_list;
 
@@ -43,6 +44,15 @@ static bool pp_bitmap_alloc(size_t pool_num_pages, bitmap_t** bitmap)
     spin_unlock(&bitmap_lock);
 
     return allocated;
+}
+
+static size_t calc_root_mem_size(void)
+{
+    if (DEFINED(MEM_NON_UNIFIED)) {
+        return (size_t)(&_image_end - &_data_vma_start);
+    } else {
+        return (size_t)(&_image_end - &_image_start);
+    }
 }
 
 bool pp_alloc(struct page_pool* pool, size_t num_pages, bool aligned, struct ppages* ppages)
@@ -178,25 +188,73 @@ static bool root_pool_set_up_bitmap(struct page_pool* root_pool)
 static bool pp_root_reserve_hyp_image_load(struct page_pool* root_pool)
 {
     size_t image_load_size = (size_t)(&_image_load_end - &_image_start);
+
+    struct ppages images_load_ppages = mem_ppages_get(img_addr, NUM_PAGES(image_load_size));
+
+    return mem_reserve_ppool_ppages(root_pool, &images_load_ppages);
+}
+
+static bool pp_root_reserve_hyp_image_noload(struct page_pool* root_pool)
+{
+    size_t image_load_size = (size_t)(&_image_load_end - &_image_start);
     size_t image_noload_size = (size_t)(&_image_end - &_image_load_end);
     size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);
-    size_t cpu_size = platform.cpu_num * mem_cpu_boot_alloc_size();
-    paddr_t image_noload_addr = load_addr + image_load_size + vm_image_size;
-    paddr_t cpu_base_addr = image_noload_addr + image_noload_size;
+    paddr_t image_noload_addr = img_addr + image_load_size + vm_image_size;
 
-    struct ppages images_load_ppages = mem_ppages_get(load_addr, NUM_PAGES(image_load_size));
     struct ppages images_noload_ppages =
         mem_ppages_get(image_noload_addr, NUM_PAGES(image_noload_size));
+
+    return mem_reserve_ppool_ppages(root_pool, &images_noload_ppages);
+}
+
+static bool pp_root_reserve_cpus(struct page_pool* root_pool)
+{
+    size_t cpu_size = platform.cpu_num * mem_cpu_boot_alloc_size();
+    paddr_t cpu_base_addr;
+
+    if (DEFINED(MEM_NON_UNIFIED)) {
+        size_t data_size = (size_t)(&_image_end - &_data_vma_start);
+        cpu_base_addr = (paddr_t)&_data_vma_start + data_size;
+    } else {
+        size_t image_load_size = (size_t)(&_image_load_end - &_image_start);
+        size_t image_noload_size = (size_t)(&_image_end - &_image_load_end);
+        size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);
+
+        paddr_t image_noload_addr = img_addr + image_load_size + vm_image_size;
+        cpu_base_addr = image_noload_addr + image_noload_size;
+    }
+
     struct ppages cpu_ppages = mem_ppages_get(cpu_base_addr, NUM_PAGES(cpu_size));
 
-    bool image_load_reserved = mem_reserve_ppool_ppages(root_pool, &images_load_ppages);
-    bool image_noload_reserved = mem_reserve_ppool_ppages(root_pool, &images_noload_ppages);
-    bool cpu_reserved = mem_reserve_ppool_ppages(root_pool, &cpu_ppages);
+    return mem_reserve_ppool_ppages(root_pool, &cpu_ppages);
+}
 
-    return image_load_reserved && image_noload_reserved && cpu_reserved;
+static bool pp_root_reserve_hyp_data(struct page_pool* root_pool)
+{
+    size_t data_size = (size_t)(&_image_end - &_data_vma_start);
+    paddr_t data_base_addr = (paddr_t)&_data_vma_start;
+
+    struct ppages data_ppages = mem_ppages_get(data_base_addr, NUM_PAGES(data_size));
+
+    return mem_reserve_ppool_ppages(root_pool, &data_ppages);
 }
 
 static bool pp_root_reserve_hyp_mem(struct page_pool* root_pool)
+{
+    if (DEFINED(MEM_NON_UNIFIED)) {
+        bool hyp_data_mem = pp_root_reserve_hyp_data(root_pool);
+        bool cpus_mem = pp_root_reserve_cpus(root_pool);
+        return hyp_data_mem && cpus_mem;
+
+    } else {
+        bool hyp_image_load_mem = pp_root_reserve_hyp_image_load(root_pool);
+        bool hyp_image_noload_mem = pp_root_reserve_hyp_image_noload(root_pool);
+        bool cpus_mem = pp_root_reserve_cpus(root_pool);
+        return hyp_image_load_mem && hyp_image_noload_mem && cpus_mem;
+    }
+}
+
+static bool pp_root_init(struct mem_region* root_region)
 {
     struct page_pool* root_pool = &root_region->page_pool;
     root_pool->base = ALIGN(root_region->base, PAGE_SIZE);
@@ -260,6 +318,12 @@ static bool mem_reserve_physical_memory(struct page_pool* pool)
 {
     if (pool == NULL) {
         return false;
+    }
+
+    if (DEFINED(MEM_NON_UNIFIED)) {
+        if (!pp_root_reserve_hyp_image_load(pool)) {
+            return false;
+        }
     }
 
     for (size_t i = 0; i < config.vmlist_size; i++) {
@@ -335,13 +399,21 @@ static bool mem_create_ppools(struct mem_region* root_mem_region)
 
 static struct mem_region* mem_find_root_region(void)
 {
-    size_t image_size = (size_t)(&_image_end - &_image_start);
+    size_t root_mem_size = calc_root_mem_size();
 
-    /* Find the root memory region in which the hypervisor was loaded. */
+    /* Find the root memory region */
     struct mem_region* root_mem_region = NULL;
     for (size_t i = 0; i < platform.region_num; i++) {
         struct mem_region* region = &(platform.regions[i]);
-        bool is_in_rgn = range_in_range(load_addr, image_size, region->base, region->size);
+        bool is_in_rgn;
+        vaddr_t root_base_addr;
+        if (DEFINED(MEM_NON_UNIFIED)) {
+            root_base_addr = data_addr;
+        } else {
+            root_base_addr = img_addr;
+        }
+        is_in_rgn = range_in_range(root_base_addr, root_mem_size, region->base, region->size);
+
         if (is_in_rgn) {
             root_mem_region = region;
             break;
@@ -353,7 +425,7 @@ static struct mem_region* mem_find_root_region(void)
 
 static bool mem_setup_root_pool(struct mem_region** root_mem_region)
 {
-    *root_mem_region = mem_find_root_region(load_addr);
+    *root_mem_region = mem_find_root_region();
     if (*root_mem_region == NULL) {
         return false;
     }
