@@ -195,9 +195,9 @@ bool vipir_emul_handler(struct emul_access* acc)
 
         unsigned long psw = get_gmpsw();
         if (*tgt_reg & bitop_mask)
-            set_gmpsw(psw & ~0x1UL);
+            set_gmpsw(psw & ~PSW_Z);
         else
-            set_gmpsw(psw | 0x1UL);
+            set_gmpsw(psw | PSW_Z);
 
         switch (acc->arch.op)
         {

@@ -6,3 +6,4 @@ boards-objs-y+=plat.o
 boards-objs-y+=port.o
 boards-objs-y+=clock.o
 boards-objs-y+=stbc.o
+boards-objs-y+=pbg.o

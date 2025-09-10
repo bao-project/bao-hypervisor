@@ -8,6 +8,48 @@
 
 #include <bao.h>
 
+/* Basic System Registers */
+#define PSW_Z               (1UL << 0)
+#define PSW_EBV             (1UL << 15)
+
+#define EIPSW_EBV           (PSW_EBV)
+#define FEPSW_EBV           (PSW_EBV)
+
+/* MPU Registers */
+#define MPM_MPE             (1UL << 0)
+#define MPM_SVP             (1UL << 1)
+#define MPCFG_HBE_OFF       (8)
+#define MPCFG_HBE_LEN       (6)
+#define MPCFG_HBE_MASK      (BIT_MASK(MPCFG_HBE_OFF, MPCFG_HBE_LEN))
+#define MPIDX_IDX_OFF       (0)
+#define MPIDX_IDX_LEN       (5)
+#define MPIDX_IDX_MASK      (BIT_MASK(MPIDX_IDX_OFF, MPIDX_IDX_LEN))
+#define MPLA_OFF            (2)
+#define MPLA_LEN            (30)
+#define MPLA_MASK           (BIT_MASK(MPLA_OFF, MPLA_LEN))
+#define MPUA_OFF            (2)
+#define MPUA_LEN            (30)
+#define MPUA_MASK           (BIT_MASK(MPUA_OFF, MPUA_LEN))
+
+/* Hypervisor registers */
+#define GMCFG_HMP           (1UL << 1)
+#define GMCFG_GSYSE         (1UL << 4)
+#define GMCFG_GCU0          (1UL << 16)
+#define GMCFG_GCU1          (1UL << 17)
+
+#define EIPSWH_GPID_OFF     (8)
+#define EIPSWH_GPID_LEN     (3)
+#define EIPSWH_GPID_MASK    (BIT_MASK(EIPSWH_GPID_OFF, EIPSWH_GPID_LEN))
+#define EIPSWH_GM           (1UL << 31)
+
+#define FEPSWH_GPID_OFF     (EIPSWH_GPID_OFF)
+#define FEPSWH_GPID_LEN     (EIPSWH_GPID_LEN)
+#define FEPSWH_GPID_MASK    (EIPSWH_GPID_MASK)
+#define FEPSWH_GM           (EIPSWH_GM)
+
+/* Guest context registers */
+#define GMMPM_GMPE      (1UL << 2)
+
 #ifndef __ASSEMBLER__
 
 /* BASIC SYS REG */

@@ -58,9 +58,9 @@ static void emulate_intc_eic_access(struct emul_access* acc, size_t reg_idx, uns
 
         unsigned long psw = get_gmpsw();
         if (*tgt_reg & bitop_mask)
-            set_gmpsw(psw & ~0x1UL);
+            set_gmpsw(psw & ~PSW_Z);
         else
-            set_gmpsw(psw | 0x1UL);
+            set_gmpsw(psw | PSW_Z);
 
         switch (acc->arch.op)
         {
@@ -135,9 +135,9 @@ static void emulate_intc_imr_access(struct emul_access* acc, size_t reg_idx, uin
 
         unsigned long psw = get_gmpsw();
         if (*tgt_reg & bitop_mask)
-            set_gmpsw(psw & ~0x1UL);
+            set_gmpsw(psw & ~PSW_Z);
         else
-            set_gmpsw(psw | 0x1UL);
+            set_gmpsw(psw | PSW_Z);
 
         switch (acc->arch.op)
         {
@@ -227,9 +227,9 @@ static void emulate_intc_eibd_access(struct emul_access* acc, size_t reg_idx, ui
 
         unsigned long psw = get_gmpsw();
         if (*tgt_reg & bitop_mask)
-            set_gmpsw(psw & ~0x1UL);
+            set_gmpsw(psw & ~PSW_Z);
         else
-            set_gmpsw(psw | 0x1UL);
+            set_gmpsw(psw | PSW_Z);
 
         switch (acc->arch.op)
         {
@@ -341,9 +341,9 @@ static void emulate_intc_eeic_access(struct emul_access* acc, size_t reg_idx, ui
 
         unsigned long psw = get_gmpsw();
         if (*tgt_reg & bitop_mask)
-            set_gmpsw(psw & ~0x1UL);
+            set_gmpsw(psw & ~PSW_Z);
         else
-            set_gmpsw(psw | 0x1UL);
+            set_gmpsw(psw | PSW_Z);
 
         switch (acc->arch.op)
         {

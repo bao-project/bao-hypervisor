@@ -93,7 +93,7 @@ sync_loop:
     ldsr r0, 8, 5   /* MCA = MCS = 0 covers all memory */
     ldsr r0, 9, 5
     ldsr r0, 12, 5  /* MCI = 0 */
-    ldsr r0, 0, 1   /* CPU SPID = 0 */
+    ldsr r10, 0, 1   /* set SPID = CPU ID */
 
     /* initialize mpu entries for bank 0 */
     /* TODO: Discover number of MPU banks */

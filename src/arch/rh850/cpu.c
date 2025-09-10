@@ -22,7 +22,6 @@ void cpu_arch_init(cpuid_t cpuid, paddr_t load_addr)
                 continue;
             }
 
-            // TODO: Manual recommends 100us wait time between each core
             (*bootcrl) |= (1UL << c);
         }
     }
@@ -34,6 +33,10 @@ void cpu_arch_init(cpuid_t cpuid, paddr_t load_addr)
     set_mei(0x0);
     set_eiic(0x0);
     set_feic(0x0);
+
+    /* set xxPSW.EBV */
+    set_eipsw(0x8000);
+    set_fepsw(0x8000);
 
     /* Set snooze time */
     set_snzcfg(SNZCFG_PERIOD);

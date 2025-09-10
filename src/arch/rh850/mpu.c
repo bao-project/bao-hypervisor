@@ -29,45 +29,44 @@ static void mpu_entry_set(mpid_t mpid, struct mp_region *mpr)
 {
     unsigned long lim = mpr->base + mpr->size - 4;
 
-    set_mpidx(mpid);
-    set_mpla(mpr->base);
-    set_mpua(lim);
+    set_mpidx(mpid & MPIDX_IDX_MASK);
+    set_mpla(mpr->base & MPLA_MASK);
+    set_mpua(lim & MPUA_MASK);
     set_mpat(mpr->mem_flags.raw);
 }
 
 static void mpu_entry_clear(mpid_t mpid)
 {
-    set_mpidx(mpid);
+    set_mpidx(mpid & MPIDX_IDX_MASK);
     set_mpla(0);
     set_mpua(0);
-    set_mpat(0); /* TODO is disabling enough */
+    set_mpat(0);
 }
 
-static mpid_t mpu_entry_allocate_guest(void)
-{
-    mpid_t reg_num = INVALID_MPID;
-    for (mpid_t i = (mpid_t)mpu_num_entries(); i > 0; i--) {
-        mpid_t idx = i - 1;
-        if (bitmap_get(cpu()->arch.mpu_hyp.bitmap, idx) == 0) {
-            bitmap_set(cpu()->arch.mpu_hyp.bitmap, idx);
-            reg_num = idx;
+// // TODO: add hyp mpu entry counter to prevent guest mpu entries from 
+// // spiling into hyp entries
+// static mpid_t mpu_entry_allocate_guest(void)
+// {
+//     mpid_t reg_num = INVALID_MPID;
+//     for (mpid_t i = 0; i < (mpid_t)mpu_num_entries(); i++) {
+//         mpid_t idx = i - 1;
+//         if (bitmap_get(cpu()->arch.mpu_hyp.bitmap, idx) == 0) {
+//             bitmap_set(cpu()->arch.mpu_hyp.bitmap, idx);
+//             reg_num = idx;
 
-            // // Update HBE
-            // unsigned long mpcfg = get_mpcfg();
+//             // Update HBE
+//             unsigned long mpcfg = get_mpcfg();
 
-            // // TODO right now hyp entries must be allocated first
-            // //
-            // // TODO add hyp mpu entry counter to prevent guest mpu entries from
-            // // spiling into hyp entries
-            // unsigned long hbe = (reg_num + 1) << 8;
-            // mpcfg = (mpcfg & ~0x3F00) | hbe;
-            // set_mpcfg(mpcfg);
-            break;
-        }
-    }
+//             // spiling into hyp entries
+//             unsigned long hbe = (reg_num + 1) << MPCFG_HBE_OFF;
+//             mpcfg = (mpcfg & ~MPCFG_HBE_MASK) | hbe;
+//             set_mpcfg(mpcfg);
+//             break;
+//         }
+//     }
 
-    return reg_num;
-}
+//     return reg_num;
+// }
 
 static mpid_t mpu_entry_allocate_hyp(void)
 {
@@ -85,20 +84,13 @@ static mpid_t mpu_entry_allocate_hyp(void)
     return reg_num;
 }
 
-bool mpu_add_region(struct addr_space* as, struct mp_region *reg, bool locked)
+bool mpu_add_region(struct mp_region *reg, bool locked)
 {
     bool failed = true;
 
     if (reg->size > 0) {
         mpid_t mpid = 0;
-        if (as->type == AS_VM)
-        {
-            mpid = mpu_entry_allocate_guest();
-        }
-        else
-        {
-            mpid = mpu_entry_allocate_hyp();
-        }
+        mpid = mpu_entry_allocate_hyp();
 
         if (mpid != INVALID_MPID) {
             failed = false;
@@ -112,17 +104,9 @@ bool mpu_add_region(struct addr_space* as, struct mp_region *reg, bool locked)
     return !failed;
 }
 
-/* static inline bool mpu_arch_perms_compatible(mem_flags_t perms1, mem_flags_t perms2) */
-/* { */
-/*     UNUSED_ARG(perms1); */
-/*     UNUSED_ARG(perms2); */
-
-/*     return 1; */
-/* } */
-
 static void mpu_entry_get_region(mpid_t mpid, struct mp_region *mpe)
 {
-    set_mpidx(mpid);
+    set_mpidx(mpid & MPIDX_IDX_MASK);
 
     unsigned long base = get_mpla();
     unsigned long limit = get_mpua();
@@ -202,7 +186,7 @@ bool mpu_update_region(struct mp_region *mpr)
 
 static inline bool mpu_entry_valid(mpid_t mpid)
 {
-    set_mpidx(mpid);
+    set_mpidx(mpid & MPIDX_IDX_MASK);
     unsigned long attr = get_mpat();
     unsigned long valid_bit = (attr & (1 << 7)) >> 7;
 
@@ -213,11 +197,9 @@ void mpu_arch_init(void)
 {
     bitmap_clear_consecutive(cpu()->arch.mpu_hyp.bitmap, 0, mpu_num_entries());
 
-    for (mpid_t mpid = 0; mpid < (mpid_t)mpu_num_entries(); mpid++)
-    {
-        /* TODO No entry should be valid at this point... */
-        if (mpu_entry_valid(mpid))
-        {
+    for (mpid_t mpid = 0; mpid < (mpid_t)mpu_num_entries(); mpid++) {
+        /* No entry should be valid at this point */
+        if (mpu_entry_valid(mpid)) {
             bitmap_set(cpu()->arch.mpu_hyp.bitmap, mpid);
             bitmap_set(cpu()->arch.mpu_hyp.locked, mpid);
         }
@@ -226,18 +208,22 @@ void mpu_arch_init(void)
     unsigned long mpcfg = get_mpcfg();
     // give all entries to the hypervisor
     unsigned long hbe = 0;
-    mpcfg = (mpcfg & ~0x3F00UL) | hbe;
+    mpcfg = (mpcfg & ~MPCFG_HBE_MASK) | hbe;
     set_mpcfg(mpcfg);
 
-    /* configure SPIDs */
-    // we assume MPIDn.SPID = 0 after reset for n = 2 to 7
-    set_mpid0(HYP_SPID);
-    set_mpid1(VM_SPID);
-    set_mpid7(AUX_SPID);
-    set_spid(HYP_SPID);
+    /* At this point we configure MPIDs as PEID to perform platform initialization */
+    unsigned long peid = get_peid();
+    set_mpid0(peid);
+    set_spid(peid);
 }
 
 void mpu_arch_enable(void)
 {
-    set_mpm(3); // TODO don't hardcode
+    set_mpm(MPM_SVP | MPM_MPE);
+}
+
+void mpu_arch_disable(void)
+{
+    unsigned long mpm = get_mpm() & ~MPM_MPE;
+    set_mpm(mpm);
 }

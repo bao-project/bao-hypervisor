@@ -11,6 +11,7 @@
 #include <plat/port.h>
 #include <plat/clock.h>
 #include <plat/stbc.h>
+#include <plat/pbg.h>
 
 /* Interrupts */
 #define PLAT_MAX_INTERRUPTS     768

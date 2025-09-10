@@ -8,7 +8,12 @@
 
 #include <bao.h>
 
-void vmm_enable_access_to_vm(void);
-void vmm_disable_access_to_vm(void);
+/* Bao uses MPID0 and MPID7 */
+#define HYP_SPID 0x10
+#define HYP_AUX_SPID 0x1F
+
+#ifndef __ASSEMBLER__
+
+#endif /* __ASSEMBLER__ */
 
 #endif /* __ARCH_VMM_H__ */

@@ -3,8 +3,9 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
-#include <arch/bao.h>
+#include <bao.h>
 #include <asm_defs.h>
+#include <arch/vmm.h>
 
 .text
 
@@ -12,7 +13,7 @@
 
 	/* set SPID to HYP_SPID */
 	ldsr r31, 28, 0 /* use EIWR as scratchpad */
-	mov 0x0, r31	/* HYP_SPID (TODO: use macro) */
+	mov HYP_SPID, r31
 	ldsr r31, 0, 1
 
 	/* save program registers in vcpu struct */
@@ -79,15 +80,19 @@
     ld.dw 96[r31], r24
     ld.dw 104[r31], r26
     ld.dw 112[r31], r28
-    ld.dw 120[r31], r30
+    ld.w 120[r31], r30
 
-	/* set SPID to VM_SPID */
+	/* set SPID to VMID */
 	ldsr r31, 28, 0
-	mov 0x1, r31 	/* VM_SPID (TODO: use macro) */
+	ld.w 132[r31], r31
 	ldsr r31, 0, 1
 
-	/* the instructions below should not trigger any MIP exception, 
-	as all the hypervisor code belongs to an MPU entry with RG = 1 */
+	/* the instructions below should not trigger any MIP/MDP exception, 
+	all the hypervisor code/data belongs to an MPU entry with RG = 1 */
+
+	stsr 28, r31, 0
+	ld.w 124[r31], r31
+	ldsr r31, 28, 0
 
 	/* select ret instruction */
 	br _select_xxret

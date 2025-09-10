@@ -13,6 +13,9 @@ void vm_arch_init(struct vm* vm, const struct vm_config* vm_config)
 {
     UNUSED_ARG(vm_config);
 
+    /* All VMs use MPID1 for memory protection */
+    set_mpid1(vm->id);
+
     vintc_init(vm);
     vipir_init(vm);
     vbootctrl_init(vm);
@@ -21,8 +24,7 @@ void vm_arch_init(struct vm* vm, const struct vm_config* vm_config)
 void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm)
 {
     UNUSED_ARG(vm);
-    
-    vcpu->arch.started = vcpu->id == 0 ? true : false;
+    UNUSED_ARG(vcpu);
 }
 
 void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
@@ -33,14 +35,31 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
 
     vcpu_writepc(vcpu, entry);
     set_eipc(entry);
+
+    vcpu->arch.started = vcpu->id == 0 ? true : false;
+    
+    /* Bao fixes the VMID as SPID to isolate VM memory regions */
+    vcpu->regs.spid = vm->id;
+    set_gmspid(vm->id);
+    set_gmspidlist(0x0);
+
+    set_gmmpm(GMMPM_GMPE);
+
+    unsigned long eipswh = get_eipswh() & ~EIPSWH_GPID_MASK;
+    set_eipswh(eipswh | (vm->id << EIPSWH_GPID_OFF));
+
+    unsigned long fepswh = get_fepswh() & ~FEPSWH_GPID_MASK;
+    set_fepswh(fepswh | (vm->id << FEPSWH_GPID_OFF));
+
     set_gmpeid(vcpu->id);
 
-    /* set xxPSW.EBV */
-    set_eipsw(0x8000);
-    set_fepsw(0x8000);
-
-    /* set EIPSWH.GPID */
-    set_eipswh(get_eipswh() | (vm->id << 8));
+    /* clear guest-context exception registers */
+    set_gmeipc(0x0);
+    set_gmfepc(0x0);
+    set_gmmea(0x0);
+    set_gmmei(0x0);
+    set_gmeiic(0x0);
+    set_gmfeic(0x0);
 
     vintc_vcpu_reset(vcpu);
 }
@@ -115,9 +134,9 @@ bool vbootctrl_emul_handler(struct emul_access* acc)
 
         unsigned long psw = get_gmpsw();
         if (vm->vcpus[virt_id].arch.started)
-            set_gmpsw(psw & ~0x1UL);
+            set_gmpsw(psw & ~PSW_Z);
         else
-            set_gmpsw(psw | 0x1UL);
+            set_gmpsw(psw | PSW_Z);
 
         switch (acc->arch.op)
         {

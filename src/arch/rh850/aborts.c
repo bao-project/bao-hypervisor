@@ -6,7 +6,7 @@
 #include <emul.h>
 #include <hypercall.h>
 #include <fences.h>
-#include <vm.h>
+#include <vmm.h>
 #include <arch/aborts.h>
 #include <arch/emul.h>
 #include <arch/srs.h>
@@ -72,7 +72,7 @@ static unsigned long read_instruction(unsigned long pc)
     inst = (unsigned long)(*pc_ptr | (*(pc_ptr+1) << 16));
 
     /* Disable Hyp access to VM space */
-    set_mpid7(AUX_SPID);
+    set_mpid7(HYP_AUX_SPID);
     fence_sync();
 
     return inst;

@@ -10,6 +10,9 @@ void platform_init(void) {
 
     if (cpu_is_master()) {
 
+        /*** Peripheral Bus Guard Initialization ***/
+        pbg_init();
+
         /*** Module Standby Initialization ***/
         stbc_init();
 

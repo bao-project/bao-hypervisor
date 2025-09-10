@@ -13,10 +13,10 @@ struct addr_space;
 struct mp_region;
 
 void mpu_arch_init(void);
-void mpu_arch_enable(void);
-bool mpu_add_region(struct addr_space* as, struct mp_region* reg, bool locked);
+bool mpu_add_region(struct mp_region* reg, bool locked);
 bool mpu_remove_region(struct mp_region* reg);
 bool mpu_update_region(struct mp_region* reg);
-bool mpu_arch_perms_compatible(mem_flags_t perms1, mem_flags_t perms2);
+void mpu_arch_enable(void);
+void mpu_arch_disable(void);
 
 #endif /* __ARCH_MPU_H__ */

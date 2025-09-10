@@ -11,7 +11,7 @@
 #define MSRKCPROT_ENABLE_WR     (0xA5A5A501UL)
 #define MSRKCPROT_DISABLE_WR    (0xA5A5A500UL)
 
-#define STBC_BASE               (0xFF981000UL)
+#define PLAT_STBC_BASE               (0xFF981000UL)
 
 /* Standby Controller MMIO Registers */
 struct stbc_hw {

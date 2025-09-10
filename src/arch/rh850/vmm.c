@@ -3,6 +3,7 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
+#include <arch/mpu.h>
 #include <vmm.h>
 #include <arch/srs.h>
 #include <arch/fences.h>
@@ -11,55 +12,15 @@ void vmm_arch_init(void)
 {
     /* HVCFG.HVE is set after reset */
 
-    /* set GMCFG.HMP, GMCFG.GSYSE, GMCFG */
-    set_gmcfg(0x30012);
-    if (get_gmcfg() != 0x30012){
-        ERROR("GMCFG is not being written");
-    }
+    /* configure Hypervisor MPIDs for memory protection */
+    mpu_arch_disable();
+    set_mpid0(HYP_SPID);
+    set_mpid7(HYP_AUX_SPID);
+    set_spid(HYP_SPID);
+    mpu_arch_enable();
 
-    // TODO: set xxPSWH.GPID with the VM ID
+    set_gmcfg(GMCFG_GCU1 | GMCFG_GCU0 | GMCFG_GSYSE | GMCFG_HMP);
 
-    /* set EIPSWH.GM */
-    set_eipswh(0x80000000);
-    if (get_eipswh() != 0x80000000){
-        ERROR("EIPSWH is not being written");
-    }
-
-    /* set FEPSWH.GM */
-    set_fepswh(0x80000000);
-    if (get_fepswh() != 0x80000000){
-        ERROR("FEPSWH is not being written");
-    }
-
-    /* set GMMPM.GMPE */
-    set_gmmpm(0x4);
-    if (get_gmmpm() != 0x4){
-        ERROR("GMMPM is not being written");
-    }
-
-    /* set GMSPIDLIST with available SPIDs not used by the hyp */
-    set_gmspidlist(0x0);
-
-    /* set GMSPID */
-    set_gmspid(VM_SPID);
-
-    /* clear guest-context exception registers */
-    set_gmeipc(0x0);
-    set_gmfepc(0x0);
-    set_gmmea(0x0);
-    set_gmmei(0x0);
-    set_gmeiic(0x0);
-    set_gmfeic(0x0);
-}
-
-void vmm_enable_access_to_vm(void)
-{
-    set_mpid7(HYP_SPID);
-    fence_sync();
-}
-
-void vmm_disable_access_to_vm(void)
-{
-    set_mpid7(AUX_SPID);
-    fence_sync();
+    set_eipswh(EIPSWH_GM);
+    set_fepswh(FEPSWH_GM);
 }

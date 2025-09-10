@@ -8,10 +8,6 @@
 
 #include <bao.h>
 
-#define HYP_SPID 0x0
-#define VM_SPID 0x1
-#define AUX_SPID 0x1F
-
 #define MPU_ARCH_MAX_NUM_ENTRIES (32)
 
 struct addr_space;
@@ -64,23 +60,23 @@ typedef mpat_flags_t mem_flags_t;
  */
 #define PTE_HYP_FLAGS       ((mem_flags_t){ .e = 1, .sr = 1, .sw = 1, .sx = 1, .rg = 1, .wmpid0 = 1 })
 /**
- * Only SPID0 can read from this region
- * Only SPID0 can write to this region
+ * Only the SPID in MPID0 can read from this region
+ * Only the SPID in MPID0 can write to this region
  */
 #define PTE_HYP_DEV_FLAGS   ((mem_flags_t){ .e = 1, .sr = 1, .sw = 1, .sx = 0, .rmpid0 = 1, .wmpid0 = 1 })
 
 /* TODO in the future we need to deal with IO permissions securely */
 /**
- * Only SPID1 and SPID7 can read from this region
- * Only SPID1 and SPID7 can write to this region
+ * Only SPIDs in MPID1 and MPID7 can read from this region
+ * Only SPIDs in MPID1 and MPID7 can write to this region
  */
 #define PTE_VM_FLAGS \
     ((mem_flags_t){ .e = 1, .sr = 1, .sw = 1, .sx = 1, .ur = 1, .uw = 1, .ux = 1, .rmpid1 = 1, .wmpid1 = 1, .rmpid7 = 1, .wmpid7 = 1 })
 
 /* TODO in the future we need to deal with IO permissions securely */
 /**
- * Only SPID1 can read from this region
- * Only SPID1 can write to this region
+ * Only the SPID in MPID1 can read from this region
+ * Only the SPID in MPID1 can write to this region
  */
 #define PTE_VM_DEV_FLAGS \
     ((mem_flags_t){ .e = 1, .sr = 1, .sw = 1, .sx = 0, .ur = 1, .uw = 1, .ux = 0, .rmpid1 = 1, .wmpid1 = 1 })
