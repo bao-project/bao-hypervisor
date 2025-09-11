@@ -71,7 +71,7 @@ platforms is presented below:
 - [ ] TC4x Communication Board  ([WiP branch](https://github.com/bao-project/bao-hypervisor/tree/feat/tricore))
 
 **Renesas RH850**
-- [ ] RH850 U2A16 ([WiP branch](https://github.com/bao-project/bao-hypervisor/tree/wip/rh850-u2a16))
+- [x] RH850 U2A16
 
 
 Community Resources

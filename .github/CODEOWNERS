@@ -12,3 +12,5 @@ src/arch/armv8/armv8-r @josecm @danielRep @miguelafsilva5
 src/arch/armv8/aarch32 @josecm @danielRep @miguelafsilva5
 
 src/arch/riscv @josecm @ninolomata @malejo97
+
+src/arch/rh850 @davidmcerdeira
