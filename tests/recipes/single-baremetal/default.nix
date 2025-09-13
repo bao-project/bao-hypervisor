@@ -34,14 +34,14 @@ let
 
     #Build guests
     guests = [
-          (callPackage (../../bao-nix/pkgs/guest/tf/baremetal.nix)
+          (callPackage (../../bao-nix/pkgs/guest/baremetal/tf/guest.nix)
                   { 
                     inherit setup-cfg;
                     inherit toolchain;
                     guest_name = "baremetal";
                     list_tests = "";
-                    list_suites = "CPU_BOOT_CHECK";
-                    inherit log_level;                     
+                    list_suites = "BOOT_CHECK IRQ_CHECK";
+                    inherit log_level;      
                   }
           )
       ];
