@@ -16,7 +16,7 @@
     add \rd, \rd, r1
 .endm
 
-.data
+.section .datanocopy
 .balign 4
 /**
  * barrier is used to minimal synchronization in boot - other cores wait for bsp to set it.
@@ -108,7 +108,7 @@ _reset_handler:
  * which later will turn on all the others. Therefore, there is no concurrency when setting
  * CPU_MASTER and no atomic operations are needed.
  */
- .pushsection .data
+ .pushsection .datanocopy
 _master_set:
     .4byte 0
 .popsection

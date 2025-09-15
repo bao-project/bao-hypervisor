@@ -56,22 +56,25 @@ SECTIONS
         _ipi_cpumsg_handlers_id_end = .;
 	}
 
-	.pad_load : {
-		/**
-		 * This section ensures the loadable portion of the image (_image_load_end) is page-aligned
-		 * by adding padding if necessary. The BYTE(0x00) forces this section to be PROGBITS rather
-		 * than NOBITS, ensuring any padding bytes are actually written to the file up to the align
-		 */
-		BYTE(0x00)
-		. = ALIGN(PAGE_SIZE);
-	}
-
     _image_load_end = .;
+
+	.datanocopy : ALIGN(PAGE_SIZE) {
+		/**
+		 * This section holds data initialized and used during early stages of the boot that can't
+		 * be later rewritten during the copy of data sections from non-volatile memory
+		 */
+		*(.datanocopy)
+		/**
+		 * Ensure the loadable portion of the image (_image_load_end) is page-aligned by adding
+		 * padding if necessary.
+		 */
+	    . = ALIGN(PAGE_SIZE);
+	}
 
 #ifdef MEM_NON_UNIFIED
 	/* Save the current location counter (VMA) and switch to LMA for .vm_images */
 	_vma_before_vm_images = .;
-    _image_load_end = _data_lma_start + (_image_load_end - _data_vma_start);
+    _image_load_end = ALIGN((_data_lma_start + (_image_load_end - _data_vma_start)), PAGE_SIZE);
 	. = _image_load_end;
 #endif
 

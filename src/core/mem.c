@@ -20,9 +20,9 @@ extern uint8_t _image_start, _image_load_end, _image_end, _vm_image_start, _vm_i
 struct list page_pool_list;
 
 /* The address where the Bao image is loaded in memory */
-vaddr_t img_addr __attribute__((section(".data")));
+vaddr_t img_addr __attribute__((section(".datanocopy")));
 /* The address where the data section is loaded in memory */
-vaddr_t data_addr __attribute__((section(".data")));
+vaddr_t data_addr __attribute__((section(".datanocopy")));
 
 static bool pp_bitmap_alloc(size_t pool_num_pages, bitmap_t** bitmap)
 {

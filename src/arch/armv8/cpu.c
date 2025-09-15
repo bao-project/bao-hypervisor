@@ -8,7 +8,7 @@
 #include <platform.h>
 #include <arch/sysregs.h>
 
-cpuid_t CPU_MASTER __attribute__((section(".data")));
+cpuid_t CPU_MASTER __attribute__((section(".datanocopy")));
 
 /* Perform architecture dependent cpu cores initializations */
 void cpu_arch_init(cpuid_t cpuid, paddr_t load_addr)
