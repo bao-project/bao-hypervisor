@@ -199,7 +199,13 @@ bool mpu_perms_compatible(unsigned long perms1, unsigned long perms2)
 
 void mpu_enable(void)
 {
-    sysreg_sctlr_el2_write(SCTLR_M);
+    unsigned long reg_val;
+
+    reg_val = sysreg_sctlr_el2_read();
+    reg_val |= SCTLR_M;
+    sysreg_sctlr_el2_write(reg_val);
+
+    ISB();
 }
 
 void mpu_init()

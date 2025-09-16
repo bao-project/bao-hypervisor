@@ -50,7 +50,7 @@ boot_arch_profile_init:
     /* r4 contains the id of the MPU entry being used */
     mov r4, #(-1)
 
-    /* Enable caches and MPU */
+    /* Enable caches */
     ldr r4, =(SCTLR_RES1_AARCH32 | SCTLR_C | SCTLR_I)
     mcr p15, 4, r4, c1, c0, 0 // HSCTLR
 
