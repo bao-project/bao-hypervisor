@@ -154,6 +154,19 @@ _set_master_cpu:
     /* If this is the cpu master, clear bss */
     cmp r9, #0
     bne 1f
+
+#ifdef MEM_NON_UNIFIED
+    /* Copy data from RX to RWX */
+    ldr r7, =_data_lma_start        // LMA start
+    ldr r11, =_data_vma_start       // VMA start
+    ldr r12, =_image_load_end       // LMA end
+    bl copy_data
+
+    ldr r1, =_data_vma_start
+    ldr r3, =data_addr
+    str r1, [r3] // store image load address in img_addr
+#endif
+
     ldr r11, =_bss_start
     ldr r12, =_bss_end
     bl boot_clear
@@ -196,6 +209,16 @@ boot_clear:
 	b 2b
 1:
 	bx lr
+
+/* Copies data from r7 to r11 up to the r12 limit */
+.global copy_data
+copy_data:
+1:
+    ldr r8, [r7], #4
+    str r8, [r11], #4
+    cmp r7, r12
+    bne 1b
+    bx lr
 
 /*
  * Code adapted from "Application Note Bare-metal Boot Code for ARMv8-A Processors - Version 1.0"
