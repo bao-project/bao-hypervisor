@@ -204,6 +204,9 @@ endif
 ifeq ($(plat_mem),non_unified)
 	build_macros+=-DMEM_NON_UNIFIED
 endif
+ifeq ($(phys_irqs_only),y)
+	build_macros+=-DPHYS_IRQS_ONLY
+endif
 
 ifeq ($(CC_IS_GCC),y)
 	build_macros+=-DCC_IS_GCC

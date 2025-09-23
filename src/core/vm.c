@@ -182,6 +182,14 @@ static void vm_init_ipc(struct vm* vm, const struct vm_config* vm_config)
             WARNING("Trying to map region to smaller shared memory. Truncated");
         }
 
+        if (DEFINED(PHYS_IRQS_ONLY)) {
+            for (size_t j = 0; j < ipc->interrupt_num; j++) {
+                if (!interrupts_vm_assign(vm, ipc->interrupts[j])) {
+                    ERROR("Failed to assign interrupt id %d", ipc->interrupts[j]);
+                }
+            }
+        }
+
         spin_lock(&shmem->lock);
         shmem->cpu_masters |= (1UL << cpu()->id);
         spin_unlock(&shmem->lock);
