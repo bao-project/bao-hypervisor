@@ -118,7 +118,11 @@ SECTIONS
 
 	. = ALIGN(PAGE_SIZE);
 	_image_end = ABSOLUTE(.);
+
 	_dmem_phys_beg = ABSOLUTE(.) + extra_allocated_phys_mem;
+#ifdef MEM_NON_UNIFIED
+	_dmem_phys_beg = ABSOLUTE(.);
+#endif
 
 	. = ALIGN(PAGE_SIZE);
 	_dmem_beg = ABSOLUTE(.);
