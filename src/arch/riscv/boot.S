@@ -98,7 +98,7 @@ _reset_handler:
     mv      a2, a1
     la      a1, _image_start
 
-    LD_SYM  a3, img_addr
+    la      a3, img_addr
     STORE   a1, 0(a3) // store image load address in img_addr
 
     LD_SYM  s6, _extra_allocated_phys_mem_sym
