@@ -48,7 +48,7 @@ _reset_handler:
 	mrs  x0, MPIDR_EL1
 	adrp x1, _image_start
 
-	ldr x2, =img_addr
+	adr x2, img_addr
     str x1, [x2] // store image load address in img_addr
 
 	/*
