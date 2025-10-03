@@ -203,7 +203,7 @@ static void mem_init_boot_regions(void)
 void mem_prot_init()
 {
     mpu_init();
-    as_init(&cpu()->as, AS_HYP, HYP_ASID, BIT_MASK(0, PLAT_CPU_NUM), 0);
+    as_init(&cpu()->as, AS_HYP, HYP_ASID, 0);
     mem_init_boot_regions();
     mpu_enable();
 }
@@ -214,14 +214,13 @@ size_t mem_cpu_boot_alloc_size()
     return size;
 }
 
-void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, cpumap_t cpus, colormap_t colors)
+void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, colormap_t colors)
 {
     UNUSED_ARG(colors);
 
     as->type = type;
     as->colors = 0;
     as->id = id;
-    as->cpus = cpus;
     as->lock = SPINLOCK_INITVAL;
     as_arch_init(as);
 
