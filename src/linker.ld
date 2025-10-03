@@ -56,7 +56,7 @@ SECTIONS
         _ipi_cpumsg_handlers_id_end = .;
 	}
 
-    _image_load_end = .;
+    _data_vma_end = .;
 
 	.datanocopy : ALIGN(PAGE_SIZE) {
 		/**
@@ -71,9 +71,12 @@ SECTIONS
 	    . = ALIGN(PAGE_SIZE);
 	}
 
+	_image_load_end = .;
+
 #ifdef MEM_NON_UNIFIED
 	/* Save the current location counter (VMA) and switch to LMA for .vm_images */
 	_vma_before_vm_images = .;
+	_data_lma_end =  ALIGN((_data_lma_start + (_data_vma_end - _data_vma_start)), PAGE_SIZE);
     _image_load_end = ALIGN((_data_lma_start + (_image_load_end - _data_vma_start)), PAGE_SIZE);
 	. = _image_load_end;
 #endif
@@ -122,8 +125,9 @@ SECTIONS
 	. = ALIGN(PAGE_SIZE);
 	_image_end = ABSOLUTE(.);
 
+#ifdef MEM_PROT_MMU
 	_dmem_phys_beg = ABSOLUTE(.) + extra_allocated_phys_mem;
-#ifdef MEM_NON_UNIFIED
+#else
 	_dmem_phys_beg = ABSOLUTE(.);
 #endif
 
