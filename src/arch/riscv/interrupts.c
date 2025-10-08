@@ -45,7 +45,7 @@ void interrupts_arch_ipi_send(cpuid_t target_cpu)
     if (USE_ACLINT_IPI()) {
         aclint_send_ipi(target_cpu);
     } else {
-        sbi_send_ipi(1UL << target_cpu, 0);
+        irqc_send_ipi(target_cpu, ipi_id);
     }
 }
 
@@ -85,6 +85,11 @@ void interrupts_arch_handle(void)
     stopi = stopi >> TOPI_IID_SHIFT;
     switch (stopi) {
         case IRQ_S_SOFT:
+            /**
+             * This case is executed only by APLIC configuration,
+             * IPIs sent through IMSIC are handled as external
+             * interrupts.
+             */
             interrupts_handle(interrupts_ipi_id);
             csrs_sip_clear(SIP_SSIP);
             break;
