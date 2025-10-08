@@ -55,8 +55,8 @@ SECTIONS
 		*(.ipi_cpumsg_handlers_id)
         _ipi_cpumsg_handlers_id_end = .;
 	}
-
-    _image_load_end = .;
+	
+	_data_lma_end = . ;
 
 	.datanocopy : ALIGN(PAGE_SIZE) {
 		/**
@@ -71,13 +71,16 @@ SECTIONS
 	    . = ALIGN(PAGE_SIZE);
 	}
 
+	_image_load_end = .;
+
 #ifdef MEM_NON_UNIFIED
 	/* Save the current location counter (VMA) and switch to LMA for .vm_images */
 	_vma_before_vm_images = .;
     _image_load_end = ALIGN((_data_lma_start + (_image_load_end - _data_vma_start)), PAGE_SIZE);
 	. = _image_load_end;
+#else
+	_image_load_end = .;
 #endif
-
 	/* Sections to be allocated only in physical memory, not in VA space */
 
     .vm_images : AT(_image_load_end) SUBALIGN(PAGE_SIZE) {
