@@ -15,6 +15,7 @@ jobs:
       matrix:
         platform: [
           "qemu-riscv64-virt",
+          "qemu-riscv32-virt",
         ]
         irqc: [
           "PLIC",
