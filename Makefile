@@ -204,8 +204,13 @@ endif
 ifeq ($(plat_mem),non_unified)
 	build_macros+=-DMEM_NON_UNIFIED
 endif
-ifeq ($(phys_irqs_only),y)
-	build_macros+=-DPHYS_IRQS_ONLY
+
+ifeq ($(mmio_slave_side_prot),y)
+	build_macros+=-DMMIO_SLAVE_SIDE_PROT
+
+	ifneq ($(arch_mem_prot),mpu)
+		$(error mmio_slave_side_prot=y requires arch_mem_prot=mpu)
+	endif
 endif
 
 ifeq ($(CC_IS_GCC),y)
