@@ -21,6 +21,8 @@ struct platform {
     size_t region_num;
     struct mem_region* regions;
 
+    size_t mmio_region_num;
+    struct mem_region* mmio_regions;
     struct {
         paddr_t base;
     } console;
