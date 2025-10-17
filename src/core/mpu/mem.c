@@ -213,6 +213,15 @@ size_t mem_cpu_boot_alloc_size()
     return size;
 }
 
+static void mem_mmio_init_regions(struct addr_space* as)
+{
+    for (unsigned long i = 0; i < platform.mmio_region_num; i++) {
+        mem_alloc_map_dev(as, as->type == AS_VM ? SEC_VM_ANY : SEC_HYP_ANY,
+            platform.mmio_regions[i].base, platform.mmio_regions[i].base,
+            NUM_PAGES(platform.mmio_regions[i].size));
+    }
+}
+
 static unsigned long as_id_alloc(struct addr_space* as)
 {
     static spinlock_t as_id_alloc_lock = SPINLOCK_INITVAL;
@@ -243,6 +252,12 @@ void as_init(struct addr_space* as, enum AS_TYPE type, colormap_t colors)
 
     for (size_t i = 0; i < VMPU_NUM_ENTRIES; i++) {
         mem_vmpu_free_entry(as, i);
+    }
+
+    /* For architectures with slave-side mmio protection, we map all the
+    mmio regions to be accessible to all address spaces */
+    if (DEFINED(MMIO_SLAVE_SIDE_PROT)) {
+        mem_mmio_init_regions(as);
     }
 }
 
