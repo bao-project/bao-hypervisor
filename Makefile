@@ -204,8 +204,17 @@ endif
 ifeq ($(plat_mem),non_unified)
 	build_macros+=-DMEM_NON_UNIFIED
 endif
-ifeq ($(phys_irqs_only),y)
-	build_macros+=-DPHYS_IRQS_ONLY
+
+# Could be mmio_prot -> slave_side, mpu, etc
+ifeq ($(mmio_slave_side_prot),y)
+	build_macros+=-DMMIO_SLAVE_SIDE_PROT
+endif
+
+# Consistency check
+ifeq ($(mmio_slave_side_prot),y)
+  ifneq ($(arch_mem_prot),mpu)
+    $(error mmio_slave_side_prot=y requires arch_mem_prot=mpu)
+  endif
 endif
 
 ifeq ($(CC_IS_GCC),y)
@@ -395,3 +404,4 @@ $(call ci, format, $(all_c_files))
 ci: license-check format-check
 
 endif
+# Could be mmio_prot -> slave_side, mpu, etc
