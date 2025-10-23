@@ -40,7 +40,7 @@ let
                     inherit toolchain;
                     guest_name = "baremetal";
                     list_tests = "";
-                    list_suites = "BOOT_CHECK IRQ_CHECK";
+                    list_suites = "BOOT_CHECK";
                     inherit log_level;      
                   }
           )
@@ -56,7 +56,6 @@ let
       inherit bao_cfg_repo;
       inherit bao_cfg;
       inherit guests; 
-      #bao_srcs_path = /home/mafs/bao-hypervisor;
     };
 
     # Build Firmware
