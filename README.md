@@ -141,3 +141,72 @@ In IEEE Access, 2024. https://ieeexplore.ieee.org/document/10781314
 
 10. Hidemasa Kawasaki and Soramichi Akiyama. "**Running Bao Hypervisor on gem5**"
 In gem5 blog, 2024. https://www.gem5.org/2024/11/12/bao-on-gem5.html
+
+
+Testing Framework Usage
+-----------------------
+
+### Prerequisites
+- Ensure [Nix package manager](https://nixos.org/download.html) is installed.
+- After cloning the Bao repository, initialize and update the submodules (bao-nix and bao-tests):
+
+```
+
+git submodule update --init --recursive
+
+```
+
+- Install QEMU for your target platform via Nix (first-time runs may take time):
+
+  For **qemu-aarch64-virt**:
+```
+
+nix-shell -p 'with import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/0c924ec948073580a3c3d438746388d05a38028b.zip") {}; qemu' --run "true"
+
+```
+
+For **qemu-riscv64-virt**:
+```
+
+nix-shell -p 'with import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/0c924ec948073580a3c3d438746388d05a38028b.zip") {}; qemu_full' --run "true"
+
+```
+
+### Running Tests
+To run tests, invoke the framework using the Makefile target:
+
+```
+
+make tests PLATFORM=<platform> RECIPE=<recipe>
+
+```
+
+Example:
+
+```
+
+make tests PLATFORM=qemu-aarch64-virt RECIPE=single-baremetal/default.nix
+
+```
+
+This will run tests on the specified platform with the given recipe.
+
+### Supported Platforms and Test Setups
+The following table summarizes the supported platforms and test setups for the Bao testing framework. It shows which setups support boot tests and which have IRQ tests implemented (e.g., UART and timer interrupts):
+
+| Platform           | Setup            | Boot Tests | IRQ Tests       |
+|:------------------:|:----------------:|:----------:|:---------------:|
+| qemu-aarch64-virt  | single-baremetal | Yes        | UART, Timer     |
+| qemu-aarch64-virt  | single-freertos  | Yes        | UART, Timer     |
+| qemu-aarch64-virt  | single-linux     | Yes        | No              |
+| qemu-riscv64-virt  | single-baremetal | Yes        | UART, Timer     |
+| qemu-riscv64-virt  | single-freertos  | Yes        | UART, Timer     |
+| qemu-riscv64-virt  | single-linux     | Yes        | No              |
+
+Example enabling GICv3:
+
+```
+
+make tests PLATFORM=qemu-aarch64-virt RECIPE=single-baremetal/default.nix IRQC=gicv3
+
+```
