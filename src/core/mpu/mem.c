@@ -223,13 +223,29 @@ static void mem_mmio_init_regions(struct addr_space* as)
     }
 }
 
+static void as_id_alloc(struct addr_space* as)
+{
+    static spinlock_t as_id_alloc_lock = SPINLOCK_INITVAL;
+    static asid_t asid_counter = 1;
+
+    spin_lock(&as_id_alloc_lock);
+    if (as->type == AS_HYP) {
+        as->id = 0;
+    } else {
+        as->id = asid_counter;
+        asid_counter++;
+    }
+    spin_unlock(&as_id_alloc_lock);
+}
+
 void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, colormap_t colors)
 {
     UNUSED_ARG(colors);
+    UNUSED_ARG(id);
 
     as->type = type;
     as->colors = 0;
-    as->id = id;
+    as_id_alloc(as);
     as->lock = SPINLOCK_INITVAL;
     as_arch_init(as);
 

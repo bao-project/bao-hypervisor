@@ -900,13 +900,30 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
     mem_unmap(&cpu()->as, va, p_cpu.num_pages, false);
 }
 
+static void as_id_alloc(struct addr_space* as)
+{
+    static spinlock_t as_id_alloc_lock = SPINLOCK_INITVAL;
+    static asid_t asid_counter = 1;
+
+    spin_lock(&as_id_alloc_lock);
+    if (as->type == AS_HYP) {
+        as->id = 0;
+    } else {
+        as->id = asid_counter;
+        asid_counter++;
+    }
+    spin_unlock(&as_id_alloc_lock);
+}
+
 void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, pte_t* root_pt, colormap_t colors)
 {
+    UNUSED_ARG(id);
+
     as->type = type;
     as->pt.dscr = type == AS_HYP || type == AS_HYP_CPY ? hyp_pt_dscr : vm_pt_dscr;
+    as_id_alloc(as);
     as->colors = colors;
     as->lock = SPINLOCK_INITVAL;
-    as->id = id;
 
     if (root_pt == NULL) {
         size_t n = NUM_PAGES(pt_size(&as->pt, 0));
