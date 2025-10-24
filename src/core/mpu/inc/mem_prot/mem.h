@@ -12,9 +12,7 @@
 #include <arch/mem.h>
 #include <arch/spinlock.h>
 
-#define HYP_ASID         0
 #define VMPU_NUM_ENTRIES 64
-
 struct mp_region {
     vaddr_t base;
     size_t size;
