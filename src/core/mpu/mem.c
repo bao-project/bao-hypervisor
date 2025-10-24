@@ -203,7 +203,7 @@ static void mem_init_boot_regions(void)
 void mem_prot_init()
 {
     mpu_init();
-    as_init(&cpu()->as, AS_HYP, HYP_ASID, 0);
+    as_init(&cpu()->as, AS_HYP, 0);
     mem_init_boot_regions();
     mpu_enable();
 }
@@ -230,10 +230,9 @@ static unsigned long as_id_alloc(struct addr_space* as)
     return ret;
 }
 
-void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, colormap_t colors)
+void as_init(struct addr_space* as, enum AS_TYPE type, colormap_t colors)
 {
     UNUSED_ARG(colors);
-    UNUSED_ARG(id);
 
     as->type = type;
     as->colors = 0;
