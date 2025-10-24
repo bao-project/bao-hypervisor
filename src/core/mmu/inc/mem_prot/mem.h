@@ -10,8 +10,6 @@
 #include <arch/mem.h>
 #include <page_table.h>
 #include <spinlock.h>
-
-#define HYP_ASID 0
 struct addr_space {
     struct page_table pt;
     enum AS_TYPE type;
