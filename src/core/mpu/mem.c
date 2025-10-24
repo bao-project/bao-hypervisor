@@ -214,13 +214,30 @@ size_t mem_cpu_boot_alloc_size()
     return size;
 }
 
+static unsigned long as_id_alloc(struct addr_space* as)
+{
+    static spinlock_t as_id_alloc_lock = SPINLOCK_INITVAL;
+    static asid_t asid_counter = 1;
+    unsigned long ret = 0;
+
+    spin_lock(&as_id_alloc_lock);
+    if (as->type != AS_HYP) {
+        ret = asid_counter;
+        asid_counter++;
+    }
+    spin_unlock(&as_id_alloc_lock);
+
+    return ret;
+}
+
 void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, colormap_t colors)
 {
     UNUSED_ARG(colors);
+    UNUSED_ARG(id);
 
     as->type = type;
     as->colors = 0;
-    as->id = id;
+    as->id = as_id_alloc(as);
     as->lock = SPINLOCK_INITVAL;
     as_arch_init(as);
 
