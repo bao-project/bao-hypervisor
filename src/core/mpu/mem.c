@@ -203,7 +203,7 @@ static void mem_init_boot_regions(void)
 void mem_prot_init()
 {
     mpu_init();
-    as_init(&cpu()->as, AS_HYP, HYP_ASID, BIT_MASK(0, PLAT_CPU_NUM), 0);
+    as_init(&cpu()->as, AS_HYP, 0);
     mem_init_boot_regions();
     mpu_enable();
 }
@@ -214,14 +214,38 @@ size_t mem_cpu_boot_alloc_size()
     return size;
 }
 
-void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, cpumap_t cpus, colormap_t colors)
+static void mem_mmio_init_regions(struct addr_space* as)
+{
+    for (unsigned long i = 0; i < platform.mmio_region_num; i++) {
+        mem_alloc_map_dev(as, as->type == AS_VM ? SEC_VM_ANY : SEC_HYP_ANY,
+            platform.mmio_regions[i].base, platform.mmio_regions[i].base,
+            NUM_PAGES(platform.mmio_regions[i].size));
+    }
+}
+
+static unsigned long as_id_alloc(struct addr_space* as)
+{
+    static spinlock_t as_id_alloc_lock = SPINLOCK_INITVAL;
+    static asid_t asid_counter = 1;
+    unsigned long ret = 0;
+
+    spin_lock(&as_id_alloc_lock);
+    if (as->type != AS_HYP) {
+        ret = asid_counter;
+        asid_counter++;
+    }
+    spin_unlock(&as_id_alloc_lock);
+
+    return ret;
+}
+
+void as_init(struct addr_space* as, enum AS_TYPE type, colormap_t colors)
 {
     UNUSED_ARG(colors);
 
     as->type = type;
     as->colors = 0;
-    as->id = id;
-    as->cpus = cpus;
+    as->id = as_id_alloc(as);
     as->lock = SPINLOCK_INITVAL;
     as_arch_init(as);
 
@@ -229,6 +253,12 @@ void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, cpumap_t cpus,
 
     for (size_t i = 0; i < VMPU_NUM_ENTRIES; i++) {
         mem_vmpu_free_entry(as, i);
+    }
+
+    /* For architectures with slave-side mmio protection, we map all the
+    mmio regions to be accessible to all address spaces */
+    if (DEFINED(MMIO_SLAVE_SIDE_PROT)) {
+        mem_mmio_init_regions(as);
     }
 }
 
