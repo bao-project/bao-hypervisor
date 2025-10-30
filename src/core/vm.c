@@ -20,8 +20,6 @@ static void vm_master_init(struct vm* vm, const struct vm_config* vm_config, vmi
     vm->lock = SPINLOCK_INITVAL;
 
     cpu_sync_init(&vm->sync, vm->cpu_num);
-
-    vm_mem_prot_init(vm, vm_config);
 }
 
 static void vm_cpu_init(struct vm* vm)
@@ -210,9 +208,10 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* vm_config)
     for (size_t i = 0; i < vm_config->platform.dev_num; i++) {
         struct vm_dev_region* dev = &vm_config->platform.devs[i];
 
-        size_t n = ALIGN(dev->size, PAGE_SIZE) / PAGE_SIZE;
-
-        if (dev->va != INVALID_VA) {
+        if (DEFINED(MMIO_SLAVE_SIDE_PROT)) {
+            vm_arch_allow_mmio_access(dev);
+        } else if (dev->va != INVALID_VA) {
+            size_t n = ALIGN(dev->size, PAGE_SIZE) / PAGE_SIZE;
             mem_alloc_map_dev(&vm->as, SEC_VM_ANY, (vaddr_t)dev->va, dev->pa, n);
         }
 
@@ -319,6 +318,12 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* vm_co
 
     cpu_sync_barrier(&vm->sync);
 
+    if (master) {
+        vm_mem_prot_init(vm, vm_config);
+    }
+
+    cpu_sync_barrier(&vm->sync);
+
     /**
      * Perform architecture dependent initializations. This includes, for example, setting the page
      * table pointer and other virtualization extensions specifics.
@@ -421,4 +426,11 @@ void vcpu_run(struct vcpu* vcpu)
     } else {
         cpu_powerdown();
     }
+}
+
+__attribute__((weak)) void vm_arch_allow_mmio_access(struct vm_dev_region* dev)
+{
+    UNUSED_ARG(dev);
+    ERROR("vm_arch_allow_mmio_access must be implemented by the arch!")
+    return;
 }

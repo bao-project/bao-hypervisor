@@ -12,9 +12,7 @@
 #include <arch/mem.h>
 #include <arch/spinlock.h>
 
-#define HYP_ASID         0
 #define VMPU_NUM_ENTRIES 64
-
 struct mp_region {
     vaddr_t base;
     size_t size;
@@ -40,7 +38,7 @@ struct addr_space {
     spinlock_t lock;
 };
 
-void as_init(struct addr_space* as, enum AS_TYPE type, asid_t id, colormap_t colors);
+void as_init(struct addr_space* as, enum AS_TYPE type, colormap_t colors);
 
 static inline bool mem_regions_overlap(struct mp_region* reg1, struct mp_region* reg2)
 {
