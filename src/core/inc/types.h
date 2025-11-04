@@ -23,6 +23,7 @@
 typedef signed long ssize_t;
 
 typedef unsigned long asid_t;
+#define INVALID_ASID ((asid_t)~0UL)
 
 typedef unsigned long vmid_t;
 #define INVALID_VMID ((vmid_t)~0UL)
