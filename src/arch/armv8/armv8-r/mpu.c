@@ -9,19 +9,6 @@
 #include <arch/sysregs.h>
 #include <arch/fences.h>
 
-static priv_t mpu_as_priv(struct addr_space* as)
-{
-    priv_t priv;
-
-    if (as->type == AS_VM) {
-        priv = PRIV_VM;
-    } else {
-        priv = PRIV_HYP;
-    }
-
-    return priv;
-}
-
 static unsigned long mpu_get_region_base(mpid_t mpid)
 {
     unsigned long prbar = 0;
@@ -111,7 +98,6 @@ static bool mpu_entry_clear(mpid_t mpid)
 bool mpu_map(struct addr_space* as, struct mp_region* mpr, bool locked)
 {
     mpid_t mpid = INVALID_MPID;
-    priv_t priv = mpu_as_priv(as);
 
     if (mpr->size == 0) {
         return false;
@@ -130,8 +116,10 @@ bool mpu_map(struct addr_space* as, struct mp_region* mpr, bool locked)
                 mpu_entry_lock(mpid);
             }
             bitmap_set((bitmap_t*)&as->arch.mpu_entry_mask, mpid);
-            if (priv == PRIV_VM) {
+            if (as->type == AS_VM) {
                 mpr->mem_flags.prlar &= (uint16_t)~PRLAR_EN;
+            } else if (as->type == AS_HYP || as->type == AS_HYP_CPY) {
+                mpr->mem_flags.prlar |= (uint16_t)PRLAR_EN;
             }
             mpu_entry_set(mpid, mpr);
         }
