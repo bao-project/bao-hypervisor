@@ -33,24 +33,14 @@ static unsigned long mpu_get_region_base(mpid_t mpid)
     return PRBAR_BASE(prbar);
 }
 
-static unsigned long mpu_get_region_limit(mpid_t mpid)
-{
-    unsigned long prlar = 0;
-
-    sysreg_prselr_el2_write(mpid);
-    ISB();
-    prlar = sysreg_prlar_el2_read();
-
-    return PRLAR_LIMIT(prlar);
-}
-
-static mpid_t mpu_find_region_base(struct mp_region* mpr)
+static mpid_t mpu_find_region(struct mp_region* mpr, asid_t asid)
 {
     mpid_t mpid = INVALID_MPID;
 
     for (mpid_t i = 0; i < MPU_ARCH_MAX_NUM_ENTRIES; i++) {
         if (bitmap_get(cpu()->arch.profile.mpu.allocated_entries, i)) {
-            if (mpu_get_region_base(i) == mpr->base) {
+            if (mpu_get_region_base(i) == mpr->base &&
+                cpu()->arch.profile.mpu.entry_asid[i] == asid) {
                 mpid = i;
                 break;
             }
@@ -59,26 +49,14 @@ static mpid_t mpu_find_region_base(struct mp_region* mpr)
     return mpid;
 }
 
-static mpid_t mpu_find_region_exact(struct mp_region* mpr)
-{
-    mpid_t mpid = mpu_find_region_base(mpr);
-
-    if (mpid != INVALID_MPID) {
-        if (mpu_get_region_limit(mpid) == PRLAR_LIMIT(mpr->base + mpr->size - 1)) {
-            return mpid;
-        }
-    }
-
-    return INVALID_MPID;
-}
-
-static mpid_t mpu_entry_allocate(void)
+static mpid_t mpu_entry_allocate(asid_t asid)
 {
     mpid_t reg_num = INVALID_MPID;
     reg_num = (mpid_t)bitmap_find_nth(cpu()->arch.profile.mpu.allocated_entries,
         MPU_ARCH_MAX_NUM_ENTRIES, 1, 0, false);
 
     bitmap_set(cpu()->arch.profile.mpu.allocated_entries, reg_num);
+    cpu()->arch.profile.mpu.entry_asid[reg_num] = asid;
 
     return reg_num;
 }
@@ -86,6 +64,7 @@ static mpid_t mpu_entry_allocate(void)
 static inline void mpu_entry_deallocate(mpid_t mpid)
 {
     bitmap_clear(cpu()->arch.profile.mpu.allocated_entries, mpid);
+    cpu()->arch.profile.mpu.entry_asid[mpid] = INVALID_ASID;
 }
 
 static inline void mpu_entry_lock(mpid_t mpid)
@@ -145,7 +124,7 @@ bool mpu_map(struct addr_space* as, struct mp_region* mpr, bool locked)
     */
 
     else {
-        mpid = mpu_entry_allocate();
+        mpid = mpu_entry_allocate(as->id);
         if (mpid != INVALID_MPID) {
             if (locked) {
                 mpu_entry_lock(mpid);
@@ -164,7 +143,7 @@ bool mpu_map(struct addr_space* as, struct mp_region* mpr, bool locked)
 bool mpu_unmap(struct addr_space* as, struct mp_region* mpr)
 {
     UNUSED_ARG(as);
-    mpid_t mpid = mpu_find_region_exact(mpr);
+    mpid_t mpid = mpu_find_region(mpr, as->id);
 
     if (mpid != INVALID_MPID) {
         mpu_entry_deallocate(mpid);
@@ -180,9 +159,7 @@ bool mpu_unmap(struct addr_space* as, struct mp_region* mpr)
 
 bool mpu_update(struct addr_space* as, struct mp_region* mpr)
 {
-    UNUSED_ARG(as);
-
-    mpid_t mpid = mpu_find_region_base(mpr);
+    mpid_t mpid = mpu_find_region(mpr, as->id);
 
     if (mpid != INVALID_MPID) {
         mpu_entry_update_limit(mpid, mpr);
@@ -213,5 +190,6 @@ void mpu_init()
     for (mpid_t mpid = 0; mpid < MPU_ARCH_MAX_NUM_ENTRIES; mpid++) {
         bitmap_clear(cpu()->arch.profile.mpu.allocated_entries, mpid);
         bitmap_clear(cpu()->arch.profile.mpu.locked_entries, mpid);
+        cpu()->arch.profile.mpu.entry_asid[mpid] = INVALID_ASID;
     }
 }
