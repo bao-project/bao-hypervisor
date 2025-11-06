@@ -14,6 +14,7 @@
 
 static struct vm_assignment {
     spinlock_t lock;
+    struct cpu_synctoken root_sync;
     bool master;
     size_t ncpus;
     cpumap_t cpus;
@@ -29,7 +30,6 @@ static bool vmm_assign_vcpu(bool* master, vmid_t* vm_id)
     /* Assign cpus according to vm affinity. */
     for (size_t i = 0; i < config.vmlist_size && !assigned; i++) {
         if (config.vmlist[i].cpu_affinity & (1UL << cpu()->id)) {
-            vm_assign[i].lock = SPINLOCK_INITVAL;
             spin_lock(&vm_assign[i].lock);
             if (!vm_assign[i].master) {
                 vm_assign[i].master = true;
@@ -131,6 +131,13 @@ void vmm_init()
     shmem_init();
     remio_init();
 
+    if (cpu_is_master()) {
+        for (size_t i = 0; i < CONFIG_VM_NUM; i++) {
+            vm_assign[i].lock = SPINLOCK_INITVAL;
+            cpu_sync_init(&vm_assign[i].root_sync, config.vmlist[i].platform.cpu_num);
+        }
+    }
+
     cpu_sync_barrier(&cpu_glb_sync);
 
     bool master = false;
@@ -138,7 +145,7 @@ void vmm_init()
     if (vmm_assign_vcpu(&master, &vm_id)) {
         struct vm_allocation* vm_alloc = vmm_alloc_install_vm(vm_id, master);
         struct vm_config* vm_config = &config.vmlist[vm_id];
-        struct vm* vm = vm_init(vm_alloc, vm_config, master, vm_id);
+        struct vm* vm = vm_init(vm_alloc, &vm_assign[vm_id].root_sync, vm_config, master, vm_id);
         cpu_sync_barrier(&vm->sync);
         vcpu_run(cpu()->vcpu);
     } else {

@@ -293,8 +293,8 @@ static struct vm* vm_allocation_init(struct vm_allocation* vm_alloc)
     return vm;
 }
 
-struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* vm_config, bool master,
-    vmid_t vm_id)
+struct vm* vm_init(struct vm_allocation* vm_alloc, struct cpu_synctoken* vm_init_sync,
+    const struct vm_config* vm_config, bool master, vmid_t vm_id)
 {
     struct vm* vm = vm_allocation_init(vm_alloc);
 
@@ -304,6 +304,8 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* vm_co
     if (master) {
         vm_master_init(vm, vm_config, vm_id);
     }
+
+    cpu_sync_barrier(vm_init_sync);
 
     /*
      *  Initialize each core.
