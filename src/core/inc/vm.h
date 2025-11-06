@@ -113,8 +113,8 @@ struct vm_allocation {
     struct vcpu* vcpus;
 };
 
-struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* config, bool master,
-    vmid_t vm_id);
+struct vm* vm_init(struct vm_allocation* vm_alloc, struct cpu_synctoken* vm_init_sync,
+    const struct vm_config* config, bool master, vmid_t vm_id);
 void vm_start(struct vm* vm, vaddr_t entry);
 void vm_emul_add_mem(struct vm* vm, struct emul_mem* emu);
 void vm_emul_add_reg(struct vm* vm, struct emul_reg* emu);
