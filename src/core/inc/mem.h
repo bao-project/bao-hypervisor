@@ -43,18 +43,6 @@ struct mem_region {
     struct page_pool page_pool;
 };
 
-struct shmem {
-    size_t size;
-    colormap_t colors;
-    bool place_phys;
-    union {
-        paddr_t base;
-        paddr_t phys;
-    };
-    cpumap_t cpu_masters;
-    spinlock_t lock;
-};
-
 static inline struct ppages mem_ppages_get(paddr_t base, size_t num_pages)
 {
     return (struct ppages){ .colors = 0, .base = base, .num_pages = num_pages };
