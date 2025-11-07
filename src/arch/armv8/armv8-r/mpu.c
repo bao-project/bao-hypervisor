@@ -167,7 +167,7 @@ void mpu_enable(void)
     unsigned long reg_val;
 
     reg_val = sysreg_sctlr_el2_read();
-    reg_val |= SCTLR_M;
+    reg_val |= (SCTLR_M | SCTLR_C);
     sysreg_sctlr_el2_write(reg_val);
 
     ISB();
