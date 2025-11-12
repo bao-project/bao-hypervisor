@@ -52,24 +52,33 @@
     LOAD      \rd, 0(\rd)
 .endm
 
+.macro DEFINE_WORD val
+#if REGLEN == 8
+    .8byte \val
+#else
+    .4byte \val
+#endif
+.endm
+
 .section ".rodata", "a"
+.balign REGLEN
 /* Symbol values */
-_image_start_sym: .8byte _image_start
-_image_load_end_sym: .8byte _image_load_end
-_image_noload_start_sym: .8byte _image_noload_start
-_image_end_sym: .8byte _image_end
-_dmem_beg_sym: .8byte _dmem_beg
-_enter_vas_sym: .8byte _enter_vas
-_bss_start_sym: .8byte _bss_start
-_bss_end_sym: .8byte _bss_end
-_extra_allocated_phys_mem_sym: .8byte extra_allocated_phys_mem
+_image_start_sym: DEFINE_WORD _image_start
+_image_load_end_sym: DEFINE_WORD _image_load_end
+_image_noload_start_sym: DEFINE_WORD _image_noload_start
+_image_end_sym: DEFINE_WORD _image_end
+_dmem_beg_sym: DEFINE_WORD _dmem_beg
+_enter_vas_sym: DEFINE_WORD _enter_vas
+_bss_start_sym: DEFINE_WORD _bss_start
+_bss_end_sym: DEFINE_WORD _bss_end
+_extra_allocated_phys_mem_sym: DEFINE_WORD extra_allocated_phys_mem
 
 .data 
-.align 3
+.balign REGLEN
 /**
  * barrier is used to minimal synchronization in boot - other cores wait for bsp to set it.
  */
-_barrier: .8byte 0		
+_barrier: DEFINE_WORD 0		
 
 /**
  * 	The following code MUST be at the base of the image, as this is bao's entrypoint. Therefore
