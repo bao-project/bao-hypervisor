@@ -95,6 +95,8 @@ _reset_handler:
     * values (can be also corrputed in auxiliary routines).
     */
 
+.option norelax
+
     mv      a2, a1
     la      a1, _image_start
 
@@ -304,10 +306,7 @@ _enter_vas:
     li      sp, CPU_STACK_OFF + CPU_STACK_SIZE
     add     sp, t0, sp
 
-    .option push
-    .option norelax
     la  gp, __global_pointer$
-    .option pop
 
     /* clear bss if hart 0 */
     LD_SYM  t0, CPU_MASTER
