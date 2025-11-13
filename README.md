@@ -56,9 +56,9 @@ platforms is presented below:
 
 **Armv8-R AArch32**
 - [x] Arm Fixed Virtual Platforms
+- [x] Arm MPS3-AN536
 - [ ] NXP S32Z/E
 - [ ] Renesas RZT2M
-- [ ] QEMU MPS3-AN536
 
 **RISC-V RV64**
 - [x] QEMU virt
