@@ -76,7 +76,7 @@ static mpid_t mpu_entry_allocate(void)
 {
     mpid_t reg_num = INVALID_MPID;
     reg_num = (mpid_t)bitmap_find_nth(cpu()->arch.profile.mpu.allocated_entries,
-        MPU_ARCH_MAX_NUM_ENTRIES, 1, 0, false);
+        MPU_ARCH_MAX_NUM_ENTRIES, 1, 0, BITMAP_NOT_SET);
 
     bitmap_set(cpu()->arch.profile.mpu.allocated_entries, reg_num);
 

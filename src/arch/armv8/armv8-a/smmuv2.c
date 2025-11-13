@@ -182,7 +182,7 @@ ssize_t smmu_alloc_ctxbnk(void)
 {
     spin_lock(&smmu.ctx_lock);
     /* Find a free context bank. */
-    ssize_t nth = bitmap_find_nth(smmu.ctxbank_bitmap, smmu.ctx_num, 1, 0, false);
+    ssize_t nth = bitmap_find_nth(smmu.ctxbank_bitmap, smmu.ctx_num, 1, 0, BITMAP_NOT_SET);
     if (nth >= 0) {
         bitmap_set(smmu.ctxbank_bitmap, (size_t)nth);
     }
@@ -247,7 +247,7 @@ ssize_t smmu_alloc_sme(void)
 {
     spin_lock(&smmu.sme_lock);
     /* Find a free sme. */
-    ssize_t nth = bitmap_find_nth(smmu.sme_bitmap, smmu.sme_num, 1, 0, false);
+    ssize_t nth = bitmap_find_nth(smmu.sme_bitmap, smmu.sme_num, 1, 0, BITMAP_NOT_SET);
     if (nth >= 0) {
         bitmap_set(smmu.sme_bitmap, (size_t)nth);
     }
