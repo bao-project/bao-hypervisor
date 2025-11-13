@@ -13,6 +13,7 @@
 #include <vm.h>
 #include <fences.h>
 #include <config.h>
+#include <shmem.h>
 
 extern uint8_t _image_start, _image_load_end, _image_end, _vm_image_start, _vm_image_end,
     _data_vma_start;

@@ -5,6 +5,7 @@
 
 #include <bao.h>
 #include <config.h>
+#include <shmem.h>
 
 void config_mem_prot_init(void)
 {
