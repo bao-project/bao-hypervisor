@@ -1,12 +1,14 @@
-* @josecm @sandro2pinto @DavidMCerdeira @danielRep
+* @josecm @sandro2pinto @DavidMCerdeira @danielRep @miguelafsilva5
 
-src/ @josecm @DavidMCerdeira
-scripts/ @josecm
+scripts/ @josecm @DavidMCerdeira @danielRep @miguelafsilva5
 
+src/core/mmu @josecm @DavidMCerdeira @joaopeixoto13
 src/core/mpu @josecm @danielRep @miguelafsilva5
 
-src/arch/armv8 @josecm @DavidMCerdeira
+*remio* @josecm @DavidMCerdeira @joaopeixoto13
+
+src/arch/armv8 @josecm @DavidMCerdeira @joaopeixoto13
 src/arch/armv8/armv8-r @josecm @danielRep @miguelafsilva5
 src/arch/armv8/aarch32 @josecm @danielRep @miguelafsilva5
 
-src/arch/riscv @josecm @ninolomata
+src/arch/riscv @josecm @ninolomata @malejo97
