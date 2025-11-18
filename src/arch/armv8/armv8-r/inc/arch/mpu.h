@@ -17,6 +17,4 @@ struct mpu_arch {
     asid_t entry_asid[MPU_ARCH_MAX_NUM_ENTRIES];
 };
 
-bool mpu_perms_compatible(unsigned long perms1, unsigned long perms2);
-
 #endif /* __ARCH_MPU_H__ */
