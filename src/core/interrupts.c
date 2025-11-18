@@ -102,11 +102,20 @@ static inline bool interrupt_is_shared(irqid_t int_id)
 
 enum irq_res interrupts_handle(irqid_t int_id)
 {
-    if (interrupts_arch_irq_is_forwardable(int_id) && vm_has_interrupt(cpu()->vcpu->vm, int_id)) {
+    if (interrupts_arch_irq_is_forwardable(int_id) && cpu()->vcpu != NULL && vm_has_interrupt(cpu()->vcpu->vm, int_id)) {
         vcpu_inject_hw_irq(cpu()->vcpu, int_id);
 
         return FORWARD_TO_VM;
 
+    } else if (interrupt_assigned_to_vm(int_id)) {
+        struct vcpu *vcpu = cpu_get_vcpu_by_vmid(interrupt_vm_id[int_id]);
+        if (vcpu == NULL) {
+            ERROR("No vcpu found for recevied interrupt %ld", int_id);
+        }
+        vcpu_inject_hw_irq(vcpu, int_id);
+
+        return FORWARD_TO_VM;
+     
     } else if (interrupt_assigned_to_hyp(int_id)) {
         interrupt_handlers[int_id](int_id);
 
