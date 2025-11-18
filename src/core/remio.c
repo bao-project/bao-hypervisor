@@ -577,12 +577,12 @@ long int remio_hypercall(void)
     return ret;
 }
 
-bool remio_mmio_emul_handler(struct emul_access* acc)
+bool remio_mmio_emul_handler(struct vcpu* vcpu, struct emul_access* acc)
 {
     struct remio_device* device = NULL;
 
     /** Find the Remote I/O device based on the MMIO access address */
-    device = remio_find_vm_dev_by_addr(cpu()->vcpu->vm, acc->addr);
+    device = remio_find_vm_dev_by_addr(vcpu->vm, acc->addr);
     if (device == NULL) {
         return false;
     }
@@ -601,7 +601,7 @@ bool remio_mmio_emul_handler(struct emul_access* acc)
         device->config.backend.interrupt);
 
     /** Pause the current vCPU to wait for the MMIO emulation to be completed */
-    cpu()->vcpu->active = false;
+    vcpu->active = false;
 
     return true;
 }

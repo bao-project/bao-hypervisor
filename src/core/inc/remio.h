@@ -79,6 +79,6 @@ long int remio_hypercall(void);
  * @param emul_access Holds the information about the MMIO access
  * @return Returns true if handled successfully, false otherwise
  */
-bool remio_mmio_emul_handler(struct emul_access* emul_access);
+bool remio_mmio_emul_handler(struct vcpu* vcpu, struct emul_access* emul_access);
 
 #endif /* __REMIO_H__ */
