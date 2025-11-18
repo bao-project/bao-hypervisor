@@ -67,8 +67,6 @@ typedef enum AS_SEC {
 
 typedef enum AS_TYPE { AS_HYP = 0, AS_VM, AS_HYP_CPY } as_type_t;
 
-typedef enum { PRIV_NONE = 0, PRIV_HYP = 1, PRIV_VM = 2 } priv_t;
-
 typedef enum { PERM_X = 1, PERM_R = 2, PERM_W = 4 } perms_t;
 #define PERM_NONE ((perms_t)0)
 #define PERM_RW   (PERM_R | PERM_W)
