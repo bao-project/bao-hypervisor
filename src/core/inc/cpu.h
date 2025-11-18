@@ -12,6 +12,7 @@
 #include <spinlock.h>
 #include <mem.h>
 #include <list.h>
+#include <timer.h>
 
 #ifndef __ASSEMBLER__
 
@@ -30,6 +31,12 @@ struct cpu {
     struct vcpu* vcpu; // current vcpu
     struct vcpu* next_vcpu; // next scheduled vcpu
     struct list vcpu_list;
+
+    struct list timer_event_list;
+
+    struct {
+        struct timer_event timer_event;
+    } sched;
 
     struct cpu_arch arch;
 
