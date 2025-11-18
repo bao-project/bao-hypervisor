@@ -208,7 +208,7 @@ static void mem_init_boot_regions(void)
 void mem_prot_init()
 {
     mpu_init();
-    as_init(&cpu()->as, AS_HYP, 0);
+    as_init(&cpu()->as, AS_HYP, BIT_MASK(0, PLAT_CPU_NUM), 0);
     mem_init_boot_regions();
     if (DEFINED(MMIO_SLAVE_SIDE_PROT) && cpu_is_master()) {
         mem_mmio_init_regions(&cpu()->as);
@@ -247,7 +247,7 @@ static unsigned long as_id_alloc(struct addr_space* as)
     return ret;
 }
 
-void as_init(struct addr_space* as, enum AS_TYPE type, colormap_t colors)
+void as_init(struct addr_space* as, enum AS_TYPE type, cpumap_t cpus, colormap_t colors)
 {
     UNUSED_ARG(colors);
 
@@ -255,6 +255,7 @@ void as_init(struct addr_space* as, enum AS_TYPE type, colormap_t colors)
     as->colors = 0;
     as->id = as_id_alloc(as);
     as->lock = SPINLOCK_INITVAL;
+    as->cpus = cpus;
     as_arch_init(as);
 
     list_init(&(as->vmpu.ordered_list));
@@ -285,21 +286,10 @@ CPU_MSG_HANDLER(mem_msg_handler, MEM_PROT_SYNC)
 static cpumap_t mem_section_shared_cpus(struct addr_space* as, as_sec_t section)
 {
     cpumap_t cpus = 0;
-    if (as->type == AS_HYP) {
-        if ((section == SEC_HYP_GLOBAL) || (section == SEC_HYP_IMAGE)) {
-            cpus = BIT_MASK(0, PLAT_CPU_NUM);
-        } else if (section == SEC_HYP_VM) {
-            /**
-             * If we don't have a valid vcpu at this point, it means we are creating this region
-             * before even having a vm. Therefore, the sharing of the region must be guaranteed by
-             * other means (e.g. vmm_vm_install)
-             */
-            if (cpu()->vcpu != NULL) {
-                cpus = cpu()->vcpu->vm->cpus;
-            }
-        }
+    if ((as->type == AS_HYP) && !((section == SEC_HYP_GLOBAL) || (section == SEC_HYP_IMAGE))) {
+        cpus = 0;
     } else {
-        cpus = cpu()->vcpu->vm->cpus;
+        cpus = as->cpus;
     }
 
     return cpus;
@@ -459,15 +449,9 @@ void mem_handle_broadcast_region(uint32_t event, uint64_t data)
     struct shared_region* sh_reg = (struct shared_region*)(uintptr_t)data;
 
     if (sh_reg != NULL) {
-        struct addr_space* as;
-        if (sh_reg->as_type == AS_HYP) {
-            as = &cpu()->as;
-        } else {
-            struct addr_space* vm_as = &cpu()->vcpu->vm->as;
-            if (vm_as->id != sh_reg->asid) {
-                ERROR("Received shared region for unkown vm address space.");
-            }
-            as = vm_as;
+        struct addr_space* as = cpu_get_as(sh_reg->asid);
+        if (as == NULL) {
+            ERROR("received broadcast msg for unknown address space");
         }
 
         switch (event) {

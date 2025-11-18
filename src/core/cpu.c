@@ -161,4 +161,20 @@ struct vcpu* cpu_get_vcpu_by_vmid(vmid_t vmid) {
     }
     return vcpu;
 }
+struct addr_space* cpu_get_as(asid_t asid)
+{
+    struct addr_space* as = NULL;
 
+    if (cpu()->as.id == asid) {
+        as = &cpu()->as;
+    } else {
+        list_foreach(cpu()->vcpu_list, struct vcpu, vcpu) {
+            if (vcpu->vm->as.id == asid) {
+                as = &vcpu->vm->as;
+                break;
+            }
+        }
+    }
+
+    return as;
+}

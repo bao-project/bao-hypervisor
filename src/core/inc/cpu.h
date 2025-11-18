@@ -82,6 +82,8 @@ void cpu_arch_standby(void);
 void cpu_arch_powerdown(void);
 void cpu_arch_park(void);
 
+struct addr_space* cpu_get_as(asid_t asid);
+
 extern struct cpuif cpu_interfaces[];
 static inline struct cpuif* cpu_if(cpuid_t cpu_id)
 {
