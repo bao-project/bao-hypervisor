@@ -516,7 +516,7 @@ static bool remio_cpu_post_work(uint32_t event, uint8_t remio_bind_key, uint8_t 
 
     request->state = REMIO_STATE_FREE;
     objpool_free(&remio_request_pool, request);
-    cpu()->vcpu->active = true;
+    vcpu_unblock(cpu()->vcpu);
 
     return true;
 }
@@ -601,7 +601,7 @@ bool remio_mmio_emul_handler(struct vcpu* vcpu, struct emul_access* acc)
         device->config.backend.interrupt);
 
     /** Pause the current vCPU to wait for the MMIO emulation to be completed */
-    vcpu->active = false;
+    vcpu_block(vcpu);
 
     return true;
 }

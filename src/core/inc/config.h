@@ -79,6 +79,13 @@ struct vm_config {
 
     /* Entry point address in VM's address space */
     vaddr_t entry;
+
+    /**
+     * If this option is set all vCPUs of this VM will have exclusive access to the assigned CPUs.
+     * That is, they will not share the CPU with others vCPUs and thus will never be preempted. 
+     */
+    bool cpu_exclusivity;
+
     /**
      * A bitmap signaling the preferred physical cpus assigned to the VM. If this value is each
      * mutual exclusive for all the VMs, this field allows to direcly assign specific physical cpus

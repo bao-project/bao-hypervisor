@@ -94,14 +94,16 @@ struct vm {
 };
 
 struct vcpu {
-    node_t node;
-
-    struct arch_regs regs;
-    struct vcpu_arch arch;
+    node_t cpu_vcpu_list_node;
 
     vcpuid_t id;
     cpuid_t phys_id;
-    bool active;
+    
+    spinlock_t blocked_count_lock;
+    int blocked_count;
+
+    struct arch_regs regs;
+    struct vcpu_arch arch;
 
     struct vm* vm;
 };
@@ -167,6 +169,49 @@ static inline void vcpu_inject_irq(struct vcpu* vcpu, irqid_t id)
 {
     vcpu_arch_inject_irq(vcpu, id);
 }
+
+
+static inline void vcpu_block(struct vcpu* vcpu)
+{
+    // TODO check for overflows
+    vcpu->blocked_count += 1;
+}
+
+static inline void vcpu_unblock(struct vcpu* vcpu)
+{
+    if (vcpu->blocked_count > 0) {
+        vcpu->blocked_count -= 1;
+    }
+}
+
+static inline bool vcpu_is_blocked(struct vcpu* vcpu)
+{
+    return vcpu->blocked_count > 0;
+}
+
+static inline void vcpu_kill(struct vcpu* vcpu)
+{
+    vcpu->blocked_count = -1;
+}
+
+static inline bool vcpu_is_dead(struct vcpu* vcpu)
+{
+    return vcpu->blocked_count < 0;
+}
+
+static inline struct vcpu* vcpu_current(void) {
+    return cpu()->vcpu;
+}
+
+static inline struct vcpu* vcpu_next(void) {
+    return cpu()->vcpu;
+}
+
+static inline struct vcpu* vcpu_set_next(struct vcpu* vcpu) {
+    return cpu()->next_vcpu = vcpu;
+}
+
+void vcpu_context_switch(void);
 
 /* ------------------------------------------------------------*/
 

@@ -48,11 +48,13 @@ static void vm_vcpu_init(struct vm* vm, const struct vm_config* vm_config)
     vcpu->id = vcpu_id;
     vcpu->phys_id = cpu()->id;
     vcpu->vm = vm;
-    vcpu->active = true;
-    cpu()->vcpu = vcpu;
+
+    vcpu->blocked_count = 0;
 
     vcpu_arch_init(vcpu, vm);
     vcpu_arch_reset(vcpu, vm_config->entry);
+
+    cpu_add_vcpu(vcpu);
 }
 
 static void vm_map_mem_region(struct vm* vm, struct vm_mem_region* reg)
@@ -420,7 +422,7 @@ __attribute__((weak)) cpumap_t vm_translate_to_vcpu_mask(struct vm* vm, cpumap_t
 void vcpu_run(struct vcpu* vcpu)
 {
     if (vcpu_arch_is_on(vcpu)) {
-        if (vcpu->active) {
+        if (!vcpu_is_blocked(vcpu)) {
             vcpu_arch_entry();
         } else {
             cpu_standby();

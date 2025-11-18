@@ -27,7 +27,9 @@ struct cpu {
 
     bool handling_msgs;
 
-    struct vcpu* vcpu;
+    struct vcpu* vcpu; // current vcpu
+    struct vcpu* next_vcpu; // next scheduled vcpu
+    struct list vcpu_list;
 
     struct cpu_arch arch;
 
@@ -72,9 +74,13 @@ void cpu_powerdown(void);
 void cpu_standby_wakeup(void);
 void cpu_powerdown_wakeup(void);
 
+void cpu_add_vcpu(struct vcpu* vcpu);
+struct vcpu* cpu_get_vcpu_by_vmid(vmid_t vmid);
+
 void cpu_arch_init(cpuid_t cpu_id, paddr_t load_addr);
 void cpu_arch_standby(void);
 void cpu_arch_powerdown(void);
+void cpu_arch_park(void);
 
 extern struct cpuif cpu_interfaces[];
 static inline struct cpuif* cpu_if(cpuid_t cpu_id)
@@ -134,6 +140,11 @@ static inline void cpu_sync_and_clear_msgs(struct cpu_synctoken* token)
 
     cpu_sync_barrier(token);
 }
+
+static inline bool cpu_vcpu_is_current(struct vcpu* vcpu) {
+    return cpu()->vcpu == vcpu;
+}
+
 
 #endif /* __ASSEMBLER__ */
 
