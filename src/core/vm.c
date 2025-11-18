@@ -440,3 +440,12 @@ __attribute__((weak)) void vm_arch_allow_mmio_access(struct vm* vm, struct vm_de
     ERROR("vm_arch_allow_mmio_access must be implemented by the arch!")
     return;
 }
+
+void vcpu_context_switch(void)
+{
+    if (cpu()->vcpu != NULL) {
+        vcpu_save_state(cpu()->vcpu);
+    }
+    vcpu_restore_state(cpu()->next_vcpu);
+    cpu()->vcpu = cpu()->next_vcpu;
+}
