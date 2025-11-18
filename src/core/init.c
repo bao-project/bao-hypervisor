@@ -13,6 +13,7 @@
 #include <platform.h>
 #include <timer.h>
 #include <vmm.h>
+#include <sched.h>
 
 void init(cpuid_t cpu_id)
 {
@@ -38,6 +39,8 @@ void init(cpuid_t cpu_id)
     timer_init();
 
     vmm_init();
+
+    sched_start();
 
     vcpu_arch_entry();
 
