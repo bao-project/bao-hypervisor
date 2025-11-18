@@ -933,7 +933,7 @@ void as_init(struct addr_space* as, enum AS_TYPE type, pte_t* root_pt, colormap_
     if (root_pt == NULL) {
         size_t n = NUM_PAGES(pt_size(&as->pt, 0));
         root_pt = (pte_t*)mem_alloc_page(n,
-            type == AS_HYP || type == AS_HYP_CPY ? SEC_HYP_PRIVATE : SEC_HYP_VM, MEM_ALIGN_REQ);
+            type == AS_HYP || type == AS_HYP_CPY ? SEC_HYP_PRIVATE : SEC_HYP_GLOBAL, true);
         memset((void*)root_pt, 0, n * PAGE_SIZE);
     }
     as->pt.root = root_pt;
