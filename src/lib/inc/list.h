@@ -153,4 +153,16 @@ static inline void list_insert_ordered(struct list* list, node_t* node, node_cmp
     }
 }
 
+static inline size_t list_size(struct list* list)
+{
+    size_t size = 0;
+    node_t *node = list->head;
+    while (node != NULL) {
+        size += 1;
+        node = *node;
+    }
+    return size;
+}
+
+
 #endif /* __LIST_H__ */
