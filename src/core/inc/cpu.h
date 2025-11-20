@@ -27,11 +27,11 @@ struct cpu {
 
     bool handling_msgs;
 
-    struct addr_space as;
-
     struct vcpu* vcpu;
 
     struct cpu_arch arch;
+
+    struct addr_space as;
 
     struct cpuif* interface;
 
