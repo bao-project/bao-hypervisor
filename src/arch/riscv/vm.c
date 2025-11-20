@@ -36,7 +36,7 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
 {
     memset(&vcpu->regs, 0, sizeof(struct arch_regs));
 
-    csrs_sscratch_write((uintptr_t)&vcpu->regs);
+    csrs_sscratch_write((uintptr_t)vcpu);
 
     vcpu->regs.hstatus = HSTATUS_SPV | (1ULL << HSTATUS_VGEIN_OFF);
 
