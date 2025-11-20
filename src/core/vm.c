@@ -20,8 +20,6 @@ static void vm_master_init(struct vm* vm, const struct vm_config* vm_config, vmi
     vm->lock = SPINLOCK_INITVAL;
 
     cpu_sync_init(&vm->sync, vm->cpu_num);
-
-    vm_mem_prot_init(vm, vm_config);
 }
 
 static void vm_cpu_init(struct vm* vm)
@@ -317,6 +315,12 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* vm_co
      *  Initialize each virtual core.
      */
     vm_vcpu_init(vm, vm_config);
+
+    cpu_sync_barrier(&vm->sync);
+
+    if (master) {
+        vm_mem_prot_init(vm, vm_config);
+    }
 
     cpu_sync_barrier(&vm->sync);
 
