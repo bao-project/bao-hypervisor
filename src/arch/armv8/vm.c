@@ -11,6 +11,8 @@
 
 void vm_arch_init(struct vm* vm, const struct vm_config* vm_config)
 {
+    vm_arch_profile_init(vm);
+
     if (vm->master == cpu()->id) {
         vgic_init(vm, &vm_config->platform.arch.gic);
     }
@@ -52,8 +54,6 @@ void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm)
 
     vcpu->arch.psci_ctx.state = vcpu->id == 0 ? ON : OFF;
     vcpu->arch.psci_ctx.lock = SPINLOCK_INITVAL;
-
-    vcpu_arch_profile_init(vcpu, vm);
 
     vgic_cpu_init(vcpu);
 }
