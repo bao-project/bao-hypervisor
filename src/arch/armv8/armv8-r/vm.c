@@ -7,10 +7,8 @@
 #include <config.h>
 #include <arch/sysregs.h>
 
-void vcpu_arch_profile_init(struct vcpu* vcpu, struct vm* vm)
+void vm_arch_profile_init(struct vm* vm)
 {
-    UNUSED_ARG(vcpu);
-
     sysreg_vsctlr_el2_write((vm->id << VSCTLR_EL2_VMID_OFF) & VSCTLR_EL2_VMID_MSK);
 
     if (DEFINED(MEM_PROT_MPU) && DEFINED(AARCH64) && vm->config->platform.mmu) {

@@ -8,10 +8,8 @@
 #include <arch/fences.h>
 #include <tlb.h>
 
-void vcpu_arch_profile_init(struct vcpu* vcpu, struct vm* vm)
+void vm_arch_profile_init(struct vm* vm)
 {
-    UNUSED_ARG(vcpu);
-
     paddr_t root_pt_pa;
     mem_translate(&cpu()->as, (vaddr_t)vm->as.pt.root, &root_pt_pa);
     sysreg_vttbr_el2_write((((uint64_t)vm->id << VTTBR_VMID_OFF) & VTTBR_VMID_MSK) |
