@@ -46,6 +46,7 @@ static inline bool mem_regions_overlap(struct mp_region* reg1, struct mp_region*
 }
 
 bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool locked);
+void mem_mmio_init_regions(struct addr_space* as);
 
 /**
  * This functions must be defined for the physical MPU. The abstraction provided by the physical
