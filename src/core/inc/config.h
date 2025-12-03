@@ -10,6 +10,7 @@
 #include <platform.h>
 #include <vm.h>
 #include <config_defs.h>
+#include <shmem.h>
 
 #ifndef GENERATING_DEFS
 // clang-format wont correctly recognize the syntax of assembly strings interleaved with
