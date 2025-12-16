@@ -111,7 +111,7 @@ struct sbiret sbi_set_timer(uint64_t stime_value)
 {
     unsigned long a0 = (unsigned long)stime_value;
     unsigned long a1 = 0;
-    if (RV32) {
+    if (DEFINED(RV32)) {
         a1 = (unsigned long)(stime_value >> 32);
     }
     return sbi_ecall(SBI_EXTID_TIME, SBI_SET_TIMER_FID, a0, a1, 0, 0, 0, 0);
@@ -218,7 +218,7 @@ static struct sbiret sbi_time_handler(unsigned long fid)
     }
 
     uint64_t stime_value = vcpu_readreg(cpu()->vcpu, REG_A0);
-    if (RV32) {
+    if (DEFINED(RV32)) {
         stime_value |= ((uint64_t)vcpu_readreg(cpu()->vcpu, REG_A1)) << 32;
     }
 

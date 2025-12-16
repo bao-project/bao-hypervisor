@@ -6,14 +6,17 @@
 #ifndef __ARCH_BAO_H__
 #define __ARCH_BAO_H__
 
-#define RV64 (RV_XLEN == 64)
-#define RV32 (RV_XLEN == 32)
+#if (RV_XLEN == 64)
+#define RV64 1
+#else
+#define RV32 1
+#endif
 
-#if (RV64)
+#if defined(RV64)
 #define LOAD   ld
 #define STORE  sd
 #define REGLEN (8)
-#elif (RV32)
+#elif defined(RV32)
 #define LOAD   lw
 #define STORE  sw
 #define REGLEN (4)

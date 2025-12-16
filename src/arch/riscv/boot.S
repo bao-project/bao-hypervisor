@@ -10,7 +10,7 @@
 #include <platform_defs.h>
 
 #define PT_SIZE PAGE_SIZE
-#if RV64
+#if defined(RV64)
 #define PT_LVLS 3
 #define PTE_INDEX_SHIFT(LEVEL) ((9 * (PT_LVLS - 1 - (LEVEL))) + 12)
 #else
@@ -176,7 +176,7 @@ _boot_lock:
 
     la          t0, root_l1_pt
     add         t0, t0, s6
-#if RV64
+#if defined(RV64)
     la          t1, root_l2_pt
     add         t1, t1, s6
     PTE_FILL    t1, t1, PTE_TABLE
@@ -200,7 +200,7 @@ _boot_lock:
     add     t0, t0, (PAGE_SIZE >> 2)
     j       1b
 2:
-#if RV64
+#if defined(RV64)
     la          t0, root_l2_pt
 #else
     la          t0, root_l1_pt
@@ -256,7 +256,7 @@ map_cpu:
     PTE_PTR     t3, t1, 0, t3
     STORE       t2, 0(t3)
 
-#if RV64
+#if defined(RV64)
     add         t1, t1, t4
     add         t2, t1, t4
     PTE_FILL    t2, t2, PTE_TABLE

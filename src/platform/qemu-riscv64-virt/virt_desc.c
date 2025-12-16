@@ -6,7 +6,7 @@
 #include <platform.h>
 #include <interrupts.h>
 
-#if RV32
+#if defined(RV32)
 // We use only 1 GiB for the rv32, due to limitations on how the physical memory must
 // be identity mapped by the hypervisor and the fact that the hypervisor reserves for
 // itsel the upper GB of the 4GB address space.
