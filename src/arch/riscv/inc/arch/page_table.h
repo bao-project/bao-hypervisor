@@ -14,7 +14,7 @@
 
 #define PT_SHARED_LVL    (0)
 
-#if (RV32)
+#if defined(RV32)
 #define PTE_MASK     BIT32_MASK
 #define PTE_ADDR_MSK PTE_MASK(12, 22)
 #else
@@ -71,7 +71,7 @@
 
 #ifndef __ASSEMBLER__
 
-#if (RV32)
+#if defined(RV32)
 typedef uint32_t pte_t;
 #else
 typedef uint64_t pte_t;
