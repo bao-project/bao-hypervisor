@@ -141,3 +141,23 @@ In IEEE Access, 2024. https://ieeexplore.ieee.org/document/10781314
 
 10. Hidemasa Kawasaki and Soramichi Akiyama. "**Running Bao Hypervisor on gem5**"
 In gem5 blog, 2024. https://www.gem5.org/2024/11/12/bao-on-gem5.html
+
+
+Testing Framework Usage
+-----------------------
+
+### Prerequisites
+- Ensure [Nix package manager](https://nixos.org/download.html) is installed.
+- Ensure that all dependencies (check [here](./tests/README.md)) are installed.
+
+### Run the test framework locally 
+(Follow [this instructions](./tests/README.md) to use Docker)
+```sh
+make tests PLATFORM=<platform_name> RECIPE=<target_recipe>
+```
+
+Example using `qemu-aarch64-virt` with a single baremetal setup:
+
+```sh
+make tests PLATFORM=qemu-aarch64-virt RECIPE=single-baremetal/default.nix IRQC=gicv3
+```
