@@ -1,12 +1,26 @@
 /**
  * SPDX-License-Identifier: Apache-2.0
  * Copyright (c) Bao Project and Contributors. All rights reserved.
+ * 
+ * @file config.c
+ * @brief This source file contains the implementation for memory protection configuration in MPU-based systems.
+ * 
  */
 
 #include <bao.h>
 #include <config.h>
 #include <shmem.h>
 
+/**
+ * @brief Initializes memory protection configuration for MPU-based systems
+ *
+ * Enforces MPU-specific memory mapping design, where:
+ * - All VM regions must use 1-to-1 physical mapping
+ * - IPC object addresses must match their shared memory base addresses
+ * - All shared memory regions must use 1-to-1 physical mapping
+ *
+ * @see config, vm_config, vm_platform, paddr_t, vaddr_t, shmem, ipc
+ */
 void config_mem_prot_init(void)
 {
     for (size_t i = 0; i < config.vmlist_size; i++) {
