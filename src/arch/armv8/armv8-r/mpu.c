@@ -95,6 +95,17 @@ static bool mpu_entry_clear(mpid_t mpid)
     return true;
 }
 
+static unsigned long* find_mpu_mask_by_asid(asid_t id)
+{
+    unsigned long* mpu_mask = NULL;
+    if (cpu()->as.id == id) {
+        mpu_mask = &cpu()->arch.profile.mpu.mpu_entry_mask;
+    } else if (cpu()->vcpu->vm->as.id == id) {
+        mpu_mask = &cpu()->vcpu->arch.mpu_entry_mask;
+    }
+    return mpu_mask;
+}
+
 bool mpu_map(struct addr_space* as, struct mp_region* mpr, bool locked)
 {
     mpid_t mpid = INVALID_MPID;
@@ -115,7 +126,16 @@ bool mpu_map(struct addr_space* as, struct mp_region* mpr, bool locked)
             if (locked) {
                 mpu_entry_lock(mpid);
             }
-            bitmap_set((bitmap_t*)&as->arch.mpu_entry_mask, mpid);
+
+            unsigned long* mpu_mask = find_mpu_mask_by_asid(as->id);
+
+            if (mpu_mask == NULL) {
+                WARNING("Couldn't find an mpu_mask for as_id %d\n");
+                return false;
+            }
+
+            bitmap_set((bitmap_t*)mpu_mask, mpid);
+
             if (as->type == AS_VM) {
                 mpr->mem_flags.prlar &= (uint16_t)~PRLAR_EN;
             } else if (as->type == AS_HYP || as->type == AS_HYP_CPY) {
@@ -130,7 +150,6 @@ bool mpu_map(struct addr_space* as, struct mp_region* mpr, bool locked)
 
 bool mpu_unmap(struct addr_space* as, struct mp_region* mpr)
 {
-    UNUSED_ARG(as);
     mpid_t mpid = mpu_find_region(mpr, as->id);
 
     if (mpid != INVALID_MPID) {
@@ -139,7 +158,14 @@ bool mpu_unmap(struct addr_space* as, struct mp_region* mpr)
 
         mpu_entry_clear(mpid);
 
-        bitmap_clear((bitmap_t*)&as->arch.mpu_entry_mask, mpid);
+        unsigned long* mpu_mask = find_mpu_mask_by_asid(as->id);
+
+        if (mpu_mask == NULL) {
+            WARNING("Couldn't find an mpu_mask for as_id %d\n");
+            return false;
+        }
+
+        bitmap_clear((bitmap_t*)mpu_mask, mpid);
     }
 
     return true;
