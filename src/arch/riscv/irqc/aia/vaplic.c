@@ -46,13 +46,6 @@ static inline cpuid_t vaplic_vcpuid_to_pcpuid(struct vcpu* vcpu, vcpuid_t vhart)
 
 static uint32_t vaplic_get_domaincfg(struct vcpu* vcpu);
 static uint32_t vaplic_get_target(struct vcpu* vcpu, irqid_t intp_id);
-#if (IRQC == APLIC)
-#define APLIC_MIN_PRIO (0xFF)
-
-static uint32_t vaplic_get_idelivery(struct vcpu* vcpu, idcid_t idc_id);
-static uint32_t vaplic_get_iforce(struct vcpu* vcpu, idcid_t idc_id);
-static uint32_t vaplic_get_ithreshold(struct vcpu* vcpu, idcid_t idc_id);
-#endif
 
 void vaplic_set_hw(struct vm* vm, irqid_t intp_id)
 {
@@ -60,21 +53,6 @@ void vaplic_set_hw(struct vm* vm, irqid_t intp_id)
         bitmap_set(vm->arch.vaplic.hw, intp_id);
     }
 }
-
-#if (IRQC == AIA)
-/**
- * @brief Returns the target guest index of a given interrupt
- *
- * @param vcpu virtual cpu
- * @param intp_id interrupt ID
- * @return uint8_t guest hart index of the given interrupt
- */
-static inline uint8_t vaplic_get_target_guest(struct vcpu* vcpu, irqid_t intp_id)
-{
-    return (vaplic_get_target(vcpu, intp_id) >> APLIC_TARGET_GUEST_IDX_SHIFT) &
-        APLIC_TARGET_GUEST_INDEX_MASK;
-}
-#endif
 
 /**
  * @brief Returns the target hart index of a given interrupt
@@ -189,6 +167,12 @@ static void vaplic_ipi_handler(uint32_t event, uint64_t data);
 CPU_MSG_HANDLER(vaplic_ipi_handler, VPLIC_IPI_ID)
 
 #if (IRQC == APLIC)
+
+static uint32_t vaplic_get_idelivery(struct vcpu* vcpu, idcid_t idc_id);
+static uint32_t vaplic_get_iforce(struct vcpu* vcpu, idcid_t idc_id);
+static uint32_t vaplic_get_ithreshold(struct vcpu* vcpu, idcid_t idc_id);
+static void vaplic_update_hart(struct vcpu* vcpu, size_t vhart_index);
+
 /**
  * @brief Updates the topi register with with the highest pend & en interrupt id
  *
@@ -265,7 +249,298 @@ static void vaplic_update_hart_line(struct vcpu* vcpu, vcpuid_t vhart_index)
     }
 }
 
+/**
+ * @brief Set idelivery register for a given idc.
+ *
+ * @param vcpu virtual CPU
+ * @param idc_id idc identifier
+ * @param new_val new value to write in idelivery. Only 0 and 1 are allowed.
+ */
+static void vaplic_set_idelivery(struct vcpu* vcpu, idcid_t idc_id, uint32_t new_val)
+{
+    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
+    spin_lock(&vaplic->lock);
+    if (idc_id < vaplic->idc_num) {
+        if ((new_val & 0x1) != 0) {
+            bitmap_set(vaplic->idelivery, idc_id);
+        } else {
+            bitmap_clear(vaplic->idelivery, idc_id);
+        }
+    }
+    vaplic_update_hart(vcpu, idc_id);
+    spin_unlock(&vaplic->lock);
+}
+
+/**
+ * @brief Read idelivery register from a given idc.
+ *
+ * @param vcpu virtual CPU
+ * @param idc_id idc identifier
+ * @return uint32_t value read from idelivery
+ */
+static uint32_t vaplic_get_idelivery(struct vcpu* vcpu, idcid_t idc_id)
+{
+    uint32_t ret = 0;
+    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
+    if (idc_id < vaplic->idc_num) {
+        ret = bitmap_get(vaplic->idelivery, idc_id);
+    }
+    return ret;
+}
+
+/**
+ * @brief Set iforce register for a given idc.
+ *
+ * @param vcpu virtual CPU
+ * @param idc_id idc identifier
+ * @param new_val new value to write in iforce. Only 0 and 1 are allowed.
+ */
+static void vaplic_set_iforce(struct vcpu* vcpu, idcid_t idc_id, uint32_t new_val)
+{
+    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
+    spin_lock(&vaplic->lock);
+    if (idc_id < vaplic->idc_num) {
+        if ((new_val & 0x1) != 0) {
+            bitmap_set(vaplic->iforce, idc_id);
+        } else {
+            bitmap_clear(vaplic->iforce, idc_id);
+        }
+    }
+    vaplic_update_hart(vcpu, idc_id);
+    spin_unlock(&vaplic->lock);
+}
+
+/**
+ * @brief Read iforce register from a given idc.
+ *
+ * @param vcpu virtual CPU
+ * @param idc_id idc identifier
+ * @return uint32_t value read from iforce
+ */
+static uint32_t vaplic_get_iforce(struct vcpu* vcpu, idcid_t idc_id)
+{
+    uint32_t ret = 0;
+    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
+    if (idc_id < vaplic->idc_num) {
+        ret = bitmap_get(vaplic->iforce, idc_id);
+    }
+    return ret;
+}
+
+/**
+ * @brief Set ithreshold register for a given idc.
+ *
+ * @param vcpu virtual CPU
+ * @param idc_id idc identifier
+ * @param new_val new value to write in ithreshold
+ */
+static void vaplic_set_ithreshold(struct vcpu* vcpu, idcid_t idc_id, uint32_t new_val)
+{
+    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
+    spin_lock(&vaplic->lock);
+    if (idc_id < vaplic->idc_num) {
+        vaplic->ithreshold[idc_id] = new_val & APLIC_IPRIO_MASK;
+    }
+    vaplic_update_hart(vcpu, idc_id);
+    spin_unlock(&vaplic->lock);
+}
+
+/**
+ * @brief Read ithreshold register from a given idc.
+ *
+ * @param vcpu virtual CPU
+ * @param idc_id idc identifier
+ * @return uint32_t value read from ithreshold
+ */
+static uint32_t vaplic_get_ithreshold(struct vcpu* vcpu, idcid_t idc_id)
+{
+    uint32_t ret = 0;
+    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
+    if (idc_id < vaplic->idc_num) {
+        ret = vaplic->ithreshold[idc_id];
+    }
+    return ret;
+}
+
+/**
+ * @brief Read topi register from a given idc.
+ *
+ * @param vcpu virtual CPU
+ * @param idc_id idc identifier
+ * @return uint32_t value read from topi
+ */
+static uint32_t vaplic_get_topi(struct vcpu* vcpu, idcid_t idc_id)
+{
+    uint32_t ret = 0;
+    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
+    if (idc_id < vaplic->idc_num) {
+        ret = vaplic->topi_claimi[idc_id];
+    }
+    return ret;
+}
+
+/**
+ * @brief Returns the highest pending and enabled interrupt.
+ *
+ * Claimi has the same value as topi. However, reading claimi has the side effect of clearing the
+ * pending bit for the reported interrupt identity.
+ *
+ * @param vcpu virtual CPU
+ * @param idc_id idc identifier
+ * @return 32 bit value read from virt claimi
+ */
+static uint32_t vaplic_get_claimi(struct vcpu* vcpu, idcid_t idc_id)
+{
+    uint32_t ret = 0;
+    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
+    spin_lock(&vaplic->lock);
+    if (idc_id < vaplic->idc_num) {
+        ret = vaplic->topi_claimi[idc_id];
+        CLR_INTP_REG(vaplic->ip, (ret >> IDC_CLAIMI_INTP_ID_SHIFT));
+        /** Spurious intp*/
+        if (ret == 0) {
+            bitmap_clear(vaplic->iforce, idc_id);
+        }
+        vaplic_update_hart(vcpu, idc_id);
+    }
+    spin_unlock(&vaplic->lock);
+    return ret;
+}
+
+/**
+ * @brief idelivery register access emulation function
+ *
+ * @param acc access information
+ *
+ * It determines whether it needs to call the write or read funcion for the choosen register.
+ */
+static void vaplic_emul_idelivery_access(struct emul_access* acc, idcid_t idc_id)
+{
+    if (acc->write) {
+        vaplic_set_idelivery(cpu()->vcpu, idc_id, (uint32_t)vcpu_readreg(cpu()->vcpu, acc->reg));
+    } else {
+        vcpu_writereg(cpu()->vcpu, acc->reg, vaplic_get_idelivery(cpu()->vcpu, idc_id));
+    }
+}
+
+/**
+ * @brief iforce register access emulation function
+ *
+ * @param acc access information
+ *
+ * It determines whether it needs to call the write or read funcion for the choosen register.
+ */
+static void vaplic_emul_iforce_access(struct emul_access* acc, idcid_t idc_id)
+{
+    if (acc->write) {
+        vaplic_set_iforce(cpu()->vcpu, idc_id, (uint32_t)vcpu_readreg(cpu()->vcpu, acc->reg));
+    } else {
+        vcpu_writereg(cpu()->vcpu, acc->reg, vaplic_get_iforce(cpu()->vcpu, idc_id));
+    }
+}
+
+/**
+ * @brief ithreshold register access emulation function
+ *
+ * @param acc access information
+ *
+ * It determines whether it needs to call the write or read funcion for the choosen register.
+ */
+static void vaplic_emul_ithreshold_access(struct emul_access* acc, idcid_t idc_id)
+{
+    if (acc->write) {
+        vaplic_set_ithreshold(cpu()->vcpu, idc_id, (uint32_t)vcpu_readreg(cpu()->vcpu, acc->reg));
+    } else {
+        vcpu_writereg(cpu()->vcpu, acc->reg, vaplic_get_ithreshold(cpu()->vcpu, idc_id));
+    }
+}
+
+/**
+ * @brief topi register access emulation function
+ *
+ * @param acc access information
+ *
+ * It determines whether it needs to call the write or read funcion for the choosen register.
+ */
+static void vaplic_emul_topi_access(struct emul_access* acc, idcid_t idc_id)
+{
+    if (!acc->write) {
+        vcpu_writereg(cpu()->vcpu, acc->reg, vaplic_get_topi(cpu()->vcpu, idc_id));
+    }
+}
+
+/**
+ * @brief claimi register access emulation function
+ *
+ * @param acc access information
+ *
+ * It determines whether it needs to call the write or read funcion for the choosen register.
+ */
+static void vaplic_emul_claimi_access(struct emul_access* acc, idcid_t idc_id)
+{
+    if (!acc->write) {
+        vcpu_writereg(cpu()->vcpu, acc->reg, vaplic_get_claimi(cpu()->vcpu, idc_id));
+    }
+}
+
+/**
+ * @brief Function to handle writes (or reads) to (from) IDC structure.
+ *
+ * @param acc emulated access
+ * @return true  if conclude without errors.
+ * @return false if the access is not aligned.
+ */
+static bool vaplic_idc_emul_handler(struct emul_access* acc)
+{
+    // only allow aligned word accesses
+    if (acc->width != 4 || acc->addr & 0x3) {
+        return false;
+    }
+
+    uint32_t addr = (uint32_t)(acc->addr);
+    idcid_t idc_id = ((acc->addr - cpu()->vcpu->vm->arch.vaplic.aplic_idc_emul.va_base) >> 5) &
+        APLIC_MAX_NUM_HARTS_MAKS;
+
+    switch (addr & 0x1F) {
+        case offsetof(struct aplic_idc_hw, idelivery):
+            vaplic_emul_idelivery_access(acc, idc_id);
+            break;
+        case offsetof(struct aplic_idc_hw, iforce):
+            vaplic_emul_iforce_access(acc, idc_id);
+            break;
+        case offsetof(struct aplic_idc_hw, ithreshold):
+            vaplic_emul_ithreshold_access(acc, idc_id);
+            break;
+        case offsetof(struct aplic_idc_hw, topi):
+            vaplic_emul_topi_access(acc, idc_id);
+            break;
+        case offsetof(struct aplic_idc_hw, claimi):
+            vaplic_emul_claimi_access(acc, idc_id);
+            break;
+        default:
+            if (!acc->write) {
+                vcpu_writereg(cpu()->vcpu, acc->reg, 0);
+            }
+            break;
+    }
+    return true;
+}
+
 #elif (IRQC == AIA)
+
+/**
+ * @brief Returns the target guest index of a given interrupt
+ *
+ * @param vcpu virtual cpu
+ * @param intp_id interrupt ID
+ * @return uint8_t guest hart index of the given interrupt
+ */
+static inline uint8_t vaplic_get_target_guest(struct vcpu* vcpu, irqid_t intp_id)
+{
+    return (vaplic_get_target(vcpu, intp_id) >> APLIC_TARGET_GUEST_IDX_SHIFT) &
+        APLIC_TARGET_GUEST_INDEX_MASK;
+}
+
 static void vaplic_update_hart_imsic(struct vcpu* vcpu, vcpuid_t vhart_index)
 {
     struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
@@ -289,6 +564,15 @@ static void vaplic_update_hart_imsic(struct vcpu* vcpu, vcpuid_t vhart_index)
 }
 #endif
 
+static inline void vaplic_update_hart_impl(struct vcpu* vcpu, vcpuid_t vhart_index)
+{
+#if (IRQC == APLIC)
+    vaplic_update_hart_line(vcpu, vhart_index);
+#elif (IRQC == AIA)
+    vaplic_update_hart_imsic(vcpu, vhart_index);
+#endif
+}
+
 /**
  * @brief Triggers the hart/harts interrupt line update.
  *
@@ -303,18 +587,10 @@ static void vaplic_update_hart(struct vcpu* vcpu, size_t vhart_index)
 
     if (vhart_index == UPDATE_ALL_HARTS) {
         for (size_t i = 0; i < vaplic->idc_num; i++) {
-#if (IRQC == APLIC)
-            vaplic_update_hart_line(vcpu, (vcpuid_t)i);
-#elif (IRQC == AIA)
-            vaplic_update_hart_imsic(vcpu, (vcpuid_t)i);
-#endif
+            vaplic_update_hart_impl(vcpu, (vcpuid_t)i);
         }
     } else if ((uint16_t)vhart_index < vaplic->idc_num) {
-#if (IRQC == APLIC)
-        vaplic_update_hart_line(vcpu, (vcpuid_t)vhart_index);
-#elif (IRQC == AIA)
-        vaplic_update_hart_imsic(vcpu, (vcpuid_t)vhart_index);
-#endif
+        vaplic_update_hart_impl(vcpu, (vcpuid_t)vhart_index);
     }
 }
 
@@ -349,11 +625,11 @@ static void vaplic_set_domaincfg(struct vcpu* vcpu, uint32_t new_val)
     /** Update only the virtual domaincfg */
     /** Only Interrupt Enable is configurable */
     new_val &= APLIC_DOMAINCFG_IE;
-#if (IRQC == APLIC)
-    new_val &= ~APLIC_DOMAINCFG_DM;
-#elif (IRQC == AIA)
-    new_val |= APLIC_DOMAINCFG_DM;
-#endif
+    if (IRQC == AIA) {
+        new_val |= APLIC_DOMAINCFG_DM;
+    } else {
+        new_val &= ~APLIC_DOMAINCFG_DM;
+    }
     vaplic->domaincfg = new_val | APLIC_DOMAINCFG_RO80;
     vaplic_update_hart(vcpu, UPDATE_ALL_HARTS);
     spin_unlock(&vaplic->lock);
@@ -703,12 +979,8 @@ static void vaplic_set_target(struct vcpu* vcpu, irqid_t intp_id, uint32_t new_v
 {
     struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
     vcpuid_t hart_index = (new_val >> APLIC_TARGET_HART_IDX_SHIFT) & APLIC_TARGET_HART_IDX_MASK;
-#if (IRQC == APLIC)
     uint8_t priority = (uint8_t)(new_val & APLIC_IPRIO_MASK);
-#elif (IRQC == AIA)
-    uint8_t guest_index = (new_val >> APLIC_TARGET_GUEST_IDX_SHIFT) & APLIC_TARGET_GUEST_INDEX_MASK;
     irqid_t eiid = new_val & APLIC_TARGET_EEID_MASK;
-#endif
     cpuid_t pcpu_id = vm_translate_to_pcpuid(vcpu->vm, hart_index);
     vcpuid_t prev_hart_index = 0;
 
@@ -720,36 +992,39 @@ static void vaplic_set_target(struct vcpu* vcpu, irqid_t intp_id, uint32_t new_v
         pcpu_id = vm_translate_to_pcpuid(vcpu->vm, hart_index);
     }
 
-#if (IRQC == APLIC)
-    new_val &= APLIC_TARGET_DIRECT_MASK;
-    if (priority == 0) {
-        new_val |= APLIC_TARGET_MAX_PRIO;
-        priority = APLIC_TARGET_MAX_PRIO;
+    if (IRQC == AIA) {
+        new_val &= APLIC_TARGET_MSI_MASK;
+    } else {
+        new_val &= APLIC_TARGET_DIRECT_MASK;
+        if (priority == 0) {
+            new_val |= APLIC_TARGET_MAX_PRIO;
+            priority = APLIC_TARGET_MAX_PRIO;
+        }
     }
-#elif (IRQC == AIA)
-    new_val &= APLIC_TARGET_MSI_MASK;
-#endif
 
     if (vaplic_get_active(vcpu, intp_id) && vaplic_get_target(vcpu, intp_id) != new_val) {
         prev_hart_index = vaplic_get_hart_index(vcpu, intp_id);
         if (vaplic_get_hw(vcpu, intp_id)) {
             aplic_set_target_hart(intp_id, pcpu_id);
-#if (IRQC == APLIC)
-            aplic_set_target_prio(intp_id, priority);
-            priority = aplic_get_target_prio(intp_id);
-#elif (IRQC == AIA)
-            aplic_set_target_guest(intp_id, 1);
-            aplic_set_target_eiid(intp_id, eiid);
-            eiid = aplic_get_target_eiid(intp_id);
-#endif
+            if (IRQC == AIA) {
+                aplic_set_target_guest(intp_id, 1);
+                aplic_set_target_eiid(intp_id, eiid);
+                eiid = aplic_get_target_eiid(intp_id);
+            } else {
+                aplic_set_target_prio(intp_id, priority);
+                priority = aplic_get_target_prio(intp_id);
+            }
         }
 
-#if (IRQC == APLIC)
-        vaplic->target[intp_id] = (uint32_t)(hart_index << APLIC_TARGET_HART_IDX_SHIFT) | priority;
-#elif (IRQC == AIA)
-        vaplic->target[intp_id] = (uint32_t)(hart_index << APLIC_TARGET_HART_IDX_SHIFT) |
-            (uint32_t)(guest_index << APLIC_TARGET_GUEST_IDX_SHIFT) | eiid;
-#endif
+        if (IRQC == AIA) {
+            uint8_t guest_index =
+                (new_val >> APLIC_TARGET_GUEST_IDX_SHIFT) & APLIC_TARGET_GUEST_INDEX_MASK;
+            vaplic->target[intp_id] = (uint32_t)(hart_index << APLIC_TARGET_HART_IDX_SHIFT) |
+                (uint32_t)(guest_index << APLIC_TARGET_GUEST_IDX_SHIFT) | eiid;
+        } else {
+            vaplic->target[intp_id] =
+                (uint32_t)(hart_index << APLIC_TARGET_HART_IDX_SHIFT) | priority;
+        }
 
         if (prev_hart_index != hart_index) {
             vaplic_update_hart(vcpu, prev_hart_index);
@@ -776,166 +1051,6 @@ static uint32_t vaplic_get_target(struct vcpu* vcpu, irqid_t intp_id)
     }
     return ret;
 }
-
-#if (IRQC == APLIC)
-/**
- * @brief Set idelivery register for a given idc.
- *
- * @param vcpu virtual CPU
- * @param idc_id idc identifier
- * @param new_val new value to write in idelivery. Only 0 and 1 are allowed.
- */
-static void vaplic_set_idelivery(struct vcpu* vcpu, idcid_t idc_id, uint32_t new_val)
-{
-    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
-    spin_lock(&vaplic->lock);
-    if (idc_id < vaplic->idc_num) {
-        if ((new_val & 0x1) != 0) {
-            bitmap_set(vaplic->idelivery, idc_id);
-        } else {
-            bitmap_clear(vaplic->idelivery, idc_id);
-        }
-    }
-    vaplic_update_hart(vcpu, idc_id);
-    spin_unlock(&vaplic->lock);
-}
-
-/**
- * @brief Read idelivery register from a given idc.
- *
- * @param vcpu virtual CPU
- * @param idc_id idc identifier
- * @return uint32_t value read from idelivery
- */
-static uint32_t vaplic_get_idelivery(struct vcpu* vcpu, idcid_t idc_id)
-{
-    uint32_t ret = 0;
-    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
-    if (idc_id < vaplic->idc_num) {
-        ret = bitmap_get(vaplic->idelivery, idc_id);
-    }
-    return ret;
-}
-
-/**
- * @brief Set iforce register for a given idc.
- *
- * @param vcpu virtual CPU
- * @param idc_id idc identifier
- * @param new_val new value to write in iforce. Only 0 and 1 are allowed.
- */
-static void vaplic_set_iforce(struct vcpu* vcpu, idcid_t idc_id, uint32_t new_val)
-{
-    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
-    spin_lock(&vaplic->lock);
-    if (idc_id < vaplic->idc_num) {
-        if ((new_val & 0x1) != 0) {
-            bitmap_set(vaplic->iforce, idc_id);
-        } else {
-            bitmap_clear(vaplic->iforce, idc_id);
-        }
-    }
-    vaplic_update_hart(vcpu, idc_id);
-    spin_unlock(&vaplic->lock);
-}
-
-/**
- * @brief Read iforce register from a given idc.
- *
- * @param vcpu virtual CPU
- * @param idc_id idc identifier
- * @return uint32_t value read from iforce
- */
-static uint32_t vaplic_get_iforce(struct vcpu* vcpu, idcid_t idc_id)
-{
-    uint32_t ret = 0;
-    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
-    if (idc_id < vaplic->idc_num) {
-        ret = bitmap_get(vaplic->iforce, idc_id);
-    }
-    return ret;
-}
-
-/**
- * @brief Set ithreshold register for a given idc.
- *
- * @param vcpu virtual CPU
- * @param idc_id idc identifier
- * @param new_val new value to write in ithreshold
- */
-static void vaplic_set_ithreshold(struct vcpu* vcpu, idcid_t idc_id, uint32_t new_val)
-{
-    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
-    spin_lock(&vaplic->lock);
-    if (idc_id < vaplic->idc_num) {
-        vaplic->ithreshold[idc_id] = new_val & APLIC_IPRIO_MASK;
-    }
-    vaplic_update_hart(vcpu, idc_id);
-    spin_unlock(&vaplic->lock);
-}
-
-/**
- * @brief Read ithreshold register from a given idc.
- *
- * @param vcpu virtual CPU
- * @param idc_id idc identifier
- * @return uint32_t value read from ithreshold
- */
-static uint32_t vaplic_get_ithreshold(struct vcpu* vcpu, idcid_t idc_id)
-{
-    uint32_t ret = 0;
-    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
-    if (idc_id < vaplic->idc_num) {
-        ret = vaplic->ithreshold[idc_id];
-    }
-    return ret;
-}
-
-/**
- * @brief Read topi register from a given idc.
- *
- * @param vcpu virtual CPU
- * @param idc_id idc identifier
- * @return uint32_t value read from topi
- */
-static uint32_t vaplic_get_topi(struct vcpu* vcpu, idcid_t idc_id)
-{
-    uint32_t ret = 0;
-    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
-    if (idc_id < vaplic->idc_num) {
-        ret = vaplic->topi_claimi[idc_id];
-    }
-    return ret;
-}
-
-/**
- * @brief Returns the highest pending and enabled interrupt.
- *
- * Claimi has the same value as topi. However, reading claimi has the side effect of clearing the
- * pending bit for the reported interrupt identity.
- *
- * @param vcpu virtual CPU
- * @param idc_id idc identifier
- * @return 32 bit value read from virt claimi
- */
-static uint32_t vaplic_get_claimi(struct vcpu* vcpu, idcid_t idc_id)
-{
-    uint32_t ret = 0;
-    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
-    spin_lock(&vaplic->lock);
-    if (idc_id < vaplic->idc_num) {
-        ret = vaplic->topi_claimi[idc_id];
-        CLR_INTP_REG(vaplic->ip, (ret >> IDC_CLAIMI_INTP_ID_SHIFT));
-        /** Spurious intp*/
-        if (ret == 0) {
-            bitmap_clear(vaplic->iforce, idc_id);
-        }
-        vaplic_update_hart(vcpu, idc_id);
-    }
-    spin_unlock(&vaplic->lock);
-    return ret;
-}
-#endif
 
 /**
  * @brief domaincfg register access emulation function
@@ -1110,84 +1225,6 @@ static void vaplic_emul_target_access(struct emul_access* acc)
     }
 }
 
-#if (IRQC == APLIC)
-/**
- * @brief idelivery register access emulation function
- *
- * @param acc access information
- *
- * It determines whether it needs to call the write or read funcion for the choosen register.
- */
-static void vaplic_emul_idelivery_access(struct emul_access* acc, idcid_t idc_id)
-{
-    if (acc->write) {
-        vaplic_set_idelivery(cpu()->vcpu, idc_id, (uint32_t)vcpu_readreg(cpu()->vcpu, acc->reg));
-    } else {
-        vcpu_writereg(cpu()->vcpu, acc->reg, vaplic_get_idelivery(cpu()->vcpu, idc_id));
-    }
-}
-
-/**
- * @brief iforce register access emulation function
- *
- * @param acc access information
- *
- * It determines whether it needs to call the write or read funcion for the choosen register.
- */
-static void vaplic_emul_iforce_access(struct emul_access* acc, idcid_t idc_id)
-{
-    if (acc->write) {
-        vaplic_set_iforce(cpu()->vcpu, idc_id, (uint32_t)vcpu_readreg(cpu()->vcpu, acc->reg));
-    } else {
-        vcpu_writereg(cpu()->vcpu, acc->reg, vaplic_get_iforce(cpu()->vcpu, idc_id));
-    }
-}
-
-/**
- * @brief ithreshold register access emulation function
- *
- * @param acc access information
- *
- * It determines whether it needs to call the write or read funcion for the choosen register.
- */
-static void vaplic_emul_ithreshold_access(struct emul_access* acc, idcid_t idc_id)
-{
-    if (acc->write) {
-        vaplic_set_ithreshold(cpu()->vcpu, idc_id, (uint32_t)vcpu_readreg(cpu()->vcpu, acc->reg));
-    } else {
-        vcpu_writereg(cpu()->vcpu, acc->reg, vaplic_get_ithreshold(cpu()->vcpu, idc_id));
-    }
-}
-
-/**
- * @brief topi register access emulation function
- *
- * @param acc access information
- *
- * It determines whether it needs to call the write or read funcion for the choosen register.
- */
-static void vaplic_emul_topi_access(struct emul_access* acc, idcid_t idc_id)
-{
-    if (!acc->write) {
-        vcpu_writereg(cpu()->vcpu, acc->reg, vaplic_get_topi(cpu()->vcpu, idc_id));
-    }
-}
-
-/**
- * @brief claimi register access emulation function
- *
- * @param acc access information
- *
- * It determines whether it needs to call the write or read funcion for the choosen register.
- */
-static void vaplic_emul_claimi_access(struct emul_access* acc, idcid_t idc_id)
-{
-    if (!acc->write) {
-        vcpu_writereg(cpu()->vcpu, acc->reg, vaplic_get_claimi(cpu()->vcpu, idc_id));
-    }
-}
-#endif
-
 /**
  * @brief Injects a given interrupt into a given vcpu
  *
@@ -1322,51 +1359,6 @@ static bool vaplic_domain_emul_handler(struct emul_access* acc)
     }
     return true;
 }
-
-#if (IRQC == APLIC)
-/**
- * @brief Function to handle writes (or reads) to (from) IDC structure.
- *
- * @param acc emulated access
- * @return true  if conclude without errors.
- * @return false if the access is not aligned.
- */
-static bool vaplic_idc_emul_handler(struct emul_access* acc)
-{
-    // only allow aligned word accesses
-    if (acc->width != 4 || acc->addr & 0x3) {
-        return false;
-    }
-
-    uint32_t addr = (uint32_t)(acc->addr);
-    idcid_t idc_id = ((acc->addr - cpu()->vcpu->vm->arch.vaplic.aplic_idc_emul.va_base) >> 5) &
-        APLIC_MAX_NUM_HARTS_MAKS;
-
-    switch (addr & 0x1F) {
-        case offsetof(struct aplic_idc_hw, idelivery):
-            vaplic_emul_idelivery_access(acc, idc_id);
-            break;
-        case offsetof(struct aplic_idc_hw, iforce):
-            vaplic_emul_iforce_access(acc, idc_id);
-            break;
-        case offsetof(struct aplic_idc_hw, ithreshold):
-            vaplic_emul_ithreshold_access(acc, idc_id);
-            break;
-        case offsetof(struct aplic_idc_hw, topi):
-            vaplic_emul_topi_access(acc, idc_id);
-            break;
-        case offsetof(struct aplic_idc_hw, claimi):
-            vaplic_emul_claimi_access(acc, idc_id);
-            break;
-        default:
-            if (!acc->write) {
-                vcpu_writereg(cpu()->vcpu, acc->reg, 0);
-            }
-            break;
-    }
-    return true;
-}
-#endif
 
 void vaplic_init(struct vm* vm, const union vm_irqc_dscrp* vm_irqc_dscrp)
 {

@@ -26,6 +26,8 @@ typedef cpuid_t idcid_t;
 #define APLIC_NUM_SETIx_REGS          (APLIC_MAX_INTERRUPTS / 32)
 #define APLIC_NUM_INTP_PER_REG        (APLIC_MAX_INTERRUPTS / APLIC_NUM_SETIx_REGS)
 
+#define APLIC_MIN_PRIO                (0xFF)
+
 /** Source Mode defines */
 #define APLIC_SOURCECFG_SM_MASK       (0x00000007U)
 #define APLIC_SOURCECFG_SM_INACTIVE   (0x0U)

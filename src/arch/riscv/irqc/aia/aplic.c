@@ -47,9 +47,9 @@ void aplic_init(void)
     }
     APLIC_IPRIO_MASK = aplic_control->target[0] & APLIC_TARGET_IPRIO_MASK;
     aplic_control->domaincfg |= APLIC_DOMAINCFG_IE;
-#if (IRQC == AIA)
-    aplic_control->domaincfg |= APLIC_DOMAINCFG_DM;
-#endif
+    if (IRQC == AIA) {
+        aplic_control->domaincfg |= APLIC_DOMAINCFG_DM;
+    }
 }
 
 void aplic_idc_init(void)
