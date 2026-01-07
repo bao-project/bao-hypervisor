@@ -37,5 +37,6 @@ extern struct platform platform;
 void platform_init(void);
 void platform_default_init(void);
 void platform_config_init(void);
+void plat_cpu_init(cpuid_t cpuid, paddr_t load_addr);
 
 #endif /* __PLATFORM_H__ */
