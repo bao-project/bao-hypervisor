@@ -170,6 +170,8 @@ void mpu_enable(void)
     reg_val |= (SCTLR_M | SCTLR_C);
     sysreg_sctlr_el2_write(reg_val);
 
+    /* Make sure that all the registers are set before proceeding */
+    DSB(ish);
     ISB();
 }
 
