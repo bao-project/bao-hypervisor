@@ -57,15 +57,15 @@ inline irqid_t interrupts_arch_reserve(irqid_t pint_id)
 void interrupts_arch_enable(irqid_t int_id, bool en)
 {
     if (int_id == interrupts_ipi_id) {
-#if ((IRQC == PLIC) || ((IRQC == APLIC)))
-        if (en) {
-            csrs_sie_set(SIE_SSIE);
+        if (IRQC != AIA) {
+            if (en) {
+                csrs_sie_set(SIE_SSIE);
+            } else {
+                csrs_sie_clear(SIE_SSIE);
+            }
         } else {
-            csrs_sie_clear(SIE_SSIE);
+            irqc_config_irq(int_id, en);
         }
-#elif (IRQC == AIA)
-        irqc_config_irq(int_id, en);
-#endif
     } else if (int_id == irqc_timer_int_id) {
         if (en) {
             csrs_sie_set(SIE_STIE);
@@ -77,16 +77,28 @@ void interrupts_arch_enable(irqid_t int_id, bool en)
     }
 }
 
+static inline unsigned long interrupts_arch_get_pend_irq_id(void)
+{
+    unsigned long irq_id;
+
+    if (IRQC == AIA) {
+        unsigned long stopi = csrs_stopi_read();
+        irq_id = stopi >> TOPI_IID_SHIFT;
+    } else {
+        irq_id = csrs_scause_read() & ~SCAUSE_INT_BIT;
+    }
+
+    return irq_id;
+}
+
 void interrupts_arch_handle(void)
 {
-#if (IRQC == AIA)
-    unsigned long stopi = csrs_stopi_read();
+    unsigned long irq_id = interrupts_arch_get_pend_irq_id();
 
-    stopi = stopi >> TOPI_IID_SHIFT;
-    switch (stopi) {
+    switch (irq_id) {
         case IRQ_S_SOFT:
             /**
-             * This case is executed only by APLIC configuration,
+             * This case is executed only by PLIC/APLIC configuration,
              * IPIs sent through IMSIC are handled as external
              * interrupts.
              */
@@ -94,24 +106,6 @@ void interrupts_arch_handle(void)
             csrs_sip_clear(SIP_SSIP);
             break;
         case IRQ_S_TIMER:
-            interrupts_handle(irqc_timer_int_id);
-            break;
-        case IRQ_S_EXT:
-            irqc_handle();
-            break;
-        default:
-            WARNING("unkown interrupt");
-            break;
-    }
-#else
-    unsigned long _scause = csrs_scause_read();
-
-    switch (_scause) {
-        case SCAUSE_CODE_SSI:
-            csrs_sip_clear(SIP_SSIP);
-            interrupts_handle(interrupts_ipi_id);
-            break;
-        case SCAUSE_CODE_STI:
             interrupts_handle(irqc_timer_int_id);
             /**
              * Clearing the timer pending bit actually has no effect. We could re-program the timer
@@ -121,39 +115,42 @@ void interrupts_arch_handle(void)
              * continously triggering the timer interrupt (spoiler alert, it does!)
              */
             break;
-        case SCAUSE_CODE_SEI:
+        case IRQ_S_EXT:
             irqc_handle();
             break;
         default:
             WARNING("unkown interrupt");
             break;
     }
-#endif
 }
 
 bool interrupts_arch_check(irqid_t int_id)
 {
+    bool irq_pend;
+
     if (int_id == interrupts_ipi_id) {
-#if (IRQC != AIA)
-        return csrs_sip_read() & SIP_SSIP;
-#else
-        return irqc_get_pend(int_id);
-#endif
+        if (IRQC != AIA) {
+            irq_pend = csrs_sip_read() & SIP_SSIP;
+        } else {
+            irq_pend = irqc_get_pend(int_id);
+        }
     } else if (int_id == irqc_timer_int_id) {
-        return csrs_sip_read() & SIP_STIP;
+        irq_pend = csrs_sip_read() & SIP_STIP;
     } else {
-        return irqc_get_pend(int_id);
+        irq_pend = irqc_get_pend(int_id);
     }
+
+    return irq_pend;
 }
 
 void interrupts_arch_clear(irqid_t int_id)
 {
     if (int_id == interrupts_ipi_id) {
-#if (IRQC != AIA)
-        csrs_sip_clear(SIP_SSIP);
-#else
-        irqc_clr_pend(int_id);
-#endif
+        if (IRQC != AIA) {
+            csrs_sip_clear(SIP_SSIP);
+        } else {
+            irqc_clr_pend(int_id);
+        }
     } else if (int_id == irqc_timer_int_id) {
         /**
          * It is not actually possible to clear timer by software.
