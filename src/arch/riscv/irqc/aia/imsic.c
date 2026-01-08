@@ -15,11 +15,10 @@ BITMAP_ALLOC(msi_reserved, IMSIC_MAX_INTERRUPTS);
 
 static inline size_t imsic_eie_index(irqid_t int_id)
 {
-    size_t index = int_id / __riscv_xlen;
-    bool index_is_odd = (index & 1) != 0;
+    size_t index = int_id / 32U;
 
-    if ((__riscv_xlen == 64) && index_is_odd) {
-        index -= 1;
+    if (__riscv_xlen == 64) {
+        index &= ~1UL;
     }
 
     return index;
