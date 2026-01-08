@@ -91,6 +91,9 @@ SYSREG_GEN_ACCESSORS_MERGE(mair_el2, hmair0, hmair1)
 SYSREG_GEN_ACCESSORS(hcr, 4, c1, c1, 0)
 SYSREG_GEN_ACCESSORS(hcr2, 4, c6, c0, 0)
 SYSREG_GEN_ACCESSORS_MERGE(hcr_el2, hcr, hcr2)
+SYSREG_GEN_ACCESSORS(hactlr, 4, c1, c0, 1)
+SYSREG_GEN_ACCESSORS(hactlr2, 4, c1, c0, 3)
+SYSREG_GEN_ACCESSORS_MERGE(actlr_el2, hactlr, hactlr2) // hactlr
 SYSREG_GEN_ACCESSORS(cntfrq_el0, 0, c14, c0, 0)
 
 SYSREG_GEN_ACCESSORS(mpuir_el2, 4, c0, c0, 4)

@@ -57,7 +57,7 @@ platforms is presented below:
 **Armv8-R AArch32**
 - [x] Arm Fixed Virtual Platforms
 - [x] Arm MPS3-AN536
-- [ ] NXP S32Z/E
+- [x] NXP S32Z270
 - [ ] Renesas RZT2M
 
 **RISC-V RV64**

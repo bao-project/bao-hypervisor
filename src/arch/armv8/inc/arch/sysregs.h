@@ -424,6 +424,10 @@
 #define VSCTLR_EL2_VMID_OFF        (REG_LENGTH - VSCTLR_EL2_VMID_OFF_ADJUST)
 #define VSCTLR_EL2_VMID_MSK        BIT_MASK(VSCTLR_EL2_VMID_OFF, VSCTLR_EL2_VMID_LEN)
 
+/* ACTLR_EL2, Auxiliary Control Register */
+
+#define ACTLR_PERIPHPREGIONR       (1UL << 8)
+
 /* GICC System Register Interface Definitions */
 
 #define ICC_PMR_EL1                S3_0_C4_C6_0
