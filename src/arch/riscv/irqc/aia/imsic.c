@@ -102,7 +102,7 @@ irqid_t imsic_allocate_msi(void)
     irqid_t msi_id = INVALID_IRQID;
 
     spin_lock(&msi_alloc_lock);
-    ssize_t bit = bitmap_find_nth(msi_reserved, PLAT_IMSIC_MAX_INTERRUPTS, 1, 0, BITMAP_NOT_SET);
+    ssize_t bit = bitmap_find_nth(msi_reserved, PLAT_IMSIC_MAX_INTERRUPTS, 1, 1, BITMAP_NOT_SET);
     if (bit >= 0) {
         msi_id = (irqid_t)bit;
         bitmap_set(msi_reserved, msi_id);
