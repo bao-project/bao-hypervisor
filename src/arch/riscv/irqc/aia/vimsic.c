@@ -21,8 +21,8 @@ void vimsic_init(struct vm* vm, const union vm_irqc_dscrp* vm_irqc_dscrp)
 
     imsic_vaddr = vm_irqc_dscrp->aia.imsic.base + (PAGE_SIZE * vcpu_id);
 
-    imsic_paddr = platform.arch.irqc.aia.imsic.base +
-        (PAGE_SIZE * ((IMSIC_NUM_FILES * pcpu_id) + VS_FILE_IDX));
+    imsic_paddr = platform.arch.irqc.aia.imsic.base + (PLAT_IMSIC_HART_SIZE * pcpu_id) +
+        (PAGE_SIZE * VS_FILE_IDX);
 
     if (imsic_vaddr != INVALID_VA) {
         mem_alloc_map_dev(&vm->as, SEC_VM_ANY, imsic_vaddr, imsic_paddr, 1);

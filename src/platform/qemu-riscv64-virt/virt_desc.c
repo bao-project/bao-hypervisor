@@ -35,6 +35,7 @@ struct platform platform = {
         .irqc.aia.aplic.base = 0xd000000,
         .irqc.aia.imsic.base = 0x28000000,
         .irqc.aia.imsic.num_msis = 255,
+        .irqc.aia.imsic.num_guest_files = 1,
 #endif
 
 #if (IPIC == IPIC_ACLINT)

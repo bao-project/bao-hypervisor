@@ -10,9 +10,6 @@
 #include <platform.h>
 
 #define IMSIC_MAX_INTERRUPTS (PLAT_IMSIC_MAX_INTERRUPTS)
-/** We only support 1 guest per hart at the moment */
-#define IMSIC_NUM_VS_FILES   (1)
-#define IMSIC_NUM_FILES      (IMSIC_NUM_VS_FILES + 1)
 
 #define STOPEI_EEID          (16)
 
