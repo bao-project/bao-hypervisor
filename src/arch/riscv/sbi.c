@@ -394,6 +394,7 @@ static struct sbiret sbi_hsm_suspend_handler(void)
 {
     struct sbiret ret;
     uint32_t suspend_type = (uint32_t)vcpu_readreg(cpu()->vcpu, REG_A0);
+    bool try_suspend = false;
 
     spin_lock(&cpu()->vcpu->arch.sbi_ctx.lock);
     if (cpu()->vcpu->arch.sbi_ctx.state != STARTED) {
@@ -407,8 +408,13 @@ static struct sbiret sbi_hsm_suspend_handler(void)
              */
             ret.error = SBI_ERR_NOT_SUPPORTED;
         } else {
-            ret = sbi_hart_suspend(suspend_type, 0, 0);
+            try_suspend = true;
         }
+    }
+    spin_unlock(&cpu()->vcpu->arch.sbi_ctx.lock);
+
+    if (try_suspend) {
+        ret = sbi_hart_suspend(suspend_type, 0, 0);
     }
 
     return ret;
