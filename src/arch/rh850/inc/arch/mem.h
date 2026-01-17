@@ -109,6 +109,4 @@ static inline size_t mpu_granularity(void)
     return (size_t)PAGE_SIZE;
 }
 
-bool mpu_perms_compatible(uint32_t perms1, uint32_t perms2);
-
 #endif /* __ARCH_MEM_H__ */

@@ -65,7 +65,7 @@ bool mpu_update(struct addr_space* as, struct mp_region* mpr)
     return !failed;
 }
 
-bool mpu_perms_compatible(uint32_t perms1, uint32_t perms2)
+bool mpu_perms_compatible(unsigned long perms1, unsigned long perms2)
 {
     return perms1 == perms2;
 }
