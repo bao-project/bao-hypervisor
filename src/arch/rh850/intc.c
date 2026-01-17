@@ -7,49 +7,44 @@
 #include <arch/intc.h>
 
 /* EIC */
-#define EIRFn_BIT                (1U << 12)
-#define EIMKn_BIT                (1U << 7)
+#define EIRFn_BIT          (1U << 12)
+#define EIMKn_BIT          (1U << 7)
 
-#define EIPn_MASK                (0xF)
+#define EIPn_MASK          (0xF)
 
-#define EIC_SET_EIRFn(reg)       ((reg) |= (uint16_t)EIRFn_BIT)
-#define EIC_CLR_EIRFn(reg)       ((reg) &= (uint16_t)(~EIRFn_BIT))
-#define EIC_GET_EIRFn(reg)       (((reg) & (uint16_t)EIRFn_BIT) >> 12)
+#define EIC_SET_EIRFn(reg) ((reg) |= (uint16_t)EIRFn_BIT)
+#define EIC_CLR_EIRFn(reg) ((reg) &= (uint16_t)(~EIRFn_BIT))
+#define EIC_GET_EIRFn(reg) (((reg) & (uint16_t)EIRFn_BIT) >> 12)
 
-#define EIC_SET_EIMKn(reg)       ((reg) |= (uint16_t)EIMKn_BIT)
-#define EIC_CLR_EIMKn(reg)       ((reg) &= (uint16_t)(~EIMKn_BIT))
+#define EIC_SET_EIMKn(reg) ((reg) |= (uint16_t)EIMKn_BIT)
+#define EIC_CLR_EIMKn(reg) ((reg) &= (uint16_t)(~EIMKn_BIT))
 
 #define EIC_SET_EIPn(reg, value) \
-    ((reg) = (uint16_t)(((reg) & (uint16_t)(~EIPn_MASK)) | \
-        ((value) & EIPn_MASK)))
+    ((reg) = (uint16_t)(((reg) & (uint16_t)(~EIPn_MASK)) | ((value) & EIPn_MASK)))
 
 /* EIBD */
-#define EIBD_GM_BIT              (1U << 15)
+#define EIBD_GM_BIT      (1U << 15)
 
-#define EIBD_GPID_MASK           (0x7U << 8)
-#define EIBD_GPID_SHIFT          8
+#define EIBD_GPID_MASK   (0x7U << 8)
+#define EIBD_GPID_SHIFT  8
 
-#define EIBD_PEID_MASK           (0x7U)
+#define EIBD_PEID_MASK   (0x7U)
 
-#define EIBD_SET_GM(reg)         ((reg) |= (unsigned long)EIBD_GM_BIT)
-#define EIBD_CLR_GM(reg)         ((reg) &= (unsigned long)(~EIBD_GM_BIT))
+#define EIBD_SET_GM(reg) ((reg) |= (unsigned long)EIBD_GM_BIT)
+#define EIBD_CLR_GM(reg) ((reg) &= (unsigned long)(~EIBD_GM_BIT))
 
 #define EIBD_SET_GPID(reg, value) \
-    ((reg) = ((reg) & (unsigned long)(~EIBD_GPID_MASK)) | \
-    (((value) & 0x7) << EIBD_GPID_SHIFT))
+    ((reg) = ((reg) & (unsigned long)(~EIBD_GPID_MASK)) | (((value) & 0x7) << EIBD_GPID_SHIFT))
 
 #define EIBD_SET_PEID(reg, value) \
-    ((reg) = ((reg) & (unsigned long)(~EIBD_PEID_MASK)) | \
-    ((value) & EIBD_PEID_MASK))
+    ((reg) = ((reg) & (unsigned long)(~EIBD_PEID_MASK)) | ((value) & EIBD_PEID_MASK))
 
-    
 volatile struct intc1* intc1_hw;
 volatile struct intc2* intc2_hw;
 volatile struct intif* intif_hw;
 volatile struct eint* eint_hw;
 volatile struct fenc* fenc_hw;
 volatile struct feinc* feinc_hw[PLAT_CPU_NUM];
-
 
 void intc_set_pend(irqid_t int_id, bool en)
 {

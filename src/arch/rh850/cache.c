@@ -21,7 +21,8 @@
 /*     cild */
 /* } */
 
-void cache_arch_enumerate(struct cache* dscrp) { 
+void cache_arch_enumerate(struct cache* dscrp)
+{
     UNUSED_ARG(dscrp);
 }
 

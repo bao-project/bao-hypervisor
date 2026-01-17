@@ -7,11 +7,11 @@
 
 volatile struct stbc_hw* stbc;
 
-void stbc_init(void) {
-
+void stbc_init(void)
+{
     /* Enable temporary access to STBC registers */
     vaddr_t stbc_ptr = mem_alloc_map_dev(&cpu()->as, SEC_HYP_PRIVATE, INVALID_VA,
-                                        (paddr_t)(PLAT_STBC_BASE), NUM_PAGES(sizeof(struct stbc_hw)));
+        (paddr_t)(PLAT_STBC_BASE), NUM_PAGES(sizeof(struct stbc_hw)));
     if (stbc_ptr == INVALID_VA) {
         ERROR("Maping STBC MMIO failed");
     }

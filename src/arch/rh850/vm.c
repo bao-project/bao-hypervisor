@@ -30,14 +30,14 @@ void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm)
 void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
 {
     struct vm* vm = vcpu->vm;
-    
+
     memset(&vcpu->regs, 0, sizeof(struct arch_regs));
 
     vcpu_writepc(vcpu, entry);
     set_eipc(entry);
 
     vcpu->arch.started = vcpu->id == 0 ? true : false;
-    
+
     /* Bao fixes the VMID as SPID to isolate VM memory regions */
     vcpu->regs.spid = vm->id;
     set_gmspid(vm->id);
@@ -129,30 +129,30 @@ bool vbootctrl_emul_handler(struct emul_access* acc)
             }
         }
 
-        if (virt_id == INVALID_CPUID)
+        if (virt_id == INVALID_CPUID) {
             return true;
+        }
 
         unsigned long psw = get_gmpsw();
-        if (vm->vcpus[virt_id].arch.started)
+        if (vm->vcpus[virt_id].arch.started) {
             set_gmpsw(psw & ~PSW_Z);
-        else
+        } else {
             set_gmpsw(psw | PSW_Z);
+        }
 
-        switch (acc->arch.op)
-        {
+        switch (acc->arch.op) {
             case SET1:
                 vm->vcpus[virt_id].arch.started = true;
-            break;
-            case NOT1:                
+                break;
+            case NOT1:
                 vm->vcpus[virt_id].arch.started = true;
-            break;
+                break;
             /* CLR1 accesses are ignored */
             /* TST1 only modifies the PSW.Z flag */
             default:
-            break;
+                break;
         }
-    }
-    else if (acc->write) {
+    } else if (acc->write) {
         unsigned long val = vcpu_readreg(vcpu, acc->reg);
         for (size_t i = 0; i < vcpu->vm->cpu_num; i++) {
             if ((1U << i) & val) {
@@ -162,8 +162,7 @@ bool vbootctrl_emul_handler(struct emul_access* acc)
                 vm->vcpus[i].arch.started = true;
             }
         }
-    }
-    else {
+    } else {
         unsigned long val = 0;
         for (size_t i = 0; i < vcpu->vm->cpu_num; i++) {
             if (vm->vcpus[i].arch.started) {
@@ -174,9 +173,11 @@ bool vbootctrl_emul_handler(struct emul_access* acc)
     }
 
     /* Notify physical CPUs, if any */
-    for (cpuid_t c = 0; c < platform.cpu_num; c++)
-        if (notify & (1UL << c))
+    for (cpuid_t c = 0; c < platform.cpu_num; c++) {
+        if (notify & (1UL << c)) {
             interrupts_cpu_sendipi(c);
+        }
+    }
 
     return true;
 }

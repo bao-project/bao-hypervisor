@@ -8,12 +8,12 @@
 
 #include <platform.h>
 
-#define PLAT_NUM_PBG_CHANNELS   (16)
+#define PLAT_NUM_PBG_CHANNELS (16)
 
-#define PLAT_PBG_BASE           (0xFF0A1300UL)
+#define PLAT_PBG_BASE         (0xFF0A1300UL)
 
-#define PBGKCPROT_ENABLE_WR     (0xA5A5A501UL)
-#define PBGKCPROT_DISABLE_WR    (0xA5A5A500UL)
+#define PBGKCPROT_ENABLE_WR   (0xA5A5A501UL)
+#define PBGKCPROT_DISABLE_WR  (0xA5A5A500UL)
 
 struct pbg_channel {
     uint32_t PBGPROT0;

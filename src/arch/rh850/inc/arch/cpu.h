@@ -11,7 +11,7 @@
 #include <bitmap.h>
 #include <arch/srs.h>
 
-#define SNZCFG_PERIOD (uint8_t)(-1)
+#define SNZCFG_PERIOD          (uint8_t)(-1)
 
 #define CPU_HAS_EXTENSION(EXT) (DEFINED(EXT))
 

@@ -5,10 +5,9 @@
 
 #include <platform.h>
 
-void platform_default_init(void) {
-
+void platform_default_init(void)
+{
     if (cpu_is_master()) {
-
         /*** Peripheral Bus Guard Initialization ***/
         pbg_init();
 

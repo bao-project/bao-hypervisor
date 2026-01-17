@@ -44,21 +44,15 @@ void cpu_arch_init(cpuid_t cpuid, paddr_t load_addr)
 
 static void reset_stack_and_jump(void* stack_base, void (*jmp_target)(void))
 {
-    __asm__ volatile(
-        "mov   %[stack], sp\n\t"
-        "st.w  lp, -4[sp]\n\t"
-        "add   -4, sp\n\t"
-        "jarl  %[target], lp\n\t"
-        "ld.w  0[sp], lp\n\t"
-        "add   4, sp\n\t"
-        "jmp   [lp]\n\t"
-        :
-        : [stack] "r" (stack_base),
-          [target] "r" (jmp_target)
-        : "lp", "memory"
-    );
+    __asm__ volatile("mov   %[stack], sp\n\t"
+                     "st.w  lp, -4[sp]\n\t"
+                     "add   -4, sp\n\t"
+                     "jarl  %[target], lp\n\t"
+                     "ld.w  0[sp], lp\n\t"
+                     "add   4, sp\n\t"
+                     "jmp   [lp]\n\t" : : [stack] "r"(stack_base), [target] "r"(jmp_target)
+                     : "lp", "memory");
 }
-
 
 void cpu_arch_standby()
 {

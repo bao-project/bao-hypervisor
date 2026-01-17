@@ -5,15 +5,15 @@
 
 #include <platform.h>
 
-#define PBGPROT1_SPID_MASK  (((1UL << 16) - 1) | (1UL << 16))
+#define PBGPROT1_SPID_MASK (((1UL << 16) - 1) | (1UL << 16))
 
 volatile struct pbg_hw* pbg;
 
-void pbg_init(void) {
-
+void pbg_init(void)
+{
     /* Enable temporary access to PBG registers */
     vaddr_t pbg_ptr = mem_alloc_map_dev(&cpu()->as, SEC_HYP_PRIVATE, INVALID_VA,
-                                (paddr_t)(PLAT_PBG_BASE), NUM_PAGES(sizeof(struct pbg_hw)));
+        (paddr_t)(PLAT_PBG_BASE), NUM_PAGES(sizeof(struct pbg_hw)));
     if (pbg_ptr == INVALID_VA) {
         ERROR("Maping PBG MMIO failed");
     }
@@ -34,8 +34,7 @@ void pbg_init(void) {
     pbg->PBGERRSLV90.PBGKCPROT = PBGKCPROT_ENABLE_WR;
 
     /* Allow SPIDs [0-16] to write to P-Bus */
-    for (size_t i = 0; i < PLAT_NUM_PBG_CHANNELS; i++)
-    {
+    for (size_t i = 0; i < PLAT_NUM_PBG_CHANNELS; i++) {
         pbg->PBG00.ch[i].PBGPROT1 |= (PBGPROT1_SPID_MASK);
         pbg->PBG10.ch[i].PBGPROT1 |= (PBGPROT1_SPID_MASK);
         pbg->PBG20.ch[i].PBGPROT1 |= (PBGPROT1_SPID_MASK);

@@ -44,8 +44,8 @@ irqid_t interrupts_arch_reserve(irqid_t int_id)
 inline bool interrupts_arch_conflict(bitmap_t* interrupt_bitmap, irqid_t int_id)
 {
     /* IPIR channels not used by the hypervisor are shared between VMs */
-    return bitmap_get(interrupt_bitmap, int_id) && 
-            !(int_id < IPIR_NUM_CHANNELS && int_id != IPI_HYP_IRQ_ID);
+    return bitmap_get(interrupt_bitmap, int_id) &&
+        !(int_id < IPIR_NUM_CHANNELS && int_id != IPI_HYP_IRQ_ID);
 }
 
 void interrupts_arch_vm_assign(struct vm* vm, irqid_t int_id)

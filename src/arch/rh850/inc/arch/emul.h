@@ -9,13 +9,7 @@
 #include <emul.h>
 
 /* The order of the operations can NOT be modified */
-enum bitwise_op {
-    NO_OP,
-    SET1,
-    NOT1,
-    CLR1,
-    TST1
-};
+enum bitwise_op { NO_OP, SET1, NOT1, CLR1, TST1 };
 
 struct emul_access_arch {
     enum bitwise_op op;

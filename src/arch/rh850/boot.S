@@ -13,7 +13,7 @@
 .endm
 
 /**
- * 	The following code MUST be at the base of the image, as this is bao's entrypoint. Therefore
+ * The following code MUST be at the base of the image, as this is bao's entrypoint. Therefore
  * .boot section must also be the first in the linker script. DO NOT implement any code before the
  * _reset_handler in this section.
  */
@@ -22,20 +22,20 @@
 _reset_handler:
 
     /**
-    * Not following any ABI for registers in this boot code.
-    * The following registers are however reserved to be passed to main
-    * as arguments:
-    *     r6 -> CPU ID
-    *
-    * Register r10 is reserved to hold the CPU ID
-    * Register r11 is reserved to hold the master CPU ID
-    * Register r12 is reserved to hold the CPU struct size
-    * Register r13 is reserved to hold the CPU struct pointer
-    * Register r31 is reserved as link pointer when calling a routine
-    *
-    * The remaining code must use r20-r29 as scratchpad registers in the main 
-    * flow and r15-r19 as arguments and return values. r10-r14 are used to hold constants.
-    */
+     * Not following any ABI for registers in this boot code.
+     * The following registers are however reserved to be passed to main
+     * as arguments:
+     *     r6 -> CPU ID
+     *
+     * Register r10 is reserved to hold the CPU ID
+     * Register r11 is reserved to hold the master CPU ID
+     * Register r12 is reserved to hold the CPU struct size
+     * Register r13 is reserved to hold the CPU struct pointer
+     * Register r31 is reserved as link pointer when calling a routine
+     *
+     * The remaining code must use r20-r29 as scratchpad registers in the main
+     * flow and r15-r19 as arguments and return values. r10-r14 are used to hold constants.
+     */
 
     di  /* Disable interrupts */
 
@@ -44,11 +44,14 @@ _reset_handler:
     mov CPU_MASTER_FIXED, r11   /* identify master cpu */
     /* TODO: Support for non-fixed master cpu*/
 
-/*  TODO: Remove.
-    This loop serves as a workaround for the fact that, when using e2studio to debug execution,
-    all cores start executing simultaneously, instead of following the BOOTCTRL mechanism */
+    /**
+     * TODO: Remove.
+     * This loop serves as a workaround for the fact that, when using e2studio to debug execution,
+     * all cores start executing simultaneously, instead of following the BOOTCTRL mechanism
+     */
 sync_loop:
-    /* mov 3, r20
+    /*
+    mov 3, r20
     cmp r10, r20
     be sync_loop
     mov 2, r20
@@ -56,7 +59,8 @@ sync_loop:
     be sync_loop
     mov 1, r20
     cmp r10, r20
-    be sync_loop */
+    be sync_loop
+    //*/
 
     /* set PSW.EBV and PSW.ID */
     mov 0x8020, r20
@@ -79,7 +83,7 @@ sync_loop:
     ldsr r0, 8, 5   /* MCA = MCS = 0 covers all memory */
     ldsr r0, 9, 5
     ldsr r0, 12, 5  /* MCI = 0 */
-    ldsr r10, 0, 1   /* set SPID = CPU ID */
+    ldsr r10, 0, 1  /* set SPID = CPU ID */
 
     /* initialize mpu entries for bank 0 */
     /* TODO: Discover number of MPU banks */
@@ -120,12 +124,12 @@ sync_loop:
     mov 0xFE800000, r15
     mov 0xFE83FFFF, r16
     jarl _boot_clear, lp
-   
+
     /* copy non-text sections from flash to ram */
     LOAD_ADDR _data_lma_start, r15
     LOAD_ADDR _image_load_end, r16
     mov PLAT_DATA_ADDR, r17
-    jarl _copy_data, lp 
+    jarl _copy_data, lp
 
     /* clear .bss in ram */
     LOAD_ADDR _image_noload_start, r15
@@ -191,7 +195,7 @@ _clear_cpu:
     mov CPU_STACK_SIZE, r21
     add r21, r20
     mov r20, sp
-    
+
     /* Set init arguments */
     mov r10, r6     /* copy CPU ID to r6 */
     LOAD_ADDR init, r5
@@ -215,7 +219,7 @@ _boot_clear_exit:
 
 
 /**
- * Copy contents from [r15] until [r16] to [r17] 
+ * Copy contents from [r15] until [r16] to [r17]
  * r15: start of the source region
  * r16: end of the source region
  * r17: start of the destination region
@@ -230,8 +234,8 @@ _copy_data:
     bne _copy_data
     jmp [lp]
 
-/** 
- * Clear MPU SRs 
+/**
+ * Clear MPU SRs
  * Uses r15, r16
  */
 _clear_mpu:

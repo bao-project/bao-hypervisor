@@ -11,50 +11,50 @@
 #include <arch/emul.h>
 #include <arch/srs.h>
 
-#define F8_OPCODE               (0x3EUL)
-#define F9_OPCODE               (0x3FUL)
-#define F9_SUBOPCODE            (0x1CUL)
+#define F8_OPCODE        (0x3EUL)
+#define F9_OPCODE        (0x3FUL)
+#define F9_SUBOPCODE     (0x1CUL)
 
-#define OPCODE_SHIFT            (5)
-#define OPCODE_MASK             (0x3FUL << OPCODE_SHIFT)
+#define OPCODE_SHIFT     (5)
+#define OPCODE_MASK      (0x3FUL << OPCODE_SHIFT)
 
-#define SUBOPCODE_SHIFT         (19)
-#define SUBOPCODE_MASK          (0x1FFFUL << SUBOPCODE_SHIFT)
+#define SUBOPCODE_SHIFT  (19)
+#define SUBOPCODE_MASK   (0x1FFFUL << SUBOPCODE_SHIFT)
 
-#define SUB8_SHIFT              (14)
-#define SUB8_MASK               (0x3UL << SUB8_SHIFT)
+#define SUB8_SHIFT       (14)
+#define SUB8_MASK        (0x3UL << SUB8_SHIFT)
 
-#define SUB9_SHIFT              (17)
-#define SUB9_MASK               (0x3UL << SUB9_SHIFT)
+#define SUB9_SHIFT       (17)
+#define SUB9_MASK        (0x3UL << SUB9_SHIFT)
 
-#define BITIDX_SHIFT            (11)
-#define BITIDX_MASK             (0x7UL << BITIDX_SHIFT)
+#define BITIDX_SHIFT     (11)
+#define BITIDX_MASK      (0x7UL << BITIDX_SHIFT)
 
-#define REGIDX_SHIFT            (11)
-#define REGIDX_MASK             (0x1FUL << REGIDX_SHIFT)
+#define REGIDX_SHIFT     (11)
+#define REGIDX_MASK      (0x1FUL << REGIDX_SHIFT)
 
 // LEN (Bits 31-28)
-#define MEI_LEN_MASK          (0xFUL << 28)
-#define MEI_LEN_SHIFT         28
-#define MEI_GET_LEN(val)      (((val) & MEI_LEN_MASK) >> MEI_LEN_SHIFT)
+#define MEI_LEN_MASK     (0xFUL << 28)
+#define MEI_LEN_SHIFT    28
+#define MEI_GET_LEN(val) (((val) & MEI_LEN_MASK) >> MEI_LEN_SHIFT)
 
 // REG (Bits 20-16)
-#define MEI_REG_MASK          (0x1F << 16)
-#define MEI_REG_SHIFT         16
-#define MEI_GET_REG(val)      (((val) & MEI_REG_MASK) >> MEI_REG_SHIFT)
+#define MEI_REG_MASK     (0x1F << 16)
+#define MEI_REG_SHIFT    16
+#define MEI_GET_REG(val) (((val) & MEI_REG_MASK) >> MEI_REG_SHIFT)
 
 // DS (Bits 11-9)
-#define MEI_DS_MASK           (0x7 << 9)
-#define MEI_DS_SHIFT          9
-#define MEI_GET_DS(val)       (((val) & MEI_DS_MASK) >> MEI_DS_SHIFT)
+#define MEI_DS_MASK      (0x7 << 9)
+#define MEI_DS_SHIFT     9
+#define MEI_GET_DS(val)  (((val) & MEI_DS_MASK) >> MEI_DS_SHIFT)
 
 // U (Bit 8)
-#define MEI_U_MASK            (1 << 8)
-#define MEI_GET_U(val)        (((val) & MEI_U_MASK) >> 8)
+#define MEI_U_MASK       (1 << 8)
+#define MEI_GET_U(val)   (((val) & MEI_U_MASK) >> 8)
 
 // RW (Bit 0)
-#define MEI_RW_MASK         (1 << 0)
-#define MEI_GET_RW(val)     ((val) & MEI_RW_MASK)
+#define MEI_RW_MASK      (1 << 0)
+#define MEI_GET_RW(val)  ((val) & MEI_RW_MASK)
 
 static unsigned long read_instruction(unsigned long pc)
 {
@@ -69,7 +69,7 @@ static unsigned long read_instruction(unsigned long pc)
     set_mpid7(HYP_SPID);
     fence_sync();
 
-    inst = (unsigned long)(*pc_ptr | (*(pc_ptr+1) << 16));
+    inst = (unsigned long)(*pc_ptr | (*(pc_ptr + 1) << 16));
 
     /* Disable Hyp access to VM space */
     set_mpid7(HYP_AUX_SPID);
@@ -97,12 +97,11 @@ static void data_abort(void)
     unsigned long subopcode = ((inst & SUBOPCODE_MASK) >> SUBOPCODE_SHIFT);
     unsigned long bit_op = 0;
     unsigned long mask = 0;
-    
+
     if (opcode == F8_OPCODE) {
         mask = 1UL << ((inst & BITIDX_MASK) >> BITIDX_SHIFT);
         bit_op = ((inst & SUB8_MASK) >> SUB8_SHIFT) + 1;
-    }
-    else if (opcode == F9_OPCODE && subopcode == F9_SUBOPCODE) {
+    } else if (opcode == F9_OPCODE && subopcode == F9_SUBOPCODE) {
         unsigned long reg_idx = (inst & REGIDX_MASK) >> REGIDX_SHIFT;
         unsigned long bit_idx = vcpu_readreg(cpu()->vcpu, reg_idx);
         mask = 1UL << (bit_idx & 0x7UL);
@@ -133,8 +132,9 @@ static void data_abort(void)
     }
 }
 
-static void hvtrap(void) {
-    unsigned long r6 = vcpu_readreg(cpu()->vcpu , 6);
+static void hvtrap(void)
+{
+    unsigned long r6 = vcpu_readreg(cpu()->vcpu, 6);
     unsigned long res = (unsigned long)hypercall(r6);
     vcpu_writereg(cpu()->vcpu, 6, res);
 }
@@ -142,15 +142,13 @@ static void hvtrap(void) {
 void abort(void)
 {
     unsigned long psw = get_psw();
-    unsigned long cause = (psw & (0x1UL << 7)) ? 
-                            (get_feic() & 0xFFFFUL) :
-                            (get_eiic() & 0xFFFFUL);
+    unsigned long cause = (psw & (0x1UL << 7)) ? (get_feic() & 0xFFFFUL) : (get_eiic() & 0xFFFFUL);
 
     switch (cause) {
         case 0x01:
             WARNING("Exception: RESET - Reset input\n");
             break;
-            
+
         case 0x1C:
             WARNING("Exception: SYSERR - System error (context saving error)\n");
             break;
@@ -190,7 +188,7 @@ void abort(void)
             break;
         case 0x98:
             WARNING("Exception: MIP - Guest memory protection exception due to instruction "
-                "fetching\n");
+                    "fetching\n");
             break;
         case 0x99:
             data_abort();
@@ -222,7 +220,7 @@ void abort(void)
                 WARNING("SYSERR - System error (instruction fetch error)");
             } else if (cause >= 0xf000 && cause <= 0xf01f) {
                 hvtrap();
-            }else if (cause >= 0x8000 && cause <= 0x80FF) {
+            } else if (cause >= 0x8000 && cause <= 0x80FF) {
                 WARNING("SYSCALL - System call");
             } else if (cause >= 0x31 && cause <= 0x3F) {
                 WARNING("FETRAP - FE level trap");

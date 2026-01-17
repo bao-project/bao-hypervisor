@@ -19,7 +19,6 @@ extern volatile struct eint* eint_hw;
 extern volatile struct fenc* fenc_hw;
 extern volatile struct feinc* feinc_hw[PLAT_CPU_NUM];
 
-
 void vintc_inject(struct vcpu* vcpu, irqid_t int_id)
 {
     struct vm* vm = vcpu->vm;
@@ -40,11 +39,10 @@ static void emulate_intc_eic_access(struct emul_access* acc, size_t reg_idx, uns
     irqid_t int_id = 0;
     volatile uint16_t* tgt_reg = NULL;
 
-    if (acc->addr < platform.arch.intc.intc1_addr) {    /* INTC2 */
+    if (acc->addr < platform.arch.intc.intc1_addr) { /* INTC2 */
         int_id = reg_idx + 32;
         tgt_reg = &(intc2_hw->EIC[reg_idx]);
-    }
-    else {  /* INTC1 */
+    } else {                                         /* INTC1 */
         int_id = reg_idx;
         tgt_reg = &(intc1_hw->EIC[reg_idx]);
     }
@@ -55,37 +53,33 @@ static void emulate_intc_eic_access(struct emul_access* acc, size_t reg_idx, uns
 
     /* bit manipulation instruction */
     if (acc->arch.op != NO_OP) {
-
         unsigned long psw = get_gmpsw();
-        if (*tgt_reg & bitop_mask)
+        if (*tgt_reg & bitop_mask) {
             set_gmpsw(psw & ~PSW_Z);
-        else
+        } else {
             set_gmpsw(psw | PSW_Z);
+        }
 
-        switch (acc->arch.op)
-        {
+        switch (acc->arch.op) {
             case SET1:
                 *tgt_reg |= bitop_mask;
-            break;
-            case NOT1:                
-                *tgt_reg = (uint16_t)((*tgt_reg & bitop_mask) ?
-                                        (*tgt_reg & ~bitop_mask) :
-                                        (*tgt_reg | bitop_mask));
-            break;
+                break;
+            case NOT1:
+                *tgt_reg = (uint16_t)((*tgt_reg & bitop_mask) ? (*tgt_reg & ~bitop_mask) :
+                                                                (*tgt_reg | bitop_mask));
+                break;
             case CLR1:
                 *tgt_reg &= (uint16_t)(~bitop_mask);
-            break;
+                break;
             /* TST1 only modifies the PSW.Z flag */
             default:
-            break;
+                break;
         }
-    }
-    else if (acc->write) {
+    } else if (acc->write) {
         unsigned long val = vcpu_readreg(vcpu, acc->reg);
-        *tgt_reg = (uint16_t)(((val & mask) << (addr_off * 8)) | 
-                                    (*tgt_reg & ~(mask << (addr_off * 8))));
-    }
-    else {
+        *tgt_reg =
+            (uint16_t)(((val & mask) << (addr_off * 8)) | (*tgt_reg & ~(mask << (addr_off * 8))));
+    } else {
         unsigned long val = *tgt_reg;
 
         val = (val >> (addr_off * 8)) & mask;
@@ -108,18 +102,16 @@ static void emulate_intc_imr_access(struct emul_access* acc, size_t reg_idx, uin
     irqid_t first_imr_int = 0;
     volatile uint32_t* tgt_reg = NULL;
 
-    if (acc->addr < platform.arch.intc.intc1_addr) {    /* INTC2 */
+    if (acc->addr < platform.arch.intc.intc1_addr) { /* INTC2 */
         first_imr_int = reg_idx * 32 + 32;
         tgt_reg = &(intc2_hw->IMR[reg_idx]);
-    }
-    else {  /* INTC1 */
+    } else {                                         /* INTC1 */
         first_imr_int = 0;
         tgt_reg = &(intc1_hw->IMR);
     }
 
     /* bit manipulation instruction */
     if (acc->arch.op != NO_OP) {
-
         for (unsigned int i = first_imr_int; i < first_imr_int + 32; i++) {
             if ((1UL << (i % 32)) & bitop_mask) {
                 int_id = i;
@@ -127,54 +119,51 @@ static void emulate_intc_imr_access(struct emul_access* acc, size_t reg_idx, uin
             }
         }
 
-        if (int_id == IPI_HYP_IRQ_ID)
+        if (int_id == IPI_HYP_IRQ_ID) {
             bitop_mask = 0;
-        else if (!vm_has_interrupt(vm, int_id)) {
+        } else if (!vm_has_interrupt(vm, int_id)) {
             ERROR("VM tried to access unassigned interrupt");
         }
 
         unsigned long psw = get_gmpsw();
-        if (*tgt_reg & bitop_mask)
+        if (*tgt_reg & bitop_mask) {
             set_gmpsw(psw & ~PSW_Z);
-        else
+        } else {
             set_gmpsw(psw | PSW_Z);
+        }
 
-        switch (acc->arch.op)
-        {
+        switch (acc->arch.op) {
             case SET1:
                 *tgt_reg |= bitop_mask;
-            break;
-            case NOT1:                
-                *tgt_reg = (*tgt_reg & bitop_mask) ?
-                            (*tgt_reg & ~bitop_mask) :
-                            (*tgt_reg | bitop_mask);
-            break;
+                break;
+            case NOT1:
+                *tgt_reg =
+                    (*tgt_reg & bitop_mask) ? (*tgt_reg & ~bitop_mask) : (*tgt_reg | bitop_mask);
+                break;
             case CLR1:
                 *tgt_reg &= ~bitop_mask;
-            break;
+                break;
             /* TST1 only modifies the PSW.Z flag */
             default:
-            break;
+                break;
         }
-    }
-    else if (acc->write) {
+    } else if (acc->write) {
         unsigned long val = vcpu_readreg(vcpu, acc->reg);
         unsigned long write_val = *tgt_reg;
 
         for (unsigned int i = first_imr_int; i < first_imr_int + 32; i++) {
-
             if (!vm_has_interrupt(vm, i) || (int_id == IPI_HYP_IRQ_ID)) {
                 continue;
             }
 
             unsigned int imr_bit = (i % 32);
-            if ((1UL << imr_bit) & val)
+            if ((1UL << imr_bit) & val) {
                 write_val |= (1UL << imr_bit);
-            else
+            } else {
                 write_val &= ~(1UL << imr_bit);
+            }
         }
-        *tgt_reg = ((write_val & mask) << (addr_off * 8)) | 
-                    (*tgt_reg & ~(mask << (addr_off * 8)));
+        *tgt_reg = ((write_val & mask) << (addr_off * 8)) | (*tgt_reg & ~(mask << (addr_off * 8)));
     } else {
         unsigned long val = 0;
 
@@ -208,11 +197,10 @@ static void emulate_intc_eibd_access(struct emul_access* acc, size_t reg_idx, ui
     irqid_t int_id = 0;
     volatile uint32_t* tgt_reg = NULL;
 
-    if (acc->addr < platform.arch.intc.intc1_addr) {    /* INTC2 */
+    if (acc->addr < platform.arch.intc.intc1_addr) { /* INTC2 */
         int_id = reg_idx + 32;
         tgt_reg = &(intc2_hw->EIBD[reg_idx]);
-    }
-    else {  /* INTC1 */
+    } else {                                         /* INTC1 */
         int_id = reg_idx;
         tgt_reg = &(intc1_hw->EIBD[reg_idx]);
     }
@@ -224,54 +212,52 @@ static void emulate_intc_eibd_access(struct emul_access* acc, size_t reg_idx, ui
     /* we use 0xFFFF0000 to mask access to virtualization configuration */
     /* bit manipulation instruction */
     if (acc->arch.op != NO_OP) {
-
         unsigned long psw = get_gmpsw();
-        if (*tgt_reg & bitop_mask)
+        if (*tgt_reg & bitop_mask) {
             set_gmpsw(psw & ~PSW_Z);
-        else
+        } else {
             set_gmpsw(psw | PSW_Z);
+        }
 
-        switch (acc->arch.op)
-        {
+        switch (acc->arch.op) {
             case SET1:
                 *tgt_reg |= bitop_mask;
-            break;
-            case NOT1:                
-                *tgt_reg = (*tgt_reg & bitop_mask) ?
-                            (*tgt_reg & ~bitop_mask) :
-                            (*tgt_reg | bitop_mask);
-            break;
+                break;
+            case NOT1:
+                *tgt_reg =
+                    (*tgt_reg & bitop_mask) ? (*tgt_reg & ~bitop_mask) : (*tgt_reg | bitop_mask);
+                break;
             case CLR1:
                 *tgt_reg &= ~bitop_mask;
-            break;
+                break;
             /* TST1 only modifies the PSW.Z flag */
             default:
-            break;
+                break;
         }
-    }
-    else if (acc->write) {
+    } else if (acc->write) {
         unsigned long val = vcpu_readreg(vcpu, acc->reg);
         unsigned long virt_peid = val & 0x7UL;
         unsigned long phys_peid = vm_translate_to_pcpuid(vm, virt_peid);
-        if (phys_peid != INVALID_CPUID)
+        if (phys_peid != INVALID_CPUID) {
             val = (val & 0xFFFF0000) | (*tgt_reg & 0xFFF8) | (phys_peid & 0x7UL);
-        else
+        } else {
             val = (val & 0xFFFF0000) | (*tgt_reg & ~0xFFFF0000);
-        *tgt_reg = ((val & mask) << (addr_off * 8)) | 
-                                    (*tgt_reg & ~(mask << (addr_off * 8)));
-    }
-    else {
+        }
+        *tgt_reg = ((val & mask) << (addr_off * 8)) | (*tgt_reg & ~(mask << (addr_off * 8)));
+    } else {
         unsigned long val = *tgt_reg;
         unsigned long phys_peid = val & 0x7UL;
         unsigned long virt_peid = INVALID_CPUID;
         for (size_t i = 0; i < vm->cpu_num; i++) {
-            if (vm->vcpus[i].phys_id == phys_peid)
+            if (vm->vcpus[i].phys_id == phys_peid) {
                 virt_peid = vm->vcpus[i].id;
+            }
         }
-        if (virt_peid != INVALID_CPUID)
+        if (virt_peid != INVALID_CPUID) {
             val = (val & 0xFFFF0000) | (virt_peid & 0x7UL);
-        else
+        } else {
             val = (val & 0xFFFF0000);
+        }
 
         val = (val >> (addr_off * 8)) & mask;
         if (acc->sign_ext && (1UL << ((acc->reg_width * 8) + 7) & val)) {
@@ -292,17 +278,18 @@ static void emulate_intc_fibd_access(struct emul_access* acc, uint32_t mask)
 
     if (acc->arch.op != NO_OP || acc->write) {
         /* FIBD register can not be written/modified by any guest */
-    }
-    else {
+    } else {
         unsigned long val = 0;
         unsigned long phys_peid = *tgt_reg & 0x7UL;
         unsigned long virt_peid = INVALID_CPUID;
         for (size_t i = 0; i < vm->cpu_num; i++) {
-            if (vm->vcpus[i].phys_id == phys_peid)
+            if (vm->vcpus[i].phys_id == phys_peid) {
                 virt_peid = vm->vcpus[i].id;
+            }
         }
-        if (virt_peid != INVALID_CPUID)
+        if (virt_peid != INVALID_CPUID) {
             val = virt_peid & 0x7UL;
+        }
 
         val = (val >> (addr_off * 8)) & mask;
         if (acc->sign_ext && (1UL << ((acc->reg_width * 8) + 7) & val)) {
@@ -323,11 +310,10 @@ static void emulate_intc_eeic_access(struct emul_access* acc, size_t reg_idx, ui
     irqid_t int_id = 0;
     volatile uint32_t* tgt_reg = NULL;
 
-    if (acc->addr < platform.arch.intc.intc1_addr) {    /* INTC2 */
+    if (acc->addr < platform.arch.intc.intc1_addr) { /* INTC2 */
         int_id = reg_idx + 32;
         tgt_reg = &(intc2_hw->EEIC[reg_idx]);
-    }
-    else {  /* INTC1 */
+    } else {                                         /* INTC1 */
         int_id = reg_idx;
         tgt_reg = &(intc1_hw->EEIC[reg_idx]);
     }
@@ -338,37 +324,32 @@ static void emulate_intc_eeic_access(struct emul_access* acc, size_t reg_idx, ui
 
     /* bit manipulation instruction */
     if (acc->arch.op != NO_OP) {
-
         unsigned long psw = get_gmpsw();
-        if (*tgt_reg & bitop_mask)
+        if (*tgt_reg & bitop_mask) {
             set_gmpsw(psw & ~PSW_Z);
-        else
+        } else {
             set_gmpsw(psw | PSW_Z);
+        }
 
-        switch (acc->arch.op)
-        {
+        switch (acc->arch.op) {
             case SET1:
                 *tgt_reg |= bitop_mask;
-            break;
-            case NOT1:                
-                *tgt_reg = (*tgt_reg & bitop_mask) ?
-                                            (*tgt_reg & ~bitop_mask) :
-                                            (*tgt_reg | bitop_mask);
-            break;
+                break;
+            case NOT1:
+                *tgt_reg =
+                    (*tgt_reg & bitop_mask) ? (*tgt_reg & ~bitop_mask) : (*tgt_reg | bitop_mask);
+                break;
             case CLR1:
                 *tgt_reg &= ~bitop_mask;
-            break;
+                break;
             /* TST1 only modifies the PSW.Z flag */
             default:
-            break;
+                break;
         }
-    }
-    else if (acc->write) {
+    } else if (acc->write) {
         unsigned long val = vcpu_readreg(vcpu, acc->reg);
-        *tgt_reg = ((val & mask) << (addr_off * 8)) | 
-                                    (*tgt_reg & ~(mask << (addr_off * 8)));
-    }
-    else {
+        *tgt_reg = ((val & mask) << (addr_off * 8)) | (*tgt_reg & ~(mask << (addr_off * 8)));
+    } else {
         unsigned long val = *tgt_reg;
 
         val = (val >> (addr_off * 8)) & mask;
@@ -383,14 +364,14 @@ static void emulate_intc_eeic_access(struct emul_access* acc, size_t reg_idx, ui
 bool vintc1_emul_handler(struct emul_access* acc)
 {
     size_t acc_offset = acc->addr - platform.arch.intc.intc1_addr;
-    unsigned long mask = ((1U << (8 * (acc->reg_width + 1))) - 1) 
-                            | ((acc->reg_width == 2) * 0xFF000000);
+    unsigned long mask =
+        ((1U << (8 * (acc->reg_width + 1))) - 1) | ((acc->reg_width == 2) * 0xFF000000);
 
     size_t intc1_eic_bot = offsetof(struct intc1, EIC);
     size_t intc1_eic_top = sizeof(((struct intc1*)NULL)->EIC) + intc1_eic_bot;
     size_t intc1_eic_idx = (ALIGN(acc_offset - intc1_eic_bot, 2)) / 2;
-    if (acc_offset >= intc1_eic_bot && acc_offset < intc1_eic_top && 
-            intc1_eic_idx != IPI_HYP_IRQ_ID) {
+    if (acc_offset >= intc1_eic_bot && acc_offset < intc1_eic_top &&
+        intc1_eic_idx != IPI_HYP_IRQ_ID) {
         emulate_intc_eic_access(acc, intc1_eic_idx, mask);
         return true;
     }
@@ -411,7 +392,7 @@ bool vintc1_emul_handler(struct emul_access* acc)
         emulate_intc_eibd_access(acc, intc1_eibd_idx, mask);
         return true;
     }
-    
+
     size_t intc1_fibd_bot = offsetof(struct intc1, FIBD);
     size_t intc1_fibd_top = sizeof(((struct intc1*)NULL)->FIBD) + intc1_fibd_bot;
     if (acc_offset >= intc1_fibd_bot && acc_offset < intc1_fibd_top) {
@@ -423,14 +404,15 @@ bool vintc1_emul_handler(struct emul_access* acc)
     size_t intc1_eeic_top = sizeof(((struct intc1*)NULL)->EEIC) + intc1_eeic_bot;
     size_t intc1_eeic_idx = (ALIGN(acc_offset - intc1_eeic_bot, 4)) / 4;
     if (acc_offset >= intc1_eeic_bot && acc_offset < intc1_eeic_top &&
-            intc1_eeic_idx != IPI_HYP_IRQ_ID) {
+        intc1_eeic_idx != IPI_HYP_IRQ_ID) {
         emulate_intc_eeic_access(acc, intc1_eeic_idx, mask);
         return true;
     }
 
     /* Ignore access */
-    if (!acc->write && acc->arch.op == NO_OP)
+    if (!acc->write && acc->arch.op == NO_OP) {
         vcpu_writereg(cpu()->vcpu, acc->reg, 0);
+    }
 
     return true;
 }
@@ -438,8 +420,8 @@ bool vintc1_emul_handler(struct emul_access* acc)
 bool vintc2_emul_handler(struct emul_access* acc)
 {
     size_t acc_offset = acc->addr - platform.arch.intc.intc2_addr;
-    unsigned long mask = ((1U << (8 * (acc->reg_width + 1))) - 1) 
-                            | ((acc->reg_width == 2) * 0xFF000000);
+    unsigned long mask =
+        ((1U << (8 * (acc->reg_width + 1))) - 1) | ((acc->reg_width == 2) * 0xFF000000);
 
     size_t intc2_eic_bot = offsetof(struct intc2, EIC);
     size_t intc2_eic_top = sizeof(((struct intc2*)NULL)->EIC) + intc2_eic_bot;
@@ -474,8 +456,9 @@ bool vintc2_emul_handler(struct emul_access* acc)
     }
 
     /* Ignore access */
-    if (!acc->write && acc->arch.op == NO_OP)
+    if (!acc->write && acc->arch.op == NO_OP) {
         vcpu_writereg(cpu()->vcpu, acc->reg, 0);
+    }
 
     return true;
 }
@@ -507,7 +490,6 @@ bool vfeinc_emul_handler(struct emul_access* acc)
 void vintc_init(struct vm* vm)
 {
     if (cpu()->id == vm->master) {
-
         vm->arch.intc1_emul = (struct emul_mem){
             .va_base = platform.arch.intc.intc1_addr,
             .size = ALIGN(sizeof(struct intc1), PAGE_SIZE),
@@ -550,12 +532,13 @@ void vintc_init(struct vm* vm)
             .handler = vfeinc_emul_handler,
         };
         vm_emul_add_mem(vm, &vm->arch.feinc_emul);
-        
+
         // TODO: Add spinlock for INTC emulation
     }
 }
 
-void vintc_vcpu_reset(struct vcpu* vcpu) {
+void vintc_vcpu_reset(struct vcpu* vcpu)
+{
     for (size_t i = 0; i < PRIVATE_IRQS_NUM; i++) {
         if (vm_has_interrupt(vcpu->vm, i)) {
             intc_set_trgt(i, vcpu->phys_id);
@@ -567,7 +550,8 @@ void vintc_vcpu_reset(struct vcpu* vcpu) {
     }
 }
 
-void vintc_vm_reset(struct vm* vm) {
+void vintc_vm_reset(struct vm* vm)
+{
     if (vm->master == cpu()->id) {
         for (size_t i = PRIVATE_IRQS_NUM; i < MAX_INTERRUPTS; i++) {
             if (vm_has_interrupt(vm, i)) {
