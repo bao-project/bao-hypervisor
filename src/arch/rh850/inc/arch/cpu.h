@@ -9,7 +9,7 @@
 #include <bao.h>
 #include <mem.h>
 #include <bitmap.h>
-#include <arch/srs.h>
+#include <srs.h>
 
 #define SNZCFG_PERIOD          (uint8_t)(-1)
 

@@ -9,8 +9,8 @@
 #include <mem.h>
 #include <platform.h>
 #include <vm.h>
-#include <arch/intc.h>
-#include <arch/ipir.h>
+#include <intc.h>
+#include <ipir.h>
 
 void interrupts_arch_init()
 {

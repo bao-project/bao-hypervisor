@@ -6,7 +6,7 @@
 #include <bao.h>
 #include <cpu.h>
 #include <platform.h>
-#include <arch/srs.h>
+#include <srs.h>
 
 cpuid_t CPU_MASTER __attribute__((section(".datanocopy")));
 

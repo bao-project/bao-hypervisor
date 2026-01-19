@@ -7,7 +7,7 @@
 #include <fences.h>
 #include <bit.h>
 #include <platform.h>
-#include <arch/srs.h>
+#include <srs.h>
 
 /* #pragma inline_asm cist */
 /* static void cist(void) */

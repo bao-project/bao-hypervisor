@@ -5,7 +5,7 @@
 
 #include <interrupts.h>
 #include <vm.h>
-#include <arch/ipir.h>
+#include <ipir.h>
 
 #define IPIR_REGS_PAT_MASK (0x9FUL)
 

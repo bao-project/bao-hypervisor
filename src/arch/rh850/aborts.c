@@ -9,7 +9,7 @@
 #include <vmm.h>
 #include <arch/aborts.h>
 #include <arch/emul.h>
-#include <arch/srs.h>
+#include <srs.h>
 
 #define F8_OPCODE        (0x3EUL)
 #define F9_OPCODE        (0x3FUL)

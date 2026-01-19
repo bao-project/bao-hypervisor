@@ -5,7 +5,7 @@
 
 #include <arch/mpu.h>
 #include <vmm.h>
-#include <arch/srs.h>
+#include <srs.h>
 #include <arch/fences.h>
 
 void vmm_arch_init(void)

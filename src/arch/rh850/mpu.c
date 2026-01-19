@@ -6,7 +6,7 @@
 #include <bao.h>
 #include <cpu.h>
 #include <arch/mpu.h>
-#include <arch/srs.h>
+#include <srs.h>
 
 static inline size_t mpu_num_entries(void)
 {

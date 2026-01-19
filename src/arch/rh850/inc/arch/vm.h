@@ -9,7 +9,7 @@
 #include <bao.h>
 #include <interrupts.h>
 #include <emul.h>
-#include <arch/vintc.h>
+#include <vintc.h>
 
 #define MAX_OF_GP_REGS (sizeof(union gp_regs) / sizeof(unsigned long))
 

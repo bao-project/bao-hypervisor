@@ -6,8 +6,8 @@
 #include <config.h>
 #include <string.h>
 #include <vm.h>
-#include <arch/ipir.h>
-#include <arch/vintc.h>
+#include <ipir.h>
+#include <vintc.h>
 
 void vm_arch_init(struct vm* vm, const struct vm_config* vm_config)
 {

@@ -8,9 +8,9 @@
 #include <platform.h>
 #include <vm.h>
 #include <arch/fences.h>
-#include <arch/intc.h>
-#include <arch/ipir.h>
-#include <arch/srs.h>
+#include <intc.h>
+#include <ipir.h>
+#include <srs.h>
 
 extern volatile struct intc1* intc1_hw;
 extern volatile struct intc2* intc2_hw;

@@ -4,7 +4,7 @@
  */
 
 #include <interrupts.h>
-#include <arch/intc.h>
+#include <intc.h>
 
 /* EIC */
 #define EIRFn_BIT          (1U << 12)
