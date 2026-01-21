@@ -39,7 +39,7 @@ void cpu_init(cpuid_t cpu_id)
 
     cpu_arch_init(cpu_id, img_addr);
 
-    list_init(&cpu()->interface->event_list);
+    cq_init(cpu()->interface->msgs);
 
     if (cpu_is_master()) {
         cpu_sync_init(&cpu_glb_sync, platform.cpu_num);
@@ -56,25 +56,14 @@ void cpu_init(cpuid_t cpu_id)
 
 void cpu_send_msg(cpuid_t trgtcpu, struct cpu_msg* msg)
 {
-    struct cpu_msg_node* node = objpool_alloc(&msg_pool);
-    if (node == NULL) {
-        ERROR("cant allocate msg node");
-    }
-    node->msg = *msg;
-    list_push(&cpu_if(trgtcpu)->event_list, (node_t*)node);
+    cq_add(cpu_if(trgtcpu)->msgs, *msg);
     fence_sync_write();
     interrupts_cpu_sendipi(trgtcpu);
 }
 
 bool cpu_get_msg(struct cpu_msg* msg)
 {
-    struct cpu_msg_node* node = NULL;
-    if ((node = (struct cpu_msg_node*)list_pop(&cpu()->interface->event_list)) != NULL) {
-        *msg = node->msg;
-        objpool_free(&msg_pool, node);
-        return true;
-    }
-    return false;
+    return cq_pop(cpu()->interface->msgs, msg);
 }
 
 void cpu_msg_handler(void)
