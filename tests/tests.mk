@@ -7,6 +7,8 @@ recipes_dir = $(tests_dir)/recipes
 
 LOG_LEVEL?=2
 ECHO?=tf
+SETUP?=baremetal
+TEST?=boot
 
 irq_flags:= 
 
@@ -36,9 +38,9 @@ endif
 
 	@echo "Running Bao Tests Framework..."
 	python3 $(bao-tests_dir)/framework/test_framework.py \
-        -recipe $(recipes_dir)/$(RECIPE) \
-        -log_level $(LOG_LEVEL) \
-        -echo $(ECHO) \
-        -platform $(PLATFORM) \
+		-log_level $(LOG_LEVEL) \
+		-echo $(ECHO) \
+		-platform $(PLATFORM) \
+		-test $(TEST) \
+		-setup $(SETUP) \
 		$(irq_flags)
-
