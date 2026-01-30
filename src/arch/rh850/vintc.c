@@ -35,13 +35,12 @@ static void emulate_intc_eic_access(struct emul_access* acc, size_t reg_idx, uns
     struct vm* vm = vcpu->vm;
 
     size_t addr_off = acc->addr & 0x1UL;
-    uint16_t bitop_mask = (uint16_t)(acc->arch.byte_mask << (addr_off * 8));
     irqid_t int_id = 0;
     volatile uint16_t* tgt_reg = NULL;
 
     if (acc->addr < platform.arch.intc.intc1_addr) { /* INTC2 */
-        int_id = reg_idx + 32;
         tgt_reg = &(intc2_hw->EIC[reg_idx]);
+        int_id = reg_idx + 32;
     } else {                                         /* INTC1 */
         int_id = reg_idx;
         tgt_reg = &(intc1_hw->EIC[reg_idx]);
@@ -52,29 +51,10 @@ static void emulate_intc_eic_access(struct emul_access* acc, size_t reg_idx, uns
     }
 
     /* bit manipulation instruction */
-    if (acc->arch.op != NO_OP) {
-        unsigned long psw = get_gmpsw();
-        if (*tgt_reg & bitop_mask) {
-            set_gmpsw(psw & ~PSW_Z);
-        } else {
-            set_gmpsw(psw | PSW_Z);
-        }
-
-        switch (acc->arch.op) {
-            case SET1:
-                *tgt_reg |= bitop_mask;
-                break;
-            case NOT1:
-                *tgt_reg = (uint16_t)((*tgt_reg & bitop_mask) ? (*tgt_reg & ~bitop_mask) :
-                                                                (*tgt_reg | bitop_mask));
-                break;
-            case CLR1:
-                *tgt_reg &= (uint16_t)(~bitop_mask);
-                break;
-            /* TST1 only modifies the PSW.Z flag */
-            default:
-                break;
-        }
+    if (acc->arch.op != BWOP_NO) {
+        uint16_t bitop_mask = (uint16_t)bitwise_op_get_acc_bitop_mask(acc);
+        bitwise_op_set_gmpse((unsigned long)*tgt_reg, bitop_mask);
+        *tgt_reg = (uint16_t)bitwise_op_set_val(acc, *tgt_reg, bitop_mask);
     } else if (acc->write) {
         unsigned long val = vcpu_readreg(vcpu, acc->reg);
         *tgt_reg =
@@ -95,58 +75,25 @@ static void emulate_intc_imr_access(struct emul_access* acc, size_t reg_idx, uin
 {
     struct vcpu* vcpu = cpu()->vcpu;
     struct vm* vm = vcpu->vm;
-
     size_t addr_off = acc->addr & 0x3UL;
-    uint32_t bitop_mask = acc->arch.byte_mask << (addr_off * 8);
     irqid_t int_id = 0;
     irqid_t first_imr_int = 0;
     volatile uint32_t* tgt_reg = NULL;
 
     if (acc->addr < platform.arch.intc.intc1_addr) { /* INTC2 */
-        first_imr_int = reg_idx * 32 + 32;
+        first_imr_int = reg_idx * 32;
         tgt_reg = &(intc2_hw->IMR[reg_idx]);
-    } else {                                         /* INTC1 */
+        first_imr_int += 32;
+    } else { /* INTC1 */
         first_imr_int = 0;
         tgt_reg = &(intc1_hw->IMR);
     }
 
     /* bit manipulation instruction */
-    if (acc->arch.op != NO_OP) {
-        for (unsigned int i = first_imr_int; i < first_imr_int + 32; i++) {
-            if ((1UL << (i % 32)) & bitop_mask) {
-                int_id = i;
-                break;
-            }
-        }
-
-        if (int_id == IPI_HYP_IRQ_ID) {
-            bitop_mask = 0;
-        } else if (!vm_has_interrupt(vm, int_id)) {
-            ERROR("VM tried to access unassigned interrupt");
-        }
-
-        unsigned long psw = get_gmpsw();
-        if (*tgt_reg & bitop_mask) {
-            set_gmpsw(psw & ~PSW_Z);
-        } else {
-            set_gmpsw(psw | PSW_Z);
-        }
-
-        switch (acc->arch.op) {
-            case SET1:
-                *tgt_reg |= bitop_mask;
-                break;
-            case NOT1:
-                *tgt_reg =
-                    (*tgt_reg & bitop_mask) ? (*tgt_reg & ~bitop_mask) : (*tgt_reg | bitop_mask);
-                break;
-            case CLR1:
-                *tgt_reg &= ~bitop_mask;
-                break;
-            /* TST1 only modifies the PSW.Z flag */
-            default:
-                break;
-        }
+    if (acc->arch.op != BWOP_NO) {
+        uint32_t bitop_mask = (uint32_t)bitwise_op_get_acc_bitop_mask(acc);
+        bitwise_op_set_gmpse((unsigned long)*tgt_reg, bitop_mask);
+        *tgt_reg = (uint32_t)bitwise_op_set_val(acc, *tgt_reg, bitop_mask);
     } else if (acc->write) {
         unsigned long val = vcpu_readreg(vcpu, acc->reg);
         unsigned long write_val = *tgt_reg;
@@ -193,13 +140,12 @@ static void emulate_intc_eibd_access(struct emul_access* acc, size_t reg_idx, ui
     struct vm* vm = vcpu->vm;
 
     size_t addr_off = acc->addr & 0x3UL;
-    uint32_t bitop_mask = (acc->arch.byte_mask << (addr_off * 8)) & 0xFFFF0000;
     irqid_t int_id = 0;
     volatile uint32_t* tgt_reg = NULL;
 
     if (acc->addr < platform.arch.intc.intc1_addr) { /* INTC2 */
-        int_id = reg_idx + 32;
         tgt_reg = &(intc2_hw->EIBD[reg_idx]);
+        int_id = reg_idx + 32;
     } else {                                         /* INTC1 */
         int_id = reg_idx;
         tgt_reg = &(intc1_hw->EIBD[reg_idx]);
@@ -211,29 +157,10 @@ static void emulate_intc_eibd_access(struct emul_access* acc, size_t reg_idx, ui
 
     /* we use 0xFFFF0000 to mask access to virtualization configuration */
     /* bit manipulation instruction */
-    if (acc->arch.op != NO_OP) {
-        unsigned long psw = get_gmpsw();
-        if (*tgt_reg & bitop_mask) {
-            set_gmpsw(psw & ~PSW_Z);
-        } else {
-            set_gmpsw(psw | PSW_Z);
-        }
-
-        switch (acc->arch.op) {
-            case SET1:
-                *tgt_reg |= bitop_mask;
-                break;
-            case NOT1:
-                *tgt_reg =
-                    (*tgt_reg & bitop_mask) ? (*tgt_reg & ~bitop_mask) : (*tgt_reg | bitop_mask);
-                break;
-            case CLR1:
-                *tgt_reg &= ~bitop_mask;
-                break;
-            /* TST1 only modifies the PSW.Z flag */
-            default:
-                break;
-        }
+    if (acc->arch.op != BWOP_NO) {
+        uint32_t bitop_mask = (uint32_t)bitwise_op_get_acc_bitop_mask(acc) & 0xFFFF0000;
+        bitwise_op_set_gmpse((unsigned long)*tgt_reg, bitop_mask);
+        *tgt_reg = (uint32_t)bitwise_op_set_val(acc, *tgt_reg, bitop_mask);
     } else if (acc->write) {
         unsigned long val = vcpu_readreg(vcpu, acc->reg);
         unsigned long virt_peid = val & 0x7UL;
@@ -276,7 +203,7 @@ static void emulate_intc_fibd_access(struct emul_access* acc, uint32_t mask)
     size_t addr_off = acc->addr & 0x3UL;
     volatile uint32_t* tgt_reg = &(intc1_hw->FIBD);
 
-    if (acc->arch.op != NO_OP || acc->write) {
+    if (acc->arch.op != BWOP_NO || acc->write) {
         /* FIBD register can not be written/modified by any guest */
     } else {
         unsigned long val = 0;
@@ -306,13 +233,12 @@ static void emulate_intc_eeic_access(struct emul_access* acc, size_t reg_idx, ui
     struct vm* vm = vcpu->vm;
 
     size_t addr_off = acc->addr & 0x3UL;
-    uint32_t bitop_mask = acc->arch.byte_mask << (addr_off * 8);
     irqid_t int_id = 0;
     volatile uint32_t* tgt_reg = NULL;
 
     if (acc->addr < platform.arch.intc.intc1_addr) { /* INTC2 */
-        int_id = reg_idx + 32;
         tgt_reg = &(intc2_hw->EEIC[reg_idx]);
+        int_id = reg_idx + 32;
     } else {                                         /* INTC1 */
         int_id = reg_idx;
         tgt_reg = &(intc1_hw->EEIC[reg_idx]);
@@ -323,29 +249,10 @@ static void emulate_intc_eeic_access(struct emul_access* acc, size_t reg_idx, ui
     }
 
     /* bit manipulation instruction */
-    if (acc->arch.op != NO_OP) {
-        unsigned long psw = get_gmpsw();
-        if (*tgt_reg & bitop_mask) {
-            set_gmpsw(psw & ~PSW_Z);
-        } else {
-            set_gmpsw(psw | PSW_Z);
-        }
-
-        switch (acc->arch.op) {
-            case SET1:
-                *tgt_reg |= bitop_mask;
-                break;
-            case NOT1:
-                *tgt_reg =
-                    (*tgt_reg & bitop_mask) ? (*tgt_reg & ~bitop_mask) : (*tgt_reg | bitop_mask);
-                break;
-            case CLR1:
-                *tgt_reg &= ~bitop_mask;
-                break;
-            /* TST1 only modifies the PSW.Z flag */
-            default:
-                break;
-        }
+    if (acc->arch.op != BWOP_NO) {
+        uint32_t bitop_mask = (uint32_t)bitwise_op_get_acc_bitop_mask(acc);
+        bitwise_op_set_gmpse((unsigned long)*tgt_reg, bitop_mask);
+        *tgt_reg = (uint32_t)bitwise_op_set_val(acc, *tgt_reg, bitop_mask);
     } else if (acc->write) {
         unsigned long val = vcpu_readreg(vcpu, acc->reg);
         *tgt_reg = ((val & mask) << (addr_off * 8)) | (*tgt_reg & ~(mask << (addr_off * 8)));
@@ -410,7 +317,7 @@ bool vintc1_emul_handler(struct emul_access* acc)
     }
 
     /* Ignore access */
-    if (!acc->write && acc->arch.op == NO_OP) {
+    if (!acc->write && acc->arch.op == BWOP_NO) {
         vcpu_writereg(cpu()->vcpu, acc->reg, 0);
     }
 
@@ -456,7 +363,7 @@ bool vintc2_emul_handler(struct emul_access* acc)
     }
 
     /* Ignore access */
-    if (!acc->write && acc->arch.op == NO_OP) {
+    if (!acc->write && acc->arch.op == BWOP_NO) {
         vcpu_writereg(cpu()->vcpu, acc->reg, 0);
     }
 

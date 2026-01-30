@@ -102,7 +102,6 @@ bool vipir_emul_handler(struct emul_access* acc)
     struct vm* vm = vcpu->vm;
 
     size_t acc_offset = acc->addr - platform.arch.ipir_addr;
-    uint8_t bitop_mask = 0;
     cpuid_t pe_idx = 0;
     size_t chann_idx = 0;
     volatile uint8_t* tgt_reg = NULL;
@@ -164,15 +163,16 @@ bool vipir_emul_handler(struct emul_access* acc)
 
     /* Ignore access */
     if (ignore) {
-        if (!acc->write && acc->arch.op == NO_OP) {
+        if (!acc->write && acc->arch.op == BWOP_NO) {
             vcpu_writereg(vcpu, acc->reg, 0);
         }
         return true;
     }
 
     /* Translate access */
-    if (acc->arch.op != NO_OP) {
-        for (size_t i = 0; i < vcpu->vm->cpu_num; i++) {
+    if (acc->arch.op != BWOP_NO) {
+        uint8_t bitop_mask = 0;
+        for (size_t i = 0; i < vm->cpu_num; i++) {
             if ((1U << i) & acc->arch.byte_mask) {
                 size_t phys_id = vm->vcpus[i].phys_id;
                 bitop_mask = (uint8_t)(1U << phys_id);
@@ -180,28 +180,8 @@ bool vipir_emul_handler(struct emul_access* acc)
             }
         }
 
-        unsigned long psw = get_gmpsw();
-        if (*tgt_reg & bitop_mask) {
-            set_gmpsw(psw & ~PSW_Z);
-        } else {
-            set_gmpsw(psw | PSW_Z);
-        }
-
-        switch (acc->arch.op) {
-            case SET1:
-                *tgt_reg |= bitop_mask;
-                break;
-            case NOT1:
-                *tgt_reg = (uint8_t)((*tgt_reg & bitop_mask) ? (*tgt_reg & ~bitop_mask) :
-                                                               (*tgt_reg | bitop_mask));
-                break;
-            case CLR1:
-                *tgt_reg &= (uint8_t)(~bitop_mask);
-                break;
-            /* TST1 only modifies the PSW.Z flag */
-            default:
-                break;
-        }
+        bitwise_op_set_gmpse((unsigned long)*tgt_reg, bitop_mask);
+        *tgt_reg = (uint8_t)bitwise_op_set_val(acc, *tgt_reg, bitop_mask);
     } else if (acc->write) {
         unsigned long val = vcpu_readreg(vcpu, acc->reg);
         unsigned long write_val = 0;

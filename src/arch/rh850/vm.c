@@ -116,7 +116,9 @@ bool vbootctrl_emul_handler(struct emul_access* acc)
     unsigned long notify = 0;
 
     /* Translate access */
-    if (acc->arch.op != NO_OP) {
+    if (acc->arch.op != BWOP_NO) {
+        /* this access is fairly unique, so it's not practical to put behind
+         * arch emul */
         size_t virt_id = INVALID_CPUID;
 
         for (size_t i = 0; i < vcpu->vm->cpu_num; i++) {
@@ -141,10 +143,10 @@ bool vbootctrl_emul_handler(struct emul_access* acc)
         }
 
         switch (acc->arch.op) {
-            case SET1:
+            case BWOP_SET1:
                 vm->vcpus[virt_id].arch.started = true;
                 break;
-            case NOT1:
+            case BWOP_NOT1:
                 vm->vcpus[virt_id].arch.started = true;
                 break;
             /* CLR1 accesses are ignored */
