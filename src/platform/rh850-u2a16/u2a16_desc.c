@@ -13,7 +13,7 @@ struct platform platform = {
     .cpu_master_fixed = true,
     .cpu_master = 0,
 
-    .region_num = 12,
+    .region_num = 11,
     .regions =
         (struct mem_region[]){
             // Code flash (User Areas)
@@ -56,12 +56,6 @@ struct platform platform = {
             {
                 .base = 0xFE800000,
                 .size = 0x40000,
-                .perms = MEM_RWX,
-            },
-            // Local RAM (self region)
-            {
-                .base = 0xFDE00000,
-                .size = 0x10000,
                 .perms = MEM_RWX,
             },
             // Local RAM (CPU0)
