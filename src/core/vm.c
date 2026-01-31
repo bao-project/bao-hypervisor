@@ -10,6 +10,7 @@
 #include <config.h>
 #include <shmem.h>
 #include <objpool.h>
+#include <list.h>
 
 static void vm_master_init(struct vm* vm, const struct vm_config* vm_config, vmid_t vm_id)
 {
@@ -19,6 +20,8 @@ static void vm_master_init(struct vm* vm, const struct vm_config* vm_config, vmi
     vm->id = vm_id;
     vm->lock = SPINLOCK_INITVAL;
 
+    list_init(&vm->emul_mem_list);
+    list_init(&vm->emul_reg_list);
     cpu_sync_init(&vm->sync, vm->cpu_num);
 }
 
