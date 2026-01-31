@@ -86,12 +86,6 @@ sync_loop:
     ldsr r0, 17, 5      /* set MPBK.BK = 0 */
     jarl _clear_mpu, lp
 
-    /* initialize local RAM */
-    /* TODO: use macros for platform addresses */
-    mov 0xFDE00000, r20
-    mov 0xFDE0FFFF, r21
-    jarl _boot_clear, lp
-
     /* check if current CPU is CPU_MASTER */
     cmp r11, r10
     bne _clear_cpu
@@ -102,24 +96,6 @@ sync_loop:
     mov 0xFFFC402F0, r20
     mov 0x1, r21
     st.w r21, 0[r20]    /* IHVCFG.IHVE = 0x1 */
-
-    /* initialize cluster RAM */
-    /* TODO: use macros for platform addresses */
-    mov 0xFE000000, r15
-    mov 0xFE07FFFF, r16
-    jarl _boot_clear, lp
-
-    mov 0xFE100000, r15
-    mov 0xFE17FFFF, r16
-    jarl _boot_clear, lp
-
-    mov 0xFE400000, r15
-    mov 0xFE5FFFFF, r16
-    jarl _boot_clear, lp
-
-    mov 0xFE800000, r15
-    mov 0xFE83FFFF, r16
-    jarl _boot_clear, lp
 
     /* copy non-text sections from flash to ram */
     LOAD_ADDR _data_lma_start, r15
