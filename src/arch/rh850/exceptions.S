@@ -11,10 +11,7 @@
 
 .macro VM_EXIT
 
-    /* set SPID to HYP_SPID */
     ldsr r31, 28, 0 /* use EIWR as scratchpad */
-    mov HYP_SPID, r31
-    ldsr r31, 0, 1
 
     /* save program registers in vcpu struct */
     stsr 29, r31, 0                /* get cpu* from FEWR */
@@ -82,17 +79,9 @@
     ld.dw 112[r31], r28
     ld.w 120[r31], r30
 
-    /* set SPID to VMID.
-    The code below uses EIWR and HVSB as scratchpad registers */
-    ldsr r31, 28, 0
+    /* uses EIWR as scratchpad register */
     ld.w 124[r31], r31
-    ldsr r31, 20, 1
-    stsr 28, r31, 0
-    ld.w 132[r31], r31
-    ldsr r31, 0, 1    /* set SPID = VMID */
-
-    /* the instructions below should not trigger any MIP exception
-    as all the hypervisor code belongs to an MPU entry with RG = 1 */
+    ldsr r31, 28, 0
 
     /* select ret instruction */
     br _select_xxret
@@ -136,17 +125,17 @@ _restore_pc_exit:
 
 /**
  * Execute eiret or feret depending on the exception type
- * and restores r31 from HVSB
+ * and restores r31 from EIWR
  */
 _select_xxret:
     stsr 5, r31, 0
     andi 0x80, r31, r31
     cmp r0, r31
     be _ei_ret
-    stsr 20, r31, 1
+    stsr 28, r31, 0
     feret
 _ei_ret:
-    stsr 20, r31, 1
+    stsr 28, r31, 0
     eiret
 
 .balign 0x200
