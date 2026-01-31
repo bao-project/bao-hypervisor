@@ -71,10 +71,6 @@ sync_loop:
     ori 0x2, r20, r20   /* direct vector method */
     ldsr r20, 3, 1
 
-    /* configure INTBP with interrupt vector */
-    LOAD_ADDR _hyp_interrupt_table, r20
-    ldsr r20, 4, 1
-
     /* clear MPM to disable memory protections */
     mov r0, r20
     ldsr r20, 0, 5

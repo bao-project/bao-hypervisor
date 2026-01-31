@@ -269,16 +269,6 @@ _hyp_vector_table:
     syncp
     br    _Interrupt_EI        /* INTn(priority15) */
 
-/* only used with table reference method */
-.balign    0x200
-.global _hyp_interrupt_table
-_hyp_interrupt_table:
-    .long    _Interrupt_EI     /* INT0 */
-    .long    _Interrupt_EI     /* INT1 */
-    .long    _Interrupt_EI     /* INT2 */
-    .rept    2048 - 3
-    .long    _Interrupt_EI     /* INTn */
-    .endr
 
 _guest_exception:
 
