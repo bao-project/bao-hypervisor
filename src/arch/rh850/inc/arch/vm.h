@@ -19,8 +19,7 @@ struct intc_dscrp {
 };
 
 struct arch_vm_platform {
-    /* interrupt controller */
-    struct intc_dscrp vir;
+    unsigned long dummy;
 };
 
 struct vm_arch {
