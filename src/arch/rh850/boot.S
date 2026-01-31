@@ -194,9 +194,8 @@ _clear_cpu:
 
     /* Set init arguments */
     mov r10, r6     /* copy CPU ID to r6 */
-    LOAD_ADDR init, r5
 
-    br init
+    jr init
 
 
 /**
