@@ -14,7 +14,7 @@ void vmm_arch_init(void)
 
     /* configure Hypervisor MPIDs for memory protection */
     mpu_arch_disable();
-    set_mpid0(HYP_SPID);
+    set_mpid6(HYP_SPID);
     set_mpid7(HYP_AUX_SPID);
     set_spid(HYP_SPID);
     mpu_arch_enable();

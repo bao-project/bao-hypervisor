@@ -8,8 +8,8 @@
 
 #include <bao.h>
 
-/* Bao uses MPID0 and MPID7 */
-#define HYP_SPID     0x10
+/* Bao uses MPID6 and MPID7 */
+#define HYP_SPID     0x1E
 #define HYP_AUX_SPID 0x1F
 
 #ifndef __ASSEMBLER__

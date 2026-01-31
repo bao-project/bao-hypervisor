@@ -13,8 +13,8 @@ void vm_arch_init(struct vm* vm, const struct vm_config* vm_config)
 {
     UNUSED_ARG(vm_config);
 
-    /* All VMs use MPID1 for memory protection */
-    set_mpid1(vm->id);
+    /* All VMs use MPID5 for memory protection */
+    set_mpid5(vm->id);
 
     vintc_init(vm);
     vipir_init(vm);

@@ -59,21 +59,21 @@ typedef mpat_flags_t mem_flags_t;
  */
 #define PTE_HYP_FLAGS_CODE ((mem_flags_t){ .e = 1, .sr = 1, .sw = 1, .sx = 1, .rg = 1 })
 /**
- * Only SPID0 can read from this region
- * Only SPID0 can write to this region
+ * Only SPID in MPID6 can read from this region
+ * Only SPID in MPID6 can write to this region
  */
-#define PTE_HYP_FLAGS      ((mem_flags_t){ .e = 1, .sr = 1, .sw = 1, .sx = 1, .rmpid0 = 1, .wmpid0 = 1 })
+#define PTE_HYP_FLAGS      ((mem_flags_t){ .e = 1, .sr = 1, .sw = 1, .sx = 1, .rmpid6 = 1, .wmpid6 = 1 })
 /**
- * Only the SPID in MPID0 can read from this region
- * Only the SPID in MPID0 can write to this region
+ * Only the SPID in MPID6 can read from this region
+ * Only the SPID in MPID6 can write to this region
  */
 #define PTE_HYP_DEV_FLAGS \
-    ((mem_flags_t){ .e = 1, .sr = 1, .sw = 1, .sx = 0, .rmpid0 = 1, .wmpid0 = 1 })
+    ((mem_flags_t){ .e = 1, .sr = 1, .sw = 1, .sx = 0, .rmpid6 = 1, .wmpid6 = 1 })
 
 /* TODO in the future we need to deal with IO permissions securely */
 /**
- * Only SPIDs in MPID1 and MPID7 can read from this region
- * Only SPIDs in MPID1 and MPID7 can write to this region
+ * Only SPIDs in MPID5 and MPID7 can read from this region
+ * Only SPIDs in MPID5 and MPID7 can write to this region
  */
 #define PTE_VM_FLAGS        \
     ((mem_flags_t){ .e = 1, \
@@ -83,15 +83,15 @@ typedef mpat_flags_t mem_flags_t;
         .ur = 1,            \
         .uw = 1,            \
         .ux = 1,            \
-        .rmpid1 = 1,        \
-        .wmpid1 = 1,        \
+        .rmpid5 = 1,        \
+        .wmpid5 = 1,        \
         .rmpid7 = 1,        \
         .wmpid7 = 1 })
 
 /* TODO in the future we need to deal with IO permissions securely */
 /**
- * Only the SPID in MPID1 can read from this region
- * Only the SPID in MPID1 can write to this region
+ * Only the SPID in MPID5 can read from this region
+ * Only the SPID in MPID5 can write to this region
  */
 #define PTE_VM_DEV_FLAGS    \
     ((mem_flags_t){ .e = 1, \
@@ -101,8 +101,8 @@ typedef mpat_flags_t mem_flags_t;
         .ur = 1,            \
         .uw = 1,            \
         .ux = 0,            \
-        .rmpid1 = 1,        \
-        .wmpid1 = 1 })
+        .rmpid5 = 1,        \
+        .wmpid5 = 1 })
 
 static inline size_t mpu_granularity(void)
 {
