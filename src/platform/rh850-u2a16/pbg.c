@@ -36,11 +36,20 @@ void pbg_init(void)
     /* Allow SPIDs [0-16] to write to P-Bus */
     for (size_t i = 0; i < PLAT_NUM_PBG_CHANNELS; i++) {
         pbg->PBG00.ch[i].PBGPROT1 |= (PBGPROT1_SPID_MASK);
+        pbg->PBG01.ch[i].PBGPROT1 |= (PBGPROT1_SPID_MASK);
         pbg->PBG10.ch[i].PBGPROT1 |= (PBGPROT1_SPID_MASK);
         pbg->PBG20.ch[i].PBGPROT1 |= (PBGPROT1_SPID_MASK);
+        pbg->PBG21.ch[i].PBGPROT1 |= (PBGPROT1_SPID_MASK);
+        pbg->PBG22.ch[i].PBGPROT1 |= (PBGPROT1_SPID_MASK);
         pbg->PBG30.ch[i].PBGPROT1 |= (PBGPROT1_SPID_MASK);
+        pbg->PBG31.ch[i].PBGPROT1 |= (PBGPROT1_SPID_MASK);
+        pbg->PBG32.ch[i].PBGPROT1 |= (PBGPROT1_SPID_MASK);
+        pbg->PBG33.ch[i].PBGPROT1 |= (PBGPROT1_SPID_MASK);
         pbg->PBG40.ch[i].PBGPROT1 |= (PBGPROT1_SPID_MASK);
         pbg->PBG50.ch[i].PBGPROT1 |= (PBGPROT1_SPID_MASK);
+        pbg->PBG51.ch[i].PBGPROT1 |= (PBGPROT1_SPID_MASK);
+        pbg->PBG52.ch[i].PBGPROT1 |= (PBGPROT1_SPID_MASK);
+        pbg->PBG53.ch[i].PBGPROT1 |= (PBGPROT1_SPID_MASK);
         pbg->PBG6L0.ch[i].PBGPROT1 |= (PBGPROT1_SPID_MASK);
         pbg->PBG6L1.ch[i].PBGPROT1 |= (PBGPROT1_SPID_MASK);
         pbg->PBG6H0.ch[i].PBGPROT1 |= (PBGPROT1_SPID_MASK);
