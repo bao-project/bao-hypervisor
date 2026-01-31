@@ -84,6 +84,13 @@ static mpid_t mpu_entry_allocate_hyp(void)
     return reg_num;
 }
 
+static inline void mpu_set_hbe(unsigned long hbe)
+{
+    unsigned long mpcfg = get_mpcfg();
+    mpcfg = (mpcfg & ~MPCFG_HBE_MASK) | hbe;
+    set_mpcfg(mpcfg);
+}
+
 bool mpu_add_region(struct mp_region* reg, bool locked)
 {
     bool failed = true;
@@ -99,6 +106,7 @@ bool mpu_add_region(struct mp_region* reg, bool locked)
                 mpu_lock_entry(mpid);
             }
         }
+        mpu_set_hbe(mpid);
     }
 
     return !failed;
@@ -200,11 +208,8 @@ void mpu_arch_init(void)
         }
     }
 
-    unsigned long mpcfg = get_mpcfg();
-    // give all entries to the hypervisor
-    unsigned long hbe = 0;
-    mpcfg = (mpcfg & ~MPCFG_HBE_MASK) | hbe;
-    set_mpcfg(mpcfg);
+    /* give no mpu entries to hypervisor, we will allocate them dynamically */
+    mpu_set_hbe(mpu_num_entries());
 
     /* At this point we configure MPIDs as PEID to perform platform initialization */
     unsigned long peid = get_peid();
