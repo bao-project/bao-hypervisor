@@ -30,21 +30,22 @@ static inline void synce(void)
 
 static inline void fence_ord_write(void)
 {
-    synci();
+    syncm();
 }
 
 static inline void fence_ord_read(void)
 {
-    synci();
+    syncp();
 }
 
 static inline void fence_ord(void)
 {
-    synci();
+    syncm();
 }
 
 static inline void fence_sync_write(void)
 {
+    syncm();
     synci();
 }
 
@@ -55,6 +56,7 @@ static inline void fence_sync_read(void)
 
 static inline void fence_sync(void)
 {
+    syncm();
     synci();
 }
 
