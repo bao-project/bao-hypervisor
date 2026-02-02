@@ -5,12 +5,12 @@ ARCH_SUB?=riscv64
 
 ifeq ($(ARCH_SUB), riscv64)
 CROSS_COMPILE ?= riscv64-unknown-elf-
-riscv_march:=rv64imac_zicsr
+riscv_march:=rv64imach_zicsr
 riscv_mabi:=lp64
 ld_emulation:=elf64lriscv
 else ifeq ($(ARCH_SUB), riscv32)
 CROSS_COMPILE ?= riscv32-unknown-elf-
-riscv_march:=rv32imac_zicsr
+riscv_march:=rv32imach_zicsr
 riscv_mabi:=ilp32
 ld_emulation:=elf32lriscv
 else

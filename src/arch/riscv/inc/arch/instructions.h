@@ -14,4 +14,24 @@ static inline uint64_t hlvxhu(uintptr_t addr)
     return value;
 }
 
+/**
+ * TODO: The following implementation of fence instructions assume global
+ * invalidation of memory translation/protection structures, without an
+ * explicit address or asid/vmid. If per-address or per-asid/vmid invalidation
+ * is required in the features, new versions of these instructions shall be
+ * defined. For example, `sfence_vma_vaddr`/`sfence_vma_asid`/`sfence_vma_vaddr_asid`.
+ */
+
+static inline void sfence_vma(void) {
+    __asm__ volatile("sfence.vma");
+}
+
+static inline void hfence_vvma(void) {
+    __asm__ volatile("hfence.vvma");
+}
+
+static inline void hfence_gvma(void) {
+    __asm__ volatile("hfence.gvma");
+}
+
 #endif /* ARCH_INSTRUCTIONS_H */
