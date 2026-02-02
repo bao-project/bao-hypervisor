@@ -75,7 +75,7 @@ targets:=$(MAKECMDGOALS)
 ifeq ($(targets),)
 targets:=all
 endif
-non_build_targets+=ci clean
+non_build_targets+=ci clean tests
 build_targets:=$(strip $(foreach target, $(targets), \
 	$(if $(findstring $(target),$(non_build_targets)),,$(target))))
 
@@ -401,5 +401,11 @@ $(call ci, format, $(all_c_files))
 
 .PHONY: ci
 ci: license-check format-check
+
+tests_dir := $(cur_dir)/tests
+-include $(tests_dir)/tests.mk
+
+.PHONY: tests
+tests: framework 
 
 endif
