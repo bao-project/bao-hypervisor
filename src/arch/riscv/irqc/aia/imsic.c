@@ -67,23 +67,6 @@ void imsic_clr_pend(irqid_t intp_id)
     csrs_sireg_clear(1UL << imsic_eie_bit(intp_id));
 }
 
-/**
- * For now we only support 1 guest file per hart.
- * Should I remove the guest_file from the API?
- */
-void imsic_inject_pend(size_t guest_file, irqid_t intp_id)
-{
-    UNUSED_ARG(guest_file);
-
-    csrs_vsiselect_write(IMSIC_EIP + imsic_eie_index(intp_id));
-    csrs_vsireg_clear(1UL << imsic_eie_bit(intp_id));
-}
-
-void imsic_send_msi(cpuid_t target_cpu)
-{
-    imsic[target_cpu]->s_file.seteipnum_le = interrupts_ipi_id;
-}
-
 void imsic_handle(void)
 {
     /* Read STOPEI and write to it to claim the interrupt */
