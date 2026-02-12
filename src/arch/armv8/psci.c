@@ -170,6 +170,7 @@ static int32_t psci_features_handler(uint32_t feature_id)
         case PSCI_AFFINITY_INFO_SMC32:
         case PSCI_AFFINITY_INFO_SMC64:
         case PSCI_FEATURES:
+        case PSCI_1_1_RESET_TYPE_VENDOR_START:
             ret = PSCI_E_SUCCESS;
             break;
         default:
@@ -186,7 +187,7 @@ int32_t psci_smc_handler(uint32_t smc_fid, unsigned long x1, unsigned long x2, u
 
     switch (smc_fid) {
         case PSCI_VERSION:
-            ret = PSCI_VERSION_0_2;
+            ret = PSCI_VERSION_1_1;
             break;
 
         case PSCI_CPU_OFF:
