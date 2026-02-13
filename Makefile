@@ -104,8 +104,12 @@ endif
 config_dir:=$(CONFIG_REPO)
 config_src:=$(wildcard $(config_dir)/$(CONFIG).c)
 ifeq ($(config_src),)
-config_dir:=$(CONFIG_REPO)/$(CONFIG)
-config_src:=$(wildcard $(config_dir)/config.c)
+  undefine config_src
+  config_dir:=$(CONFIG_REPO)/$(CONFIG)
+  -include $(config_dir)/config.mk
+  ifeq ($(config_src),)
+    config_src:=$(wildcard $(config_dir)/config.c)
+  endif
 endif
 
 ifneq ($(build_targets),)
@@ -123,10 +127,10 @@ bin_dir:=$(cur_dir)/bin/$(PLATFORM)/$(CONFIG)
 directories:=$(build_dir) $(bin_dir)
 
 src_dirs+=$(cpu_arch_dir) $(lib_dir) $(core_dir) $(core_mem_prot_dir) \
-	$(platform_dir) $(addprefix $(drivers_dir)/, $(drivers))
+	$(platform_dir) $(addprefix $(drivers_dir)/, $(drivers)) $(config_dir)
 inc_dirs:=$(addsuffix /inc, $(src_dirs))
 
-build_dirs:=$(patsubst $(src_dir)%, $(build_dir)%, $(src_dirs) $(inc_dirs))
+build_dirs:=$(patsubst $(cur_dir)%, $(build_dir)%, $(src_dirs) $(inc_dirs))
 directories+=$(build_dirs)
 
 
@@ -141,9 +145,9 @@ ld_script_temp:= $(build_dir)/linker_temp.ld
 deps+=$(ld_script_temp).d
 
 asm_defs_src:=$(cpu_arch_dir)/asm_defs.c
-asm_defs_hdr:=$(patsubst $(src_dir)%, $(build_dir)%, \
+asm_defs_hdr:=$(patsubst $(cur_dir)%, $(build_dir)%, \
 	$(cpu_arch_dir))/inc/asm_defs.h
-inc_dirs+=$(patsubst $(src_dir)%, $(build_dir)%, $(cpu_arch_dir))/inc
+inc_dirs+=$(patsubst $(cur_dir)%, $(build_dir)%, $(cpu_arch_dir))/inc
 deps+=$(asm_defs_hdr).d
 
 gens:=
@@ -172,25 +176,34 @@ inc_dirs+=$(platform_build_dir)
 # Setup list of objects for compilation
 -include $(addsuffix /objects.mk, $(src_dirs))
 
+## Force adding config source file to to config objects (later we remove duplicate if it is already there)
+config-objs-y+=$(patsubst $(config_dir)/%.c, %.o, $(config_src))
+
 objs-y:=
 objs-y+=$(addprefix $(cpu_arch_dir)/, $(cpu-objs-y))
 objs-y+=$(addprefix $(lib_dir)/, $(lib-objs-y))
 objs-y+=$(addprefix $(core_dir)/, $(core-objs-y))
 objs-y+=$(addprefix $(platform_dir)/, $(boards-objs-y))
 objs-y+=$(addprefix $(drivers_dir)/, $(drivers-objs-y))
+objs-y+=$(addprefix $(config_dir)/, $(config-objs-y))
 
 c_src_files:=$(wildcard $(patsubst %.o,%.c, $(objs-y)))
 asm_src_files:=$(wildcard $(patsubst %.o,%.S, $(objs-y)))
 c_hdr_files=$(shell cat $(deps) | grep -o "$(src_dir)/\S*\.h" | sort | uniq)
 
 deps+=$(patsubst %.o,%.d,$(objs-y))
-objs-y:=$(patsubst $(src_dir)%, $(build_dir)%, $(objs-y))
+objs-y:=$(patsubst $(cur_dir)%, $(build_dir)%, $(objs-y))
 
-config_obj:=$(config_src:$(config_dir)/%.c=$(config_build_dir)/%.o)
-config_dep:=$(config_src:$(config_dir)/%.c=$(config_build_dir)/%.d)
+# As config_dir might be an out-of-tree directory (if CONFIG_REPO is defined as such),
+# we need to account for that also for the config defined objs
+objs-y:=$(patsubst $(config_dir)%, $(config_build_dir)%, $(objs-y))
 
-deps+=$(config_dep)
-objs-y+=$(config_obj)
+
+# Make sure that are no duplicates in directories, deps and objs-y.
+# These variables should not be modified beyong this point.
+directories:=$(sort $(directories))
+deps:=$(sort $(deps))
+objs-y:=$(sort $(objs-y))
 
 # Toolchain flags
 
@@ -300,7 +313,14 @@ $(ld_script_temp).d: $(ld_script)
 	@$(cc) -x assembler-with-cpp  -MM -MT "$(ld_script_temp) $@" \
 		$(addprefix -I, $(inc_dirs))  $< > $@
 
-$(build_dir)/%.d : $(src_dir)/%.[c,S]
+$(build_dir)/%.d : $(cur_dir)/%.[c,S]
+	@echo "Creating dependency	$(patsubst $(cur_dir)/%, %, $<)"
+	@$(cc) $(CFLAGS) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $< > $@
+
+# We need a specific rule for the config deps which has the exact same recipe as the generic
+# dep rule because the `config_dir` might be out-of-tree if CONFIG_REPO points to a foreign directory
+# and the pattern match must allow for it, given it might not match $(cur_dir)
+$(config_build_dir)/%.d : $(config_dir)/%.[c,S]
 	@echo "Creating dependency	$(patsubst $(cur_dir)/%, %, $<)"
 	@$(cc) $(CFLAGS) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $< > $@
 
@@ -330,6 +350,8 @@ $(asm_defs_hdr).d: $(asm_defs_src)
 	@$(cc) -MM -MT $(CFLAGS) "$(patsubst %.d,%, $@)" $(addprefix -I, $(inc_dirs)) $< > $@
 endif
 
+config_obj:=$(config_src:$(config_dir)/%.c=$(config_build_dir)/%.o)
+config_dep:=$(config_src:$(config_dir)/%.c=$(config_build_dir)/%.d)
 $(config_dep): $(config_src)
 	@echo "Creating dependency	$(patsubst $(cur_dir)/%, %,\
 		 $(patsubst %.d,%, $@))"
