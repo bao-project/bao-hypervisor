@@ -229,7 +229,7 @@ void smmu_write_ctxbnk(size_t ctx_id, paddr_t root_pt, asid_t vm_id)
         tcr |= SMMUV2_TCR_TG0_4K;
         tcr |= SMMUV2_TCR_ORGN0_WB_RA_WA;
         tcr |= SMMUV2_TCR_IRGN0_WB_RA_WA;
-        tcr |= SMMUV2_TCR_T0SZ(t0sz);
+        tcr |= (uint32_t)SMMUV2_TCR_T0SZ(t0sz);
         tcr |= SMMUV2_TCR_SH0_IS;
         tcr |= ((parange_table[parange] < 44) ? SMMUV2_TCR_SL0_1 : SMMUV2_TCR_SL0_0);
         smmu.hw.cntxt[ctx_id].TCR = tcr;
@@ -338,7 +338,7 @@ void smmu_write_s2c(size_t sme, size_t ctx_id)
 
         s2cr = S2CR_CLEAR(s2cr);
         s2cr |= S2CR_DFLT;
-        s2cr |= ctx_id & S2CR_CBNDX_MASK;
+        s2cr |= (uint32_t)(ctx_id & S2CR_CBNDX_MASK);
 
         smmu.hw.glbl_rs0->S2CR[sme] = s2cr;
     }
