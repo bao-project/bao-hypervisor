@@ -67,6 +67,7 @@ configs_dir=$(cur_dir)/configs
 CONFIG_REPO?=$(configs_dir)
 scripts_dir:=$(cur_dir)/scripts
 ci_dir:=$(cur_dir)/ci
+BSP?=$(cur_dir)/bsp
 src_dirs:=
 
 -include $(ci_dir)/ci.mk
@@ -100,18 +101,12 @@ ifneq ($(MAKECMDGOALS), clean)
  core_mem_prot_dir:=$(core_dir)/$(arch_mem_prot)
 endif
 
-config_repo := $(CONFIG_REPO)
-
-# Detect file-style config
-config_file := $(wildcard $(config_repo)/$(CONFIG).c)
-CONFIG_IS_FILE := $(if $(config_file),y,n)
-
-ifeq ($(CONFIG_IS_FILE),y)
-  config_dir := $(config_repo)
-  config_src := $(config_file)
-else
-  config_dir := $(config_repo)/$(CONFIG)
-  config_src := $(wildcard $(config_dir)/config.c)
+# Check configuration exists and set configurtion sources based on it
+config_dir:=$(CONFIG_REPO)
+config_src:=$(wildcard $(config_dir)/$(CONFIG).c)
+ifeq ($(config_src),)
+config_dir:=$(CONFIG_REPO)/$(CONFIG)
+config_src:=$(wildcard $(config_dir)/config.c)
 endif
 
 ifneq ($(build_targets),)
@@ -123,6 +118,7 @@ $(error Cant find file for $(CONFIG) config!)
 endif
 endif
 
+bsp_dir:=$(BSP)
 
 build_dir:=$(cur_dir)/build/$(PLATFORM)/$(CONFIG)
 bin_dir:=$(cur_dir)/bin/$(PLATFORM)/$(CONFIG)
@@ -158,7 +154,8 @@ gens+=$(asm_defs_hdr)
 config_build_dir:=$(build_dir)/config
 platform_build_dir:=$(build_dir)/platform
 scripts_build_dir:=$(build_dir)/scripts
-directories+=$(config_build_dir) $(platform_build_dir) $(scripts_build_dir)
+bsp_build_dir:=$(build_dir)/bsp
+directories+=$(config_build_dir) $(platform_build_dir) $(scripts_build_dir) $(bsp_build_dir)
 
 config_def_generator_src:=$(scripts_dir)/config_defs_gen.c
 config_def_generator:=$(scripts_build_dir)/config_defs_gen
@@ -177,6 +174,7 @@ inc_dirs+=$(platform_build_dir)
 
 # Setup list of objects for compilation
 -include $(addsuffix /objects.mk, $(src_dirs))
+-include $(addsuffix /objects.mk, $(bsp_dir))
 
 objs-y:=
 objs-y+=$(addprefix $(cpu_arch_dir)/, $(cpu-objs-y))
@@ -184,57 +182,35 @@ objs-y+=$(addprefix $(lib_dir)/, $(lib-objs-y))
 objs-y+=$(addprefix $(core_dir)/, $(core-objs-y))
 objs-y+=$(addprefix $(platform_dir)/, $(boards-objs-y))
 objs-y+=$(addprefix $(drivers_dir)/, $(drivers-objs-y))
+objs-y+=$(addprefix $(bsp_dir)/, $(bsp-objs-y))
 
-#
-# Second root: CONFIG folder sources (out-of-tree)
-#
-ifeq ($(CONFIG_IS_FILE),n)
-  # 1) Include paths: every subfolder under config_dir (+ each inc/)
-  cfg_inc_dirs := $(sort $(shell find "$(config_dir)" -type d -print 2>/dev/null))
-  inc_dirs += $(cfg_inc_dirs) $(addsuffix /inc,$(cfg_inc_dirs))
+# Second root: BSP folder sources (out-of-tree)
 
-  # 2) Source discovery
-  cfg_c_src := $(sort $(shell find "$(config_dir)" -type f -name '*.c' -print 2>/dev/null))
-  cfg_s_src := $(sort $(shell find "$(config_dir)" -type f -name '*.S' -print 2>/dev/null))
-  cfg_src   := $(cfg_c_src) $(cfg_s_src)
+# Include paths: every subfolder under bsp_dir (+ each inc/)
+bsp_inc_dirs := $(sort $(shell find "$(bsp_dir)" -type d -print 2>/dev/null))
+inc_dirs += $(bsp_inc_dirs)
 
-  # 3) Map source paths to build objects under config_build_dir, preserving layout
-  #    e.g. configs/mycfg/bsp/foo.c -> build/.../config/bsp/foo.o
-  config_obj  := $(patsubst $(config_dir)/%.c,$(config_build_dir)/%.o,$(cfg_c_src))
-  config_obj += $(patsubst $(config_dir)/%.S,$(config_build_dir)/%.o,$(cfg_s_src))
+# Ensure directories exist for these objects
+bsp_dirs += $(sort $(filter-out .,$(patsubst %/,%,$(dir $(bsp-objs-y)))))
 
-  # 4) Add to global lists
-  objs-y += $(config_obj)
-  deps   += $(config_obj:.o=.d)
-
-  # 5) Ensure directories exist for these objects/deps
-  cfg_dirs += $(sort \
-    $(patsubst %/,%,$(dir $(config_obj))) \
-    $(patsubst %/,%,$(dir $(config_obj:.o=.d))) \
-  )
-  directories += $(cfg_dirs)
-
-  # remove duplicate for the config root folder
-  directories := $(sort $(directories))
-endif
+directories += $(patsubst %,$(bsp_build_dir)/%,$(bsp_dirs))
 
 c_src_files:=$(wildcard $(patsubst %.o,%.c, $(objs-y)))
 asm_src_files:=$(wildcard $(patsubst %.o,%.S, $(objs-y)))
 c_hdr_files=$(shell cat $(deps) | grep -o "$(src_dir)/\S*\.h" | sort | uniq)
 
-deps+=$(patsubst %.o,%.d,$(objs-y))
 objs-y:=$(patsubst $(src_dir)%, $(build_dir)%, $(objs-y))
 objs-y:=$(patsubst $(config_dir)%, $(config_build_dir)%, $(objs-y))
+objs-y:=$(patsubst $(bsp_dir)%, $(bsp_build_dir)%, $(objs-y))
 
-#
-# Single-file config mode ($(CONFIG_REPO)/$(CONFIG).c):
-#
-ifeq ($(CONFIG_IS_FILE),y)
-  config_obj:=$(config_src:$(config_dir)/%.c=$(config_build_dir)/%.o)
-  config_dep:=$(config_src:$(config_dir)/%.c=$(config_build_dir)/%.d)
-  deps+=$(config_dep)
-  objs-y+=$(config_obj)
-endif
+deps+=$(patsubst %.o,%.d,$(objs-y))
+
+config_obj:=$(config_src:$(config_dir)/%.c=$(config_build_dir)/%.o)
+config_dep:=$(config_src:$(config_dir)/%.c=$(config_build_dir)/%.d)
+
+deps+=$(config_dep)
+
+objs-y+=$(config_obj)
 
 # Toolchain flags
 
@@ -347,6 +323,10 @@ $(ld_script_temp).d: $(ld_script)
 $(build_dir)/%.d : $(src_dir)/%.[c,S]
 	@echo "Creating dependency	$(patsubst $(cur_dir)/%, %, $<)"
 	@$(cc) $(CFLAGS) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $< > $@
+
+$(bsp_build_dir)/%.d : $(bsp_dir)/%.[c,S]
+	@echo "Creating dependency	$(patsubst $(bsp)%, %, $<)"
+	@$(cc) $(CFLAGS) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@" $(CPPFLAGS) $< > $@
 
 
 # Dependency generation for out-of-tree config sources:
