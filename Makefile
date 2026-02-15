@@ -289,18 +289,18 @@ ifneq ($(build_targets),)
 all: $(targets-y)
 
 $(bin_dir)/$(PROJECT_NAME).elf: $(gens) $(objs-y) $(ld_script_temp)
-	@echo "Linking			$(patsubst $(cur_dir)/%, %, $@)"
+	@echo "Linking			$(patsubst $(cur_dir)/%,%, $@)"
 	@$(ld) $(LDFLAGS) -T$(ld_script_temp) $(objs-y) -o $@
 	@$(objdump) -S --wide $@ > $(basename $@).asm
 	@$(readelf) -a --wide $@ > $@.txt
 
 ifneq ($(DEBUG), y)
-	@echo "Striping		$(patsubst $(cur_dir)/%, %, $@)"
+	@echo "Striping		$(patsubst $(cur_dir)/%,%, $@)"
 	@$(sstrip) -s $@
 endif
 
 $(ld_script_temp):
-	@echo "Pre-processing		$(patsubst $(cur_dir)/%, %, $(ld_script))"
+	@echo "Pre-processing		$(patsubst $(cur_dir)/%,%, $(ld_script))"
 	@$(cc) $(CFLAGS) -E $(addprefix -I, $(inc_dirs)) -x assembler-with-cpp  $(CPPFLAGS) \
 		$(ld_script) | grep -v '^\#' > $(ld_script_temp)
 
@@ -309,27 +309,27 @@ ifneq ($(build_targets),)
 endif
 
 $(ld_script_temp).d: $(ld_script)
-	@echo "Creating dependency	$(patsubst $(cur_dir)/%, %, $<)"
+	@echo "Creating dependency	$(patsubst $(cur_dir)/%,%, $<)"
 	@$(cc) -x assembler-with-cpp  -MM -MT "$(ld_script_temp) $@" \
 		$(addprefix -I, $(inc_dirs))  $< > $@
 
 $(build_dir)/%.d : $(cur_dir)/%.[c,S]
-	@echo "Creating dependency	$(patsubst $(cur_dir)/%, %, $<)"
+	@echo "Creating dependency	$(patsubst $(cur_dir)/%,%, $<)"
 	@$(cc) $(CFLAGS) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $< > $@
 
 # We need a specific rule for the config deps which has the exact same recipe as the generic
 # dep rule because the `config_dir` might be out-of-tree if CONFIG_REPO points to a foreign directory
 # and the pattern match must allow for it, given it might not match $(cur_dir)
 $(config_build_dir)/%.d : $(config_dir)/%.[c,S]
-	@echo "Creating dependency	$(patsubst $(cur_dir)/%, %, $<)"
+	@echo "Creating dependency	$(patsubst $(cur_dir)/%,%, $<)"
 	@$(cc) $(CFLAGS) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $< > $@
 
 $(objs-y):
-	@echo "Compiling source	$(patsubst $(cur_dir)/%, %, $<)"
+	@echo "Compiling source	$(patsubst $(cur_dir)/%,%, $<)"
 	@$(cc) $(CFLAGS) -c $< -o $@
 
 %.bin: %.elf
-	@echo "Generating binary	$(patsubst $(cur_dir)/%, %, $@)"
+	@echo "Generating binary	$(patsubst $(cur_dir)/%,%, $@)"
 	@$(objcopy) -S -O binary $< $@
 
 $(deps): | $(gens)
@@ -339,13 +339,13 @@ $(deps): | $(gens)
 
 ifneq ($(wildcard $(asm_defs_src)),)
 $(asm_defs_hdr): $(asm_defs_src)
-	@echo "Generating header	$(patsubst $(cur_dir)/%, %, $@)"
+	@echo "Generating header	$(patsubst $(cur_dir)/%,%, $@)"
 	@$(cc) -S $(CFLAGS) -DGENERATING_DEFS $< -o - \
 		| awk '($$1 == "//#" || $$1 == "##" || $$1 == "@#")   \
 			{ gsub("#", "", $$3); print "#define " $$2 " " $$3 }' > $@
 
 $(asm_defs_hdr).d: $(asm_defs_src)
-	@echo "Creating dependency	$(patsubst $(cur_dir)/%, %,\
+	@echo "Creating dependency	$(patsubst $(cur_dir)/%,%,\
 		 $(patsubst %.d,%, $@))"
 	@$(cc) -MM -MT $(CFLAGS) "$(patsubst %.d,%, $@)" $(addprefix -I, $(inc_dirs)) $< > $@
 endif
@@ -353,28 +353,28 @@ endif
 config_obj:=$(config_src:$(config_dir)/%.c=$(config_build_dir)/%.o)
 config_dep:=$(config_src:$(config_dir)/%.c=$(config_build_dir)/%.d)
 $(config_dep): $(config_src)
-	@echo "Creating dependency	$(patsubst $(cur_dir)/%, %,\
+	@echo "Creating dependency	$(patsubst $(cur_dir)/%,%,\
 		 $(patsubst %.d,%, $@))"
 	@$(cc) $(CFLAGS) -MM -MG -MT "$(config_obj) $@" $(CPPFLAGS) $(filter %.c, $^) > $@
 	@$(cc) $(CFLAGS) $(CPPFLAGS) -S $(config_src) -o - | grep ".incbin" | \
 		awk '{ gsub("\"", "", $$2); print "$(config_obj): " $$2 }' >> $@
 
 $(config_def_generator): $(config_def_generator_src) $(config_src)
-	@echo "Compiling generator	$(patsubst $(cur_dir)/%, %, $@)"
+	@echo "Compiling generator	$(patsubst $(cur_dir)/%,%, $@)"
 	@$(HOST_CC) $^ $(build_macros) $(HOST_CPPFLAGS) -DGENERATING_DEFS \
 		$(addprefix -I, $(inc_dirs)) -o $@
 
 $(config_defs): $(config_def_generator)
-	@echo "Generating header	$(patsubst $(cur_dir)/%, %, $@)"
+	@echo "Generating header	$(patsubst $(cur_dir)/%,%, $@)"
 	@$(config_def_generator) > $(config_defs)
 
 $(platform_def_generator): $(platform_def_generator_src) $(platform_description)
-	@echo "Compiling generator	$(patsubst $(cur_dir)/%, %, $@)"
+	@echo "Compiling generator	$(patsubst $(cur_dir)/%,%, $@)"
 	@$(HOST_CC) $^ $(build_macros) $(HOST_CPPFLAGS) -DGENERATING_DEFS -D$(ARCH) \
 		$(addprefix -I, $(inc_dirs)) -o $@
 
 $(platform_defs): $(platform_def_generator)
-	@echo "Generating header	$(patsubst $(cur_dir)/%, %, $@)"
+	@echo "Generating header	$(patsubst $(cur_dir)/%,%, $@)"
 	@$(platform_def_generator) > $(platform_defs)
 
 
@@ -385,7 +385,7 @@ $(platform_defs): $(platform_def_generator)
 $(objs-y) $(deps) $(targets-y) $(gens): | $$(@D)
 
 $(directories):
-	@echo "Creating directory	$(patsubst $(cur_dir)/%, %, $@)"
+	@echo "Creating directory	$(patsubst $(cur_dir)/%,%, $@)"
 	@mkdir -p $@
 
 endif
