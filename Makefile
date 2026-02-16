@@ -101,6 +101,7 @@ ifneq ($(MAKECMDGOALS), clean)
 endif
 
 # Check configuration exists and set configurtion sources based on it
+override CONFIG_REPO:=$(realpath $(CONFIG_REPO))
 config_dir:=$(CONFIG_REPO)
 config_src:=$(wildcard $(config_dir)/$(CONFIG).c)
 ifeq ($(config_src),)
@@ -196,14 +197,18 @@ objs-y:=$(patsubst $(cur_dir)%, $(build_dir)%, $(objs-y))
 
 # As config_dir might be an out-of-tree directory (if CONFIG_REPO is defined as such),
 # we need to account for that also for the config defined objs
-objs-y:=$(patsubst $(config_dir)%, $(config_build_dir)%, $(objs-y))
+objs-y:=$(patsubst $(config_dir)%, $(build_dir)%, $(objs-y))
+
+# Now we add all object files directories to the directories list so they can be
+# created later
+directories+=$(abspath $(dir $(objs-y)))
 
 
 # Make sure that are no duplicates in directories, deps and objs-y.
 # These variables should not be modified beyong this point.
-directories:=$(sort $(directories))
-deps:=$(sort $(deps))
-objs-y:=$(sort $(objs-y))
+directories:=$(abspath $(sort $(directories)))
+deps:=$(abspath $(sort $(deps)))
+objs-y:=$(abspath $(sort $(objs-y)))
 
 # Toolchain flags
 
@@ -320,7 +325,13 @@ $(build_dir)/%.d : $(cur_dir)/%.[c,S]
 # We need a specific rule for the config deps which has the exact same recipe as the generic
 # dep rule because the `config_dir` might be out-of-tree if CONFIG_REPO points to a foreign directory
 # and the pattern match must allow for it, given it might not match $(cur_dir)
-$(config_build_dir)/%.d : $(config_dir)/%.[c,S]
+$(build_dir)/%.d : $(config_dir)/%.[c,S]
+	@echo "Creating dependency	$(patsubst $(cur_dir)/%,%, $<)"
+	@$(cc) $(CFLAGS) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $< > $@
+
+# We need to repeat the rule again to support fully out-of-tree sources (both from the root directory
+# and the CONFIG_REPO)
+$(build_dir)%.d : %.[c,S]
 	@echo "Creating dependency	$(patsubst $(cur_dir)/%,%, $<)"
 	@$(cc) $(CFLAGS) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $< > $@
 
