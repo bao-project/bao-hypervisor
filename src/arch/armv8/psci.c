@@ -217,7 +217,7 @@ int32_t psci_smc_handler(uint32_t smc_fid, unsigned long x1, unsigned long x2, u
             break;
 
         default:
-            INFO("unkown psci smc_fid 0x%lx", smc_fid);
+            INFO("unknown psci smc_fid 0x%lx", smc_fid);
     }
 
     return ret;

@@ -119,7 +119,7 @@ void interrupts_arch_handle(void)
             irqc_handle();
             break;
         default:
-            WARNING("unkown interrupt");
+            WARNING("unknown interrupt");
             break;
     }
 }
