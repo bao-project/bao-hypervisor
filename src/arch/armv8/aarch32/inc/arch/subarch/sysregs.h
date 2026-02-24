@@ -118,6 +118,10 @@ SYSREG_GEN_ACCESSORS_64(icc_sgi1r_el1, 0, c12)
 SYSREG_GEN_ACCESSORS(vsctlr_el2, 4, c2, c0, 0)
 SYSREG_GEN_ACCESSORS(sctlr_el2, 4, c1, c0, 0)
 
+SYSREG_GEN_ACCESSORS(hactlr, 4, c1, c0, 1)
+SYSREG_GEN_ACCESSORS(imp_periphregionr, 0, c15, c0, 0)
+SYSREG_GEN_ACCESSORS(flashifregionr, 0, c15, c0, 1)
+
 #define SYSREG_GEN_GIC_LR(n, crn1, crn2, op2)           \
     SYSREG_GEN_ACCESSORS(ich_lr##n, 4, c12, crn1, op2)  \
     SYSREG_GEN_ACCESSORS(ich_lrc##n, 4, c12, crn2, op2) \
