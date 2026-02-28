@@ -75,6 +75,9 @@ struct vm_config {
         bool separately_loaded;
         /* Dont copy the image */
         bool inplace;
+
+        /* This field is used for book keeping only, don't fill it in in the configuration file */
+        bool reserved;
     } image;
 
     /* Entry point address in VM's address space */
