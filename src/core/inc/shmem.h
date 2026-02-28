@@ -16,6 +16,7 @@ struct shmem {
         paddr_t base;
         paddr_t phys;
     };
+    bool reserved;
     cpumap_t cpu_masters;
     spinlock_t lock;
 };
