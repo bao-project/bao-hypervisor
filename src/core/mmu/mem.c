@@ -301,7 +301,7 @@ static void mem_inflate_pt(struct addr_space* as, vaddr_t va, size_t length)
     }
 }
 
-vaddr_t mem_alloc_vpage(struct addr_space* as, enum AS_SEC section, vaddr_t at, size_t n)
+vaddr_t mem_alloc_vpage(struct addr_space* as, as_sec_t section, vaddr_t at, size_t n)
 {
     size_t lvl = 0;
     size_t entry = 0;
@@ -683,7 +683,7 @@ bool mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages, siz
     return true;
 }
 
-vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, enum AS_SEC asd_section,
+vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, as_sec_t asd_section,
     vaddr_t vas, vaddr_t vad, size_t num_pages)
 {
     vaddr_t _vad = mem_alloc_vpage(asd, asd_section, vad, num_pages);
@@ -949,7 +949,7 @@ void mem_prot_init(void)
     as_init(&cpu()->as, AS_HYP, root_pt, config.hyp.colors);
 }
 
-vaddr_t mem_alloc_map(struct addr_space* as, enum AS_SEC section, struct ppages* page, vaddr_t at,
+vaddr_t mem_alloc_map(struct addr_space* as, as_sec_t section, struct ppages* page, vaddr_t at,
     size_t num_pages, mem_flags_t flags)
 {
     vaddr_t address = mem_alloc_vpage(as, section, at, num_pages);
@@ -959,7 +959,7 @@ vaddr_t mem_alloc_map(struct addr_space* as, enum AS_SEC section, struct ppages*
     return address;
 }
 
-vaddr_t mem_alloc_map_dev(struct addr_space* as, enum AS_SEC section, vaddr_t at, paddr_t pa,
+vaddr_t mem_alloc_map_dev(struct addr_space* as, as_sec_t section, vaddr_t at, paddr_t pa,
     size_t num_pages)
 {
     vaddr_t address = mem_alloc_vpage(as, section, at, num_pages);

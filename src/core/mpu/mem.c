@@ -655,7 +655,7 @@ void mem_unmap(struct addr_space* as, vaddr_t at, size_t num_pages, bool free_pp
     }
 }
 
-vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, enum AS_SEC asd_section,
+vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, as_sec_t asd_section,
     vaddr_t vas, vaddr_t vad, size_t num_pages)
 {
     UNUSED_ARG(num_pages);

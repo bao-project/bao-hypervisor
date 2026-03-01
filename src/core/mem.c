@@ -170,7 +170,7 @@ static bool mem_reserve_ppool_ppages(struct page_pool* pool, struct ppages* ppag
     return is_in_rgn && was_free;
 }
 
-void* mem_alloc_page(size_t num_pages, enum AS_SEC sec, bool phys_aligned)
+void* mem_alloc_page(size_t num_pages, as_sec_t sec, bool phys_aligned)
 {
     vaddr_t vpage = INVALID_VA;
     struct ppages ppages = mem_alloc_ppages(cpu()->as.colors, num_pages, phys_aligned);
