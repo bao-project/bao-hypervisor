@@ -71,8 +71,8 @@ vaddr_t mem_alloc_map_dev(struct addr_space* as, enum AS_SEC section, vaddr_t at
 void mem_unmap(struct addr_space* as, vaddr_t at, size_t num_pages, bool free_ppages);
 bool mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages, size_t num_pages,
     mem_flags_t flags);
-vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, vaddr_t vas, vaddr_t vad,
-    size_t num_pages);
+vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, enum AS_SEC asd_section,
+    vaddr_t vas, vaddr_t vad, size_t num_pages);
 bool pp_alloc(struct page_pool* pool, size_t num_pages, bool aligned, struct ppages* ppages);
 
 void mem_prot_init(void);
