@@ -683,34 +683,36 @@ bool mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages, siz
     return true;
 }
 
-vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, vaddr_t vas, vaddr_t vad,
-    size_t num_pages)
+vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, enum AS_SEC asd_section,
+    vaddr_t vas, vaddr_t vad, size_t num_pages)
 {
-    vaddr_t _vad = mem_alloc_vpage(asd, SEC_HYP_GLOBAL, vad, num_pages);
+    vaddr_t _vad = mem_alloc_vpage(asd, asd_section, vad, num_pages);
     size_t base_vad = _vad;
     size_t count = 0;
     size_t to_map = num_pages * PAGE_SIZE;
 
-    while (count < num_pages) {
-        size_t lvl = 0;
-        pte_t* pte = pt_get_pte(&ass->pt, lvl, vas);
-        while (!pte_page(&ass->pt, pte, lvl)) {
-            lvl += 1;
-            pte = pt_get_pte(&ass->pt, lvl, vas);
+    if (base_vad != INVALID_VA) {
+        while (count < num_pages) {
+            size_t lvl = 0;
+            pte_t* pte = pt_get_pte(&ass->pt, lvl, vas);
+            while (!pte_page(&ass->pt, pte, lvl)) {
+                lvl += 1;
+                pte = pt_get_pte(&ass->pt, lvl, vas);
+            }
+            size_t lvl_size = pt_lvlsize(&ass->pt, lvl);
+            size_t size = lvl_size;
+            if (to_map < lvl_size) {
+                size = to_map;
+            }
+            size_t npages = NUM_PAGES(size);
+            paddr_t pa = pte_addr(pte) + (vas - ALIGN_FLOOR(vas, lvl_size));
+            struct ppages pages = mem_ppages_get(pa, npages);
+            mem_map(asd, _vad, &pages, npages, PTE_HYP_FLAGS);
+            _vad += size;
+            vas += size;
+            count += npages;
+            to_map -= size;
         }
-        size_t lvl_size = pt_lvlsize(&ass->pt, lvl);
-        size_t size = lvl_size;
-        if (to_map < lvl_size) {
-            size = to_map;
-        }
-        size_t npages = NUM_PAGES(size);
-        paddr_t pa = pte_addr(pte) + (vas - ALIGN_FLOOR(vas, lvl_size));
-        struct ppages pages = mem_ppages_get(pa, npages);
-        mem_map(asd, _vad, &pages, npages, PTE_HYP_FLAGS);
-        _vad += size;
-        vas += size;
-        count += npages;
-        to_map -= size;
     }
 
     return base_vad;
