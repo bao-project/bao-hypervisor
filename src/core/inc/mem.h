@@ -62,16 +62,16 @@ static inline bool all_clrs(colormap_t clrs)
 }
 
 void mem_init(void);
-void* mem_alloc_page(size_t num_pages, enum AS_SEC sec, bool phys_aligned);
+void* mem_alloc_page(size_t num_pages, as_sec_t sec, bool phys_aligned);
 struct ppages mem_alloc_ppages(colormap_t colors, size_t num_pages, bool aligned);
-vaddr_t mem_alloc_map(struct addr_space* as, enum AS_SEC section, struct ppages* page, vaddr_t at,
+vaddr_t mem_alloc_map(struct addr_space* as, as_sec_t section, struct ppages* page, vaddr_t at,
     size_t num_pages, mem_flags_t flags);
-vaddr_t mem_alloc_map_dev(struct addr_space* as, enum AS_SEC section, vaddr_t at, paddr_t pa,
+vaddr_t mem_alloc_map_dev(struct addr_space* as, as_sec_t section, vaddr_t at, paddr_t pa,
     size_t size);
 void mem_unmap(struct addr_space* as, vaddr_t at, size_t num_pages, bool free_ppages);
 bool mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages, size_t num_pages,
     mem_flags_t flags);
-vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, enum AS_SEC asd_section,
+vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, as_sec_t asd_section,
     vaddr_t vas, vaddr_t vad, size_t num_pages);
 bool pp_alloc(struct page_pool* pool, size_t num_pages, bool aligned, struct ppages* ppages);
 
