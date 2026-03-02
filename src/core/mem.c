@@ -156,22 +156,16 @@ static bool mem_are_ppages_reserved_in_pool(struct page_pool* ppool, struct ppag
 
 static bool mem_reserve_ppool_ppages(struct page_pool* pool, struct ppages* ppages)
 {
+    bool reserved = false;
     bool is_in_rgn = mem_ppages_in_pool(pool, ppages);
-    if (!is_in_rgn) {
-        return false;
+    if (is_in_rgn && !mem_are_ppages_reserved_in_pool(pool, ppages)) {
+        size_t pageoff = NUM_PAGES(ppages->base - pool->base);
+        bitmap_set_consecutive(pool->bitmap, pageoff, ppages->num_pages);
+        pool->free -= ppages->num_pages;
+        reserved = true;
     }
 
-    size_t pageoff = NUM_PAGES(ppages->base - pool->base);
-
-    bool was_free = true;
-    if (mem_are_ppages_reserved_in_pool(pool, ppages)) {
-        was_free = false;
-    }
-
-    bitmap_set_consecutive(pool->bitmap, pageoff, ppages->num_pages);
-    pool->free -= ppages->num_pages;
-
-    return is_in_rgn && was_free;
+    return reserved;
 }
 
 void* mem_alloc_page(size_t num_pages, as_sec_t sec, bool phys_aligned)
