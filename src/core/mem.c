@@ -325,13 +325,12 @@ static void mem_init_reserved(void)
     for (size_t i = 0; i < config.vmlist_size; i++) {
         struct vm_config* vm_cfg = &config.vmlist[i];
 
-        // If the vm image is already built-in the hypervisor image or is part
-        // of a statically allocated region of the same vm, we defer the
-        // reservation of this memory to when we reserve the physical region
-        // below. Note that this not allow partial overlaps. If the image must
-        // be entirely inside a statically allocated region, or completely
-        // outside of it. This avoid overcamplicating the reservation logic
-        // while still covering all the useful use cases.
+        // If the vm image is part of a statically allocated region of the same
+        // vm, we defer the reservation of this memory to when we reserve the
+        // physical region below. Note that this not allow partial overlaps. If
+        // the image must be entirely inside a statically allocated region, or
+        // completely outside of it. This avoid overcamplicating the
+        // reservation logic while still covering all the useful use cases.
         if (mem_vm_img_in_phys_rgn(vm_cfg)) {
             vm_cfg->image.reserved = true;
         } else {
