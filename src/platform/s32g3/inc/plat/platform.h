@@ -1,0 +1,13 @@
+/**
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright (c) Bao Project and Contributors. All rights reserved.
+ */
+
+#ifndef __PLAT_PLATFORM_H__
+#define __PLAT_PLATFORM_H__
+
+#include <drivers/linflexd_uart.h>
+
+#define UART_CLK_FREQ (123500000UL)
+
+#endif
