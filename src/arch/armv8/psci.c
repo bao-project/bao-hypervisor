@@ -11,6 +11,7 @@
 #include <mem.h>
 #include <cache.h>
 #include <config.h>
+#include <arch/smcc.h>
 
 enum { PSCI_MSG_ON };
 
@@ -170,9 +171,12 @@ static int32_t psci_features_handler(uint32_t feature_id)
         case PSCI_AFFINITY_INFO_SMC32:
         case PSCI_AFFINITY_INFO_SMC64:
         case PSCI_FEATURES:
-        case PSCI_1_1_RESET_TYPE_VENDOR_START:
+#ifdef PLAT_PSCI_SUPPORT_SMCCC_VERSION
+        case SMCCC_VERSION:
+#endif
             ret = PSCI_E_SUCCESS;
             break;
+
         default:
             ret = PSCI_E_NOT_SUPPORTED;
             break;
