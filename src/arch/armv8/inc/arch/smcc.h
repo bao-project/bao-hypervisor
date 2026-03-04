@@ -8,6 +8,8 @@
 
 #define SMCC64_BIT              (0x40000000)
 
+#define SMCCC_VERSION           (0x80000000)
+
 #define SMCC_E_NOT_SUPPORTED    (-1)
 
 #define SMCC32_FID_STD_SRVC     (0x84000000)
