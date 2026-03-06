@@ -91,7 +91,8 @@ static inline irqid_t irqc_reserve(irqid_t pintp_id)
 
 static inline void irqc_send_ipi(cpuid_t target_cpu)
 {
-    imsic_send_msi(target_cpu);
+    extern irqid_t interrupts_ipi_id;
+    imsic_send_msi(target_cpu, interrupts_ipi_id);
 }
 
 static inline void irqc_handle(void)

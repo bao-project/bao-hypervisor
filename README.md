@@ -47,7 +47,7 @@ platforms is presented below:
 - [x] QEMU virt
 - [x] Arm Fixed Virtual Platforms
 - [x] Toradex Verdin iMX8M Plus (w/ Dahlia Carrier Board)
-- [ ] NXP S32G
+- [x] NXP S32G3
 - [x] BeagleBone AI-64
 
 **Armv7-A / Armv8-A AArch32**
@@ -60,7 +60,8 @@ platforms is presented below:
 **Armv8-R AArch32**
 - [x] Arm Fixed Virtual Platforms
 - [x] Arm MPS3-AN536
-- [ ] NXP S32Z/E
+- [x] Semidrive E3650
+- [x] NXP S32Z270
 - [ ] Renesas RZT2M
 
 **RISC-V RV64**

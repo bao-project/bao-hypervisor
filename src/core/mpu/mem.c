@@ -655,8 +655,8 @@ void mem_unmap(struct addr_space* as, vaddr_t at, size_t num_pages, bool free_pp
     }
 }
 
-vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, vaddr_t vas, vaddr_t vad,
-    size_t num_pages)
+vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, as_sec_t asd_section,
+    vaddr_t vas, vaddr_t vad, size_t num_pages)
 {
     UNUSED_ARG(num_pages);
 
@@ -674,6 +674,7 @@ vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, vaddr_t vas,
         mpid_t reg_num_src = mem_vmpu_get_entry_by_addr(ass, vas);
         mpe = mem_vmpu_get_entry(ass, reg_num_src);
         mpr = mpe->region;
+        mpr.as_sec = asd_section;
         spin_unlock(&ass->lock);
 
         if (num_pages * PAGE_SIZE > mpr.size) {

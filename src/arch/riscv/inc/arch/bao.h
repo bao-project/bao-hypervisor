@@ -29,14 +29,18 @@
 #define BAO_VM_BASE  (0xffffffe000000000)
 #define BAO_VAS_TOP  (0xfffffff000000000)
 #else
-// Because sv32 only lowest level only supports 4MiB pages, this should be enough for each section
-// otherwise we need allow for N shared PTEs for each section. For now, it seems to suffice. We also
-// are assuming, for now that all available physical memory resides in 0x0 - 0xefffffff of virtual
-// memory. Otherwise we need to implement a "highmem"-like mechanism.
+/**
+ * When using sv32 only the lowest level supports 4MiB pages. This should be
+ * enough for the shared regions, while the private region is left with 256 MiB.
+ * For now, it seems to suffice. Otherwise, we need allow for N shared PTEs for
+ * the shared sections. We are also assuming, for now, that all available
+ * physical memory resides in 0x0 - 0xefffffff of virtual memory. Otherwise we
+ * need to implement a "highmem"-like mechanism.
+ */
 #define BAO_VAS_BASE (0xc0000000)
-#define BAO_CPU_BASE (0xcf400000)
-#define BAO_VM_BASE  (0xcf800000)
-#define BAO_VAS_TOP  (0xcfc00000)
+#define BAO_CPU_BASE (0xc0400000)
+#define BAO_VM_BASE  (0xe0400000)
+#define BAO_VAS_TOP  (0xe0800000)
 #endif
 
 #define PAGE_SIZE        (0x1000)
