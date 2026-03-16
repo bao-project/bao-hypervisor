@@ -1,6 +1,15 @@
 /**
  * SPDX-License-Identifier: Apache-2.0
  * Copyright (c) Bao Project and Contributors. All rights reserved.
+ *
+ * @file    mem.c
+ * @brief   This file implements the configuration for the address space access
+ *          control for MPU-based systems.
+ *
+ * The term "Virtual MPU" (vMPU) is a Bao-specific terminology.
+ * Consider familiarizing with the concept in the paper "Let’s Get Physical:
+ * Rethinking the Static Partitioning Hypervisor Architecture for an MMU-less
+ * Memory Model"
  */
 
 #include <mem.h>
@@ -37,6 +46,15 @@ enum { MEM_INSERT_REGION, MEM_REMOVE_REGION, MEM_UPDATE_REGION };
 #endif
 OBJPOOL_ALLOC(shared_region_pool, struct shared_region, SHARED_REGION_POOL_SIZE);
 
+/**
+ * @brief Retrieve a virtual MPU entry from an address space
+ * Gets the MPU entry associated with a given MPU entry ID from the MPU mapping of
+ * the address space.
+ * @param as Pointer to the address space
+ * @param mpid MPU entry identifier
+ * @return struct mpe* Pointer to the MPU entry, or NULL if invalid mpid
+ * @see addr_space, mpid_t, mpe, VMPU_NUM_ENTRIES
+ */
 static inline struct mpe* mem_vmpu_get_entry(struct addr_space* as, mpid_t mpid)
 {
     if (mpid < VMPU_NUM_ENTRIES) {
@@ -45,6 +63,15 @@ static inline struct mpe* mem_vmpu_get_entry(struct addr_space* as, mpid_t mpid)
     return NULL;
 }
 
+/**
+ * @brief Compare two MPU entries by base address
+ * Used for ordering MPU entries of the virtual MPU list based on their
+ * base addresses.
+ * @param _n1 Pointer to first node
+ * @param _n2 Pointer to second node
+ * @return int 1 if n1 > n2, -1 if n1 < n2, 0 if equal
+ * @see mpe, node_t, vaddr_t, mp_region
+ */
 static int vmpu_node_cmp(node_t* _n1, node_t* _n2)
 {
     struct mpe* n1 = (struct mpe*)_n1;
@@ -59,6 +86,17 @@ static int vmpu_node_cmp(node_t* _n1, node_t* _n2)
     }
 }
 
+/**
+ * @brief Set up an MPU entry of the virtual MPU
+ * Configures an MPU entry with the given memory region parameters and adds it
+ * to the ordered list of MPU entries in the address space configuration.
+ * @param as Pointer to the address space
+ * @param mpid MPU entry identifier
+ * @param mpr Pointer to the memory protection region configuration
+ * @param locked Whether the entry should be locked
+ * @see mem_vmpu_get_entry(), list_insert_ordered(), mpe, addr_space, mpid_t,
+ *      mp_region, node_t, vmpu_node_cmp(), MPE_S_VALID.
+ */
 static void mem_vmpu_set_entry(struct addr_space* as, mpid_t mpid, struct mp_region* mpr,
     bool locked)
 {
@@ -75,6 +113,14 @@ static void mem_vmpu_set_entry(struct addr_space* as, mpid_t mpid, struct mp_reg
     list_insert_ordered(&as->vmpu.ordered_list, (node_t*)&as->vmpu.node[mpid], vmpu_node_cmp);
 }
 
+/**
+ * @brief Clear an MPU entry in the virtual MPU
+ * Invalidates the data in a MPU entry, effectively clearing it for
+ * @param as Pointer to the address space configuration
+ * @param mpid MPU entry identifier
+ * @see mem_vmpu_get_entry(), as_sec_t, mpe, addr_space, mpid_t, PTE_INVALID,
+ *      MPE_S_INVALID
+ */
 static void mem_vmpu_clear_entry(struct addr_space* as, mpid_t mpid)
 {
     struct mpe* mpe = mem_vmpu_get_entry(as, mpid);
@@ -87,6 +133,15 @@ static void mem_vmpu_clear_entry(struct addr_space* as, mpid_t mpid)
     mpe->lock = false;
 }
 
+/**
+ * @brief Free an MPU entry from the address space configuration.
+ * Clears the entry's contents and marks it as free for reuse. Also removes
+ * the entry from the ordered list of MPU entries.
+ * @param as Pointer to the address space
+ * @param mpid MPU entry identifier
+ * @see mem_vmpu_clear_entry(), mem_vmpu_get_entry(), list_rm(), MPE_S_FREE, node_t,
+ *      addr_space, mpid_t, mpe
+ */
 static void mem_vmpu_free_entry(struct addr_space* as, mpid_t mpid)
 {
     mem_vmpu_clear_entry(as, mpid);
@@ -96,6 +151,14 @@ static void mem_vmpu_free_entry(struct addr_space* as, mpid_t mpid)
     list_rm(&as->vmpu.ordered_list, (node_t*)&as->vmpu.node[mpid]);
 }
 
+/**
+ * @brief Allocate a new MPU entry of the virtual MPU
+ * Search for a free MPU entry in the address space configuration and return its ID.
+ * @param as Pointer to the address space
+ * @return mpid_t ID of the allocated entry, or INVALID_MPID if no MPU entries are available.
+ * @see mem_vmpu_get_entry, addr_space, mpid_t, INVALID_MPID, VMPU_NUM_ENTRIES,
+ *      MPE_S_INVALID, MPE_S_FREE
+ */
 static mpid_t mem_vmpu_allocate_entry(struct addr_space* as)
 {
     mpid_t mpid = INVALID_MPID;
@@ -112,6 +175,15 @@ static mpid_t mem_vmpu_allocate_entry(struct addr_space* as)
     return mpid;
 }
 
+/**
+ * @brief Deallocate an MPU entry of the virtual MPU
+ * Resets all fields of the specified MPU entry and marks it as free,
+ * making it available for future allocations.
+ * @param as Pointer to the address space
+ * @param mpid MPU entry identifier
+ * @see mem_vmpu_get_entry(), addr_space, mpid_t, mpe, vaddr_t, SEC_UNKNOWN,
+ *      AS_SEC, MPE_S_FREE, PTE_INVALID
+ */
 static void mem_vmpu_deallocate_entry(struct addr_space* as, mpid_t mpid)
 {
     struct mpe* mpe = mem_vmpu_get_entry(as, mpid);
@@ -124,6 +196,16 @@ static void mem_vmpu_deallocate_entry(struct addr_space* as, mpid_t mpid)
     mpe->lock = false;
 }
 
+/**
+ * @brief Find an MPU entry containing a given address
+ * Searches through all MPU entries in the address space to find one that
+ * contains the specified virtual address.
+ * @param as Pointer to the address space configuration
+ * @param addr Virtual address to look for in the virtual MPU entries
+ * @return mpid_t ID of the matching entry, or INVALID_MPID if not found
+ * @see mem_vmpu_get_entry, INVALID_MPID, VMPU_NUM_ENTRIES, mpe, vaddr_t, addr_space,
+ *      VMPU_NUM_ENTRIES, mpid_t, MPE_S_VALID.
+ */
 static mpid_t mem_vmpu_get_entry_by_addr(struct addr_space* as, vaddr_t addr)
 {
     mpid_t mpid = INVALID_MPID;
@@ -145,6 +227,13 @@ static mpid_t mem_vmpu_get_entry_by_addr(struct addr_space* as, vaddr_t addr)
     return mpid;
 }
 
+/**
+ * @brief   Configure the virtual MPU layer with hypervisor-owned regions that
+ *          are already configured in the MPU during system boot.
+ * @note It supports MEM_NON_UNIFIED architectures.
+ * @see vaddr_t, _image_start, _image_load_end, _image_noload_start, _image_end,
+ *      mem_map(), cpu(), PTE_HYP_FLAGS_CODE, PTE_HYP_FLAGS,
+ */
 static void mem_init_boot_regions(void)
 {
     /**
@@ -205,6 +294,15 @@ static void mem_init_boot_regions(void)
     mem_map(&cpu()->as, &mpr, MEM_DONT_BROADCAST, MEM_LOCKED);
 }
 
+/**
+ * @brief   Initialize the memory access control mechanism according to the
+ *          current CPU's address space configuration.
+ * Sets up the MPU hardware, initializes the hypervisor address space,
+ * and configures boot-time memory regions.
+ * @see mpu_init(), as_init(), mem_init_boot_regions(), mpu_enable(), cpu(),
+ *      AS_TYPE, cpu_is_master(), addr_space, AS_TYPE, mem_mmio_init_regions(),
+ *      MMIO_SLAVE_SIDE_PROT
+ */
 void mem_prot_init()
 {
     mpu_init();
@@ -216,12 +314,24 @@ void mem_prot_init()
     mpu_enable();
 }
 
+/**
+ * @brief   Calculate the memory size needed to fit the CPU private data structure
+ *          during Bao's startup.
+ * Returns the page-aligned size required for the CPU structure allocation
+ * during boot time.
+ * @return size_t Size in bytes to fit a CPU private data structure.
+ */
 size_t mem_cpu_boot_alloc_size()
 {
     size_t size = ALIGN(sizeof(struct cpu), PAGE_SIZE);
     return size;
 }
 
+/**
+ * @brief Initialize configured memory regions in which devices are mapped.
+ * @param as Address space configuration, containing the list of configured MMIO devices' regions.
+ * @see mem_alloc_map_dev, NUM_PAGES(), mem_region, vaddr_t, AS_TYPE
+ */
 void mem_mmio_init_regions(struct addr_space* as)
 {
     for (unsigned long i = 0; i < platform.mmio_region_num; i++) {
@@ -231,6 +341,12 @@ void mem_mmio_init_regions(struct addr_space* as)
     }
 }
 
+/**
+ * @brief Provide unique incremental VM address space ID at runtime.
+ * @param as    Address space for which the ID shall be allocated.
+ * @return unsigned long Unique ID. Always greater than 0.
+ * @see spin_lock(), spin_unlock(), spinlock_t, asid_t, AS_TYPE
+ */
 static unsigned long as_id_alloc(struct addr_space* as)
 {
     static spinlock_t as_id_alloc_lock = SPINLOCK_INITVAL;
@@ -247,6 +363,17 @@ static unsigned long as_id_alloc(struct addr_space* as)
     return ret;
 }
 
+/**
+ * @brief Initializes an address space structure in a MPU-based system.
+ * Sets up a new address space with the given type and ID.
+ * Cache coloring is not a feature of MPU-based systems and @param color will
+ * not be used.
+ * @param as Pointer to address space configuration.
+ * @param type Type of address space (AS_HYP, AS_VM)
+ * @param colors Memory region color (unused in MPU-based systems)
+ * @see as_arch_init, mem_vmpu_free_entry, as_id_alloc, addr_space, AS_TYPE
+ *      colormap_t, spinlock_t, VMPU_NUM_ENTRIES, SPINLOCK_INITVAL, list, vmpu
+ */
 void as_init(struct addr_space* as, enum AS_TYPE type, colormap_t colors)
 {
     UNUSED_ARG(colors);
@@ -264,6 +391,14 @@ void as_init(struct addr_space* as, enum AS_TYPE type, colormap_t colors)
     }
 }
 
+/**
+ * @brief Frees physical pages back to their pool
+ * Iterates through page pools to find the one containing the pages to be freed,
+ * then clears the corresponding bits in the pool's bitmap.
+ * @param ppages Pointer to physical pages structure to free
+ * @see page_pool_list, bitmap_clear_consecutive, spin_lock(), spin_unlock(), page_pool
+ *      PAGE_SIZE, in_rage, range_in_range, ppages,
+ */
 static void mem_free_ppages(struct ppages* ppages)
 {
     list_foreach (page_pool_list, struct page_pool, pool) {
@@ -276,12 +411,28 @@ static void mem_free_ppages(struct ppages* ppages)
     }
 }
 
+/**
+ * @brief Handles memory protection synchronization messages
+ * Message handler for memory protection related IPI messages between CPUs.
+ * @param event Event type for the message
+ * @param data Message data containing region information
+ * @see mem_handle_broadcast_region, CPU_MSG_HANDLER
+ */
 static void mem_msg_handler(uint32_t event, uint64_t data)
 {
     mem_handle_broadcast_region(event, data);
 }
 CPU_MSG_HANDLER(mem_msg_handler, MEM_PROT_SYNC)
 
+/**
+ * @brief Determines which CPUs share an address space.
+ * Calculates the CPU mask for a given address space and section type.
+ * Handles both hypervisor and VMs' address spaces.
+ * @param as Addres space configuration to check.
+ * @param section Section type to check.
+ * @return cpumap_t CPU map of the CPUs that share the address space configuration.
+ * @see addr_space, as_sec_t, BIT_MASK(), cpumap_t, cpu(), vcpu, vm,
+ */
 static cpumap_t mem_section_shared_cpus(struct addr_space* as, as_sec_t section)
 {
     cpumap_t cpus = 0;
@@ -305,6 +456,18 @@ static cpumap_t mem_section_shared_cpus(struct addr_space* as, as_sec_t section)
     return cpus;
 }
 
+/**
+ * @brief Broadcasts memory region changes to other CPUs
+ * Notifies other CPUs about changes to memory regions that are shared
+ * across multiple cores.
+ * @param as Pointer to address space being modified
+ * @param mpr Pointer to memory protection region being changed
+ * @param op Operation being performed (insert/remove/update)
+ * @param locked Whether the region should be locked
+ * @see mem_section_shared_cpus, shared_region_pool, addr_space, mp_region, cpumap_t,
+ *      mp_region, as_sec_t, shared_region, cpuid_t, PLAT_CPU_NUM, bit_get, cpu(),
+ *      cpuid_t, objpool_alloc, cpu_send_msg, cpu_msg, ERROR()
+ */
 static void mem_region_broadcast(struct addr_space* as, struct mp_region* mpr, uint32_t op,
     bool locked)
 {
@@ -334,6 +497,14 @@ static void mem_region_broadcast(struct addr_space* as, struct mp_region* mpr, u
     }
 }
 
+/**
+ * @brief Quert whether a change in the address space configuration shall be broadcasted or not by design.
+ * @param as Address space affected by the change.
+ * @param mpr Memory region affected by the change.
+ * @param broadcast Expected value of the broadcast query.
+ * @return false if the region or address space are strictly owned by the hypervisor, broadcast otherwise.
+ * @see as_sec_t, AS_TYPE, addr_space, mp_region
+ */
 static bool mem_broadcast(struct addr_space* as, struct mp_region* mpr, bool broadcast)
 {
     if (as->type == AS_HYP && mpr->as_sec == SEC_HYP_PRIVATE) {
@@ -343,6 +514,13 @@ static bool mem_broadcast(struct addr_space* as, struct mp_region* mpr, bool bro
     return broadcast;
 }
 
+/**
+ * @brief Verify whether a memory region is locked by design (owned by the hypervisor) or not.
+ * @param mpr memory region of which lock to verify.
+ * @param locked the value returned if the region is locked by design.
+ * @return true if the region belong to the hypervisor, else equal to locked.
+ * @see mp_region, as_sec_t.
+ */
 static bool mem_check_forced_locked(struct mp_region* mpr, bool locked)
 {
     if (mpr->as_sec == SEC_HYP_PRIVATE || mpr->as_sec == SEC_HYP_VM ||
@@ -353,6 +531,17 @@ static bool mem_check_forced_locked(struct mp_region* mpr, bool locked)
     return locked;
 }
 
+/**
+ * @brief Maps and inserts a memory region into vMPU entries. Optionally it broadcast the vMPU addition.
+ * @param as Address space configuration from which the region is mapped.
+ * @param mpid Identifier of the vMPU entry.
+ * @param mpr Pointer to the memory protection region configuration.
+ * @param broadcast Option to broadcast the change via IPI to other CPUs.
+ * @param locked Option to lock the vMPU entry's memory region.
+ * @return true if the vMPU entry has been successfully inserted in the address space configuration, false otherwise.
+ * @see addr_space, mpid_t, mp_region, mem_check_forced_locked, mpu_map(), mem_vmpu_set_entry(),
+ *      mem_broadcast(), mem_region_broadcast(), MEM_INSERT_REGION
+ */
 static bool mem_vmpu_insert_region(struct addr_space* as, mpid_t mpid, struct mp_region* mpr,
     bool broadcast, bool locked)
 {
@@ -372,6 +561,17 @@ static bool mem_vmpu_insert_region(struct addr_space* as, mpid_t mpid, struct mp
     return false;
 }
 
+/**
+ * @brief Update a vMPU entry with a different memory region.
+ * @param as Address space configuration to be updated.
+ * @param mpid vMPU entry ID to be updated
+ * @param merge_reg Merged region to be assign to the vMPU entry
+ * @param broadcast Option to broadcast the vMPU entry update to other CPUs.
+ * @param locked Option to lock the vMPU entry configuration.
+ * @return true if the vMPU entry was updated successfully, false otherwise.
+ * @see mpu_update(), addr_space, mpid_t, mp_region, mem_vmpu_get_entry(), mem_broadcast(),
+ *      mem_region_broadcast(), MEM_UPDATE_REGION.
+ */
 static bool mem_vmpu_update_region(struct addr_space* as, mpid_t mpid, struct mp_region merge_reg,
     bool broadcast, bool locked)
 {
@@ -388,6 +588,15 @@ static bool mem_vmpu_update_region(struct addr_space* as, mpid_t mpid, struct mp
     return merged;
 }
 
+/**
+ * @brief Remove vMPU entry from address space configuration.
+ * @param as Address space configuration to be altered.
+ * @param mpid vMPU entry ID to remove.
+ * @param broadcast Option to broadcast the removal to other CPUs
+ * @return true if the vMPU entry has been removed successfully, false otherwise.
+ * @see addr_space, mpid_t, mpe, mem_vmpu_get_entry(), mem_broadcast(), mem_region_broadcast()
+ *      MEM_REMOVE_REGION, mpu_unmap(), mem_vmpu_free_entry()
+ */
 static bool mem_vmpu_remove_region(struct addr_space* as, mpid_t mpid, bool broadcast)
 {
     bool removed = false;
@@ -407,6 +616,13 @@ static bool mem_vmpu_remove_region(struct addr_space* as, mpid_t mpid, bool broa
     return removed;
 }
 
+/**
+ * @brief Handle broadcasted events in which a new vMPU entry is inserted (mapped).
+ * @param as Address space in which the vMPU entry is inserted.
+ * @param mpr Memory region that has been inserted.
+ * @param locked Option to lock the vMPU configuration of the memory region.
+ * @see addr_space, mp_region, AS_TYPE, mem_map(), cpu()
+ */
 static void mem_handle_broadcast_insert(struct addr_space* as, struct mp_region* mpr, bool locked)
 {
     if (as->type == AS_HYP) {
@@ -416,6 +632,14 @@ static void mem_handle_broadcast_insert(struct addr_space* as, struct mp_region*
     }
 }
 
+/**
+ * @brief Handle vMPU entry removal event by unmapping the broadcasted memory region from its CPU-bound MPU configuration.
+ * @note    It does not call mpu_unmap() if the address space belongs to the hypevisor.
+ *          This is to avoid broadcasting the configuration to all CPUs.
+ * @param as Address space configuration to alter.
+ * @param mpr Memory protected region to remove.
+ * @see addr_space, mp_region, mem_unmap_range(), AS_TYPE, cpu(), mpu_unmap()
+ */
 static void mem_handle_broadcast_remove(struct addr_space* as, struct mp_region* mpr)
 {
     if (as->type == AS_HYP) {
@@ -430,6 +654,19 @@ static void mem_handle_broadcast_remove(struct addr_space* as, struct mp_region*
     }
 }
 
+/**
+ * @brief Updates memory region
+ * The memory protected region is searched in the address space configuration and,
+ * if found, the region boundaries are update.
+ * Optionally, the update is propagated via broadcast message to all CPUs.
+ * @param as Address space configuration
+ * @param mpr Memory region to update
+ * @param broadcast Option to broadcast the update to other CPUs.
+ * @param locked Option to lock the updated vMPU entry.
+ * @return true if the memory region is updated successfuly as requested.
+ * @return false if the memory region cannot be updated
+ * @see addr_space, mp_region, mpid_t, INVALID_MPID, mpe, list_foreach(), mem_vmpu_update_region()
+ */
 static bool mem_update(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool locked)
 {
     mpid_t update_mpid = INVALID_MPID;
@@ -445,6 +682,14 @@ static bool mem_update(struct addr_space* as, struct mp_region* mpr, bool broadc
     return false;
 }
 
+/**
+ * @brief   Perform vMPU configuration update upon reception of a memory
+ *          protection synchronization's broadcasted message.
+ * @param as Address space configuration to update.
+ * @param mpr Memory region to update
+ * @param locked Option to lock the updated vMPU region for the receiving CPU.
+ * @see addr_space, mp_region, AS_TYPE, mem_update, cpu(),
+ */
 static void mem_handle_broadcast_update(struct addr_space* as, struct mp_region* mpr, bool locked)
 {
     if (as->type == AS_HYP) {
@@ -454,6 +699,15 @@ static void mem_handle_broadcast_update(struct addr_space* as, struct mp_region*
     }
 }
 
+/**
+ * @brief Handle broadcasted message on MPU regions' configuration changes
+ * @param event The event associated with the broadcasted message.
+ * @param data The data in the broadcasted message.
+ * @see MEM_INSERT_REGION, MEM_REMOVE_REGION, MEM_UPDATE_REGION, ERROR(),
+ *      mem_handle_broadcast_insert(), mem_handle_broadcast_remove(),
+ *      mem_handle_broadcast_update(), objpool_free(), AS_TYPE, shared_region,
+ *      cpu(), addr_space
+ */
 void mem_handle_broadcast_region(uint32_t event, uint64_t data)
 {
     struct shared_region* sh_reg = (struct shared_region*)(uintptr_t)data;
@@ -488,6 +742,14 @@ void mem_handle_broadcast_region(uint32_t event, uint64_t data)
     }
 }
 
+/**
+ * @brief Find whether a memory region overlaps with the memory region of a mapped vMPU entry.
+ * @param as Address space configuration
+ * @param region Region to check for overlapping vMPU entries
+ * @return mpid_t The ID of the first vMPU entry that overlaps in the region.
+ * @see mpid_t, addr_space, mp_region, INVALID_MPID, VMPU_NUM_ENTRIES, mpe,
+ *      mem_vmpu_get_entry(), mem_regions_overlap()
+ */
 static mpid_t mem_vmpu_find_overlapping_region(struct addr_space* as, struct mp_region* region)
 {
     mpid_t mpid = INVALID_MPID;
@@ -508,6 +770,14 @@ static mpid_t mem_vmpu_find_overlapping_region(struct addr_space* as, struct mp_
     return mpid;
 }
 
+/**
+ * @brief Merge vMPU entries mapped to adiacent memory regions into one.
+ * @param as Address space configuration in which the memory regions are allocated.
+ * @param broadcast Option to broadcast the change of vMPU entries to other CPUs.
+ * @see addr_space, mpid_t, mpe, list_foreach_tail(), mem_vmpu_get_entry,
+ *      mpu_perms_compatible(), mem_vmpu_update_region(), mem_vmpu_remove_region(),
+ *      mp_region.
+ */
 static void mem_vmpu_coalesce_contiguous(struct addr_space* as, bool broadcast)
 {
     while (true) {
@@ -551,6 +821,17 @@ static void mem_vmpu_coalesce_contiguous(struct addr_space* as, bool broadcast)
     }
 }
 
+/**
+ * @brief Map a memory region in the virtual MPU.
+ * @param as Address space configuration in which the vMPU entry is mapped.
+ * @param mpr Memory region to map in a vMPU entry.
+ * @param broadcast Option to perform the broadcast message to synchronize the MPU configuration.
+ * @param locked Option to lock the memory protection region's configuration.
+ * @return true if successfully mapped, false otherwise.
+ * @see addr_space, mp_region, mpid_t, INVALID_MPID, mpu_granularity(), spin_lock(),
+ *      mem_vmpu_find_overlapping_region(), mem_vmpu_allocate_entry(), mem_vmpu_insert_region(),
+ *      mem_vmpu_deallocate_entry(), mem_vmpu_coalesce_contiguous(), spin_unlock().
+ */
 bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool locked)
 {
     bool mapped = false;
@@ -585,6 +866,18 @@ bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool 
     return mapped;
 }
 
+/**
+ * @brief Unmap all vMPU entries in a memory range from the address space configuration.
+ * @param as Address space configuration
+ * @param vaddr Base address of the range to unmap
+ * @param size Size of the range to unmap
+ * @param broadcast Option to broadcast the vMPU change to other CPUs.
+ * @return true if the whole range is unmapped. false otherwise.
+ * @note This function can affect (resize) the configuration of vMPU entries overlapping in the memory range.
+ * @see addr_space, vaddr_t, spin_lock(), mp_region, mpid_t, mem_vmpu_find_overlapping_region(),
+ *      INVALID_MPID, mem_vmpu_get_entry(), mem_vmpu_remove_region(), mem_vmpu_allocate_entry(),
+ *      mem_vmpu_insert_region(), spin_unlock().
+ */
 bool mem_unmap_range(struct addr_space* as, vaddr_t vaddr, size_t size, bool broadcast)
 {
     spin_lock(&as->lock);
@@ -647,6 +940,16 @@ bool mem_unmap_range(struct addr_space* as, vaddr_t vaddr, size_t size, bool bro
     return size_left == 0;
 }
 
+/**
+ * @brief Unmap a memory range. Optionally the pages are freed.
+ * @note Freed pages can be re-allocated.
+ * @param as Address space configuration of the memory range
+ * @param at Base address of the memory range
+ * @param num_pages number of page blocks in the rage.
+ * @param free_ppages Option to free the memory range for re-allocation.
+ * @see addr_space, vaddr_t, mem_unmap_range(), PAGE_SIZE, MEM_BROADCAST, ppages,
+ *      mem_ppages_get(), mem_free_ppages().
+ */
 void mem_unmap(struct addr_space* as, vaddr_t at, size_t num_pages, bool free_ppages)
 {
     if (mem_unmap_range(as, at, num_pages * PAGE_SIZE, MEM_BROADCAST) && free_ppages) {
@@ -655,6 +958,20 @@ void mem_unmap(struct addr_space* as, vaddr_t at, size_t num_pages, bool free_pp
     }
 }
 
+/**
+ * @brief   Map in the vMPU two memory region defined in different address space configurations
+ *          and copy the contents into the other's region.
+ * @param ass Source address space configuration
+ * @param asd Destination address space configuration
+ * @param asd_section Destionation address space's section type.
+ * @param vas Source "virtual address" of the source area.
+ * @param vad Source "virtual address" of the destination area
+ * @param num_pages Number of pages to map and copy at source and destination.
+ * @return vaddr_t Address of the destination.
+ * @see addr_space, as_sec_t, vaddr_t, mpe, mp_region, INVALID_VA, spin_lock(),
+ *      spin_unlock(), mpid_t, mem_vmpu_get_entry_by_addr(), mem_vmpu_get_entry(),
+ *      PAGE_SIZE, mem_broadcast(), MEM_BROADCAST, mem_map(), MEM_NOT_LOCKED, INFO().
+ */
 vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, as_sec_t asd_section,
     vaddr_t vas, vaddr_t vad, size_t num_pages)
 {
@@ -695,6 +1012,16 @@ vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, as_sec_t asd
     return va_res;
 }
 
+/**
+ * @brief Translates the VA into PA.
+ * @param as Address space in which the VA may be correctly mapped.
+ * @param va Virtual address to check whether it is part of a valid vMPU entry.
+ * @param pa Physical address in which the VA is copied if the vMPU entry is valid.
+ * @return true if the vMPU entry associated to the VA has a valid. false otherwise.
+ * @see     mem_vmpu_get_entry_by_addr, addr_space, vaddr_t, paddr_t, INVALID_MPID
+ * @note    In MPU-based systems, physical address and virtual address are identically mapped.
+ *          As such, this function is equivalent to mem_vmpu_get_entry_by_addr on the VA.
+ */
 bool mem_translate(struct addr_space* as, vaddr_t va, paddr_t* pa)
 {
     if (mem_vmpu_get_entry_by_addr(as, va) != INVALID_MPID) {
@@ -705,6 +1032,19 @@ bool mem_translate(struct addr_space* as, vaddr_t va, paddr_t* pa)
     }
 }
 
+/**
+ * @brief Allocate and map an MPU region in the address space
+ * @param as Address space configuration in which the region shall be mapped.
+ * @param section The type of memory section to be mapped.
+ * @param ppages Description of the physically-addressed memory pages to be mapped.
+ * @param at if ppages is not specified, this VA is used instead as region's base address.
+ * @param num_pages Number of pages to map.
+ * @param flags
+ * @return vaddr_t Virtual address to the mapped region.
+ * @note In MPU-based systems, physical address and virtual address are identically mapped.
+ * @see vaddr_t, addr_space, as_sec_t, ppages, mem_flags_t, ERROR(), mem_ppages_get(),
+ *      mp_region, PAGE_SIZE, mem_map().
+ */
 vaddr_t mem_alloc_map(struct addr_space* as, as_sec_t section, struct ppages* ppages, vaddr_t at,
     size_t num_pages, mem_flags_t flags)
 {
@@ -740,6 +1080,17 @@ vaddr_t mem_alloc_map(struct addr_space* as, as_sec_t section, struct ppages* pp
     return at;
 }
 
+/**
+ * @brief Allocate and map pages in which device are mapped.
+ * @param as Address space configuration
+ * @param section Type of section to be mapped
+ * @param at Virtual base address of the device.
+ * @param pa Physical base address of the device
+ * @param num_pages Number of pages to map.
+ * @return vaddr_t Virtual address at which the memory-mapped device is not mapped.
+ * @see addr_space, as_sec_t, vaddr_t, paddr_t, ppages, mem_ppages_get(), mem_alloc_map(),
+ *      PTE_HYP_DEV_FLAGS, PTE_VM_DEV_FLAGS
+ */
 vaddr_t mem_alloc_map_dev(struct addr_space* as, as_sec_t section, vaddr_t at, paddr_t pa,
     size_t num_pages)
 {
