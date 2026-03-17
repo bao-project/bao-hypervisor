@@ -406,13 +406,13 @@ void remio_init(void)
     }
 }
 
-void remio_assign_vm_cpus(struct vm* vm)
+void remio_assign_vm_cpus(vmid_t vmid)
 {
     list_foreach (remio_device_list, struct remio_device, dev) {
-        if (vm->id == dev->config.backend.vm_id) {
+        if (vmid == dev->config.backend.vm_id) {
             dev->config.backend.cpu_id = min(dev->config.backend.cpu_id, cpu()->id);
             dev->config.backend.ready = true;
-        } else if (vm->id == dev->config.frontend.vm_id) {
+        } else if (vmid == dev->config.frontend.vm_id) {
             dev->config.frontend.cpu_id = min(dev->config.frontend.cpu_id, cpu()->id);
             dev->config.frontend.ready = true;
         }
