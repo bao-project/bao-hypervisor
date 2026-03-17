@@ -13,8 +13,8 @@
 /**
  * @brief Initialize an object pool
  *
- * Zeroes out the object pool memory and its allocation bitmap,
- * and initializes the pool's spinlock.
+ * Clear out the object pool memory and its allocation bitmap,
+ * and initialize the pool's spinlock.
  *
  * @param objpool Pointer to object pool structure to initialize
  * @see memset(), BITMAP_SIZE_IN_BYTES, SPINLOCK_INITVAL, objpool

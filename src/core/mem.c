@@ -676,7 +676,7 @@ static bool mem_setup_root_pool(struct mem_region** root_mem_region)
 }
 
 /**
- * @brief Not implemented. Supported MPU-based systems do not support cache coloring.
+ * @brief Not implemented. It is specific to the supported memory accessl control mechanism.
  * @see WARNING()
  */
 __attribute__((weak)) void mem_color_hypervisor(const paddr_t load_addr,
@@ -690,7 +690,7 @@ __attribute__((weak)) void mem_color_hypervisor(const paddr_t load_addr,
 }
 
 /**
- * @brief Not implemented. Supported MPU-based systems do not support cache coloring.
+ * @brief Not implemented. It is specific to the supported memory accessl control mechanism.
  * @see: ERROR()
  */
 __attribute__((weak)) bool mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages,
@@ -706,7 +706,7 @@ __attribute__((weak)) bool mem_map_reclr(struct addr_space* as, vaddr_t va, stru
 }
 
 /**
- * @brief Not implemented. Supported MPU-based systems do not support cache coloring.
+ * @brief Not implemented. It is specific to the supported memory accessl control mechanism.
  * @see ERROR()
  */
 __attribute__((weak)) bool pp_alloc_clr(struct page_pool* pool, size_t num_pages, colormap_t colors,

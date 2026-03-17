@@ -297,8 +297,8 @@ static void mem_init_boot_regions(void)
 /**
  * @brief   Initialize the memory access control mechanism according to the
  *          current CPU's address space configuration.
- * Sets up the MPU hardware, initializes the hypervisor address space,
- * and configures boot-time memory regions.
+ * Set up the MPU hardware, initialize the hypervisor address space,
+ * and configure boot-time memory regions.
  * @see mpu_init(), as_init(), mem_init_boot_regions(), mpu_enable(), cpu(),
  *      AS_TYPE, cpu_is_master(), addr_space, AS_TYPE, mem_mmio_init_regions(),
  *      MMIO_SLAVE_SIDE_PROT
@@ -364,15 +364,14 @@ static unsigned long as_id_alloc(struct addr_space* as)
 }
 
 /**
- * @brief Initializes an address space structure in a MPU-based system.
- * Sets up a new address space with the given type and ID.
- * Cache coloring is not a feature of MPU-based systems and @param color will
- * not be used.
+ * @brief Initialize an address space structure in a MPU-based system.
+ * Set up a new address space with the given type and ID.
+ * @note Cache coloring is not a feature of MPU-based systems and @param color will not be used.
  * @param as Pointer to address space configuration.
  * @param type Type of address space (AS_HYP, AS_VM)
  * @param colors Memory region color (unused in MPU-based systems)
  * @see as_arch_init, mem_vmpu_free_entry, as_id_alloc, addr_space, AS_TYPE
- *      colormap_t, spinlock_t, VMPU_NUM_ENTRIES, SPINLOCK_INITVAL, list, vmpu
+ *      colormap_t, spinlock_t, VMPU_NUM_ENTRIES, SPINLOCK_INITVAL, list, vmpu.
  */
 void as_init(struct addr_space* as, enum AS_TYPE type, colormap_t colors)
 {
@@ -396,8 +395,8 @@ void as_init(struct addr_space* as, enum AS_TYPE type, colormap_t colors)
  * Iterates through page pools to find the one containing the pages to be freed,
  * then clears the corresponding bits in the pool's bitmap.
  * @param ppages Pointer to physical pages structure to free
- * @see page_pool_list, bitmap_clear_consecutive, spin_lock(), spin_unlock(), page_pool
- *      PAGE_SIZE, in_rage, range_in_range, ppages,
+ * @see page_pool_list, bitmap_clear_consecutive, spin_lock(), spin_unlock(), page_pool,
+ *      PAGE_SIZE, in_rage, range_in_range, ppages.
  */
 static void mem_free_ppages(struct ppages* ppages)
 {
