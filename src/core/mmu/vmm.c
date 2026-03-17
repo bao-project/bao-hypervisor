@@ -12,10 +12,8 @@
 #include <fences.h>
 
 /**
- * @brief Initializes the IOMMU for VM management.
- *
+ * @brief Initialize the IOMMU for VM management.
  * It configures the address space access control mechanism for the system's IO devices.
- *
  * @see io_init
  * 
  */

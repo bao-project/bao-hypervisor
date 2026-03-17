@@ -15,7 +15,7 @@ static struct shmem* shmem_table;
 
 /**
  * @brief Allocate physical memory for shared memory regions
- * Initializes each shared memory region in the global table.
+ * Initialize each shared memory region in the global table.
  * For regions that aren't physically placed, allocates physical pages according
  * to the region's size and color requirements.
  * @see mem_alloc_ppages(), NUM_PAGES(), ERROR(), SPINLOCK_INITVAL, shmem, ppages
@@ -53,9 +53,9 @@ struct shmem* shmem_get(size_t shmem_id)
 
 /**
  * @brief Initialize the shared memory subsystem
- * On the master CPU, initializes the global shared memory table from
- * configuration and allocates physical memory for each region. Also
- * initializes the CPU masters bitmap for each region.
+ * On the master CPU, initialize the global shared memory table from
+ * configuration and allocates physical memory for each region.
+ * Also initialize the CPU masters bitmap for each region.
  * @see cpu_is_master(), config, shmem, shmem_alloc(), cpumap_t, SPINLOCK_INITVAL
  */
 void shmem_init()

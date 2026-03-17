@@ -1118,7 +1118,7 @@ static unsigned long as_id_alloc(struct addr_space* as)
 }
 
 /**
- * @brief Initializes an address space structure in a MMU-based system.
+ * @brief Initialize an address space structure in a MMU-based system.
  * Sets up a new address space with the given type, ID and color.
  * @param as Pointer to address space configuration.
  * @param type Type of address space (AS_HYP, AS_VM)
@@ -1147,7 +1147,7 @@ void as_init(struct addr_space* as, enum AS_TYPE type, pte_t* root_pt, colormap_
 }
 
 /**
- * @brief   Initializes the memory access control mechanism according to the
+ * @brief   Initialize the memory access control mechanism according to the
  *          calling CPU's address space configuration.
  * @see as_init(), pte_t, cpu(), vaddr_t, PAGE_SIZE, AS_HYP
  */

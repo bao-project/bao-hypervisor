@@ -68,7 +68,7 @@ static vcpuid_t vm_calc_vcpu_id(struct vm* vm)
 
 /**
  * @brief Configure the virtualized CPU configuration for the executing physical CPU.
- * Sets up the VCPU structure, links it to the VM and physical CPU,
+ * Set up the VCPU structure, links it to the VM and physical CPU,
  * and performs architecture-specific initialization and reset.
  * @param vm Pointer to the VM owning this VCPU
  * @param vm_config Configuration describing the VM and entry point
@@ -641,8 +641,7 @@ void vcpu_run(struct vcpu* vcpu)
 }
 
 /**
- * @brief Grant a VM access to a device's MMIO region.
- * @note Not implemented. It is ISA-specific
+ * @brief Not implemented. It is ISA-specific
  * @see ERROR()
  */
 __attribute__((weak)) void vm_arch_allow_mmio_access(struct vm* vm, struct vm_dev_region* dev)

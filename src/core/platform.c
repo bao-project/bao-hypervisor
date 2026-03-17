@@ -9,17 +9,21 @@
 #include <platform.h>
 
 /**
- * @brief Not implemented. Platform default initialization.
+ * @brief Not implemented. Platform-specific default initialization.
  * @note It shall be defined by the platform-specific code.
  */
 __attribute__((weak)) void platform_default_init(void) { }
 
 /**
- * @brief Not implemented. Platform configuration initialization.
+ * @brief Not implemented. Platform-specific configuration initialization.
  * @note It shall be defined by the platform-specific code.
  */
 __attribute__((weak)) void platform_config_init(void) { }
 
+/**
+ * @brief Not implemented. Platform-specific configuration initialization.
+ * @note It shall be defined by the platform-specific code.
+ */
 __attribute__((weak)) void plat_cpu_init(cpuid_t cpuid, paddr_t load_addr)
 {
     UNUSED_ARG(cpuid);
