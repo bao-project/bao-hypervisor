@@ -14,7 +14,7 @@
 #include <bao.h>
 #include <emul.h>
 #include <list.h>
-#include <vm.h>
+#include <types.h>
 
 /**
  * @struct remio_shmem
@@ -64,7 +64,7 @@ void remio_init(void);
  *       one with the lowest ID, since only one CPU is required to inject VM interrupts
  * @param vm Pointer to the VM structure
  */
-void remio_assign_vm_cpus(struct vm* vm);
+void remio_assign_vm_cpus(vmid_t vmid);
 
 /**
  * @brief Remote I/O hypercall callback
