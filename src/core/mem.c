@@ -76,7 +76,6 @@ static size_t calc_root_mem_size(void)
 
 /**
  * @brief Allocate a consecutive range of pages from a page pool.
-
  * Search the page pool bitmap for a contiguous run of 'num_pages' free
  * pages. If 'aligned' is true the returned allocation is aligned to the
  * size (num_pages).
@@ -161,7 +160,7 @@ bool pp_alloc(struct page_pool* pool, size_t num_pages, bool aligned, struct ppa
 }
 
 /**
- * @brief Verify if physical pages are include a page pool.
+ * @brief Verify if physical pages are included in a page pool.
  * @param ppool Page pool that may contain the physical pages.
  * @param ppages Physical pages to search in the page pool.
  * @return true if the page pool contains the (continguous) physical pages. false otherwise.
@@ -179,7 +178,7 @@ static bool mem_ppages_in_pool(struct page_pool* ppool, struct ppages* ppages)
  * @param ppool Page pool to check.
  * @param ppages Page region to verify.
  * @return true if the pages are reserved or overlap with allocated pages, false otherwise.
- * @see range_in_range(), bitmap_get(), bitmap_count_consecutive(), page_pool, ppages,
+ * @see mem_ppages_in_pool(), bitmap_get(), bitmap_count_consecutive(), page_pool, ppages,
  *      paddr_t, PAGE_SIZE, NUM_PAGES(), bitmap_t
  */
 static bool mem_are_ppages_reserved_in_pool(struct page_pool* ppool, struct ppages* ppages)
@@ -209,8 +208,8 @@ static bool mem_are_ppages_reserved_in_pool(struct page_pool* ppool, struct ppag
  * the region belonged to the pool and whether it was previously free.
  * @param pool Target page pool.
  * @param ppages Physical pages region to reserve.
- * @return false    if the physical pages are in the page pool memory region or they
- *                  were reversed *
+ * @return false if the physical pages are in the page pool memory region or they
+ *         were reversed *
  * @see range_in_range(), bitmap_set_consecutive(), NUM_PAGES(), page_pool, ppages
  *      PAGE_SIZE, paddr_t
  */
@@ -289,7 +288,7 @@ static bool pp_root_reserve_hyp_image_load(struct page_pool* root_pool)
  * @return true on success, false on failure.
  * @see _image_load_end, _image_end, _vm_image_start, _vm_image_end,
  *      img_addr, mem_ppages_get(), mem_reserve_ppool_ppages(), page_pool,
- *      paddr_t, ppages, NUM_PAGES().
+ *      paddr_t, ppages, NUM_PAGES(), _image_start.
  */
 static bool pp_root_reserve_hyp_image_noload(struct page_pool* root_pool)
 {
@@ -305,7 +304,7 @@ static bool pp_root_reserve_hyp_image_noload(struct page_pool* root_pool)
 }
 
 /**
- * @brief Reserve CPU-specific data pagesin the root memory's page pool.
+ * @brief Reserve CPU-specific data pages in the root memory's page pool.
  * Calculate the memory to reserve for CPU-specific private memory area
  * and reserve it.
  * @param root_pool Root page pool.
@@ -505,7 +504,7 @@ static void mem_init_reserved(void)
 }
 
 /**
- * @brief Verify whether all the staticlaly allocated memory regions are reserved.
+ * @brief Verify whether all the statically allocated memory regions are reserved.
  * @return  false if static allocated memory regions in the configuration have
  *          not been flagged as reserved.
  */
@@ -551,7 +550,7 @@ static bool mem_check_reserved(void)
 /**
  * @brief Reserve all statically defined physical memory regions in the pool.
  * @param pool Page pool to reserve pages in (typically root pool).
- * @return true on succesful reservation of the pool's pages, false otherwise.
+ * @return true on successful reservation of the pool's pages, false otherwise.
  * @see pp_root_reserve_hyp_image_load(), mem_vm_img_in_phys_rgn(), mem_ppages_get(),
  *      mem_reserve_ppool_ppages(), NUM_PAGES(), page_pool, ppages
  */

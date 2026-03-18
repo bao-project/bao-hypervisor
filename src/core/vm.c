@@ -521,9 +521,9 @@ void vm_emul_add_reg(struct vm* vm, struct emul_reg* emu)
 }
 
 /**
- * @brief Register a memory-mapped emulation handler with a VM.
+ * @brief Look up the emulation handler for a given memory-mapped address.
  * @param vm Pointer to the VM that may own the memory access emulation handler.
- * @param emu Pointer to the emulated memory region descriptor to register.
+ * @param addr Guest virtual address to look up.
  * @see list_push(), vm, emul_mem
  */
 emul_handler_t vm_emul_get_mem(struct vm* vm, vaddr_t addr)
@@ -540,7 +540,7 @@ emul_handler_t vm_emul_get_mem(struct vm* vm, vaddr_t addr)
 }
 
 /**
- * @brief Look up the emulation handler for a given memory-mapped address.
+ * @brief Look up the emulation handler for a given register.
  * @param vm Pointer to the VM that may own the register emulation handler.
  * @param addr Guest virtual address to look up.
  * @return emul_handler_t The handler for the matching region, or NULL if none found.
