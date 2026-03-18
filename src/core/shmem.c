@@ -1,6 +1,11 @@
 /**
  * SPDX-License-Identifier: Apache-2.0
  * Copyright (c) Bao Project and Contributors. All rights reserved.
+ * 
+ * @file shmem.c
+ * @brief This source file contains the API implementation for allocating, initializing and finding
+ * shared memory regions.
+ * 
  */
 
 #include <shmem.h>
@@ -9,6 +14,14 @@
 static size_t shmem_table_size;
 static struct shmem* shmem_table;
 
+/**
+ * @brief Allocate physical memory for shared memory regions
+ * Initialize each shared memory region in the global table.
+ * For regions that aren't physically placed, allocates physical pages according
+ * to the region's size and color requirements.
+ * @see mem_alloc_ppages(), NUM_PAGES(), ERROR(), SPINLOCK_INITVAL, shmem, ppages
+ *      MEM_ALIGN_NOT_REQ, colormap_t, ppages
+ */
 static void shmem_alloc(void)
 {
     for (size_t i = 0; i < shmem_table_size; i++) {
@@ -24,6 +37,12 @@ static void shmem_alloc(void)
     }
 }
 
+/**
+ * @brief Get a shared memory region by its ID
+ * @param shmem_id ID of the shared memory region to retrieve
+ * @return struct shmem* Pointer to the shared memory region, or NULL if invalid ID
+ * @see shmem_table, shmem
+ */
 struct shmem* shmem_get(size_t shmem_id)
 {
     if (shmem_id < shmem_table_size) {
@@ -33,6 +52,13 @@ struct shmem* shmem_get(size_t shmem_id)
     }
 }
 
+/**
+ * @brief Initialize the shared memory subsystem
+ * On the master CPU, initialize the global shared memory table from
+ * configuration and allocates physical memory for each region.
+ * Also initialize the CPU masters bitmap for each region.
+ * @see cpu_is_master(), config, shmem, shmem_alloc(), cpumap_t, SPINLOCK_INITVAL
+ */
 void shmem_init()
 {
     if (cpu_is_master()) {
