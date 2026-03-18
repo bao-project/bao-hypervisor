@@ -3,7 +3,8 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  * 
  * @file shmem.c
- * @brief This source file contains the API implementation for allocating, initializing and finding shared memory regions.
+ * @brief This source file contains the API implementation for allocating, initializing and finding
+ * shared memory regions.
  * 
  */
 

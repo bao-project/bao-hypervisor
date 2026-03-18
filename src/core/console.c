@@ -25,7 +25,7 @@ static spinlock_t console_lock = SPINLOCK_INITVAL;
 /**
  * @brief Initialize the hypervisor console
  *
- * The master CPU initialize the configured UART device for the hypervisor
+ * The master CPU initializes the configured UART device for the hypervisor
  * console and enables it. Other CPUs wait for initialization to complete.
  *
  * @see cpu_is_master(), mem_alloc_map_dev(), uart_init(), uart_enable()

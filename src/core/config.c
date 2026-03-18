@@ -3,7 +3,7 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  *
  * @file config.c
- * @brief This source file contains the implementation of VMs configuration's initialization.
+ * @brief This source file contains the implementation of VM configuration initialization.
  *
  */
 
