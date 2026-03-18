@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  *
- * @file remio.c
+ * @file cache.c
  * @brief This source file contains the cache configuration implementation
  *
  */
@@ -58,8 +58,7 @@ static void cache_calc_colors(struct cache* dscrp, size_t page_size)
 /**
  * @brief Populate cache descriptor and cache coloring parameters
  * Populates cache description and sets cache coloring parameters
- * according to the architecture's configurationccording to the
- * architecture's configuration.
+ * according to the architecture's configuration.
  * @see cache_arch_enumerate(), cache_calc_colors(), cache_dscr, PAGE_SIZE.
  */
 void cache_enumerate(void)

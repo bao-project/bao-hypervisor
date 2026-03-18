@@ -123,7 +123,7 @@ bool cpu_get_msg(struct cpu_msg* msg)
  * processing is in progress.
  * @return None.
  * @see cpu(), cpu_get_msg(), ipi_cpumsg_handlers[], ipi_cpumsg_handler_num
- *     cpu_msg_handler_t, cpu_msg
+ *      cpu_msg_handler_t, cpu_msg
  */
 void cpu_msg_handler(void)
 {

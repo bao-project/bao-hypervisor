@@ -3,7 +3,7 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  *
  * @file ipc.c
- * @brief This source file contains the implementation for inter-processor communication (IPC)
+ * @brief This source file contains the implementation for inter-processor communication (IPC).
  */
 
 #include <ipc.h>

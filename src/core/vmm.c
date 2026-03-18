@@ -162,7 +162,7 @@ static struct vm_allocation* vmm_alloc_install_vm(vmid_t vm_id, bool master)
 /**
  * @brief Initialize the hypervisor's VM management.
  * @note    This is the last step of the hypervisor initialization.
- *          Once all the CPU Have executed this function, they are already
+ *          Once all the CPU have executed this function, they are already
  *          executing within the VM's execution environment.
  * @see vmm_arch_init(), vmm_io_init(), shmem_init(), remio_init(), vmm_assign_vcpu()
  *      vmm_alloc_install_vm(), vm_init(), vcpu_run(), cpu_powerdown(), cpu_sync_barrier()
