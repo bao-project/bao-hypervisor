@@ -318,6 +318,16 @@ bool vgic_remove_lr(struct vcpu* vcpu, struct vgic_int* interrupt)
     return ret;
 }
 
+/* Must be called holding vgic_spilled_lock */
+static void vgic_remove_spilled(struct vcpu* vcpu, struct vgic_int* interrupt)
+{
+    struct list* spilled_list = gic_is_priv(interrupt->id)
+        ? &vcpu->arch.vgic_spilled
+        : &vcpu->vm->arch.vgic_spilled;
+    list_rm(spilled_list, &interrupt->node);
+    interrupt->in_spilled = false;
+}
+
 static void vgic_spill_lr(struct vcpu* vcpu, size_t lr_ind)
 {
     gic_lr_t lr = (gic_lr_t)gich_read_lr(lr_ind);
@@ -392,6 +402,11 @@ bool vgic_add_lr(struct vcpu* vcpu, struct vgic_int* interrupt)
     }
 
     if (lr_ind >= 0) {
+        if (interrupt->in_spilled) {
+            spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
+            vgic_remove_spilled(vcpu, interrupt);
+            spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
+        }
         vgic_write_lr(vcpu, interrupt, (size_t)lr_ind);
         ret = true;
     } else {
@@ -1075,8 +1090,7 @@ void vgic_ipi_handler(uint32_t event, uint64_t data)
 /**
  * Must be called holding the vgic_spilled_lock
  */
-static inline struct vgic_int* vgic_highest_prio_spilled(struct vcpu* vcpu, unsigned flags,
-    struct list** outlist)
+static inline struct vgic_int* vgic_highest_prio_spilled(struct vcpu* vcpu, unsigned flags)
 {
     struct vgic_int* irq = NULL;
     struct list* spilled_lists[] = {
@@ -1098,7 +1112,6 @@ static inline struct vgic_int* vgic_highest_prio_spilled(struct vcpu* vcpu, unsi
             bool is_lower_id = temp_irq->id < irq_id;
             if (is_higher_prio || (is_same_prio && is_lower_id)) {
                 irq = temp_irq;
-                *outlist = list;
             }
         }
     }
@@ -1112,14 +1125,12 @@ static void vgic_refill_lrs(struct vcpu* vcpu, bool npie)
     unsigned flags = npie ? PEND : ACT | PEND;
     spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
     while (lr_ind >= 0) {
-        struct list* list = NULL;
-        struct vgic_int* irq = vgic_highest_prio_spilled(vcpu, flags, &list);
+        struct vgic_int* irq = vgic_highest_prio_spilled(vcpu, flags);
         if (irq != NULL) {
             spin_lock(&irq->lock);
             bool got_ownership = vgic_get_ownership(vcpu, irq);
             if (got_ownership) {
-                list_rm(list, &irq->node);
-                irq->in_spilled = false;
+                vgic_remove_spilled(vcpu, irq);
                 vgic_write_lr(vcpu, irq, (size_t)lr_ind);
             }
             spin_unlock(&irq->lock);
@@ -1140,16 +1151,14 @@ static void vgic_refill_lrs(struct vcpu* vcpu, bool npie)
 
 static void vgic_eoir_highest_spilled_active(struct vcpu* vcpu)
 {
-    struct list* list = NULL;
     struct vgic_int* interrupt;
 
     spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
-    interrupt = vgic_highest_prio_spilled(vcpu, ACT, &list);
+    interrupt = vgic_highest_prio_spilled(vcpu, ACT);
     if (interrupt != NULL) {
         spin_lock(&interrupt->lock);
         if (vgic_get_ownership(vcpu, interrupt)) {
-            list_rm(list, &interrupt->node);
-            interrupt->in_spilled = false;
+            vgic_remove_spilled(vcpu, interrupt);
         } else {
             spin_unlock(&interrupt->lock);
             interrupt = NULL;
