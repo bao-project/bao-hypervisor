@@ -274,10 +274,17 @@ static inline void vgic_write_lr(struct vcpu* vcpu, struct vgic_int* interrupt, 
             lr |= GICH_LR_EOI_BIT;
         }
 
-        lr |= ((gic_lr_t)state << GICH_LR_STATE_OFF) & GICH_LR_STATE_MSK;
+        /**
+         * If the interrupt is disabled, strip PEND from the LR so the guest
+         * only EOIs the active portion and the interrupt is not re-delivered
+         * while disabled. The PEND bit is preserved in interrupt->state so
+         * it is restored when the interrupt is re-enabled.
+         */
+        unsigned lr_state = !interrupt->enabled ? (state & (unsigned)~PEND) : state;
+        lr |= ((gic_lr_t)lr_state << GICH_LR_STATE_OFF) & GICH_LR_STATE_MSK;
     }
 
-    interrupt->state = (uint8_t)INV;
+    interrupt->state = !interrupt->enabled ? (uint8_t)(state & PEND) : (uint8_t)INV;
     interrupt->in_lr = true;
     interrupt->lr = (uint8_t)lr_ind;
     vcpu->arch.vgic_priv.curr_lrs[lr_ind] = interrupt->id;
@@ -301,7 +308,7 @@ bool vgic_remove_lr(struct vcpu* vcpu, struct vgic_int* interrupt)
     interrupt->in_lr = false;
 
     if (GICH_LR_STATE(lr_val) != INV) {
-        interrupt->state = (uint8_t)GICH_LR_STATE(lr_val);
+        interrupt->state = (uint8_t)(GICH_LR_STATE(lr_val) | (interrupt->state & PEND));
 #if (GIC_VERSION == GICV2)
         if (interrupt->id < GIC_MAX_SGIS) {
             if (interrupt->state & ACT) {
