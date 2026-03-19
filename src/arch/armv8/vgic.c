@@ -1128,18 +1128,28 @@ static void vgic_refill_lrs(struct vcpu* vcpu, bool npie)
 static void vgic_eoir_highest_spilled_active(struct vcpu* vcpu)
 {
     struct list* list = NULL;
-    struct vgic_int* interrupt = vgic_highest_prio_spilled(vcpu, ACT, &list);
+    struct vgic_int* interrupt;
 
+    spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
+    interrupt = vgic_highest_prio_spilled(vcpu, ACT, &list);
     if (interrupt != NULL) {
         spin_lock(&interrupt->lock);
         if (vgic_get_ownership(vcpu, interrupt)) {
-            interrupt->state &= (uint8_t)~ACT;
-            if (vgic_int_is_hw(interrupt)) {
-                gic_set_act(interrupt->id, false);
-            } else {
-                if (interrupt->state & PEND) {
-                    vgic_add_lr(vcpu, interrupt);
-                }
+            list_rm(list, &interrupt->node);
+        } else {
+            spin_unlock(&interrupt->lock);
+            interrupt = NULL;
+        }
+    }
+    spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
+
+    if (interrupt != NULL) {
+        interrupt->state &= (uint8_t)~ACT;
+        if (vgic_int_is_hw(interrupt)) {
+            gic_set_act(interrupt->id, false);
+        } else {
+            if (interrupt->state & PEND) {
+                vgic_add_lr(vcpu, interrupt);
             }
         }
         spin_unlock(&interrupt->lock);
