@@ -180,7 +180,12 @@ static void vgic_route(struct vcpu* vcpu, struct vgic_int* interrupt)
         vgic_add_lr(vcpu, interrupt);
     }
 
-    if (!interrupt->in_lr && vgic_int_has_other_target(vcpu, interrupt)) {
+    /**
+     * An active interrupt cannot be forwarded to another CPU — ownership
+     * cannot be yielded while the interrupt is active, so any IPI would
+     * be silently ignored by the recipient.
+     */
+    if (!interrupt->in_lr && !(interrupt->state & ACT) && vgic_int_has_other_target(vcpu, interrupt)) {
         struct cpu_msg msg = {
             (uint32_t)VGIC_IPI_ID,
             VGIC_ROUTE,
