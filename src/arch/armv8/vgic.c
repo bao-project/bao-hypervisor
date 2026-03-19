@@ -146,7 +146,16 @@ void vgic_send_sgi_msg(struct vcpu* vcpu, cpumap_t pcpu_mask, irqid_t int_id)
 
 static void vgic_route(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
-    if ((interrupt->state == INV) || !interrupt->enabled) {
+    if (interrupt->state == INV) {
+        return;
+    }
+
+    /**
+     * A disabled interrupt that is still active must be placed in an LR so
+     * the guest can EOI it directly, avoiding an unnecessary LRENP maintenance
+     * interrupt trap.
+     */
+    if (!interrupt->enabled && !(interrupt->state & ACT)) {
         return;
     }
 
@@ -315,7 +324,7 @@ bool vgic_add_lr(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
     bool ret = false;
 
-    if (!interrupt->enabled || interrupt->in_lr) {
+    if ((!interrupt->enabled && !(interrupt->state & ACT)) || interrupt->in_lr) {
         return ret;
     }
 
