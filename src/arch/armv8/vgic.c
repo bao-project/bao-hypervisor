@@ -144,6 +144,23 @@ void vgic_send_sgi_msg(struct vcpu* vcpu, cpumap_t pcpu_mask, irqid_t int_id)
     }
 }
 
+static void vgic_add_spilled(struct vcpu* vcpu, struct vgic_int* interrupt)
+{
+    spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
+    if (!interrupt->in_lr && !interrupt->in_spilled) {
+        struct list* spilled_list = NULL;
+        if (gic_is_priv(interrupt->id)) {
+            spilled_list = &vcpu->arch.vgic_spilled;
+        } else {
+            spilled_list = &vcpu->vm->arch.vgic_spilled;
+        }
+        list_push(spilled_list, (node_t*)interrupt);
+        interrupt->in_spilled = true;
+    }
+    spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
+    gich_set_hcr(gich_get_hcr() | GICH_HCR_NPIE_BIT);
+}
+
 static void vgic_route(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
     if (interrupt->state == INV) {
@@ -176,6 +193,15 @@ static void vgic_route(struct vcpu* vcpu, struct vgic_int* interrupt)
                 cpu_send_msg(i, &msg);
             }
         }
+    }
+
+    /**
+     * If the interrupt was not placed in an LR or forwarded to another CPU,
+     * track it in the spilled list so it gets injected when an LR slot
+     * becomes available.
+     */
+    if (!interrupt->in_lr && !interrupt->in_spilled) {
+        vgic_add_spilled(vcpu, interrupt);
     }
 }
 
@@ -290,20 +316,6 @@ bool vgic_remove_lr(struct vcpu* vcpu, struct vgic_int* interrupt)
     }
 
     return ret;
-}
-
-static void vgic_add_spilled(struct vcpu* vcpu, struct vgic_int* interrupt)
-{
-    spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
-    struct list* spilled_list = NULL;
-    if (gic_is_priv(interrupt->id)) {
-        spilled_list = &vcpu->arch.vgic_spilled;
-    } else {
-        spilled_list = &vcpu->vm->arch.vgic_spilled;
-    }
-    list_push(spilled_list, (node_t*)interrupt);
-    spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
-    gich_set_hcr(gich_get_hcr() | GICH_HCR_NPIE_BIT);
 }
 
 static void vgic_spill_lr(struct vcpu* vcpu, size_t lr_ind)
@@ -1107,6 +1119,7 @@ static void vgic_refill_lrs(struct vcpu* vcpu, bool npie)
             bool got_ownership = vgic_get_ownership(vcpu, irq);
             if (got_ownership) {
                 list_rm(list, &irq->node);
+                irq->in_spilled = false;
                 vgic_write_lr(vcpu, irq, (size_t)lr_ind);
             }
             spin_unlock(&irq->lock);
@@ -1136,6 +1149,7 @@ static void vgic_eoir_highest_spilled_active(struct vcpu* vcpu)
         spin_lock(&interrupt->lock);
         if (vgic_get_ownership(vcpu, interrupt)) {
             list_rm(list, &interrupt->node);
+            interrupt->in_spilled = false;
         } else {
             spin_unlock(&interrupt->lock);
             interrupt = NULL;
