@@ -218,13 +218,20 @@ void gicd_set_route(irqid_t int_id, uint64_t route)
 
 void gic_send_sgi(cpuid_t cpu_target, irqid_t sgi_num)
 {
-    if (sgi_num < GIC_MAX_SGIS) {
-        unsigned long mpidr = cpu_id_to_mpidr(cpu_target) & MPIDR_AFF_MSK;
-        /* We only support two affinity levels */
-        uint64_t sgi = (MPIDR_AFF_LVL(mpidr, 1) << ICC_SGIR_AFF1_OFFSET) |
-            (1UL << MPIDR_AFF_LVL(mpidr, 0)) | (sgi_num << ICC_SGIR_SGIINTID_OFF);
-        sysreg_icc_sgi1r_el1_write(sgi);
+    if (sgi_num >= GIC_MAX_SGIS) {
+        return;
     }
+
+    uint64_t mpidr = cpu_id_to_mpidr(cpu_target);
+
+    uint64_t aff0 = MPIDR_AFF_LVL(mpidr, 0);
+    uint64_t aff1 = MPIDR_AFF_LVL(mpidr, 1);
+    uint64_t aff2 = MPIDR_AFF_LVL(mpidr, 2);
+
+    uint64_t sgi = (aff2 << ICC_SGIR_AFF2_OFFSET) | (aff1 << ICC_SGIR_AFF1_OFFSET) |
+        ((uint64_t)sgi_num << ICC_SGIR_SGIINTID_OFF) | (1UL << aff0);
+
+    sysreg_icc_sgi1r_el1_write(sgi);
 }
 
 void gic_set_prio(irqid_t int_id, uint8_t prio)
