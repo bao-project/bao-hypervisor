@@ -8,36 +8,70 @@
 
 unsigned long platform_arch_cpuid_to_mpidr(const struct platform* plat, cpuid_t cpuid)
 {
-    if (cpuid > plat->cpu_num) {
-        return ~(~MPIDR_RES1 & MPIDR_RES0_MSK); // return an invlid mpidr by inverting res bits
+    if (cpuid >= plat->cpu_num) {
+        return ~(~MPIDR_RES1 & MPIDR_RES0_MSK);
     }
 
     unsigned long mpidr = 0;
-    bool found = false;
+
+    /* Prefer MPIDR table if available */
+    if (plat->arch.mpidr_table.table != NULL) {
+        mpidr = plat->arch.mpidr_table.table[cpuid];
+
+        mpidr |= MPIDR_RES1;
+
+        if (plat->cpu_num == 1) {
+            mpidr |= MPIDR_U_BIT;
+        }
+
+        return mpidr;
+    }
+
+    /* SoCs use a uniform topology; use current CPU MT bit */
+    unsigned long cur_mpidr = sysreg_mpidr_el1_read();
+    bool has_mt = (cur_mpidr & MPIDR_MT_BIT) != 0;
+
+    /* Use cluster topology if available */
     if (plat->arch.clusters.num > 0) {
-        for (size_t i = 0, j = 0; i < plat->arch.clusters.num; i++) {
-            if (cpuid < (j + plat->arch.clusters.core_num[i])) {
-                mpidr = (i << 8) | ((cpuid - j) & 0xff);
-                found = true;
-                break;
+        size_t base = 0;
+
+        for (size_t cluster = 0; cluster < plat->arch.clusters.num; cluster++) {
+            size_t cores = plat->arch.clusters.core_num[cluster];
+
+            if (cpuid < base + cores) {
+                unsigned long core = cpuid - base;
+
+                if (has_mt) {
+                    mpidr = (cluster << 16) | (core << 8);
+                } else {
+                    mpidr = (cluster << 8) | (core & 0xff);
+                }
+
+                goto done;
             }
 
-            j += plat->arch.clusters.core_num[i];
+            base += cores;
         }
 
-        if (!found) {
-            ERROR("failed cpuid to mpidr translation\n");
-        }
+        ERROR("failed cpuid to mpidr translation\n");
+    }
+
+    if (has_mt) {
+        mpidr = (cpuid << 8);
     } else {
-        /**
-         * No cluster information in configuration. Assume a singl cluster.
-         */
         mpidr = cpuid;
     }
 
+done:
+
     mpidr |= MPIDR_RES1;
+
     if (plat->cpu_num == 1) {
         mpidr |= MPIDR_U_BIT;
+    }
+
+    if (has_mt) {
+        mpidr |= MPIDR_MT_BIT;
     }
 
     return mpidr;
