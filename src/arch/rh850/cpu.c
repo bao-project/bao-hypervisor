@@ -77,12 +77,12 @@ void cpu_arch_standby()
 {
     snooze();
     reset_stack_and_jump(&cpu()->stack[STACK_SIZE], cpu_standby_wakeup);
-    ERROR("returned from standby wake up");
+    ERROR("returned from standby wake up\n");
 }
 
 void cpu_arch_powerdown()
 {
     snooze();
     reset_stack_and_jump(&cpu()->stack[STACK_SIZE], cpu_powerdown_wakeup);
-    ERROR("returned from powerdown wake up");
+    ERROR("returned from powerdown wake up\n");
 }

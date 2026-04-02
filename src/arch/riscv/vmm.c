@@ -30,7 +30,7 @@ void vmm_arch_init()
         csrs_henvcfg_set(HENVCFG_STCE);
         bool sstc_present = (csrs_henvcfg_read() & HENVCFG_STCE) != 0;
         if (cpu_is_master() && !sstc_present) {
-            ERROR("Platform configured to use Sstc extension, but extension not present.");
+            ERROR("Platform configured to use Sstc extension, but extension not present.\n");
         }
         // Set stimecmp to infinity in case we enable the stimer interrupt somewhere else
         // and fail to set the timer to a point in the future.

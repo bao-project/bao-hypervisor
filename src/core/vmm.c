@@ -110,7 +110,7 @@ static struct vm_allocation* vmm_alloc_install_vm(vmid_t vm_id, bool master)
     struct vm_config* vm_config = &config.vmlist[vm_id];
     if (master) {
         if (!vmm_alloc_vm(vm_alloc, vm_config)) {
-            ERROR("Failed to allocate vm internal structures");
+            ERROR("Failed to allocate vm internal structures\n");
         }
         vm_assign[vm_id].vm_install_info = vmm_get_vm_install_info(vm_alloc);
         fence_ord_write();

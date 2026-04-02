@@ -223,7 +223,7 @@ bool decode_32b_access(unsigned long ins, struct emul_access* emul)
 
         case 0xD5:
             /* ST.T */
-            WARNING("ST.T (store bit) emulation is not yet supported");
+            WARNING("ST.T (store bit) emulation is not yet supported\n");
             break;
 
         default:

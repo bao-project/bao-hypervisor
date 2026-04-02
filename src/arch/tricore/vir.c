@@ -31,12 +31,12 @@ static void vir_emul_src_access(struct emul_access* acc, struct vcpu* vcpu, unsi
         uint32_t orig_tos = IR_SRC_GET_TOS(orig);
 
         if (tos > PLAT_CPU_NUM) {
-            WARNING("TOS must belong to CPUs!");
+            WARNING("TOS must belong to CPUs!\n");
             return;
         }
 
         if (orig_tos != SRC_TOS_UNASSIGNED && tos != cpu()->id) {
-            WARNING("TOS is already set up (%d)!", orig_tos);
+            WARNING("TOS is already set up (%d)!\n", orig_tos);
             return;
         }
 
@@ -66,7 +66,7 @@ static bool vir_src_emul_handler(struct emul_access* acc)
     uint32_t irqid = (addr - platform.arch.ir.src_addr) / sizeof(ir_src->SRC[0]);
 
     if (!vm_has_interrupt(cpu()->vcpu->vm, irqid)) {
-        ERROR("Access to unsigned interrupt %u", irqid);
+        ERROR("Access to unsigned interrupt %u\n", irqid);
         return false;
     }
 
@@ -79,7 +79,7 @@ void vir_inject(struct vcpu* vcpu, irqid_t id)
     struct vm* vm = vcpu->vm;
 
     if (!vm_has_interrupt(vm, id)) {
-        ERROR("VM tried to access unassigned interrupt");
+        ERROR("VM tried to access unassigned interrupt\n");
     }
 
     ir_set_pend(id);
@@ -105,7 +105,7 @@ void vir_vcpu_init(struct vcpu* vcpu)
 {
     uint32_t vmid = VMID_TO_HWVM(vcpu->vm->id);
     if (vmid > VM_ARCH_MAX_NUM) {
-        ERROR("Unsuported vm id %u > %u", vmid, VM_ARCH_MAX_NUM);
+        ERROR("Unsuported vm id %u > %u\n", vmid, VM_ARCH_MAX_NUM);
         return;
     }
     ir_assign_icu_to_vm(cpu()->id, vmid);

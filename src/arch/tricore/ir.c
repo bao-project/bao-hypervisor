@@ -96,7 +96,7 @@ void ir_cpu_init(void)
 bool ir_get_pend(irqid_t int_id)
 {
     if (!ir_id_valid(int_id)) {
-        ERROR("%s Invalid interrupt %u", __func__, int_id);
+        ERROR("%s Invalid interrupt %u\n", __func__, int_id);
     }
     bool pending = IR_SRC_GET_SRR(ir_src->SRC[int_id]) != 0;
 
@@ -106,7 +106,7 @@ bool ir_get_pend(irqid_t int_id)
 bool ir_set_pend(irqid_t int_id)
 {
     if (!ir_id_valid(int_id)) {
-        ERROR("%s Invalid interrupt %u", __func__, int_id);
+        ERROR("%s Invalid interrupt %u\n", __func__, int_id);
         return false;
     }
     IR_SRC_SET_SETR(ir_src->SRC[int_id], true);
@@ -117,7 +117,7 @@ bool ir_set_pend(irqid_t int_id)
 bool ir_clr_pend(irqid_t int_id)
 {
     if (!ir_id_valid(int_id)) {
-        ERROR("%s Invalid interrupt %u", __func__, int_id);
+        ERROR("%s Invalid interrupt %u\n", __func__, int_id);
     }
     IR_SRC_SET_CLRR(ir_src->SRC[int_id], 1);
 
@@ -138,7 +138,7 @@ void ir_send_ipi(cpuid_t target_cpu)
 {
     if (ipi_initialized) {
         if (target_cpu >= PLAT_CPU_NUM) {
-            ERROR("%s invalid cpu number %u", target_cpu, __func__);
+            ERROR("%s invalid cpu number %u\n", target_cpu, __func__);
         }
         /* We previously configure interrupts for each CPU */
         ir_int->SRB[HYP_GPSR_GROUP] = 0x1UL << target_cpu;
@@ -159,7 +159,7 @@ void ir_assign_icu_to_vm(cpuid_t cpuid, vmid_t vmid)
 bool ir_src_enable(irqid_t id, bool en)
 {
     if (!ir_id_valid(id)) {
-        ERROR("%s Invalid interrupt %u", __func__, id);
+        ERROR("%s Invalid interrupt %u\n", __func__, id);
         return false;
     }
 
@@ -173,7 +173,7 @@ unsigned long ir_src_get_node(irqid_t id)
     unsigned long val = 0;
 
     if (!ir_id_valid(id)) {
-        ERROR("%s Invalid interrupt %u", __func__, id);
+        ERROR("%s Invalid interrupt %u\n", __func__, id);
         return IR_INVALID_NODE;
     }
 
@@ -185,7 +185,7 @@ unsigned long ir_src_get_node(irqid_t id)
 bool ir_src_set_node(irqid_t id, unsigned long val)
 {
     if (!ir_id_valid(id)) {
-        ERROR("%s Invalid interrupt %u", __func__, id);
+        ERROR("%s Invalid interrupt %u\n", __func__, id);
         return false;
     }
 

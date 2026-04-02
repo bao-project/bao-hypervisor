@@ -16,7 +16,7 @@ void clock_init(void)
     vaddr_t clk_iso_ptr = mem_alloc_map_dev(&cpu()->as, SEC_HYP_PRIVATE, INVALID_VA,
         (paddr_t)(PLAT_CLK_ISO_BASE), NUM_PAGES(sizeof(struct clk_ctl_iso_hw)));
     if (clk_iso_ptr == INVALID_VA) {
-        ERROR("Maping clock ISO area failed");
+        ERROR("Maping clock ISO area failed\n");
     }
     clk_ctl_iso = (struct clk_ctl_iso_hw*)clk_iso_ptr;
 
@@ -24,7 +24,7 @@ void clock_init(void)
     vaddr_t clk_awo_ptr = mem_alloc_map_dev(&cpu()->as, SEC_HYP_PRIVATE, INVALID_VA,
         (paddr_t)(PLAT_CLK_AWO_BASE), NUM_PAGES(sizeof(struct clk_ctl_awo_hw)));
     if (clk_awo_ptr == INVALID_VA) {
-        ERROR("maping clock AWO area failed");
+        ERROR("maping clock AWO area failed\n");
     }
     clk_ctl_awo = (struct clk_ctl_awo_hw*)clk_awo_ptr;
 

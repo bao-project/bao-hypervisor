@@ -262,7 +262,7 @@ static void vaplic_ipi_handler(uint32_t event, uint64_t data)
             vaplic_update_hart(cpu()->vcpu, (size_t)data, INVALID_IRQID);
             break;
         default:
-            WARNING("Unknown VAPLIC IPI event");
+            WARNING("Unknown VAPLIC IPI event\n");
             break;
     }
 }

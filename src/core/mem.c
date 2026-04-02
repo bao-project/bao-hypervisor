@@ -504,7 +504,7 @@ __attribute__((weak)) void mem_color_hypervisor(const paddr_t load_addr,
     UNUSED_ARG(root_region);
 
     WARNING("Trying to color hypervisor, but implementation does not suuport "
-            "it");
+            "it\n");
 }
 
 __attribute__((weak)) bool mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages,
@@ -516,7 +516,7 @@ __attribute__((weak)) bool mem_map_reclr(struct addr_space* as, vaddr_t va, stru
     UNUSED_ARG(num_pages);
     UNUSED_ARG(flags);
 
-    ERROR("Trying to recolor section but there is no coloring implementation");
+    ERROR("Trying to recolor section but there is no coloring implementation\n");
 }
 
 __attribute__((weak)) bool pp_alloc_clr(struct page_pool* pool, size_t num_pages, colormap_t colors,
@@ -528,7 +528,7 @@ __attribute__((weak)) bool pp_alloc_clr(struct page_pool* pool, size_t num_pages
     UNUSED_ARG(ppages);
 
     ERROR("Trying to allocate colored pages but there is no coloring "
-          "implementation");
+          "implementation\n");
 }
 
 struct ppages mem_alloc_ppages(colormap_t colors, size_t num_pages, bool aligned)
@@ -556,7 +556,7 @@ void mem_init(void)
         cache_enumerate();
 
         if (!mem_setup_root_pool(&root_mem_region)) {
-            ERROR("couldn't not initialize root pool");
+            ERROR("couldn't not initialize root pool\n");
         }
 
         /* Insert root pool in pool list */
@@ -578,11 +578,11 @@ void mem_init(void)
 
     if (cpu_is_master()) {
         if (!mem_create_ppools(root_mem_region)) {
-            ERROR("couldn't create additional page pools");
+            ERROR("couldn't create additional page pools\n");
         }
 
         if (!mem_check_reserved()) {
-            ERROR("Failed to reserved static allocated memory");
+            ERROR("Failed to reserved static allocated memory\n");
         }
     }
 

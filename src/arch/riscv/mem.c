@@ -27,7 +27,7 @@ static inline void as_map_physical_identity(struct addr_space* as)
         size_t num_entries = ((top - base - 1) / lvl_size) + 1;
 
         if (DEFINED(RV32) && ((reg->base + reg->size - 1) >= BAO_VAS_BASE)) {
-            ERROR("Physical memory layout not supported for RV32. FIXME!");
+            ERROR("Physical memory layout not supported for RV32. FIXME!\n");
         }
 
         paddr_t addr = base;
