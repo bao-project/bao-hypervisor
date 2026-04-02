@@ -159,13 +159,13 @@ gens+=$(asm_defs_hdr)
 config_build_dir:=$(build_dir)/config
 platform_build_dir:=$(build_dir)/platform
 scripts_build_dir:=$(build_dir)/scripts
-directories+=$(config_build_dir) $(platform_build_dir) $(scripts_build_dir)
+directories+=$(config_build_dir) $(config_build_dir)/inc $(platform_build_dir) $(scripts_build_dir)
 
 config_def_generator_src:=$(scripts_dir)/config_defs_gen.c
 config_def_generator:=$(scripts_build_dir)/config_defs_gen
-config_defs:=$(config_build_dir)/config_defs_gen.h
+config_defs:=$(config_build_dir)/inc/config_defs_gen.h
 gens+=$(config_def_generator) $(config_defs)
-inc_dirs+=$(config_build_dir)
+inc_dirs+=$(config_build_dir)/inc
 
 platform_def_generator_src:=$(scripts_dir)/platform_defs_gen.c
 platform_arch_def_generator_src:=$(wildcard $(scripts_dir)/arch/$(ARCH)/platform_defs_gen.c)
@@ -198,13 +198,13 @@ objs-y:=$(patsubst $(cur_dir)%, $(build_dir)%, $(objs-y))
 
 # Config objects already reside in config_build_dir so they must be added after
 # the cur_dir→build_dir remapping to avoid double-expanding the build path.
-# Absolute-path entries are mapped under build_dir preserving the full path.
+# Absolute-path entries go under config_build_dir/external/ preserving the full path.
 config_rel_objs-y:=$(filter-out /%, $(config-objs-y))
 config_abs_objs-y:=$(filter /%, $(config-objs-y))
 deps+=$(patsubst %.o,%.d,$(addprefix $(config_build_dir)/, $(config_rel_objs-y)))
-deps+=$(patsubst %.o,%.d,$(addprefix $(build_dir), $(config_abs_objs-y)))
+deps+=$(patsubst %.o,%.d,$(addprefix $(config_build_dir)/external, $(config_abs_objs-y)))
 objs-y+=$(addprefix $(config_build_dir)/, $(config_rel_objs-y))
-objs-y+=$(addprefix $(build_dir), $(config_abs_objs-y))
+objs-y+=$(addprefix $(config_build_dir)/external, $(config_abs_objs-y))
 
 # Now we add all object files directories to the directories list so they can be
 # created later
@@ -339,6 +339,12 @@ $(build_dir)/%.d : $(config_dir)/%.[c,S]
 # Dep rule for config-objs-y routed directly into config_build_dir.
 # The stem maps directly to config_dir so out-of-tree sources are found correctly.
 $(config_build_dir)/%.d : $(config_dir)/%.[c,S]
+	@echo "Creating dependency	$(patsubst $(cur_dir)/%,%, $<)"
+	@$(cc) $(CFLAGS) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $< > $@
+
+# Dep rule for absolute-path config-objs-y, placed under config_build_dir/external/.
+# No slash after 'external' so the stem captures the full absolute source path.
+$(config_build_dir)/external%.d : %.[c,S]
 	@echo "Creating dependency	$(patsubst $(cur_dir)/%,%, $<)"
 	@$(cc) $(CFLAGS) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $< > $@
 
