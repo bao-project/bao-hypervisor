@@ -1,12 +1,9 @@
 [submodule "ci"]
 	path = ci
 	url = git@github.com:bao-project/bao-ci.git
-[submodule "tests/bao-tests"]
-	path = tests/bao-tests
-	url = https://github.com/bao-project/bao-tests.git
-[submodule "tests/bao-nix"]
-	path = tests/bao-nix
-	url = https://github.com/bao-project/bao-nix.git
-[submodule "tests/bao-benchmarks"]
-	path = tests/bao-benchmarks
+[submodule "tests/tf"]
+	path = tests/tf
+	url = https://github.com/bao-project/bao-tf.git
+[submodule "tests/benchs"]
+	path = tests/benchs
 	url = git@github.com:osyxtechnologies/bao-benchmarks.git
