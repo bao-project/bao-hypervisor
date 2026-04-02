@@ -113,7 +113,7 @@ void vipir_init(struct vm* vm)
         for (irqid_t i = IPIR_CH0_IRQ_ID; i < (IPIR_CH0_IRQ_ID + IPIR_NUM_CHANNELS); i++) {
             if (i != IPI_HYP_IRQ_ID) {
                 if (!interrupts_vm_assign(vm, i)) {
-                    ERROR("Failed to reserve VM IPIR channel interrupt");
+                    ERROR("Failed to reserve VM IPIR channel interrupt\n");
                 }
             }
         }

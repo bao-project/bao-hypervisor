@@ -39,7 +39,7 @@ void interrupts_arch_ipi_init(void)
         for (int i = 0; i < PLAT_CPU_NUM; i++) {
             if (interrupts_reserve((irqid_t)(IPI_CPU_MSG + i), (irq_handler_t)cpu_msg_handler) ==
                 INVALID_IRQID) {
-                ERROR("Failed to reserve IPI_CPU_MSG interrupt");
+                ERROR("Failed to reserve IPI_CPU_MSG interrupt\n");
             }
         }
     }
@@ -76,7 +76,7 @@ void interrupts_arch_vm_assign(struct vm* vm, irqid_t id)
 {
     uint32_t vmid = VMID_TO_HWVM(vm->id);
     if (vmid > VM_ARCH_MAX_NUM) {
-        ERROR("Unsuported vm id %u > %u", vmid, VM_ARCH_MAX_NUM);
+        ERROR("Unsuported vm id %u > %u\n", vmid, VM_ARCH_MAX_NUM);
         return;
     }
 

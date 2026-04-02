@@ -206,7 +206,7 @@ void sbi_msg_handler(uint32_t event, uint64_t data)
             spin_unlock(&cpu()->vcpu->arch.sbi_ctx.lock);
         } break;
         default:
-            WARNING("unknown sbi msg");
+            WARNING("unknown sbi msg\n");
             break;
     }
 }
@@ -306,7 +306,7 @@ static struct sbiret sbi_rfence_handler(unsigned long fid)
     const size_t hart_mask_width = sizeof(hart_mask) * 8;
     if ((hart_mask_base != 0) &&
         ((hart_mask_base >= hart_mask_width) || ((hart_mask << hart_mask_base) == 0))) {
-        WARNING("sbi invalid hart_mask");
+        WARNING("sbi invalid hart_mask\n");
         return (struct sbiret){ SBI_ERR_INVALID_PARAM, 0 };
     }
 
@@ -479,7 +479,7 @@ size_t sbi_vs_handler()
             ret = sbi_bao_handler(fid);
             break;
         default:
-            WARNING("guest issued unsupport sbi extension call (%d)", extid);
+            WARNING("guest issued unsupport sbi extension call (%d)\n", extid);
             ret.error = SBI_ERR_NOT_SUPPORTED;
     }
 
@@ -496,18 +496,18 @@ void sbi_init()
     ret = sbi_get_spec_version();
 
     if (ret.error != SBI_SUCCESS || ret.value < 2) {
-        ERROR("not supported SBI spec version: 0x%x", ret.value);
+        ERROR("not supported SBI spec version: 0x%x\n", ret.value);
     }
 
     for (size_t i = 0; i < NUM_EXT; i++) {
         ret = sbi_probe_extension(ext_table[i]);
         if (ret.error != SBI_SUCCESS || ret.value == 0) {
-            ERROR("sbi does not support ext 0x%x", ext_table[i]);
+            ERROR("sbi does not support ext 0x%x\n", ext_table[i]);
         }
     }
 
     irqc_timer_int_id = interrupts_reserve(TIMR_INT_ID, (irq_handler_t)sbi_timer_irq_handler);
     if (irqc_timer_int_id == INVALID_IRQID) {
-        ERROR("Failed to reserve SBI TIMR_INT_ID interrupt");
+        ERROR("Failed to reserve SBI TIMR_INT_ID interrupt\n");
     }
 }

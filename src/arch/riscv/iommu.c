@@ -173,21 +173,21 @@ static void rv_iommu_check_features(void)
     uint64_t version = bit64_extract(caps, RV_IOMMU_CAPS_VERSION_OFF, RV_IOMMU_CAPS_VERSION_LEN);
 
     if (version != RV_IOMMU_SUPPORTED_VERSION) {
-        ERROR("RISC-V IOMMU unsupported version: %d", version);
+        ERROR("RISC-V IOMMU unsupported version: %d\n", version);
     }
 
     if (!(caps & RV_IOMMU_CAPS_SV39X4_BIT)) {
-        ERROR("RISC-V IOMMU HW does not support Sv39x4");
+        ERROR("RISC-V IOMMU HW does not support Sv39x4\n");
     }
 
     if (!(caps & RV_IOMMU_CAPS_MSI_FLAT_BIT)) {
         WARNING("RISC-V IOMMU HW does not support MSI Address Translation "
-                "(basic-translate mode)");
+                "(basic-translate mode)\n");
     }
 
     uint64_t igs = bit64_extract(caps, RV_IOMMU_CAPS_IGS_OFF, RV_IOMMU_CAPS_IGS_LEN);
     if (!igs) {
-        ERROR("RISC-V IOMMU HW does not support WSI generation");
+        ERROR("RISC-V IOMMU HW does not support WSI generation\n");
     }
 }
 
@@ -203,19 +203,19 @@ static void rv_iommu_fq_irq_handler(irqid_t irq_id)
 
     // Signal error if fip not set
     if (!(ipsr & RV_IOMMU_IPSR_FIP_BIT)) {
-        ERROR("FQ IRQ handler triggered due to non-FQ interrupt");
+        ERROR("FQ IRQ handler triggered due to non-FQ interrupt\n");
     }
 
     // Read fqcsr error bits and report if any is set
     uint32_t fqcsr = rv_iommu.hw.reg_ptr->fqcsr;
     if (fqcsr & (RV_IOMMU_XQCSR_MF_BIT | RV_IOMMU_FQCSR_OF_BIT)) {
         if (fqcsr & RV_IOMMU_XQCSR_MF_BIT) {
-            WARNING("RV IOMMU: FQ Memory Fault error!");
+            WARNING("RV IOMMU: FQ Memory Fault error!\n");
             // TODO: MF management
         }
 
         if (fqcsr & RV_IOMMU_FQCSR_OF_BIT) {
-            WARNING("RV IOMMU: FQ Full!");
+            WARNING("RV IOMMU: FQ Full!\n");
             // TODO: OF Management
         }
 
@@ -232,7 +232,7 @@ static void rv_iommu_fq_irq_handler(irqid_t irq_id)
 
     while (fqh != fqt) {
         struct fq_entry record = rv_iommu.hw.fq[fqh];
-        WARNING("RV IOMMU FQ: CAUSE: %d | DID: %d | iotval: %x | iotval2: %x",
+        WARNING("RV IOMMU FQ: CAUSE: %d | DID: %d | iotval: %x | iotval2: %x\n",
             bit64_extract(record.tags, RV_IOMMU_FQ_CAUSE_OFF, RV_IOMMU_FQ_CAUSE_LEN),
             bit64_extract(record.tags, RV_IOMMU_FQ_DID_OFF, RV_IOMMU_FQ_DID_LEN), record.iotval,
             record.iotval2);
@@ -287,7 +287,7 @@ static void rv_iommu_init(void)
     // Allocate IRQ for FQ
     irqid_t fd_irq_id = interrupts_reserve(platform.arch.iommu.fq_irq_id, rv_iommu_fq_irq_handler);
     if (fd_irq_id == INVALID_IRQID) {
-        ERROR("Failed to reserve IOMMU FQ interrupt");
+        ERROR("Failed to reserve IOMMU FQ interrupt\n");
     }
 
     interrupts_cpu_enable(fd_irq_id, true);
@@ -351,7 +351,7 @@ static void rv_iommu_write_ddt(deviceid_t dev_id, struct vm* vm, paddr_t root_pt
 {
     spin_lock(&rv_iommu.ddt_lock);
     if (!bitmap_get(rv_iommu.ddt_bitmap, dev_id)) {
-        ERROR("IOMMU DC %d is not allocated", dev_id);
+        ERROR("IOMMU DC %d is not allocated\n", dev_id);
     } else {
         // Configure DC
         uint64_t tc = 0;
@@ -409,11 +409,11 @@ static bool iommu_vm_arch_add(struct vm* vm, deviceid_t dev_id)
             // Set DDT entry with root PT base address, VMID and configuration
             rv_iommu_write_ddt(dev_id, vm, rootpt);
         } else {
-            INFO("RV IOMMU: Cannot add one device ID (%d) twice", dev_id);
+            INFO("RV IOMMU: Cannot add one device ID (%d) twice\n", dev_id);
             return false;
         }
     } else {
-        INFO("RV IOMMU: Invalid device ID: %d", dev_id);
+        INFO("RV IOMMU: Invalid device ID: %d\n", dev_id);
         return false;
     }
 

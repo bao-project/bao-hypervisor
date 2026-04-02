@@ -29,7 +29,7 @@ static void vm_ipi_init(struct vm* vm, const struct vm_config* vm_config)
     for (unsigned long int i = 0; i < vm_config->platform.arch.gpsr_num; i++) {
         unsigned long group = (unsigned long)vm_config->platform.arch.gpsr_groups[i];
         if (group == 0) {
-            ERROR("GPSR group 0 is reserved for Bao internal use.");
+            ERROR("GPSR group 0 is reserved for Bao internal use.\n");
         }
         // We need to clear the group 1st because it allows access to everyone by default
         ir_clear_gpsr_group(group);
@@ -81,7 +81,7 @@ unsigned long vcpu_readreg(struct vcpu* vcpu, unsigned long reg)
     unsigned long reg_num = a_reg ? reg : reg - CSA_SIZE;
 
     if (reg > 32 || reg_num > CSA_SIZE) {
-        ERROR("Trying to access out-of-bound registers.");
+        ERROR("Trying to access out-of-bound registers.\n");
     }
 
     unsigned long ret = 0;
@@ -125,7 +125,7 @@ void vcpu_writereg(struct vcpu* vcpu, unsigned long reg, unsigned long val)
     unsigned long reg_num = a_reg ? reg : reg - CSA_SIZE;
 
     if (reg > 32 || reg_num > CSA_SIZE) {
-        ERROR("Trying to access out-of-bound registers.");
+        ERROR("Trying to access out-of-bound registers.\n");
     }
 
     if (a_reg && a_lut[reg_num] == NOT_IN_CSA) {
@@ -200,7 +200,7 @@ void vm_arch_allow_mmio_access(struct vm* vm, struct vm_dev_region* dev)
     const struct plat_device* pdev = vm_find_platform_device(dev);
 
     if (pdev == NULL) {
-        ERROR("Device 0x%x not found", dev->pa);
+        ERROR("Device 0x%x not found\n", dev->pa);
     }
 
     for (unsigned long apu = 0; apu < pdev->apu_num; apu++) {

@@ -26,7 +26,7 @@ unsigned long platform_arch_cpuid_to_mpidr(const struct platform* plat, cpuid_t 
         }
 
         if (!found) {
-            ERROR("failed cpuid to mpidr translation");
+            ERROR("failed cpuid to mpidr translation\n");
         }
     } else {
         /**

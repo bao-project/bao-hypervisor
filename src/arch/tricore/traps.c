@@ -29,7 +29,7 @@ void sys_bus_errors_handler(void)
     unsigned long ret = 0;
 
     if (vmid >= config.vmlist_size) {
-        ERROR("Trying to access config.vmlist out-of-bounds")
+        ERROR("Trying to access config.vmlist out-of-bounds\n")
     }
 
     for (unsigned long i = 0; i < config.vmlist[vmid].platform.dev_num; i++) {
@@ -42,7 +42,7 @@ void sys_bus_errors_handler(void)
     }
 
     if (!ret) {
-        ERROR("vm accesing a device it doesn't own or trying to acccess a PROT/APU/CLC register");
+        ERROR("vm accesing a device it doesn't own or trying to acccess a PROT/APU/CLC register\n");
     }
 }
 
@@ -86,11 +86,11 @@ void l2_dmem_prot_trap_handler(unsigned long* instr_addr, unsigned long is_write
             emul.write = !!is_write;
             emul.sign_ext = false;
             if (!handler(&emul)) {
-                ERROR("register access emulation failed (0x%x)", addr);
+                ERROR("register access emulation failed (0x%x)\n", addr);
             }
         }
     } else {
-        ERROR("No emulation handler for access to 0x%x, at 0x%x", addr, vcpu_readpc(cpu()->vcpu));
+        ERROR("No emulation handler for access to 0x%x, at 0x%x\n", addr, vcpu_readpc(cpu()->vcpu));
     }
 }
 
@@ -133,7 +133,7 @@ static bool csfr_emul_handler(struct emul_access* emul, unsigned long csfr)
             ret = csfr_dcon0_emul_handler(emul);
             break;
         default:
-            WARNING("Emulation of csfr 0x%x is not yet implemented", csfr);
+            WARNING("Emulation of csfr 0x%x is not yet implemented\n", csfr);
             break;
     }
     return ret;
@@ -160,7 +160,7 @@ void hyp_csfr_access_handler(unsigned long* instr_addr, unsigned long hvtin)
     fence_sync();
 
     if (!csfr_emul_handler(&emul, csfr)) {
-        ERROR("CSFR emulation failed at 0x%x", instr_addr);
+        ERROR("CSFR emulation failed at 0x%x\n", instr_addr);
     }
     vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + 4);
 }

@@ -36,7 +36,7 @@ void cpu_arch_standby()
     __asm__ volatile("mov sp, %0\n\r"
                      "b cpu_standby_wakeup\n\r" ::"r"(&cpu()->stack[STACK_SIZE]));
 
-    ERROR("returned from standby wake up");
+    ERROR("returned from standby wake up\n");
 }
 
 void cpu_arch_powerdown()
@@ -51,5 +51,5 @@ void cpu_arch_powerdown()
     __asm__ volatile("mov sp, %0\n\r"
                      "b cpu_powerdown_wakeup\n\r" ::"r"(&cpu()->stack[STACK_SIZE]));
 
-    ERROR("returned from powerdown wake up");
+    ERROR("returned from powerdown wake up\n");
 }

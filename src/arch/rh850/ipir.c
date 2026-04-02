@@ -36,13 +36,13 @@ void ipir_init(void)
         vaddr_t ipir_ptr = mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
             platform.arch.ipir_addr, NUM_PAGES(sizeof(struct ipir_hw)));
         if (ipir_ptr == INVALID_VA) {
-            ERROR("Mapping IPIR failed");
+            ERROR("Mapping IPIR failed\n");
         }
         ipir = (struct ipir_hw*)ipir_ptr;
 
         interrupts_ipi_id = interrupts_reserve(IPI_HYP_IRQ_ID, ipir_handle);
         if (interrupts_ipi_id == INVALID_IRQID) {
-            ERROR("Failed to reserve IPIR interrupt");
+            ERROR("Failed to reserve IPIR interrupt\n");
         }
 
         ipir_ready = true;
