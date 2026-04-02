@@ -1,6 +1,6 @@
 # Bao Test Framework
 
-### Prerequesites 
+### Prerequesites
 If you prefer not to use Docker or Nix, you can install the required dependencies manually:
 ```sh
 sudo apt-get update && sudo apt-get install -y \

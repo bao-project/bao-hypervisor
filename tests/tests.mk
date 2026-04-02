@@ -10,7 +10,7 @@ ECHO?=tf
 SETUP?=baremetal
 TEST?=boot
 
-irq_flags:= 
+irq_flags:=
 
 ifdef GIC_VERSION
 irq_flags+=-gicv
