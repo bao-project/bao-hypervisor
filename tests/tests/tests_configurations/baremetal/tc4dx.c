@@ -3,12 +3,12 @@
 VM_IMAGE(baremetal_image, XSTR(BAO_WRKDIR_IMGS/baremetal.bin))
 
 struct config config = {
-    
-.vmlist_size = 1,        
+
+.vmlist_size = 1,
         //.hyp.base_addr = 0xA0000000,
 
         .vmlist = (struct vm_config[]){
-            {       
+            {
                 .image = {
                     .base_addr = 0x90100000, //TODO
                     .load_addr = VM_IMAGE_OFFSET(baremetal_image),

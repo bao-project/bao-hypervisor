@@ -16,7 +16,7 @@ BAO_TEST(BOOT_CHECK, VM_BOOT)
     }
 }
 
-BAO_TEST(BOOT_CHECK, CPU_BOOT) 
+BAO_TEST(BOOT_CHECK, CPU_BOOT)
 {
     int cpu_id = get_cpuid();
     spin_lock(&boot_status_lock);

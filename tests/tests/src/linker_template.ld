@@ -7,7 +7,7 @@
 #include <plat.h>
 
 MEMORY {
-    RAM (rwx)    : ORIGIN = PLAT_MEM_BASE, LENGTH = PLAT_MEM_SIZE    
+    RAM (rwx)    : ORIGIN = PLAT_MEM_BASE, LENGTH = PLAT_MEM_SIZE
 }
 
 ENTRY(_start)
@@ -16,11 +16,11 @@ SECTIONS {
 
     .start : {
         *(.start)
-    } 
+    }
 
     .text :  {
         *(.text*)
-    } 
+    }
 
     .rodata :  {
         *(.rodata*)
@@ -36,13 +36,13 @@ SECTIONS {
         testframework_start = . ;
         *(.testframework.PRIO* .testframework.prio*)
         *(.testframework.*)
-        testframework_end = . ;        
+        testframework_end = . ;
     }
-    
-    .bss (NOLOAD) :  {	
+
+    .bss (NOLOAD) :  {
         __bss_start = .;
-        *(.bss* .sbss*) 
-        *(COMMON)	
+        *(.bss* .sbss*)
+        *(COMMON)
         __bss_end = .;
     }
 

@@ -1,4 +1,4 @@
-#  Copyright (c) Bao Project and Contributors. All rights reserved  
+#  Copyright (c) Bao Project and Contributors. All rights reserved
 #  SPDX-License-Identifier: Apache-2.0
 
 ifndef TESTF_TESTS_DIR
@@ -12,7 +12,7 @@ TESTF_SRC_DIR:=$(TESTF_TESTS_DIR)/src/tests
 TESTF_INC_DIR:=$(TESTF_TESTS_DIR)/src/inc
 
 
-TESTF_SRCS += $(TESTF_TESTS_DIR)/src/testf_entry.c 
+TESTF_SRCS += $(TESTF_TESTS_DIR)/src/testf_entry.c
 TESTF_SRCS += $(wildcard $(TESTF_SRC_DIR)/*.c)
 
 ifndef SUITES
@@ -27,7 +27,7 @@ endif
 
 ifdef TESTS
 TESTF_FLAGS+=$(addprefix -D, $(TESTS))
-endif 
+endif
 
 ifdef TESTF_LOG_LEVEL
 TESTF_FLAGS+=-DTESTF_LOG_LEVEL=$(TESTF_LOG_LEVEL)
@@ -38,6 +38,6 @@ TESTF_FLAGS+=-Dno_rte
 endif
 
 else
-TESTF_SRCS += $(TESTF_SRC_DIR)/testf_weak.c 
+TESTF_SRCS += $(TESTF_SRC_DIR)/testf_weak.c
 
 endif
