@@ -69,6 +69,8 @@ scripts_dir:=$(cur_dir)/scripts
 ci_dir:=$(cur_dir)/ci
 src_dirs:=
 
+all:
+
 -include $(ci_dir)/ci.mk
 
 targets:=$(MAKECMDGOALS)
