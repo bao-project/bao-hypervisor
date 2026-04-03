@@ -48,6 +48,7 @@ platforms is presented below:
 - [x] Arm Fixed Virtual Platforms
 - [x] Toradex Verdin iMX8M Plus (w/ Dahlia Carrier Board)
 - [x] NXP S32G3
+- [x] BeagleBone AI-64
 
 **Armv7-A / Armv8-A AArch32**
 - [x] Arm Fixed Virtual Platforms
