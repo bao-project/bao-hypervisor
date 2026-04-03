@@ -69,6 +69,8 @@ scripts_dir:=$(cur_dir)/scripts
 ci_dir:=$(cur_dir)/ci
 src_dirs:=
 
+all:
+
 -include $(ci_dir)/ci.mk
 
 targets:=$(MAKECMDGOALS)
@@ -157,13 +159,13 @@ gens+=$(asm_defs_hdr)
 config_build_dir:=$(build_dir)/config
 platform_build_dir:=$(build_dir)/platform
 scripts_build_dir:=$(build_dir)/scripts
-directories+=$(config_build_dir) $(platform_build_dir) $(scripts_build_dir)
+directories+=$(config_build_dir) $(config_build_dir)/inc $(platform_build_dir) $(scripts_build_dir)
 
 config_def_generator_src:=$(scripts_dir)/config_defs_gen.c
 config_def_generator:=$(scripts_build_dir)/config_defs_gen
-config_defs:=$(config_build_dir)/config_defs_gen.h
+config_defs:=$(config_build_dir)/inc/config_defs_gen.h
 gens+=$(config_def_generator) $(config_defs)
-inc_dirs+=$(config_build_dir)
+inc_dirs+=$(config_build_dir)/inc
 
 platform_def_generator_src:=$(scripts_dir)/platform_defs_gen.c
 platform_arch_def_generator_src:=$(wildcard $(scripts_dir)/arch/$(ARCH)/platform_defs_gen.c)
@@ -186,7 +188,6 @@ objs-y+=$(addprefix $(lib_dir)/, $(lib-objs-y))
 objs-y+=$(addprefix $(core_dir)/, $(core-objs-y))
 objs-y+=$(addprefix $(platform_dir)/, $(boards-objs-y))
 objs-y+=$(addprefix $(drivers_dir)/, $(drivers-objs-y))
-objs-y+=$(addprefix $(config_dir)/, $(config-objs-y))
 
 c_src_files:=$(wildcard $(patsubst %.o,%.c, $(objs-y)))
 asm_src_files:=$(wildcard $(patsubst %.o,%.S, $(objs-y)))
@@ -195,9 +196,15 @@ c_hdr_files=$(shell cat $(deps) | grep -o "$(src_dir)/\S*\.h" | sort | uniq)
 deps+=$(patsubst %.o,%.d,$(objs-y))
 objs-y:=$(patsubst $(cur_dir)%, $(build_dir)%, $(objs-y))
 
-# As config_dir might be an out-of-tree directory (if CONFIG_REPO is defined as such),
-# we need to account for that also for the config defined objs
-objs-y:=$(patsubst $(config_dir)%, $(build_dir)%, $(objs-y))
+# Config objects already reside in config_build_dir so they must be added after
+# the cur_dir→build_dir remapping to avoid double-expanding the build path.
+# Absolute-path entries go under config_build_dir/external/ preserving the full path.
+config_rel_objs-y:=$(filter-out /%, $(config-objs-y))
+config_abs_objs-y:=$(filter /%, $(config-objs-y))
+deps+=$(patsubst %.o,%.d,$(addprefix $(config_build_dir)/, $(config_rel_objs-y)))
+deps+=$(patsubst %.o,%.d,$(addprefix $(config_build_dir)/external, $(config_abs_objs-y)))
+objs-y+=$(addprefix $(config_build_dir)/, $(config_rel_objs-y))
+objs-y+=$(addprefix $(config_build_dir)/external, $(config_abs_objs-y))
 
 # Now we add all object files directories to the directories list so they can be
 # created later
@@ -329,6 +336,18 @@ $(build_dir)/%.d : $(config_dir)/%.[c,S]
 	@echo "Creating dependency	$(patsubst $(cur_dir)/%,%, $<)"
 	@$(cc) $(CFLAGS) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $< > $@
 
+# Dep rule for config-objs-y routed directly into config_build_dir.
+# The stem maps directly to config_dir so out-of-tree sources are found correctly.
+$(config_build_dir)/%.d : $(config_dir)/%.[c,S]
+	@echo "Creating dependency	$(patsubst $(cur_dir)/%,%, $<)"
+	@$(cc) $(CFLAGS) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $< > $@
+
+# Dep rule for absolute-path config-objs-y, placed under config_build_dir/external/.
+# No slash after 'external' so the stem captures the full absolute source path.
+$(config_build_dir)/external%.d : %.[c,S]
+	@echo "Creating dependency	$(patsubst $(cur_dir)/%,%, $<)"
+	@$(cc) $(CFLAGS) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@"  $(CPPFLAGS) $< > $@
+
 # We need to repeat the rule again to support fully out-of-tree sources (both from the root directory
 # and the CONFIG_REPO)
 $(build_dir)%.d : %.[c,S]
@@ -361,14 +380,13 @@ $(asm_defs_hdr).d: $(asm_defs_src)
 	@$(cc) -MM -MT $(CFLAGS) "$(patsubst %.d,%, $@)" $(addprefix -I, $(inc_dirs)) $< > $@
 endif
 
-config_obj:=$(config_src:$(config_dir)/%.c=$(config_build_dir)/%.o)
-config_dep:=$(config_src:$(config_dir)/%.c=$(config_build_dir)/%.d)
+config_dep:=$(config_build_dir)/$(patsubst %.c,%.d,$(notdir $(config_src)))
 $(config_dep): $(config_src)
 	@echo "Creating dependency	$(patsubst $(cur_dir)/%,%,\
 		 $(patsubst %.d,%, $@))"
-	@$(cc) $(CFLAGS) -MM -MG -MT "$(config_obj) $@" $(CPPFLAGS) $(filter %.c, $^) > $@
+	@$(cc) $(CFLAGS) -MM -MG -MT "$(patsubst %.d, %.o, $@) $@" $(CPPFLAGS) $(filter %.c, $^) > $@
 	@$(cc) $(CFLAGS) $(CPPFLAGS) -S $(config_src) -o - | grep ".incbin" | \
-		awk '{ gsub("\"", "", $$2); print "$(config_obj): " $$2 }' >> $@
+		awk '{ gsub("\"", "", $$2); print "$(patsubst %.d, %.o, $@): " $$2 }' >> $@
 
 $(config_def_generator): $(config_def_generator_src) $(config_src)
 	@echo "Compiling generator	$(patsubst $(cur_dir)/%,%, $@)"
