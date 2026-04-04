@@ -77,15 +77,15 @@ static void smmu_check_features(void)
     unsigned version =
         bit32_extract(smmu.hw.glbl_rs0->IDR7, SMMUV2_IDR7_MAJOR_OFF, SMMUV2_IDR7_MAJOR_LEN);
     if (version != 2) {
-        ERROR("smmu unsupported version: %d", version);
+        ERROR("smmu unsupported version: %d\n", version);
     }
 
     if (!(smmu.hw.glbl_rs0->IDR0 & SMMUV2_IDR0_S2TS_BIT)) {
-        ERROR("smmuv2 does not support 2nd stage translation");
+        ERROR("smmuv2 does not support 2nd stage translation\n");
     }
 
     if (!(smmu.hw.glbl_rs0->IDR0 & SMMUV2_IDR0_SMS_BIT)) {
-        ERROR("smmuv2 does not support stream match");
+        ERROR("smmuv2 does not support stream match\n");
     }
 
     /**
@@ -94,15 +94,15 @@ static void smmu_check_features(void)
      * according to the result of this feature test.
      */
     if (!(smmu.hw.glbl_rs0->IDR0 & SMMUV2_IDR0_CTTW_BIT)) {
-        WARNING("smmuv2 does not support coherent page table walks");
+        WARNING("smmuv2 does not support coherent page table walks\n");
     }
 
     if (!(smmu.hw.glbl_rs0->IDR0 & SMMUV2_IDR0_BTM_BIT)) {
-        ERROR("smmuv2 does not support tlb maintenance broadcast");
+        ERROR("smmuv2 does not support tlb maintenance broadcast\n");
     }
 
     if (!(smmu.hw.glbl_rs0->IDR2 & SMMUV2_IDR2_PTFSv8_4kB_BIT)) {
-        ERROR("smmuv2 does not support 4kb page granule");
+        ERROR("smmuv2 does not support 4kb page granule\n");
     }
 
     size_t pasize = bit32_extract(smmu.hw.glbl_rs0->IDR2, SMMUV2_IDR2_OAS_OFF, SMMUV2_IDR2_OAS_LEN);
@@ -110,9 +110,9 @@ static void smmu_check_features(void)
         bit32_extract(smmu.hw.glbl_rs0->IDR2, SMMUV2_IDR2_IAS_OFF, SMMUV2_IDR2_IAS_LEN);
 
     if (pasize < parange) {
-        ERROR("smmuv2 does not support the full available pa range");
+        ERROR("smmuv2 does not support the full available pa range\n");
     } else if (ipasize < parange) {
-        ERROR("smmuv2 does not support the full available ipa range");
+        ERROR("smmuv2 does not support the full available ipa range\n");
     }
 }
 
@@ -214,7 +214,7 @@ void smmu_write_ctxbnk(size_t ctx_id, paddr_t root_pt, asid_t vm_id)
 {
     spin_lock(&smmu.ctx_lock);
     if (!bitmap_get(smmu.ctxbank_bitmap, ctx_id)) {
-        ERROR("smmu ctx %d is already allocated", ctx_id);
+        ERROR("smmu ctx %d is already allocated\n", ctx_id);
     } else {
         /* Set type as stage 2 only. */
         smmu.hw.glbl_rs1->CBAR[ctx_id] = SMMUV2_CBAR_VMID(vm_id);
@@ -229,7 +229,7 @@ void smmu_write_ctxbnk(size_t ctx_id, paddr_t root_pt, asid_t vm_id)
         tcr |= SMMUV2_TCR_TG0_4K;
         tcr |= SMMUV2_TCR_ORGN0_WB_RA_WA;
         tcr |= SMMUV2_TCR_IRGN0_WB_RA_WA;
-        tcr |= SMMUV2_TCR_T0SZ(t0sz);
+        tcr |= (uint32_t)SMMUV2_TCR_T0SZ(t0sz);
         tcr |= SMMUV2_TCR_SH0_IS;
         tcr |= ((parange_table[parange] < 44) ? SMMUV2_TCR_SL0_1 : SMMUV2_TCR_SL0_0);
         smmu.hw.cntxt[ctx_id].TCR = tcr;
@@ -299,7 +299,7 @@ bool smmu_compatible_sme_exists(streamid_t mask, streamid_t id, size_t ctx, bool
                 }
 
             } else {
-                ERROR("SMMU sme conflict");
+                ERROR("SMMU sme conflict\n");
             }
         }
     }
@@ -312,7 +312,7 @@ void smmu_write_sme(size_t sme, streamid_t mask, streamid_t id, bool group)
 {
     spin_lock(&smmu.sme_lock);
     if (!bitmap_get(smmu.sme_bitmap, sme)) {
-        ERROR("smmu: trying to write unallocated sme %d", sme);
+        ERROR("smmu: trying to write unallocated sme %d\n", sme);
     } else {
         smmu.hw.glbl_rs0->SMR[sme] = mask << SMMU_SMR_MASK_OFF;
         smmu.hw.glbl_rs0->SMR[sme] |= id & SMMU_ID_MSK;
@@ -329,16 +329,16 @@ void smmu_write_s2c(size_t sme, size_t ctx_id)
 {
     spin_lock(&smmu.sme_lock);
     if (!bitmap_get(smmu.ctxbank_bitmap, ctx_id)) {
-        ERROR("smmu: trying to write unallocated s2c %d", ctx_id);
+        ERROR("smmu: trying to write unallocated s2c %d\n", ctx_id);
     } else if (!bitmap_get(smmu.sme_bitmap, sme)) {
-        ERROR("smmu: trying to bind unallocated sme %d", sme);
+        ERROR("smmu: trying to bind unallocated sme %d\n", sme);
     } else {
         /* Initial contex is a translation context. */
         uint32_t s2cr = smmu.hw.glbl_rs0->S2CR[sme];
 
         s2cr = S2CR_CLEAR(s2cr);
         s2cr |= S2CR_DFLT;
-        s2cr |= ctx_id & S2CR_CBNDX_MASK;
+        s2cr |= (uint32_t)(ctx_id & S2CR_CBNDX_MASK);
 
         smmu.hw.glbl_rs0->S2CR[sme] = s2cr;
     }

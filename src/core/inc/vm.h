@@ -23,8 +23,11 @@ struct vm_mem_region {
     paddr_t base;
     size_t size;
     colormap_t colors;
-    bool place_phys;
-    paddr_t phys;
+    struct {
+        bool place_phys;
+        paddr_t phys;
+        bool reserved;
+    };
 };
 
 struct vm_dev_region {

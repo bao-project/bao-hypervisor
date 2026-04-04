@@ -86,7 +86,7 @@ void cpu_standby(void)
      * Should not return here. cpu should "wake up" from standby in cpu_standby_wakeup with a
      * rewinded stack.
      */
-    ERROR("Spurious standby wake up");
+    ERROR("Spurious standby wake up\n");
 }
 
 void cpu_powerdown(void)
@@ -97,7 +97,7 @@ void cpu_powerdown(void)
      * Should not return here. cpu should "wake up" from powerdown in cpu_powerdown_wakeup with a
      * rewinded stack.
      */
-    ERROR("Spurious powerdown wake up");
+    ERROR("Spurious powerdown wake up\n");
 }
 
 void cpu_standby_wakeup(void)

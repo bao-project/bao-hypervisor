@@ -26,7 +26,7 @@ static uint32_t read_ins(uintptr_t ins_addr)
     uint32_t ins = 0;
 
     if (ins_addr & 0x1) {
-        ERROR("trying to read guest unaligned instruction");
+        ERROR("trying to read guest unaligned instruction\n");
     }
 
     /**
@@ -96,7 +96,7 @@ static size_t guest_page_fault_handler(void)
             ins_size = INS_SIZE(ins);
         } else if (is_pseudo_ins((uint32_t)ins)) {
             // TODO: we should reinject this in the guest as a fault access
-            ERROR("fault on 1st stage page table walk");
+            ERROR("fault on 1st stage page table walk\n");
         } else {
             /**
              * If htinst is valid and is not a pseudo isntruction make sure the opcode is valid
@@ -108,7 +108,7 @@ static size_t guest_page_fault_handler(void)
 
         struct emul_access emul;
         if (!ins_ldst_decode(ins, &emul)) {
-            ERROR("cant decode ld/st instruction");
+            ERROR("cant decode ld/st instruction\n");
         }
         emul.addr = addr;
 
@@ -119,10 +119,10 @@ static size_t guest_page_fault_handler(void)
         if (handler(&emul)) {
             return ins_size;
         } else {
-            ERROR("emulation handler failed (0x%x at 0x%x)", addr, csrs_sepc_read());
+            ERROR("emulation handler failed (0x%x at 0x%x)\n", addr, csrs_sepc_read());
         }
     } else {
-        ERROR("no emulation handler for abort(0x%x at 0x%x)", addr, csrs_sepc_read());
+        ERROR("no emulation handler for abort(0x%x at 0x%x)\n", addr, csrs_sepc_read());
     }
 }
 
@@ -149,7 +149,7 @@ void sync_exception_handler(void)
     if (_scause < sync_handler_table_size && sync_handler_table[_scause]) {
         pc_step = sync_handler_table[_scause]();
     } else {
-        ERROR("unkown synchronous exception (%d)", _scause);
+        ERROR("unknown synchronous exception (%d)\n", _scause);
     }
 
     vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + pc_step);

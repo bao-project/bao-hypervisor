@@ -325,7 +325,7 @@ static void mem_region_broadcast(struct addr_space* as, struct mp_region* mpr, u
         if ((cpu()->id != cpuid) && bit_get(shared_cpus, cpuid)) {
             struct shared_region* node = objpool_alloc(&shared_region_pool);
             if (node == NULL) {
-                ERROR("Failed allocating shared region node");
+                ERROR("Failed allocating shared region node\n");
             }
             *node = shared_region;
             struct cpu_msg msg = { (uint32_t)MEM_PROT_SYNC, op, (uintptr_t)node };
@@ -465,7 +465,7 @@ void mem_handle_broadcast_region(uint32_t event, uint64_t data)
         } else {
             struct addr_space* vm_as = &cpu()->vcpu->vm->as;
             if (vm_as->id != sh_reg->asid) {
-                ERROR("Received shared region for unkown vm address space.");
+                ERROR("Received shared region for unknown vm address space.\n");
             }
             as = vm_as;
         }
@@ -481,7 +481,7 @@ void mem_handle_broadcast_region(uint32_t event, uint64_t data)
                 mem_handle_broadcast_update(as, &sh_reg->region, sh_reg->lock);
                 break;
             default:
-                ERROR("unknown mem broadcast msg");
+                ERROR("unknown mem broadcast msg\n");
         }
 
         objpool_free(&shared_region_pool, sh_reg);
@@ -562,7 +562,7 @@ bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool 
 
     if ((mpr->size % mpu_granularity()) != 0) {
         ERROR("trying to set mpu region which is not a multiple of "
-              "granularity");
+              "granularity\n");
     }
 
     spin_lock(&as->lock);
@@ -655,8 +655,8 @@ void mem_unmap(struct addr_space* as, vaddr_t at, size_t num_pages, bool free_pp
     }
 }
 
-vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, vaddr_t vas, vaddr_t vad,
-    size_t num_pages)
+vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, as_sec_t asd_section,
+    vaddr_t vas, vaddr_t vad, size_t num_pages)
 {
     UNUSED_ARG(num_pages);
 
@@ -674,6 +674,7 @@ vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, vaddr_t vas,
         mpid_t reg_num_src = mem_vmpu_get_entry_by_addr(ass, vas);
         mpe = mem_vmpu_get_entry(ass, reg_num_src);
         mpr = mpe->region;
+        mpr.as_sec = asd_section;
         spin_unlock(&ass->lock);
 
         if (num_pages * PAGE_SIZE > mpr.size) {
@@ -684,11 +685,11 @@ vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, vaddr_t vas,
             if (mem_map(asd, &mpr, broadcast, MEM_NOT_LOCKED)) {
                 va_res = vas;
             } else {
-                INFO("failed mem map on mem map cpy");
+                INFO("failed mem map on mem map cpy\n");
             }
         }
     } else {
-        INFO("failed mem map cpy");
+        INFO("failed mem map cpy\n");
     }
 
     return va_res;
@@ -713,11 +714,11 @@ vaddr_t mem_alloc_map(struct addr_space* as, as_sec_t section, struct ppages* pp
 
     if (at == INVALID_VA && ppages == NULL) {
         ERROR("Can't map an MPU region because neither the virtual"
-              "or phsyical address was specified.");
+              "or phsyical address was specified.\n");
     }
 
     if (at != INVALID_VA && ppages != NULL && at != ppages->base) {
-        ERROR("Trying to map non identity");
+        ERROR("Trying to map non identity\n");
     }
 
     if (at == INVALID_VA) {

@@ -51,6 +51,10 @@ struct vcpu_arch {
     struct vgic_priv vgic_priv;
     struct list vgic_spilled;
     struct psci_ctx psci_ctx;
+
+#ifdef MEM_PROT_MPU
+    unsigned long mpu_entry_mask;
+#endif
 };
 
 struct vcpu* vm_get_vcpu_by_mpidr(struct vm* vm, unsigned long mpidr);

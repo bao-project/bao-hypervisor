@@ -48,7 +48,7 @@ static void psci_restore_state(void)
 static void psci_wake_from_powerdown(void)
 {
     if (cpu()->vcpu == NULL) {
-        ERROR("cpu woke up but theres no vcpu to run");
+        ERROR("cpu woke up but theres no vcpu to run\n");
     }
 
     vcpu_arch_reset(cpu()->vcpu, cpu()->vcpu->arch.psci_ctx.entrypoint);
@@ -70,7 +70,7 @@ void psci_wake(uint32_t handler_id)
     if (handler_id < PSCI_WAKEUP_NUM) {
         psci_wake_handlers[handler_id]();
     } else {
-        ERROR("unkown reason for cpu wake up");
+        ERROR("unknown reason for cpu wake up\n");
     }
 }
 

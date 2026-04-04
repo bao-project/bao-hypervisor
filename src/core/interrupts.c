@@ -53,7 +53,7 @@ __attribute__((weak)) void interrupts_arch_ipi_init(void)
     if (cpu_is_master()) {
         interrupts_ipi_id = interrupts_reserve(IPI_CPU_MSG, (irq_handler_t)cpu_msg_handler);
         if (interrupts_ipi_id == INVALID_IRQID) {
-            ERROR("Failed to reserve IPI_CPU_MSG interrupt");
+            ERROR("Failed to reserve IPI_CPU_MSG interrupt\n");
         }
     }
 }
@@ -90,7 +90,7 @@ static inline bool interrupt_assigned(irqid_t int_id)
 
 enum irq_res interrupts_handle(irqid_t int_id)
 {
-    if (vm_has_interrupt(cpu()->vcpu->vm, int_id)) {
+    if (interrupts_arch_irq_is_forwardable(int_id) && vm_has_interrupt(cpu()->vcpu->vm, int_id)) {
         vcpu_inject_hw_irq(cpu()->vcpu, int_id);
 
         return FORWARD_TO_VM;
@@ -101,7 +101,7 @@ enum irq_res interrupts_handle(irqid_t int_id)
         return HANDLED_BY_HYP;
 
     } else {
-        ERROR("received unknown interrupt id = %d", int_id);
+        ERROR("received unknown interrupt id = %d\n", int_id);
     }
 }
 

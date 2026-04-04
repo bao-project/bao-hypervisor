@@ -324,9 +324,9 @@ void vgic_init(struct vm* vm, const struct vgic_dscrp* vgic_dscrp)
     vm->arch.vgicd.CTLR = 0;
     size_t vtyper_itln = vgic_get_itln(vgic_dscrp);
     vm->arch.vgicd.int_num = 32 * (vtyper_itln + 1);
-    vm->arch.vgicd.TYPER = ((vtyper_itln << GICD_TYPER_ITLN_OFF) & GICD_TYPER_ITLN_MSK) |
+    vm->arch.vgicd.TYPER = (uint32_t)(((vtyper_itln << GICD_TYPER_ITLN_OFF) & GICD_TYPER_ITLN_MSK) |
         (((vm->cpu_num - 1) << GICD_TYPER_CPUNUM_OFF) & GICD_TYPER_CPUNUM_MSK) |
-        (((10 - 1) << GICD_TYPER_IDBITS_OFF) & GICD_TYPER_IDBITS_MSK);
+        (((10 - 1) << GICD_TYPER_IDBITS_OFF) & GICD_TYPER_IDBITS_MSK));
     vm->arch.vgicd.IIDR = gicd->IIDR;
     vm->arch.vgicd.lock = SPINLOCK_INITVAL;
 
@@ -334,7 +334,7 @@ void vgic_init(struct vm* vm, const struct vgic_dscrp* vgic_dscrp)
     vm->arch.vgicd.interrupts =
         mem_alloc_page(NUM_PAGES(vgic_int_size), SEC_HYP_VM, MEM_ALIGN_NOT_REQ);
     if (vm->arch.vgicd.interrupts == NULL) {
-        ERROR("failed to alloc vgic");
+        ERROR("failed to alloc vgic\n");
     }
 
     for (irqid_t i = 0; i < vm->arch.vgicd.int_num; i++) {

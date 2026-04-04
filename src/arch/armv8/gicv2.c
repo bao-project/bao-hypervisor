@@ -42,7 +42,7 @@ static inline void gicc_init(void)
     uint32_t sgi_targets = gicd->ITARGETSR[0] & BIT32_MASK(0, GIC_TARGET_BITS);
     ssize_t gic_cpu_id = bit32_ffs(sgi_targets);
     if (gic_cpu_id < 0) {
-        ERROR("cant find gic cpu id");
+        ERROR("cant find gic cpu id\n");
     }
 
     gic_cpu_map[cpu()->id] = (cpuid_t)gic_cpu_id;

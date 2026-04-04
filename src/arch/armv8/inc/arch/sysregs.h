@@ -32,6 +32,11 @@
 #define MPIDR_AFF_MSK             (0xffff) // we are only supporting 2 affinity levels
 #define MPIDR_AFF_LVL(MPIDR, LVL) (((MPIDR) >> (8 * (LVL))) & 0xff)
 
+/* MIDR_EL1 - Main ID Register */
+#define MIDR_EL1_PARTNUM_OFF      4
+#define MIDR_EL1_PARTNUM_MSK      (0xfff << MIDR_EL1_PARTNUM_OFF)
+#define MIDR_EL1_PARTNUM(MIDR)    (((MIDR) & MIDR_EL1_PARTNUM_MSK) >> MIDR_EL1_PARTNUM_OFF)
+
 /* SPSR - Saved Program Status Register */
 
 #define SPSR_EL_MSK               (0x0f)

@@ -6,7 +6,7 @@
 #include <bao.h>
 #include <page_table.h>
 
-#if (RV32)
+#if defined(RV32)
 struct page_table_dscr sv32_pt_dscr = {
     .lvls = 2,
     .lvl_wdt = (size_t[]){ 32, 22 },
@@ -21,7 +21,7 @@ struct page_table_dscr sv32x4_pt_dscr = {
 };
 struct page_table_dscr* hyp_pt_dscr = &sv32_pt_dscr;
 struct page_table_dscr* vm_pt_dscr = &sv32x4_pt_dscr;
-#elif (RV64)
+#elif defined(RV64)
 struct page_table_dscr sv39_pt_dscr = {
     .lvls = 3,
     .lvl_wdt = (size_t[]){ 39, 30, 21 },

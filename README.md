@@ -3,6 +3,8 @@
 ![code quality workflow](https://github.com/bao-project/bao-hypervisor/actions/workflows/code-quality.yaml/badge.svg)
 ![arm build workflow](https://github.com/bao-project/bao-hypervisor/actions/workflows/build-arm.yaml/badge.svg)
 ![riscv build workflow](https://github.com/bao-project/bao-hypervisor/actions/workflows/build-riscv.yaml/badge.svg)
+![rh850 build workflow](https://github.com/bao-project/bao-hypervisor/actions/workflows/build-v850.yaml/badge.svg)
+![tricore build workflow](https://github.com/bao-project/bao-hypervisor/actions/workflows/build-tricore.yaml/badge.svg)
 
 Introduction
 ------------
@@ -45,7 +47,7 @@ platforms is presented below:
 - [x] QEMU virt
 - [x] Arm Fixed Virtual Platforms
 - [x] Toradex Verdin iMX8M Plus (w/ Dahlia Carrier Board)
-- [ ] NXP S32G
+- [x] NXP S32G3
 
 **Armv7-A / Armv8-A AArch32**
 - [x] Arm Fixed Virtual Platforms
@@ -57,7 +59,8 @@ platforms is presented below:
 **Armv8-R AArch32**
 - [x] Arm Fixed Virtual Platforms
 - [x] Arm MPS3-AN536
-- [ ] NXP S32Z/E
+- [x] Semidrive E3650
+- [x] NXP S32Z270
 - [ ] Renesas RZT2M
 
 **RISC-V RV64**
@@ -68,10 +71,10 @@ platforms is presented below:
 - [x] QEMU virt
 
 **Infineon Tricore 1.8**
-- [ ] TC4x Communication Board  ([WiP branch](https://github.com/bao-project/bao-hypervisor/tree/feat/tricore))
+- [x] TC4x Communication Board
 
 **Renesas RH850**
-- [ ] RH850 U2A16 ([WiP branch](https://github.com/bao-project/bao-hypervisor/tree/wip/rh850-u2a16))
+- [x] RH850 U2A16
 
 
 Community Resources

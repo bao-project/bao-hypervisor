@@ -28,7 +28,7 @@ void config_mem_prot_init(void)
             vaddr_t ipc_base_addr = config.vmlist[i].platform.ipcs[j].base;
             vaddr_t shmem_base_addr = config.shmemlist[shmem_id].base;
             if (ipc_base_addr != shmem_base_addr) {
-                ERROR("IPC base addr must be the same as its shmem base addr.");
+                ERROR("IPC base addr must be the same as its shmem base addr.\n");
             }
         }
     }

@@ -40,6 +40,7 @@
 #define PSCI_INVALID_ADDRESS           (-1L)
 
 #define PSCI_VERSION_0_2               (2U)
+#define PSCI_VERSION_1_1               (0x10001)
 #define PSCI_GET_VERSION_MAJOR(ver)    (u16)((ver) >> 16)
 #define PSCI_GET_VERSION(major, minor) (((major) << 16) | (minor))
 

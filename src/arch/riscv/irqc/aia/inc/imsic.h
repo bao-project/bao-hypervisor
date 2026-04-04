@@ -10,9 +10,6 @@
 #include <platform.h>
 
 #define IMSIC_MAX_INTERRUPTS (PLAT_IMSIC_MAX_INTERRUPTS)
-/** We only support 1 guest per hart at the moment */
-#define IMSIC_NUM_VS_FILES   (1)
-#define IMSIC_NUM_FILES      (IMSIC_NUM_VS_FILES + 1)
 
 #define STOPEI_EEID          (16)
 
@@ -28,7 +25,10 @@ struct imsic_intp_file_hw {
 
 struct imsic_global_hw {
     struct imsic_intp_file_hw s_file;
+    struct imsic_intp_file_hw guest_file;
 } __attribute__((__packed__, aligned(0x1000ULL)));
+
+extern volatile struct imsic_global_hw* imsic[PLAT_CPU_NUM];
 
 /**
  * @brief Initializes the IMSIC
@@ -71,16 +71,28 @@ void imsic_set_enbl(irqid_t intp_id);
  *        Only little endian is supported.
  *
  * @param target_cpu The ID of the target CPU
+ * @param msi_id The MSI ID to be sent
  */
-void imsic_send_msi(cpuid_t target_cpu);
+static inline void imsic_send_msi(cpuid_t target_cpu, irqid_t msi_id)
+{
+    imsic[target_cpu]->s_file.seteipnum_le = msi_id;
+}
 
 /**
- * @brief Inject an interrupt into a guest.
+ * @brief Sends an MSI to the guest file of specified CPU with the specified IPI ID.
  *
- * @param guest_file Guest interrupt file ID
- * @param intp_id Interrupt ID
+ *        The function sends an MSI to the target CPU's guest file by setting the seteipnum_le
+ *        register in the IMSIC. The seteipnum_le register is used to specify the ID of the
+ *        interrupt being sent. Only little endian is supported. This function assume a single guest
+ *        interrupt file per hart.
+ *
+ * @param target_cpu The ID of the target CPU
+ * @param msi_id The MSI ID to be injected in the guest interrupt file
  */
-void imsic_inject_pend(size_t guest_file, irqid_t intp_id);
+static inline void imsic_send_guest_msi(cpuid_t target_cpu, irqid_t msi_id)
+{
+    imsic[target_cpu]->guest_file.seteipnum_le = msi_id;
+}
 
 /**
  * @brief Handles interrupts in the IMSIC.

@@ -15,6 +15,7 @@ struct mpu_arch {
     BITMAP_ALLOC(allocated_entries, MPU_ARCH_MAX_NUM_ENTRIES);
     BITMAP_ALLOC(locked_entries, MPU_ARCH_MAX_NUM_ENTRIES);
     asid_t entry_asid[MPU_ARCH_MAX_NUM_ENTRIES];
+    unsigned long mpu_entry_mask;
 };
 
 #endif /* __ARCH_MPU_H__ */

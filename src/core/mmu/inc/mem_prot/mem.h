@@ -22,6 +22,6 @@ struct addr_space {
 typedef pte_t mem_flags_t;
 
 void as_init(struct addr_space* as, enum AS_TYPE type, pte_t* root_pt, colormap_t colors);
-vaddr_t mem_alloc_vpage(struct addr_space* as, enum AS_SEC section, vaddr_t at, size_t n);
+vaddr_t mem_alloc_vpage(struct addr_space* as, as_sec_t section, vaddr_t at, size_t n);
 
 #endif /* __MEM_PROT_H__ */

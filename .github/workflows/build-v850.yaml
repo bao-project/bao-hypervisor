@@ -1,0 +1,23 @@
+name: RH850 Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+
+  build-rh850:
+    runs-on: ubuntu-latest
+    container: baoproject/bao:latest
+    strategy:
+      matrix:
+        platform: [
+          "rh850-u2a16",
+        ]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - run: make PLATFORM=${{ matrix.platform }} CONFIG=null

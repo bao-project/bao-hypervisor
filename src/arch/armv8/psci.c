@@ -11,6 +11,7 @@
 #include <mem.h>
 #include <cache.h>
 #include <config.h>
+#include <arch/smcc.h>
 
 enum { PSCI_MSG_ON };
 
@@ -43,7 +44,7 @@ static void psci_cpumsg_handler(uint32_t event, uint64_t data)
             psci_wake_from_off();
             break;
         default:
-            WARNING("Unknown PSCI IPI event");
+            WARNING("Unknown PSCI IPI event\n");
             break;
     }
 }
@@ -170,8 +171,12 @@ static int32_t psci_features_handler(uint32_t feature_id)
         case PSCI_AFFINITY_INFO_SMC32:
         case PSCI_AFFINITY_INFO_SMC64:
         case PSCI_FEATURES:
+#ifdef PLAT_PSCI_SUPPORT_SMCCC_VERSION
+        case SMCCC_VERSION:
+#endif
             ret = PSCI_E_SUCCESS;
             break;
+
         default:
             ret = PSCI_E_NOT_SUPPORTED;
             break;
@@ -186,7 +191,7 @@ int32_t psci_smc_handler(uint32_t smc_fid, unsigned long x1, unsigned long x2, u
 
     switch (smc_fid) {
         case PSCI_VERSION:
-            ret = PSCI_VERSION_0_2;
+            ret = PSCI_VERSION_1_1;
             break;
 
         case PSCI_CPU_OFF:
@@ -217,7 +222,7 @@ int32_t psci_smc_handler(uint32_t smc_fid, unsigned long x1, unsigned long x2, u
             break;
 
         default:
-            INFO("unkown psci smc_fid 0x%lx", smc_fid);
+            INFO("unknown psci smc_fid 0x%lx\n", smc_fid);
     }
 
     return ret;

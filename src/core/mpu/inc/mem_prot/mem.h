@@ -24,7 +24,6 @@ struct addr_space {
     asid_t id;
     enum AS_TYPE type;
     colormap_t colors;
-    struct addr_space_arch arch;
     struct {
         struct list ordered_list;
         struct mpe {
