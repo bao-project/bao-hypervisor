@@ -6,7 +6,7 @@
         type objects [number_of_objects];           \
         signed int front, rear;                     \
         spinlock_t lock;                            \
-    } name;
+    } name
 
 #define cq_max_size(cq) (sizeof(cq.objects) / sizeof(cq.objects[0]))
 
