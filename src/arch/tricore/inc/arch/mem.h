@@ -17,10 +17,6 @@ typedef union {
     };
 } mem_flags_t;
 
-struct addr_space_arch {
-    EMPTY_STRUCT_FIELDS
-};
-
 #define PTE_FLAGS(w, r, x)       ((mem_flags_t){ .write = (w), .read = (r), .exec = (x) })
 
 #define PTE_INVALID              PTE_FLAGS(0, 0, 0)

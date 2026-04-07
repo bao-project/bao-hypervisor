@@ -43,10 +43,6 @@ typedef union {
     uint32_t raw;
 } mpat_flags_t;
 
-struct addr_space_arch {
-    unsigned long mpu_entry_mask;
-};
-
 typedef mpat_flags_t mem_flags_t;
 
 #define PTE_INVALID ((mem_flags_t){ .e = 0 })
