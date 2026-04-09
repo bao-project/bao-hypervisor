@@ -10,6 +10,7 @@
 
 #define CPU_EXT_SSTC      1
 #define CPU_EXT_F         1
+#define CPU_EXT_V         0
 #define CPU_EXT_C         0
 #define CPU_EXT_SSSTATEEN 1
 #define CPU_EXT_SSCSRIND  0
