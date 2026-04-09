@@ -8,7 +8,7 @@
 
 #include <bao.h>
 
-#define CACHE_MAX_LVL 8 // Does this make sense in all architectures?
+#define CACHE_MAX_LVL    8 // Does this make sense in all architectures?
 /*
  * Cache block size:
  * - 64B guaranteed if Zic64b is implemented
@@ -18,17 +18,17 @@
 
 static inline void cbo_clean(uintptr_t base_addr)
 {
-    __asm__ volatile("cbo.clean 0(%0) \n\t" :: "r"(base_addr) : "memory");
+    __asm__ volatile("cbo.clean 0(%0) \n\t" ::"r"(base_addr) : "memory");
 }
 
 static inline void cbo_flush(uintptr_t base_addr)
 {
-    __asm__ volatile("cbo.flush 0(%0) \n\t" :: "r"(base_addr) : "memory");
+    __asm__ volatile("cbo.flush 0(%0) \n\t" ::"r"(base_addr) : "memory");
 }
 
 static inline void cbo_invalidate(uintptr_t base_addr)
 {
-    __asm__ volatile("cbo.inval 0(%0) \n\t" :: "r"(base_addr) : "memory");
+    __asm__ volatile("cbo.inval 0(%0) \n\t" ::"r"(base_addr) : "memory");
 }
 
-#endif                  /* __ARCH_CACHE_H__ */
+#endif /* __ARCH_CACHE_H__ */
