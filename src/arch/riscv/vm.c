@@ -45,20 +45,36 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
     }
 
     vcpu->regs.sstatus = SSTATUS_SPP_BIT | SSTATUS_FS_DIRTY | SSTATUS_XS_DIRTY;
+
+    if (CPU_HAS_EXTENSION(CPU_EXT_F)) {
+        vcpu->regs.sstatus |= SSTATUS_FS_DIRTY;
+    }
+
     if (CPU_HAS_EXTENSION(CPU_EXT_V)) {
         vcpu->regs.sstatus |= SSTATUS_VS_DIRTY;
     }
+
     vcpu->regs.sepc = entry;
     vcpu->regs.a0 = vcpu->arch.hart_id = vcpu->id;
     vcpu->regs.a1 = 0; // according to sbi it should be the dtb load address
+
+    if (CPU_HAS_EXTENSION(CPU_EXT_SSSTATEEN)) {
+        csrs_sstateen0_write(0);
+    }
 
     csrs_senvcfg_write(0);
     csrs_hcounteren_write(HCOUNTEREN_TM);
     csrs_htimedelta_write(0);
     csrs_vsstatus_write(SSTATUS_SD | SSTATUS_FS_DIRTY | SSTATUS_XS_DIRTY);
+
+    if (CPU_HAS_EXTENSION(CPU_EXT_F)) {
+        csrs_vsstatus_set(SSTATUS_FS_DIRTY);
+    }
+
     if (CPU_HAS_EXTENSION(CPU_EXT_V)) {
         csrs_vsstatus_set(SSTATUS_VS_DIRTY);
     }
+
     csrs_hie_write(0);
     csrs_vstvec_write(0);
     csrs_vsscratch_write(0);
