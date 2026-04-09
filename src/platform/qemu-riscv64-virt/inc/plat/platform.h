@@ -16,6 +16,8 @@
 #define CPU_EXT_SSCSRIND  0
 #define CPU_EXT_ZICBOM    1
 #define CPU_EXT_ZICBOZ    1
+#define CPU_EXT_SSNPM     0
+#define CPU_EXT_SSNPM_PMM_MODE HENVCFG_PMM_PMLEN_7
 
 #define IPIC_SBI          (1)
 #define IPIC_ACLINT       (2)
