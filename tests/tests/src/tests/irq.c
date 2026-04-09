@@ -31,6 +31,7 @@ BAO_TEST(IRQ_CHECK, TIMER)
         timer_set(TIMER_INTERVAL);
         irq_enable(TIMER_IRQ_ID);
         irq_set_prio(TIMER_IRQ_ID, IRQ_MAX_PRIO);
+        timer_enable();
 
         while(!irq_en_timer);
         EXPECTED_TRUE(irq_en_timer);
