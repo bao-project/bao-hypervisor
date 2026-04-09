@@ -26,6 +26,11 @@
 /* Sstc Extension */
 #define CSR_VSTIMECMP     0x24D
 #define CSR_VSTIMECMPH    0x25D
+/* Supervisor State Enable (Ssstateen Extension)*/
+#define CSR_SSTATEEN0     0x10C
+#define CSR_SSTATEEN1     0x10D
+#define CSR_SSTATEEN2     0x10E
+#define CSR_SSTATEEN3     0x10F
 
 #define CSR_HSTATUS       0x600
 #define CSR_HEDELEG       0x602
@@ -44,6 +49,15 @@
 /* Hypervisor Configuration */
 #define CSR_HENVCFG       0x60A
 #define CSR_HENVCFGH      0x61A
+/* Hypervisor State Enable (Ssstateen Extension)*/
+#define CSR_HSTATEEN0     0x60C
+#define CSR_HSTATEEN1     0x60D
+#define CSR_HSTATEEN2     0x60E
+#define CSR_HSTATEEN3     0x60F
+#define CSR_HSTATEEN0H    0x61C
+#define CSR_HSTATEEN1H    0x61D
+#define CSR_HSTATEEN2H    0x61E
+#define CSR_HSTATEEN3H    0x61F
 
 #define TOPI_IID_SHIFT    (16)
 
@@ -119,6 +133,10 @@
 #define SIP_STIP           SIE_STIE
 #define SIP_UEIP           SIE_UEIE
 #define SIP_SEIP           SIE_SEIE
+
+#define SSTATEEN_C         (1ULL << 0)
+#define SSTATEEN_FCSR      (1ULL << 1)
+#define SSTATEEN_JVT       (1ULL << 2)
 
 #define HIE_VSSIE          (1UL << 2)
 #define HIE_VSTIE          (1UL << 6)
@@ -226,6 +244,17 @@
 #define HENVCFG_PBMTE               (1ULL << 62)
 #define HENVCFG_STCE                (1ULL << 63)
 
+#define HSTATEEN_C                  (1ULL << 0)
+#define HSTATEEN_FCSR               (1ULL << 1)
+#define HSTATEEN_JVT                (1ULL << 2)
+#define HSTATEEN_CTR                (1ULL << 54)
+#define HSTATEEN_CTX                (1ULL << 57)
+#define HSTATEEN_IMSIC              (1ULL << 58)
+#define HSTATEEN_AIA                (1ULL << 59)
+#define HSTATEEN_CSRIND             (1ULL << 60)
+#define HSTATEEN_ENVCFG             (1ULL << 62)
+#define HSTATEEN_SEO                (1ULL << 63)
+
 #define HCOUNTEREN_CY               (1ULL << 0)
 #define HCOUNTEREN_TM               (1ULL << 1)
 #define HCOUNTEREN_IR               (1ULL << 2)
@@ -295,6 +324,10 @@ CSRS_GEN_ACCESSORS(sepc)
 CSRS_GEN_ACCESSORS(sie)
 CSRS_GEN_ACCESSORS(sip)
 CSRS_GEN_ACCESSORS(satp)
+CSRS_GEN_ACCESSORS(sstateen0)
+CSRS_GEN_ACCESSORS(sstateen1)
+CSRS_GEN_ACCESSORS(sstateen2)
+CSRS_GEN_ACCESSORS(sstateen3)
 
 CSRS_GEN_ACCESSORS_NAMED(hstatus, CSR_HSTATUS)
 CSRS_GEN_ACCESSORS_NAMED(hgatp, CSR_HGATP)
@@ -325,10 +358,27 @@ CSRS_GEN_ACCESSORS_NAMED(stimecmp, CSR_STIMECMP)
 CSRS_GEN_ACCESSORS_NAMED(vstimecmp, CSR_VSTIMECMP)
 CSRS_GEN_ACCESSORS_NAMED(henvcfg, CSR_HENVCFG)
 CSRS_GEN_ACCESSORS_NAMED(htimedelta, CSR_HTIMEDELTA)
+CSRS_GEN_ACCESSORS_NAMED(hstateen0, CSR_HSTATEEN0)
+CSRS_GEN_ACCESSORS_NAMED(hstateen1, CSR_HSTATEEN1)
+CSRS_GEN_ACCESSORS_NAMED(hstateen2, CSR_HSTATEEN2)
+CSRS_GEN_ACCESSORS_NAMED(hstateen3, CSR_HSTATEEN3)
 #else
 CSRS_GEN_ACCESSORS_NAMED(henvcfgl, CSR_HENVCFG)
 CSRS_GEN_ACCESSORS_NAMED(henvcfgh, CSR_HENVCFGH)
 CSRS_GEN_ACCESSORS_MERGED(henvcfg, henvcfgl, henvcfgh)
+
+CSRS_GEN_ACCESSORS_NAMED(hstateen0l, CSR_HSTATEEN0)
+CSRS_GEN_ACCESSORS_NAMED(hstateen0h, CSR_HSTATEEN0H)
+CSRS_GEN_ACCESSORS_MERGED(hstateen0, hstateen0l, hstateen0h)
+CSRS_GEN_ACCESSORS_NAMED(hstateen1l, CSR_HSTATEEN1)
+CSRS_GEN_ACCESSORS_NAMED(hstateen1h, CSR_HSTATEEN1H)
+CSRS_GEN_ACCESSORS_MERGED(hstateen1, hstateen1l, hstateen1h)
+CSRS_GEN_ACCESSORS_NAMED(hstateen2l, CSR_HSTATEEN2)
+CSRS_GEN_ACCESSORS_NAMED(hstateen2h, CSR_HSTATEEN2H)
+CSRS_GEN_ACCESSORS_MERGED(hstateen2, hstateen2l, hstateen2h)
+CSRS_GEN_ACCESSORS_NAMED(hstateen3l, CSR_HSTATEEN3)
+CSRS_GEN_ACCESSORS_NAMED(hstateen3h, CSR_HSTATEEN3H)
+CSRS_GEN_ACCESSORS_MERGED(hstateen3, hstateen3l, hstateen3h)
 
 CSRS_GEN_ACCESSORS_NAMED(htimedeltal, CSR_HTIMEDELTA)
 CSRS_GEN_ACCESSORS_NAMED(htimedeltah, CSR_HTIMEDELTAH)
