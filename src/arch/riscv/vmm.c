@@ -22,7 +22,7 @@ void vmm_arch_init()
     csrs_hedeleg_write(HEDELEG_ECU | HEDELEG_IPF | HEDELEG_LPF | HEDELEG_SPF);
 
     /**
-     * Start from a clean slate for the entire HENVCFG CSR 
+     * Start from a clean slate for the entire HENVCFG CSR
      * to avoid unintended side effects from any non-zero default bits
      */
     csrs_henvcfg_write(0);
