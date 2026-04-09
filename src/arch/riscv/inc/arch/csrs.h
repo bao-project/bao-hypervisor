@@ -226,12 +226,15 @@
 
 #define HENVCFG_FIOM                (1ULL << 0)
 #define HENVCFG_CBIE_OFF            (4)
-#define HSTATUS_CBIE_LEN            (2)
-#define HSTATUS_CBIE_MSK            (BIT_MASK(HSTATUS_CBIE_OFF, HSTATUS_CBIE_LEN))
+#define HENVCFG_CBIE_LEN            (2)
+#define HENVCFG_CBIE_MSK            (BIT_MASK(HENVCFG_CBIE_OFF, HENVCFG_CBIE_LEN))
 #define HENVCFG_CBCFE               (1ULL << 6)
 #define HENVCFG_CBZE                (1ULL << 7)
 #define HENVCFG_PBMTE               (1ULL << 62)
 #define HENVCFG_STCE                (1ULL << 63)
+
+#define HENVCFG_CBIE_FLUSH          (1ULL << HENVCFG_CBIE_OFF)
+#define HENVCFG_CBIE_INV            (3ULL << HENVCFG_CBIE_OFF)
 
 #define HCOUNTEREN_CY               (1ULL << 0)
 #define HCOUNTEREN_TM               (1ULL << 1)
