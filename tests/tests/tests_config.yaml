@@ -1,36 +1,56 @@
 setups:
-    - single-baremetal:
-        - baremetal:
-            - bin_name: "baremetal"
-            - flags:
-                - qemu-aarch64-virt: ""
-                - qemu-riscv64-virt: ""
-                - fvp-r: "MEM_BASE=0x10000000"
-                - rh850-u2a16: "FLASH_BASE=0x10000 FLASH_SIZE=0x6000 RAM_BASE=0xfe100000 RAM_SIZE=0x8000"
-                - tc4dx: "FLASH_BASE=0xA000000 FLASH_SIZE=0x8000 RAM_BASE=0x9000000 RAM_SIZE=0x1000"
-                - s32: ""
-    - baremetal+linux:
-        - baremetal:
-            - bin_name: "baremetal"
-            - flags:
-                - qemu-aarch64-virt: "MEM_BASE=0x10000000"
-                - qemu-riscv64-virt: "MEM_BASE=0x10000000"
-                - rh850-u2a16: "FLASH_BASE=0x10000 FLASH_SIZE=0x6000 RAM_BASE=0xfe100000 RAM_SIZE=0x8000"
-        - linux:
-            - bin_name: "kernel"
-            - flags:
-                - qemu-aarch64-virt: "MEM_BASE=0x10000000"
-                - qemu-riscv64-virt: "MEM_BASE=0x10000000"
+  - single-baremetal:
+      - baremetal:
+          - bin_name: "baremetal"
+          - flags:
+              qemu-aarch64-virt:
+                generic_flags: ""
+                cpu_num: 4
+              qemu-riscv64-virt:
+                generic_flags: ""
+                cpu_num: 4
+              fvp-r:
+                generic_flags: "MEM_BASE=0x10000000"
+                cpu_num: 4
+              rh850-u2a16:
+                generic_flags: "FLASH_BASE=0x10000 FLASH_SIZE=0x6000 RAM_BASE=0xfe100000 RAM_SIZE=0x8000"
+                cpu_num: 4
+              tc4dx:
+                generic_flags: "FLASH_BASE=0xA000000 FLASH_SIZE=0x8000 RAM_BASE=0x9000000 RAM_SIZE=0x1000"
+                cpu_num: 4
+              s32:
+                generic_flags: "FLASH_BASE=0x10000000 FLASH_SIZE=0x10000 RAM_BASE=0x20000000 RAM_SIZE=0x100000"
+                cpu_num: 4
+              zcu104:
+                generic_flags: ""
+                cpu_num: 4
+
+      - baremetal+linux:
+          - baremetal:
+              - bin_name: "baremetal"
+              - flags:
+                  qemu-aarch64-virt:
+                    generic_flags: ""
+                    cpu_num: 4
+                  rh850-u2a16:
+                    generic_flags: "FLASH_BASE=0x10000 FLASH_SIZE=0x6000 RAM_BASE=0xfe100000 RAM_SIZE=0x8000"
+                    cpu_num: 4
+          - linux:
+              - bin_name: "kernel"
+              - flags:
+                  qemu-aarch64-virt:
+                    generic_flags: "MEM_BASE=0x10000000"
+                    cpu_num: 4
 
 tests:
-    boot:
-        - list_tests: ""
-        - list_suites: "BOOT_CHECK"
+  boot:
+    - list_tests: ""
+    - list_suites: "BOOT_CHECK"
 
-    irq:
-        - list_tests: ""
-        - list_suites: "IRQ_CHECK"
+  irq:
+    - list_tests: ""
+    - list_suites: "IRQ_CHECK"
 
-    performance:
-        - list_tests: "IRQ_LATENCY"
-        - list_suites: "IRQ_CHECK"
+  performance:
+    - list_tests: "IRQ_LATENCY"
+    - list_suites: "IRQ_CHECK"
