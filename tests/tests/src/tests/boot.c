@@ -3,7 +3,6 @@
 #include <spinlock.h>
 #include "testf.h"
 
-#define NUM_CPUS 4
 #define CPU_BOOT_WAIT_TIME TIME_MS(1000)
 
 volatile bool cpu_boot_status[NUM_CPUS] = {false};
