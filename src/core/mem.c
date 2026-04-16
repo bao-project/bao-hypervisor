@@ -507,6 +507,7 @@ static void mem_init_reserved(void)
  * @brief Verify whether all the statically allocated memory regions are reserved.
  * @return  false if static allocated memory regions in the configuration have
  *          not been flagged as reserved.
+ * @see mem_hyp_image_no_load_reserved
  */
 static bool mem_check_reserved(void)
 {
@@ -550,9 +551,9 @@ static bool mem_check_reserved(void)
 /**
  * @brief Reserve all statically defined physical memory regions in the pool.
  * @param pool Page pool to reserve pages in (typically root pool).
- * @return true on successful reservation of the pool's pages, false otherwise.
  * @see pp_root_reserve_hyp_image_load(), mem_vm_img_in_phys_rgn(), mem_ppages_get(),
- *      mem_reserve_ppool_ppages(), NUM_PAGES(), page_pool, ppages
+ *      mem_reserve_ppool_ppages(), NUM_PAGES(), page_pool, ppages,
+ *      mem_hyp_image_no_load_reserved
  */
 static void mem_reserve_physical_memory(struct page_pool* pool)
 {
@@ -676,6 +677,8 @@ static bool mem_setup_root_pool(struct mem_region** root_mem_region)
 
 /**
  * @brief Not implemented. It is specific to the supported memory accessl control mechanism.
+ * @param load_addr Unused.
+ * @param root_region Unused.
  * @see WARNING()
  */
 __attribute__((weak)) void mem_color_hypervisor(const paddr_t load_addr,
@@ -690,6 +693,12 @@ __attribute__((weak)) void mem_color_hypervisor(const paddr_t load_addr,
 
 /**
  * @brief Not implemented. It is specific to the supported memory accessl control mechanism.
+ * @param as Unused.
+ * @param va Unused.
+ * @param ppages Unused.
+ * @param num_pages Unused.
+ * @param flags Unused.
+ * @return None.
  * @see: ERROR()
  */
 __attribute__((weak)) bool mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages,
@@ -706,6 +715,11 @@ __attribute__((weak)) bool mem_map_reclr(struct addr_space* as, vaddr_t va, stru
 
 /**
  * @brief Not implemented. It is specific to the supported memory accessl control mechanism.
+ * @param pool Ununsed.
+ * @param num_pages Unused.
+ * @param colors Unused.
+ * @param ppages Unused.
+ * @return None.
  * @see ERROR()
  */
 __attribute__((weak)) bool pp_alloc_clr(struct page_pool* pool, size_t num_pages, colormap_t colors,
@@ -751,7 +765,6 @@ struct ppages mem_alloc_ppages(colormap_t colors, size_t num_pages, bool aligned
  * page pools for other regions, reserves static physical memory regions,
  * colors the hypervisor image (if supported and configured)
  * @note All the CPUs under management are synchronized at the end
- * @return None.
  * @see mem_prot_init(), cache_enumerate(), mem_setup_root_pool(), list_init(),
  *      config_init(), mem_reserve_physical_memory(), mem_color_hypervisor(),
  *      mem_create_ppools(), cpu_sync_and_clear_msgs(), cpu_is_master(),

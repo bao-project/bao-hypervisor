@@ -1,10 +1,10 @@
 /**
  * SPDX-License-Identifier: Apache-2.0
  * Copyright (c) Bao Project and Contributors. All rights reserved.
- * 
+ *
  * @file vmm.c
- * @brief This source file contains the implementation of VM management for MPU-based systems.
- * 
+ * @brief   This source file contains the implementation of VM management
+ *          for MPU-based systems.
  */
 
 #include <bao.h>

@@ -127,14 +127,14 @@ static void mem_free_ppages(struct ppages* ppages)
 /**
  * @brief Allocate pages from a pool according to cache coloring scheme.
  * @param pool Source page pool.
- * @param n Number of pages to allocate
+ * @param num_pages Number of pages to allocate
  * @param colors Bitmask indicating the color map for the pages.
  * @param ppages Physical pages allocated
  * @return true if allocation succeeded, false otherwise
  * @see pp_next_clr(), bitmap_set(), page_pool, spin_lock, colormap_t, ppages, spin_lock(),
  *      spin_unlock(), bitmap_get(), PAGE_SIZE
  */
-bool pp_alloc_clr(struct page_pool* pool, size_t n, colormap_t colors, struct ppages* ppages)
+bool pp_alloc_clr(struct page_pool* pool, size_t num_pages, colormap_t colors, struct ppages* ppages)
 {
     size_t allocated = 0;
 
@@ -158,7 +158,7 @@ bool pp_alloc_clr(struct page_pool* pool, size_t n, colormap_t colors, struct pp
      * beggining of page pool to the start of the previous iteration.
      */
     for (size_t i = 0; i < 2 && !ok; i++) {
-        while ((allocated < n) && (index < top)) {
+        while ((allocated < num_pages) && (index < top)) {
             allocated = 0;
 
             /* Find first free page on the target colors */
@@ -171,24 +171,25 @@ bool pp_alloc_clr(struct page_pool* pool, size_t n, colormap_t colors, struct pp
              * Count the number of free pages contigous on the target color segement until n pages
              * are found or we reach top page of the search.
              */
-            while ((index < top) && (bitmap_get(pool->bitmap, index) == 0) && (allocated < n)) {
+            while ((index < top) && (bitmap_get(pool->bitmap, index) == 0) &&
+                (allocated < num_pages)) {
                 allocated++;
                 index = pp_next_clr(pool->base, ++index, colors);
             }
         }
 
-        if (allocated == n) {
+        if (allocated == num_pages) {
             /**
              * We've found n contigous free pages that fit the color pattern, Fill the output ppage
              * arg, mark the pages as allocated and update page pool internal state.
              */
-            ppages->num_pages = n;
+            ppages->num_pages = num_pages;
             ppages->base = pool->base + (first_index * PAGE_SIZE);
-            for (size_t j = 0; j < n; j++) {
+            for (size_t j = 0; j < num_pages; j++) {
                 first_index = pp_next_clr(pool->base, first_index, colors);
                 bitmap_set(pool->bitmap, first_index++);
             }
-            pool->free -= n;
+            pool->free -= num_pages;
             pool->last = first_index;
             ok = true;
             break;
@@ -527,15 +528,16 @@ vaddr_t mem_alloc_vpage(struct addr_space* as, as_sec_t section, vaddr_t at, siz
 }
 
 /**
- * @brief Unmap pages allocated at a virtual address. Optionally frees the pages back to the page pool
+ * @brief Unmap pages allocated at a virtual address.
+ * Optionally it can free the pages back to the page pool.
  * @param as Address space configuration in which the pages are mapped.
  * @param at Virtual starting address of the pages to unmap.
  * @param num_pages Number of pages to unmap.
- * @param free_ppages Option to return the corresponding memory block back to its original pool of (physical) pages.
+ * @param free_ppages Option to return the physical pages back to their original pool.
  * @see addr_space, vaddr_t, section, spin_lock(), spin_unlock(), pt_get_pte(), pte_t,
  *      pte_valid(), pt_lvlsize(), pte_table(), pt_getpteindex(), pt_nentries(),
  *      mem_expand_pte(), pte_addr(), mem_ppages_get(), mem_free_ppages(), tlb_inv_va(),
- *      cpu(), ppages, paddr_t,
+ *      cpu(), ppages, paddr_t.
  */
 void mem_unmap(struct addr_space* as, vaddr_t at, size_t num_pages, bool free_ppages)
 {
@@ -837,7 +839,8 @@ bool mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages, siz
 }
 
 /**
- * @brief Map memory area in two different address space configurations and copy the contents onto the other.
+ * @brief Map memory area in two different address space configurations and
+ *        copy the contents onto the other.
  * @param ass Source address space configuration
  * @param asd Destination address space configuration
  * @param asd_section Destination address space's section type
@@ -1122,6 +1125,7 @@ static unsigned long as_id_alloc(struct addr_space* as)
  * Sets up a new address space with the given type, ID and color.
  * @param as Pointer to address space configuration.
  * @param type Type of address space (AS_HYP, AS_VM)
+ * @param root_pt Page tables root for the initializing address space.
  * @param colors Memory region color (unused in MPU-based systems)
  * @see as_arch_init, mem_vmpu_free_entry, as_id_alloc, addr_space, AS_TYPE
  *      colormap_t, spinlock_t, VMPU_NUM_ENTRIES, SPINLOCK_INITVAL, list, vmpu
@@ -1161,7 +1165,7 @@ void mem_prot_init(void)
  * @brief Maps a MPU region to the address space configuration
  * @param as Address space configuration in which the region shall be mapped.
  * @param section The type of memory section to be mapped.
- * @param ppages Description of the physically-addressed memory pages to be mapped.
+ * @param page Description of the physically-addressed memory pages to be mapped.
  * @param at Virtual address where the pages shall be mapped.
  * @param num_pages Number of pages to map.
  * @param flags mem_map() flags.

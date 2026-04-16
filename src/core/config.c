@@ -4,7 +4,6 @@
  *
  * @file config.c
  * @brief This source file contains the implementation of VM configuration initialization.
- *
  */
 
 #include <config.h>

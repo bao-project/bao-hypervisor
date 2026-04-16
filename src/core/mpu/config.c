@@ -3,8 +3,8 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  *
  * @file config.c
- * @brief This source file contains the implementation for memory protection configuration in MPU-based systems.
- *
+ * @brief This source file contains the implementation of memory protection
+ *        configuration in MPU-based systems.
  */
 
 #include <bao.h>

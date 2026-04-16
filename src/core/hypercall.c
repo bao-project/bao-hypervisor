@@ -4,7 +4,6 @@
  *
  * @file hypercall.c
  * @brief This source file contains the definition of the hypervisor call entry point.
- *
  */
 
 #include <hypercall.h>

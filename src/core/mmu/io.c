@@ -2,9 +2,9 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  *
- * @file remio.c
- * @brief This source file contains the implmentation of IOMMU configuration procedure for the supported MPU-based systems.
- *
+ * @file io.c
+ * @brief   This source file contains the implementation of IOMMU configuration
+ *          procedure for the supported MMU-based systems.
  */
 
 #include <io.h>
@@ -15,7 +15,7 @@ struct iommu_device {
 };
 
 /**
- * @brief Perform the initial configuration of the mechanism for controlling the memory access of IO devices.
+ * @brief Perform the initial configuration of the memory access control for IO devices.
  * Performs system-wide initialization of the IOMMU for MMU-based systems.
  * It entirely relies on the architecture-specific implementation of the IOMMU.
  * @see iommu_arch_init()
@@ -26,7 +26,7 @@ void io_init(void)
 }
 
 /**
- * @brief Initialize the mechanism for controlling the memory access of IO devices to a VM-owned address space, as per its configuration.
+ * @brief Initialize the memory access control for IO devices to a VM-owned address space.
  * Performs the configuration of the IOMMU to grant an IO device access to
  * the specific VM's address space.
  * @param vm Pointer to the VM structure.

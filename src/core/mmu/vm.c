@@ -1,10 +1,10 @@
 /**
  * SPDX-License-Identifier: Apache-2.0
  * Copyright (c) Bao Project and Contributors. All rights reserved.
- * 
+ *
  * @file vm.c
- * @brief This file implements the initialization of the VMs' address space access control for MMU-based systems.
- * 
+ * @brief   This file implements the initialization of the VMs' address space
+ *          access control for MMU-based systems.
  */
 
 #include <vm.h>

@@ -4,7 +4,6 @@
  *
  * @file init.c
  * @brief This source file implements the CPUs initialization sequence.
- *
  */
 
 #include <bao.h>

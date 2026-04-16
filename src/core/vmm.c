@@ -1,10 +1,9 @@
 /**
  * SPDX-License-Identifier: Apache-2.0
  * Copyright (c) Bao Project and Contributors. All rights reserved.
- * 
+ *
  * @file vmm.c
  * @brief This source file contains the core implementation for VM management.
- * 
  */
 
 #include <vmm.h>

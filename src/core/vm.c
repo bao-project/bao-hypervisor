@@ -226,11 +226,11 @@ static void vm_map_img_rgn(struct vm* vm, const struct vm_config* vm_config,
 }
 
 /**
- * @brief Initialize the memory regions defined in the VM configuration, within its mapped address space.
+ * @brief Initialize the memory regions defined in the VM configuration.
  * @param vm VM of which the memory regions are mapped.
  * @param vm_config VM configuration describing the platform's memory layout and image location.
- * @see range_in_range(), vm_map_img_rgn(), vm_map_mem_region(), vm_mem_region, 
- *      vm_config, vm
+ * @see range_in_range(), vm_map_img_rgn(), vm_map_mem_region(), vm_mem_region,
+ *      vm_config, vm.
  */
 static void vm_init_mem_regions(struct vm* vm, const struct vm_config* vm_config)
 {
@@ -249,14 +249,14 @@ static void vm_init_mem_regions(struct vm* vm, const struct vm_config* vm_config
 /**
  * @brief Initialize a VM's IPC resources
  * Map the VM's shared memory regions for inter-processor communication.
- * Its data structures are initialized and any configured physical interrupt is 
+ * Its data structures are initialized and any configured physical interrupt is
  * assigned.
  * @note    If the shared memory configuration is not correct (invalid ID),
  *          the IPC will not be mapped. A warning wil be issued but a runtime error
  *          may be encountered when configured or used by the VM.
  * @note    If the configured IPC shared memory's size is larger than the respective
  *          shared memory region, then the mapped IPC shared memory will be truncated
- *          to the size of the memory region. 
+ *          to the size of the memory region.
  * @param vm VM for which the IPCs are defined
  * @param vm_config The VM configuration.
  * @see vm, vm_config, ipc, shmem, WARNING(), shmem_get(), interrupts_vm_assign(),
@@ -435,6 +435,7 @@ static struct vm* vm_allocation_init(struct vm_allocation* vm_alloc)
  * @note    All CPUs' executions are synchronized at various stages to ensure
  *          VM state consistency during its initialization.
  * @param vm_alloc VM allocation structure with memory layout
+ * @param vm_init_sync Token used to synchronize all CPUs.
  * @param vm_config Configuration describing the VM
  * @param master true if this CPU is the VM's master
  * @param vm_id Unique identifier for the VM
@@ -524,6 +525,8 @@ void vm_emul_add_reg(struct vm* vm, struct emul_reg* emu)
  * @brief Look up the emulation handler for a given memory-mapped address.
  * @param vm Pointer to the VM that may own the memory access emulation handler.
  * @param addr Guest virtual address to look up.
+ * @return  emul_handler_t Emulation handler registered for the memory address.
+ *          NULL if no handler is registered for the address.
  * @see list_push(), vm, emul_mem
  */
 emul_handler_t vm_emul_get_mem(struct vm* vm, vaddr_t addr)
@@ -580,11 +583,12 @@ void vm_msg_broadcast(struct vm* vm, struct cpu_msg* msg)
 
 /**
  * @brief Translate a virtual CPU mask to a physical CPU mask.
- * @param vm Pointer to the hypervisor's private VM data structure, storing the CPUs ID assigned to the VM.
+ * @param vm Pointer to the hypervisor's private VM data structure, storing the
+ *           CPUs ID assigned to the VM.
  * @param mask Virtual CPU bitmask to translate.
  * @param len Number of bits in the mask to consider.
  * @return cpumap_t Physical CPU bitmask corresponding to the input virtual mask.
- * @see vm_translate_to_pcpuid(), vm, cpumap_t, cpuid_t, INVALID_CPUID
+ * @see vm_translate_to_pcpuid(), vm, cpumap_t, cpuid_t, INVALID_CPUID.
  */
 __attribute__((weak)) cpumap_t vm_translate_to_pcpu_mask(struct vm* vm, cpumap_t mask, size_t len)
 {
@@ -600,7 +604,8 @@ __attribute__((weak)) cpumap_t vm_translate_to_pcpu_mask(struct vm* vm, cpumap_t
 
 /**
  * @brief Translate a physical CPU mask to a virtual CPU mask.
- * @param vm Pointer to the hypervisor's private VM data structure, storing the CPUs ID assigned to the VM.
+ * @param vm Pointer to the hypervisor's private VM data structure, storing the
+ *           CPUs ID assigned to the VM.
  * @param mask Physical CPU bitmask to translate.
  * @param len Number of bits in the mask to consider.
  * @return cpumap_t Virtual CPU bitmask corresponding to the input physical mask.
@@ -642,6 +647,8 @@ void vcpu_run(struct vcpu* vcpu)
 
 /**
  * @brief Not implemented. It is ISA-specific
+ * @param vm Unused.
+ * @param dev Unused.
  * @see ERROR()
  */
 __attribute__((weak)) void vm_arch_allow_mmio_access(struct vm* vm, struct vm_dev_region* dev)

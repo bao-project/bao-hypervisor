@@ -4,7 +4,7 @@
  *
  * @file cpu.c
  * @brief This source file contains the implementation of the CPU management.
- *
+
  */
 
 #include <cpu.h>
@@ -42,7 +42,6 @@ struct cpuif cpu_interfaces[PLAT_CPU_NUM];
  * and, if running on the master CPU, initializes the global
  * synchronization token and sets up inter-processor message handler IDs.
  * @param cpu_id Identifier of the CPU to be initialized.
- * @return None.
  * @see cpuid_t, cpu(), cpu_if(), cpu_arch_init(), list_init(), cpu_is_master(),
  *      cpu_sync_init(), cpu_sync_barrier(), platform, _ipi_cpumsg_handlers_id_start,
  *      _ipi_cpumsg_handlers_id_end, ipi_cpumsg_handlers, size_t
@@ -77,11 +76,8 @@ void cpu_init(cpuid_t cpu_id)
  * triggers an IPI to wake the target CPU.
  * @param trgtcpu Target CPU identifier.
  * @param msg Pointer to the message to send. The message contents are copied.
- * @return None.
- *
  * @see cpuid_t, cpu_msg, cpu_msg_node, node_t, objpool_alloc(), ERROR(),
  *      list_push(), cpu_if(), fence_sync_write(), interrupts_cpu_sendipi()
- *
  */
 void cpu_send_msg(cpuid_t trgtcpu, struct cpu_msg* msg)
 {
@@ -121,7 +117,6 @@ bool cpu_get_msg(struct cpu_msg* msg)
  * the registered inter-processor message handler (ipi_cpumsg_handlers) for
  * each message. The cpu->handling_msgs flag is used to indicate message
  * processing is in progress.
- * @return None.
  * @see cpu(), cpu_get_msg(), ipi_cpumsg_handlers[], ipi_cpumsg_handler_num
  *      cpu_msg_handler_t, cpu_msg
  */
@@ -142,7 +137,6 @@ void cpu_msg_handler(void)
  * Calls the architecture-specific standby entry routine.
  * This function is expected not to return; if it does,
  * a spurious wake-up is reported as an error.
- * @return None.
  * @see cpu_arch_standby(), ERROR()
  */
 void cpu_standby(void)
@@ -160,7 +154,6 @@ void cpu_standby(void)
  * @brief Power down the CPU core.
  * This function calls an architecture-specific power-down routine. The function is
  * not expected to return; if it does, the function logs a spurious wake-up.
- * @return None.
  * @see cpu_arch_powerdown(), ERROR()
  */
 void cpu_powerdown(void)
@@ -179,7 +172,6 @@ void cpu_powerdown(void)
  * Checks for pending IPIs and handles CPU messages, then resumes the
  * currently assigned vCPU (if any) or re-enters standby state.
  * It is intended to be called with a rewound stack by architecture-specific wakeup code.
- * @return None.
  * @see interrupts_ipi_check(), interrupts_ipi_clear(), cpu_msg_handler(), vcpu_run(),
  *      cpu_standby(), cpu(), vcpu, cpu
  */
@@ -201,10 +193,8 @@ void cpu_standby_wakeup(void)
  * @brief Wakeup handler invoked after powerdown exit.
  * Checks for IPIs and handles messages, then resumes
  * the vCPU if present or re-enters powerdown otherwise.
- * @return None.
  * @see interrupts_ipi_check(), interrupts_ipi_clear(), cpu_msg_handler(), vcpu_run()
  *      cpu_powerdown(), cpu(), cpu, vcpu
- *
  */
 void cpu_powerdown_wakeup(void)
 {

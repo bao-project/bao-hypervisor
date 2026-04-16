@@ -366,10 +366,10 @@ static unsigned long as_id_alloc(struct addr_space* as)
 /**
  * @brief Initialize an address space structure in a MPU-based system.
  * Set up a new address space with the given type and ID.
- * @note Cache coloring is not a feature of MPU-based systems and @param color will not be used.
+ * @note Cache coloring is not a feature of MPU-based systems and @p colors will not be used.
  * @param as Pointer to address space configuration.
- * @param type Type of address space (AS_HYP, AS_VM)
- * @param colors Memory region color (unused in MPU-based systems)
+ * @param type Type of address space (AS_HYP, AS_VM).
+ * @param colors Unused.
  * @see as_arch_init, mem_vmpu_free_entry, as_id_alloc, addr_space, AS_TYPE
  *      colormap_t, spinlock_t, VMPU_NUM_ENTRIES, SPINLOCK_INITVAL, list, vmpu.
  */
@@ -497,11 +497,12 @@ static void mem_region_broadcast(struct addr_space* as, struct mp_region* mpr, u
 }
 
 /**
- * @brief Quert whether a change in the address space configuration shall be broadcasted or not by design.
+ * @brief Verify whether a change in the address space configuration shall be broadcasted by design.
  * @param as Address space affected by the change.
  * @param mpr Memory region affected by the change.
- * @param broadcast Expected value of the broadcast query.
- * @return false if the region or address space are strictly owned by the hypervisor, broadcast otherwise.
+ * @param broadcast Desired return value.
+ * @return false if the region or address space are strictly owned by the hypervisor, broadcast
+ * otherwise.
  * @see as_sec_t, AS_TYPE, addr_space, mp_region
  */
 static bool mem_broadcast(struct addr_space* as, struct mp_region* mpr, bool broadcast)
@@ -514,7 +515,7 @@ static bool mem_broadcast(struct addr_space* as, struct mp_region* mpr, bool bro
 }
 
 /**
- * @brief Verify whether a memory region is locked by design (owned by the hypervisor) or not.
+ * @brief Verify whether a memory region is locked by design (owned by the hypervisor).
  * @param mpr memory region of which lock to verify.
  * @param locked the value returned if the region is locked by design.
  * @return true if the region belong to the hypervisor, else equal to locked.
@@ -531,13 +532,15 @@ static bool mem_check_forced_locked(struct mp_region* mpr, bool locked)
 }
 
 /**
- * @brief Maps and inserts a memory region into vMPU entries. Optionally it broadcast the vMPU addition.
+ * @brief Maps and inserts a memory region into vMPU entries.
+ * Optionally it broadcasts the addition of a new vMPU entry.
  * @param as Address space configuration from which the region is mapped.
  * @param mpid Identifier of the vMPU entry.
  * @param mpr Pointer to the memory protection region configuration.
  * @param broadcast Option to broadcast the change via IPI to other CPUs.
  * @param locked Option to lock the vMPU entry's memory region.
- * @return true if the vMPU entry has been successfully inserted in the address space configuration, false otherwise.
+ * @return true if the vMPU entry has been successfully inserted in the address
+ *              space configuration, false otherwise.
  * @see addr_space, mpid_t, mp_region, mem_check_forced_locked, mpu_map(), mem_vmpu_set_entry(),
  *      mem_broadcast(), mem_region_broadcast(), MEM_INSERT_REGION
  */
@@ -632,7 +635,8 @@ static void mem_handle_broadcast_insert(struct addr_space* as, struct mp_region*
 }
 
 /**
- * @brief Handle vMPU entry removal event by unmapping the broadcasted memory region from its CPU-bound MPU configuration.
+ * @brief   Handle vMPU entry removal event by unmapping the broadcasted
+ *          memory region from its CPU-bound MPU configuration.
  * @note    It does not call mpu_unmap() if the address space belongs to the hypevisor.
  *          This is to avoid broadcasting the configuration to all CPUs.
  * @param as Address space configuration to alter.
@@ -872,7 +876,8 @@ bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool 
  * @param size Size of the range to unmap
  * @param broadcast Option to broadcast the vMPU change to other CPUs.
  * @return true if the whole range is unmapped. false otherwise.
- * @note This function can affect (resize) the configuration of vMPU entries overlapping in the memory range.
+ * @note    This function can affect (resize) the configuration of vMPU entries
+ *          overlapping in the memory range.
  * @see addr_space, vaddr_t, spin_lock(), mp_region, mpid_t, mem_vmpu_find_overlapping_region(),
  *      INVALID_MPID, mem_vmpu_get_entry(), mem_vmpu_remove_region(), mem_vmpu_allocate_entry(),
  *      mem_vmpu_insert_region(), spin_unlock().

@@ -20,6 +20,8 @@ void io_init()
 
 /**
  * @brief Not implemented. IOMMU/SMMU is not supported by MPU-based systems.
+ * @param vm Unused.
+ * @param config Unused.
  * @return bool Always returns true
  */
 bool io_vm_init(struct vm* vm, const struct vm_config* config)
@@ -32,6 +34,8 @@ bool io_vm_init(struct vm* vm, const struct vm_config* config)
 
 /**
  * @brief Not implemented. IOMMU/SMMU is not supported by MPU-based systems.
+ * @param vm Unused.
+ * @param dev_id Unused.
  * @return bool Always returns true.
  */
 bool io_vm_add_device(struct vm* vm, deviceid_t dev_id)

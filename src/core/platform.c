@@ -1,7 +1,7 @@
 /**
  * SPDX-License-Identifier: Apache-2.0
  * Copyright (c) Bao Project and Contributors. All rights reserved.
- * 
+ *
  * @file platform.c
  * @brief This source file defines placeholder for the platform-specific initialization procedures.
  */
@@ -22,6 +22,8 @@ __attribute__((weak)) void platform_config_init(void) { }
 
 /**
  * @brief Not implemented. Platform-specific configuration initialization.
+ * @param cpuid Unused.
+ * @param load_addr Unused.
  * @note It shall be defined by the platform-specific code.
  */
 __attribute__((weak)) void plat_cpu_init(cpuid_t cpuid, paddr_t load_addr)

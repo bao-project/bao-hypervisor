@@ -1,10 +1,10 @@
 /**
  * SPDX-License-Identifier: Apache-2.0
  * Copyright (c) Bao Project and Contributors. All rights reserved.
- * 
+ *
  * @file vmm.c
- * @brief This source file contains the implementation of VM management for MMU-based systems.
- * 
+ * @brief   This source file contains the implementation of VM management
+ *          for MMU-based systems.
  */
 
 #include <vmm.h>
@@ -15,7 +15,7 @@
  * @brief Initialize the IOMMU for VM management.
  * It configures the address space access control mechanism for the system's IO devices.
  * @see io_init
- * 
+ *
  */
 void vmm_io_init(void)
 {

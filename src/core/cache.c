@@ -4,7 +4,6 @@
  *
  * @file cache.c
  * @brief This source file contains the cache configuration implementation
- *
  */
 
 #include <cache.h>

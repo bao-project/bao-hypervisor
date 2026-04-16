@@ -1,10 +1,9 @@
 /**
  * SPDX-License-Identifier: Apache-2.0
  * Copyright (c) Bao Project and Contributors. All rights reserved.
- * 
+ *
  * @file objpool.c
  * @brief This source files implements the management of object pools.
- * 
  */
 
 #include <objpool.h>
@@ -18,7 +17,7 @@
  *
  * @param objpool Pointer to object pool structure to initialize
  * @see memset(), BITMAP_SIZE_IN_BYTES, SPINLOCK_INITVAL, objpool
- * 
+ *
  */
 void objpool_init(struct objpool* objpool)
 {
@@ -38,7 +37,7 @@ void objpool_init(struct objpool* objpool)
  * @return void* Pointer to the allocated object, or NULL if pool is full
  * @see objpool, objpool_id_t, spin_lock()/spin_unlock(),
  * @see bitmap_find_nth(), bitmap_set()
- * 
+ *
  */
 void* objpool_alloc_with_id(struct objpool* objpool, objpool_id_t* id)
 {
@@ -82,7 +81,7 @@ void* objpool_alloc(struct objpool* objpool)
  * @param obj Pointer to the object to free
  * @see in_range(), IS_ALIGNED, spin_lock(), spin_unlock(), bitmap_clear(), WARNING()
  * @see vaddr_t, objpool, spinlock_t, bitmap_t
- * 
+ *
  */
 void objpool_free(struct objpool* objpool, void* obj)
 {
