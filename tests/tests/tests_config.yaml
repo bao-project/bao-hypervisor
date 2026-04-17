@@ -18,8 +18,8 @@ setups:
               tc4dx:
                 generic_flags: "FLASH_BASE=0xA000000 FLASH_SIZE=0x8000 RAM_BASE=0x9000000 RAM_SIZE=0x1000"
                 cpu_num: 4
-              s32:
-                generic_flags: "FLASH_BASE=0x10000000 FLASH_SIZE=0x10000 RAM_BASE=0x20000000 RAM_SIZE=0x100000"
+              s32z270:
+                generic_flags: ""
                 cpu_num: 4
               zcu104:
                 generic_flags: ""
