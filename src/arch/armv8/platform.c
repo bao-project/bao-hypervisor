@@ -63,7 +63,6 @@ unsigned long platform_arch_cpuid_to_mpidr(const struct platform* plat, cpuid_t 
     }
 
 done:
-
     mpidr |= MPIDR_RES1;
 
     if (plat->cpu_num == 1) {
