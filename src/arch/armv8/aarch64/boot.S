@@ -47,6 +47,7 @@ _reset_handler:
 
 	mrs  x0, MPIDR_EL1
 	adrp x1, _image_start
+    bl mpidr_to_cpu_id
 
 	adr x2, img_addr
     str x1, [x2] // store image load address in img_addr
@@ -66,7 +67,9 @@ _reset_handler:
 	 */
 
 	lsr x3, x0, #8
-	and x3, x3, 0xff
+    and x0, x0, #0xFF
+	and x3, x3, #0xFF
+
 	adr x4, platform
 	ldr x4, [x4, PLAT_ARCH_OFF+PLAT_ARCH_CLUSTERS_OFF+PLAT_CLUSTERS_CORES_NUM_OFF]
 	ldr x5, =BAO_VAS_BASE
@@ -224,3 +227,72 @@ set_loop:
 	cmp x5, x3 // last way reached yet?
 	ble way_loop // if not, iterate way_loop
 	ret
+
+/*
+ * Registers
+ * x0 - MPIDR_EL1 input / output: [15:8] cluster ID, [7:0] core ID
+ * x1 - image base
+ * x2 - mpidr_table ptr
+ * x3 - cpu_num
+ * x4 - iterator
+ * x5 - current entry
+ * x6 - index in mpidr_table->table[]
+ * x7 - original MPIDR (saved for MT bit check)
+ * x8 - temporary scratch register
+ */
+.global mpidr_to_cpu_id
+mpidr_to_cpu_id:
+    mov x7, x0                        /* save original MPIDR for MT check */
+    adr x2, platform
+    ldr x2, [x2, PLAT_ARCH_OFF+PLAT_ARCH_MPIDR_TABLE_OFF+PLAT_MPIDR_TABLE_OFF]
+    cbz x2, no_table
+    /* Relocate pointer */
+    ldr x5, =BAO_VAS_BASE
+    sub x2, x2, x5
+    add x2, x2, x1
+    mov x4, x2
+    adr x3, platform
+    ldr x3, [x3, PLAT_CPUNUM_OFF]
+    and x0, x0, #0x00FFFFFF           /* mask MPIDR input once before the loop */
+    mov x6, #0
+1:  /* table scan */
+    ldr x5, [x4]
+    and x5, x5, #0x00FFFFFF           /* mask table entry */
+    cmp x5, x0
+    b.eq found
+    /* Increment iterator */
+    add x4, x4, #8
+    /* Increment index in the table */
+    add x6, x6, #1
+    /* Loop until the end */
+    cmp x6, x3
+    b.lt 1b
+    /* not found */
+    mov x0, #0xff
+    ret
+found:
+    tbz x7, #24, found_no_mt
+    /* MT == 1: Aff2=cluster, Aff1=core */
+    ubfx x8, x5, #16, #8
+    ubfx x0, x5, #8,  #8
+    orr  x0, x0, x8, lsl #8
+    ret
+found_no_mt:
+    /* MT == 0: Aff1=cluster, Aff0=core */
+    ubfx x8, x5, #8, #8
+    ubfx x0, x5, #0, #8
+    orr  x0, x0, x8, lsl #8
+    ret
+no_table:
+    tbz x7, #24, no_mt
+    /* MT == 1: Aff2=cluster, Aff1=core */
+    ubfx x8, x7, #16, #8
+    ubfx x0, x7, #8,  #8
+    orr  x0, x0, x8, lsl #8
+    ret
+no_mt:
+    /* MT == 0: Aff1=cluster, Aff0=core */
+    ubfx x8, x7, #8, #8
+    ubfx x0, x7, #0, #8
+    orr  x0, x0, x8, lsl #8
+    ret
