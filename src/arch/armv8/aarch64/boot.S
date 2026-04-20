@@ -238,6 +238,7 @@ set_loop:
  * x5 - current entry
  * x6 - index in mpidr_table->table[]
  * x7 - original MPIDR (saved for MT bit check)
+ * x8 - temporary scratch register
  */
 .global mpidr_to_cpu_id
 mpidr_to_cpu_id:
