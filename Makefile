@@ -221,6 +221,9 @@ ifeq ($(arch_mem_prot),mpu)
 	build_macros+=-DMEM_PROT_MPU
 endif
 ifeq ($(plat_mem),non_unified)
+	ifeq ($(ARCH),aarch64)
+		$(error AArch64 with non_unified memory is not supported)
+	endif
 	build_macros+=-DMEM_NON_UNIFIED
 endif
 ifeq ($(phys_irqs_only),y)
