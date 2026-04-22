@@ -1,6 +1,10 @@
 /**
  * SPDX-License-Identifier: Apache-2.0
  * Copyright (c) Bao Project and Contributors. All rights reserved.
+ *
+ * @file    mem.c
+ * @brief   This file implements the configuration for the address space access
+ *          control for MMU-based systems.
  */
 
 #include <bao.h>
@@ -57,6 +61,13 @@ struct {
     [AS_VM] = { vm_secs, sizeof(vm_secs) / sizeof(struct section) },
 };
 
+/**
+ * @brief Calculate size required for CPU private data structure during startup.
+ * Computes the page-aligned size required to store the cpu structure and
+ * all page table levels for the current CPU during boot.
+ * @return Size in bytes, aligned to PAGE_SIZE
+ * @see cpu, pt_size(), ALIGN, cpu(), PAGE_SIZE,
+ */
 size_t mem_cpu_boot_alloc_size(void)
 {
     size_t size = ALIGN(sizeof(struct cpu), PAGE_SIZE);
@@ -66,6 +77,14 @@ size_t mem_cpu_boot_alloc_size(void)
     return size;
 }
 
+/**
+ * @brief Find the next page index matching the designated colors.
+ * @param base Physical base address of the pool
+ * @param from Starting page index to check
+ * @param colors Bitmask of designated colors
+ * @return Index of the next page compliant with the color scheme
+ * @see COLOR_NUM, COLOR_SIZE, PAGE_SIZE
+ */
 static inline size_t pp_next_clr(paddr_t base, size_t from, colormap_t colors)
 {
     size_t clr_offset = (base / PAGE_SIZE) % (COLOR_NUM * COLOR_SIZE);
@@ -78,6 +97,14 @@ static inline size_t pp_next_clr(paddr_t base, size_t from, colormap_t colors)
     return index;
 }
 
+/**
+ * @brief Free a block of physical pages back to their owning pool
+ * Finds the page pool that owns the provided physical pages and updates
+ * its bitmap accordingly.
+ * @param ppages Pointer to the physical pages descriptor to free
+ * @see page_pool, bitmap_clear, bitmap_clear_consecutive, pp_next_clr, spin_unlock()
+ *      spin_lock(), list_foreach(), all_clrs(), in_range(), PAGE_SIZE
+ */
 static void mem_free_ppages(struct ppages* ppages)
 {
     list_foreach (page_pool_list, struct page_pool, pool) {
@@ -97,7 +124,17 @@ static void mem_free_ppages(struct ppages* ppages)
     }
 }
 
-bool pp_alloc_clr(struct page_pool* pool, size_t n, colormap_t colors, struct ppages* ppages)
+/**
+ * @brief Allocate pages from a pool according to cache coloring scheme.
+ * @param pool Source page pool.
+ * @param num_pages Number of pages to allocate
+ * @param colors Bitmask indicating the color map for the pages.
+ * @param ppages Physical pages allocated
+ * @return true if allocation succeeded, false otherwise
+ * @see pp_next_clr(), bitmap_set(), page_pool, spin_lock, colormap_t, ppages, spin_lock(),
+ *      spin_unlock(), bitmap_get(), PAGE_SIZE
+ */
+bool pp_alloc_clr(struct page_pool* pool, size_t num_pages, colormap_t colors, struct ppages* ppages)
 {
     size_t allocated = 0;
 
@@ -121,7 +158,7 @@ bool pp_alloc_clr(struct page_pool* pool, size_t n, colormap_t colors, struct pp
      * beggining of page pool to the start of the previous iteration.
      */
     for (size_t i = 0; i < 2 && !ok; i++) {
-        while ((allocated < n) && (index < top)) {
+        while ((allocated < num_pages) && (index < top)) {
             allocated = 0;
 
             /* Find first free page on the target colors */
@@ -134,24 +171,25 @@ bool pp_alloc_clr(struct page_pool* pool, size_t n, colormap_t colors, struct pp
              * Count the number of free pages contigous on the target color segement until n pages
              * are found or we reach top page of the search.
              */
-            while ((index < top) && (bitmap_get(pool->bitmap, index) == 0) && (allocated < n)) {
+            while ((index < top) && (bitmap_get(pool->bitmap, index) == 0) &&
+                (allocated < num_pages)) {
                 allocated++;
                 index = pp_next_clr(pool->base, ++index, colors);
             }
         }
 
-        if (allocated == n) {
+        if (allocated == num_pages) {
             /**
              * We've found n contigous free pages that fit the color pattern, Fill the output ppage
              * arg, mark the pages as allocated and update page pool internal state.
              */
-            ppages->num_pages = n;
+            ppages->num_pages = num_pages;
             ppages->base = pool->base + (first_index * PAGE_SIZE);
-            for (size_t j = 0; j < n; j++) {
+            for (size_t j = 0; j < num_pages; j++) {
                 first_index = pp_next_clr(pool->base, first_index, colors);
                 bitmap_set(pool->bitmap, first_index++);
             }
-            pool->free -= n;
+            pool->free -= num_pages;
             pool->last = first_index;
             ok = true;
             break;
@@ -169,6 +207,13 @@ bool pp_alloc_clr(struct page_pool* pool, size_t n, colormap_t colors, struct pp
     return ok;
 }
 
+/**
+ * @brief Find the section containing a virtual address
+ * @param as Address space configuration to search
+ * @param va Virtual address to locate
+ * @return Pointer to section or NULL when not found
+ * @see section, addr_space, vaddr_t, AS_TYPE
+ */
 static struct section* mem_find_sec(struct addr_space* as, vaddr_t va)
 {
     for (size_t i = 0; i < sections[as->type].sec_size; i++) {
@@ -180,6 +225,16 @@ static struct section* mem_find_sec(struct addr_space* as, vaddr_t va)
     return NULL;
 }
 
+/**
+ * @brief Check whether a PTE slot at level can be allocated
+ * @param as Address space configuration being operated on
+ * @param pte Pointer to the PTE slot
+ * @param lvl Level index
+ * @param left Number of pages left to allocate
+ * @param addr Virtual address corresponding to the PTE
+ * @return true if the slot can be used to allocate memory.
+ * @see pt_lvl_terminal(), pte_valid(), pt_lvlsize(),  addr_space, pte_t, vaddr_t.
+ */
 static inline bool pte_allocable(struct addr_space* as, pte_t* pte, size_t lvl, size_t left,
     vaddr_t addr)
 {
@@ -189,6 +244,16 @@ static inline bool pte_allocable(struct addr_space* as, pte_t* pte, size_t lvl, 
             ((addr % pt_lvlsize(&as->pt, lvl)) == 0));
 }
 
+/**
+ * @brief Allocate a page table and initialize its entries
+ * @param as Address space configuration where the new table belongs
+ * @param parent Parent PTE to the PT to allocate and initialize.
+ * @param lvl Parent PTE level.
+ * @param addr Virtual address used to compute indices
+ * @return Pointer to the first PTE of the new table (virtual address) or NULL on failure
+ * @see mem_alloc_ppages, pte_set(), pt_get(), pt_nentries(), fence_sync_write(),
+ *      ppages, pte_t, addr_space, vaddr_t, PTE_INVALID
+ */
 static inline pte_t* mem_alloc_pt(struct addr_space* as, pte_t* parent, size_t lvl, vaddr_t addr)
 {
     /* Must have lock on as and va section to call */
@@ -208,6 +273,17 @@ static inline pte_t* mem_alloc_pt(struct addr_space* as, pte_t* parent, size_t l
     return temp_pt;
 }
 
+/**
+ * @brief Test whether a PTE at the specified level can map a given vaddr/paddr range
+ * @param as Address space configuration
+ * @param pte Pointer to candidate PTE
+ * @param lvl Level index
+ * @param left Remaining pages to map
+ * @param vaddr Virtual address being mapped in a PTE
+ * @param paddr Physical address being mapped in a PTE
+ * @return true if the PTE can be used to map the range
+ * @see pte_valid, pt_lvlsize
+ */
 static inline bool pt_pte_mappable(struct addr_space* as, pte_t* pte, size_t lvl, size_t left,
     vaddr_t vaddr, paddr_t paddr)
 {
@@ -216,11 +292,30 @@ static inline bool pt_pte_mappable(struct addr_space* as, pte_t* pte, size_t lvl
         ((paddr % pt_lvlsize(&as->pt, lvl)) == 0);
 }
 
+/**
+ * @brief Map level index to PTE type
+ * @param pt Page table descriptor
+ * @param lvl Level index
+ * @return pte_type_t PTE_PAGE when lvl is the leaf level, otherwise PTE_SUPERPAGE.
+ * @see pte_type_t, page_table
+ */
 static inline pte_type_t pt_page_type(struct page_table* pt, size_t lvl)
 {
     return (lvl == pt->dscr->lvls - 1) ? PTE_PAGE : PTE_SUPERPAGE;
 }
 
+/**
+ * @brief Expand a page table entry to cover
+ * @note The resulting address mapping shall remain identical.
+ * @warning This routine invalidates TLB entries for the affected virtual addresses
+ *          during the transition.
+ * @param as Address space configuration
+ * @param va Virtual address within the mapping to expand
+ * @param lvl Level index of the PTE to expand
+ * @see mem_alloc_pt(), pte_table(), pte_valid(), tlb_inv_va(), cpu(), pte_check_rsw(),
+ *      pt_get_pte(), pte_addr(), pt_getpteindex(), pt_nentries(), pt_lvlsize(),
+ *      pt_page_type(), pte_set(), AS_TYPE, pte_set_rsw(), fence_sync_write()
+ */
 static void mem_expand_pte(struct addr_space* as, vaddr_t va, size_t lvl)
 {
     /* Must have lock on as and va section to call */
@@ -283,6 +378,13 @@ static void mem_expand_pte(struct addr_space* as, vaddr_t va, size_t lvl)
     }
 }
 
+/**
+ * @brief Inflate (i.e. reduce entries in) a page table for a region to ensure leaf coverage *
+ * @param as Address space configuration
+ * @param va Start virtual address
+ * @param length Length in bytes to inflate
+ * @see mem_expand_pte(), pt_lvlsize()
+ */
 static void mem_inflate_pt(struct addr_space* as, vaddr_t va, size_t length)
 {
     /* Must have lock on as and va section to call */
@@ -301,6 +403,17 @@ static void mem_inflate_pt(struct addr_space* as, vaddr_t va, size_t length)
     }
 }
 
+/**
+ * @brief Allocate virtual pages
+ * @param as Address space configuration
+ * @param section Address space section in which to allocate the pages
+ * @param at Base virtual address of the pages to allocate
+ * @param n Number of pages to allocate.
+ * @return vaddr_t Virtual address of the first page allocated.
+ * @see addr_space, as_sec_t, vaddr_t, pte_t, mem_find_sec(), section, INVALID_VA,
+ *      spin_lock(), spin_unlock(), pt_get_pte(), pt_getpteindex(), pt_nentries(),
+ *      pte_check_rsw(), pte_valid(), pte_table(), pte_allocable(), ERROR(), pt_lvlsize()
+ */
 vaddr_t mem_alloc_vpage(struct addr_space* as, as_sec_t section, vaddr_t at, size_t n)
 {
     size_t lvl = 0;
@@ -414,6 +527,18 @@ vaddr_t mem_alloc_vpage(struct addr_space* as, as_sec_t section, vaddr_t at, siz
     return vpage;
 }
 
+/**
+ * @brief Unmap pages allocated at a virtual address.
+ * Optionally it can free the pages back to the page pool.
+ * @param as Address space configuration in which the pages are mapped.
+ * @param at Virtual starting address of the pages to unmap.
+ * @param num_pages Number of pages to unmap.
+ * @param free_ppages Option to return the physical pages back to their original pool.
+ * @see addr_space, vaddr_t, section, spin_lock(), spin_unlock(), pt_get_pte(), pte_t,
+ *      pte_valid(), pt_lvlsize(), pte_table(), pt_getpteindex(), pt_nentries(),
+ *      mem_expand_pte(), pte_addr(), mem_ppages_get(), mem_free_ppages(), tlb_inv_va(),
+ *      cpu(), ppages, paddr_t.
+ */
 void mem_unmap(struct addr_space* as, vaddr_t at, size_t num_pages, bool free_ppages)
 {
     vaddr_t vaddr = at;
@@ -485,6 +610,21 @@ void mem_unmap(struct addr_space* as, vaddr_t at, size_t num_pages, bool free_pp
     spin_unlock(&as->lock);
 }
 
+/**
+ * @brief Map a virtual memory region to physical pages.
+ * @param as Address space configuration
+ * @param va Virtual address in which the pages shall be mapped.
+ * @param ppages Resulting physical pages from memory mapping
+ * @param num_pages Number of pages to map.
+ * @param flags The flags to use for the mapped page table entries
+ * @return true on successful memory map.
+ * @return false if the memory area to map is across sections or the setion cannot be identified.
+ * @see addr_space, vaddr_t, ppages, mem_flags_t, pte_t, section, spin_lock(), spin_unlock(),
+ *      all_clrs(), mem_alloc_ppages(), mem_inflate_pt(), pt_get_pte(), paddr_t,
+ *      pp_next_clr(), pte_set(), pt_lvl_terminal(), pt_pte_mappable(), pte_valid(),
+ *      mem_alloc_pt(), pte_table(), pt_getpteindex(), pt_nentries(), pt_lvlsize(),
+ *      ERROR(), PAGE_SIZE, mem_alloc_ppages(), pt_page_type(), fence_sync()
+ */
 static bool mem_map(struct addr_space* as, vaddr_t va, struct ppages* ppages, size_t num_pages,
     mem_flags_t flags)
 {
@@ -589,6 +729,21 @@ static bool mem_map(struct addr_space* as, vaddr_t va, struct ppages* ppages, si
     return true;
 }
 
+/**
+ * @brief (Re)color mapped memory regions
+ * @param as Address space configuration
+ * @param va Virtual address of a region.
+ * @param ppages Physically-address memory region to be recolored.
+ * @param num_pages Number of pages to be recolored.
+ * @param flags mem_map flags.
+ * @return true if the memory area have been recolored (move and remapped)
+ * @return false If the mapping of the pages to the virtual address have failed.
+ * @see addr_space, vaddr_t, ppages, mem_flags_t, ERROR(), bit_count(), COLOR_NUM,
+ *      COLOR_SIZE, BIT_MASK(), bit_get(), all_clrs(), mem_map(), mem_alloc_vpage(),
+ *      mem_alloc_ppages(), cpu(), pte_t, paddr_t, mem_inflate_pt(), pt_get_pte(),
+ *      pte_set(), memcpy(), pp_next_clr(), cache_flush_range(), mem_free_ppages(),
+ *      mem_unmap(), colormap_t.
+ */
 bool mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages, size_t num_pages,
     mem_flags_t flags)
 {
@@ -683,6 +838,19 @@ bool mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages, siz
     return true;
 }
 
+/**
+ * @brief Map memory area in two different address space configurations and
+ *        copy the contents onto the other.
+ * @param ass Source address space configuration
+ * @param asd Destination address space configuration
+ * @param asd_section Destination address space's section type
+ * @param vas Virtual address of the source to copy
+ * @param vad Virtual address of the destination copy
+ * @param num_pages Number of pages to map and copy
+ * @return vaddr_t Base virtual address of the destionation memory area.
+ * @see mem_alloc_vpage(), addr_space, vaddr_t, pt_get_pte(), pte_page(), pt_lvlsize(),
+ *      pte_addr(), ALIGN_FLOOR(), mem_ppages_get(), mem_map(), as_sec_t.
+ */
 vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, as_sec_t asd_section,
     vaddr_t vas, vaddr_t vad, size_t num_pages)
 {
@@ -718,6 +886,14 @@ vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, as_sec_t asd
     return base_vad;
 }
 
+/**
+ * @brief Copy the contents stored in a memory region into paged memory.
+ * @param base Address at which the data
+ * @param size Size of the area to be copied.
+ * @param pages Physically addressed pages to be written.
+ * @return void* Virtual base address of the copy's destination
+ * @see mem_alloc_ppages(), mem_alloc_vpage(), cpu(), mem_map(), memcpy(), ppages.
+ */
 static void* copy_space(void* base, const size_t size, struct ppages* pages)
 {
     *pages = mem_alloc_ppages(cpu()->as.colors, NUM_PAGES(size), MEM_ALIGN_NOT_REQ);
@@ -729,6 +905,9 @@ static void* copy_space(void* base, const size_t size, struct ppages* pages)
 }
 
 /**
+ * @brief   This function redistribute the allocated hypervisor memory to fit the
+ *          cache coloring scheme.
+ *
  * To have the true benefits of coloring it's necessary that not only the guest images, but also
  * the hypervisor itself, are colored.
  *
@@ -739,6 +918,14 @@ static void* copy_space(void* base, const size_t size, struct ppages* pages)
  * Some regions need to be aligned due to some ARM restraint with the pagetable structure, so true
  * coloring is actually never achieved. The drawbacks of this limitation are yet to be seen, and
  * are in need of more testing.
+ *
+ * @param load_addr Physical address where the hypervisor image has been loaded.
+ * @param root_region Memory region where the hypervisor data is located.
+ * @see paddr_t, mem_region, cpu, vaddr_t, pte_t, colormap_t, cpu(), copy_space,
+ *      as_init(), mem_alloc_vpage(), ERROR(), mem_map(), NUM_PAGES(), mem_cpu_boot_alloc_size(),
+ *      PAGE_SIZE, pt_size(), INVALID_VA, mem_translate(), cpu_is_master(), pte_addr(),
+ *      pt_get_pte(), cpu_sync_barrier(), switch_space(), cache_flush_range(),
+ *      cpu_sync_init(), mem_ppages_get(), memset(), mem_unmap().
  */
 void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_region)
 {
@@ -908,6 +1095,15 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
     mem_unmap(&cpu()->as, va, p_cpu.num_pages, MEM_DONT_FREE_PAGES);
 }
 
+/**
+ * @brief Provide unique incremental VM address space ID at runtime.
+ * The return is unique by means of hypervisor-wide lock during ID generation.
+ * Always greater than 0.
+ * @param as    Address space for which the ID shall be allocated.
+ *              Only the address space's type is used.
+ * @return unsigned long Unique ID. Always greater than 0.
+ * @see addr_space, spinlock_t, asid_t, AS_HYP, spin_lock, spin_unlock
+ */
 static unsigned long as_id_alloc(struct addr_space* as)
 {
     static spinlock_t as_id_alloc_lock = SPINLOCK_INITVAL;
@@ -924,6 +1120,17 @@ static unsigned long as_id_alloc(struct addr_space* as)
     return ret;
 }
 
+/**
+ * @brief Initialize an address space structure in a MMU-based system.
+ * Sets up a new address space with the given type, ID and color.
+ * @param as Pointer to address space configuration.
+ * @param type Type of address space (AS_HYP, AS_VM)
+ * @param root_pt Page tables root for the initializing address space.
+ * @param colors Memory region color (unused in MPU-based systems)
+ * @see as_arch_init, mem_vmpu_free_entry, as_id_alloc, addr_space, AS_TYPE
+ *      colormap_t, spinlock_t, VMPU_NUM_ENTRIES, SPINLOCK_INITVAL, list, vmpu
+ *      hyp_pt_dscr, vm_pt_dscr
+ */
 void as_init(struct addr_space* as, enum AS_TYPE type, pte_t* root_pt, colormap_t colors)
 {
     as->type = type;
@@ -943,12 +1150,29 @@ void as_init(struct addr_space* as, enum AS_TYPE type, pte_t* root_pt, colormap_
     as_arch_init(as);
 }
 
+/**
+ * @brief   Initialize the memory access control mechanism according to the
+ *          calling CPU's address space configuration.
+ * @see as_init(), pte_t, cpu(), vaddr_t, PAGE_SIZE, AS_HYP
+ */
 void mem_prot_init(void)
 {
     pte_t* root_pt = (pte_t*)ALIGN(((vaddr_t)cpu()) + sizeof(struct cpu), PAGE_SIZE);
     as_init(&cpu()->as, AS_HYP, root_pt, config.hyp.colors);
 }
 
+/**
+ * @brief Maps a MPU region to the address space configuration
+ * @param as Address space configuration in which the region shall be mapped.
+ * @param section The type of memory section to be mapped.
+ * @param page Description of the physically-addressed memory pages to be mapped.
+ * @param at Virtual address where the pages shall be mapped.
+ * @param num_pages Number of pages to map.
+ * @param flags mem_map() flags.
+ * @return vaddr_t Virtual address to the mapped region.
+ * @see addr_space, as_sec_t, ppages, vaddr_t, mem_flags_t, mem_alloc_vpage(),
+ *      INVALID_VA, mem_map().
+ */
 vaddr_t mem_alloc_map(struct addr_space* as, as_sec_t section, struct ppages* page, vaddr_t at,
     size_t num_pages, mem_flags_t flags)
 {
@@ -959,6 +1183,17 @@ vaddr_t mem_alloc_map(struct addr_space* as, as_sec_t section, struct ppages* pa
     return address;
 }
 
+/**
+ * @brief Map address space pages in which device are mapped.
+ * @param as Address space configuration
+ * @param section Type of section to be mapped
+ * @param at Virtual base address of the device.
+ * @param pa Physical base address of the device
+ * @param num_pages Number of pages to map.
+ * @return vaddr_t Virtual address at which the memory-mapped device is not mapped
+ * @see addr_space, as_sec_t, vaddr_t, paddr_t, mem_alloc_vpage(), ppages mem_ppages_get(),
+ *      mem_flags_t, PTE_HYP_DEV_FLAGS, AS_HYP, PTE_VM_DEV_FLAGS, mem_map()
+ */
 vaddr_t mem_alloc_map_dev(struct addr_space* as, as_sec_t section, vaddr_t at, paddr_t pa,
     size_t num_pages)
 {
