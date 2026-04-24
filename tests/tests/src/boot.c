@@ -8,14 +8,14 @@
 volatile bool cpu_boot_status[NUM_CPUS] = {false};
 spinlock_t boot_status_lock = SPINLOCK_INITVAL;
 
-BAO_TEST(BOOT_CHECK, VM_BOOT)
+BAO_TEST(BOOT_CHECK, VM_BOOT, BAREMETAL, "Check that baremetal guest boots successfully")
 {
     if(cpu_is_master()) {
         TESTF_PASS("System booted successfully!\n");
     }
 }
 
-BAO_TEST(BOOT_CHECK, CPU_BOOT)
+BAO_TEST(BOOT_CHECK, CPU_BOOT, BAREMETAL, "Check that all CPUs on the baremetal boot successfully")
 {
     int cpu_id = get_cpuid();
     spin_lock(&boot_status_lock);

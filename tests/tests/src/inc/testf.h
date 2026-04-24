@@ -94,7 +94,7 @@ extern unsigned int testframework_start, testframework_end;
             testframework_tests - testframework_fails, testframework_fails);     \
     } while (0)
 
-#define BAO_TEST(suite, test)                                \
+#define BAO_TEST(suite, test, setup, description)            \
     void test_##suite##_##test(unsigned char*);              \
     void entry_test_##suite##_##test(void)                   \
     {                                                        \

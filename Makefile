@@ -68,6 +68,8 @@ configs_dir=$(cur_dir)/configs
 CONFIG_REPO?=$(configs_dir)
 scripts_dir:=$(cur_dir)/scripts
 ci_dir:=$(cur_dir)/ci
+tests_dir:=$(cur_dir)/tests
+tf_dir:=$(tests_dir)/tf/framework
 src_dirs:=
 
 -include $(ci_dir)/ci.mk
@@ -436,10 +438,12 @@ $(call ci, format, $(all_c_files))
 .PHONY: ci
 ci: license-check format-check
 
-tests_dir := $(cur_dir)/tests
+endif
+
 -include $(tests_dir)/tests.mk
 
 .PHONY: tests
-tests: framework 
 
-endif
+tests:
+	@echo "Running tests for $(PLATFORM)..."
+	@python3 $(tf_dir)/test_framework.py -test -p $(PLATFORM)

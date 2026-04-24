@@ -22,7 +22,7 @@ volatile bool irq_en_uart = false;
 #define TEST_TIME_WAIT  (TIME_MS(200))
 #define TEST_TIMEOUT    "300"
 
-BAO_TEST(IRQ_CHECK, TIMER)
+BAO_TEST(IRQ_CHECK, TIMER, BAREMETAL, "Check that timer interrupt is triggered and handled successfully")
 {
     if(cpu_is_master()) {
         COMMAND_SET_TIMEOUT(TEST_TIMEOUT);
@@ -39,7 +39,7 @@ BAO_TEST(IRQ_CHECK, TIMER)
     }
 }
 
-BAO_TEST(IRQ_CHECK, UART)
+BAO_TEST(IRQ_CHECK, UART, BAREMETAL, "Check that UART interrupt is triggered and handled successfully")
 {
     if(cpu_is_master()) {
         COMMAND_SET_TIMEOUT(TEST_TIMEOUT);
