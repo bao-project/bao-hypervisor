@@ -460,6 +460,14 @@ size_t sbi_vs_handler()
     struct sbiret ret;
 
     switch (extid) {
+        case 0x1: {
+              /* Legacy SBI v0.1 console_putchar - forward to firmware */
+              char c = (char)vcpu_readreg(cpu()->vcpu, REG_A0);
+              console_write(&c, 1);
+              ret.error = SBI_SUCCESS;
+              ret.value = 0;
+        }
+            break;
         case SBI_EXTID_BASE:
             ret = sbi_base_handler(fid);
             break;

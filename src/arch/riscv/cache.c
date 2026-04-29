@@ -31,6 +31,5 @@ __attribute__((weak)) void cache_flush_range(vaddr_t base, size_t size)
     UNUSED_ARG(base);
     UNUSED_ARG(size);
 
-    WARNING("trying to flush caches but the operation is not defined for this "
-            "platform\n");
+    /* WARNING("trying to flush caches but the operation is not defined for this platform\n"); */
 }

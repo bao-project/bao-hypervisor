@@ -149,7 +149,7 @@ void sync_exception_handler(void)
     if (_scause < sync_handler_table_size && sync_handler_table[_scause]) {
         pc_step = sync_handler_table[_scause]();
     } else {
-        ERROR("unknown synchronous exception (%d)\n", _scause);
+        ERROR("unknown synchronous exception (%d) at 0x%x\n", _scause, vcpu_readpc(cpu()->vcpu));
     }
 
     vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + pc_step);

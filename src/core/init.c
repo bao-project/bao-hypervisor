@@ -29,7 +29,7 @@ void init(cpuid_t cpu_id)
     console_init();
 
     if (cpu_is_master()) {
-        console_printk("Bao Hypervisor %s (%s - %s)\n\r", BAO_VERSION, __DATE__, __TIME__);
+        /* console_printk("Bao Hypervisor %s (%s - %s)\n\r", BAO_VERSION, __DATE__, __TIME__); */
     }
 
     interrupts_init();
