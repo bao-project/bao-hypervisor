@@ -47,7 +47,7 @@ endif
 HOST_CC:=gcc
 
 #Makefile arguments and default values
-DEBUG:=n
+DEBUG:=y
 OPTIMIZATIONS:=2
 CONFIG=
 PLATFORM=

@@ -11,6 +11,7 @@
 #include <fences.h>
 #include <string.h>
 #include <shmem.h>
+#include <tlb.h>
 
 static struct vm_assignment {
     spinlock_t lock;
@@ -91,6 +92,8 @@ static bool vmm_alloc_vm(struct vm_allocation* vm_alloc, struct vm_config* vm_co
     total_size = ALIGN(total_size, PAGE_SIZE);
 
     void* allocation = mem_alloc_page(NUM_PAGES(total_size), SEC_HYP_VM, MEM_ALIGN_NOT_REQ);
+    fence_sync();
+    tlb_inv_all(&cpu()->as);
     if (allocation == NULL) {
         return false;
     }

@@ -205,6 +205,8 @@ static inline pte_t* mem_alloc_pt(struct addr_space* as, pte_t* parent, size_t l
     for (size_t i = 0; i < pt_nentries(&as->pt, lvl + 1); i++) {
         temp_pt[i] = pte_dflt_val;
     }
+    tlb_inv_all(as);
+    fence_sync_write();
     return temp_pt;
 }
 
@@ -335,25 +337,44 @@ vaddr_t mem_alloc_vpage(struct addr_space* as, as_sec_t section, vaddr_t at, siz
         spin_lock(&sec->lock);
     }
 
+    //INFO("mem_alloc_vpage: begin as=%d section=%d at=%lx n=%d addr=%lx top=%lx\n",
+    //    as->type, section, at, n, addr, top);
+
     while (count < n && !failed) {
         // Check if there is still enough space in the address space. The corner case of top being
         // the highest address in the address space and the target address being 0 is handled
         // separate
         size_t full_as = (addr == 0) && (top == MAX_VA);
         if (!full_as && (((top + 1 - addr) / PAGE_SIZE) < n)) {
+            /* INFO("mem_alloc_vpage: no space addr=%lx top=%lx n=%d count=%d\n", addr, top, n,
+                count); */
             vpage = INVALID_VA;
             failed = true;
             break;
         }
 
+        /* INFO("mem_alloc_vpage: get_pte lvl=%d addr=%lx count=%d\n", lvl, addr, count);
+        INFO("mem_alloc_vpage: pt root=%lx dscr=%lx lvls=%d lvl0_off=%d lvl0_wdt=%d\n", as->pt.root, as->pt.dscr, as->pt.dscr->lvls, as->pt.dscr->lvl_off[0], as->pt.dscr->lvl_wdt[0]); */
         pte = pt_get_pte(&as->pt, lvl, addr);
+        /* INFO("mem_alloc_vpage: got pte=%lx lvl=%d addr=%lx\n", pte, lvl, addr);
+        if (pte == NULL) {
+            INFO("mem_alloc_vpage: NULL pte lvl=%d addr=%lx\n", lvl, addr);
+            vpage = INVALID_VA;
+            failed = true;
+            break;
+        } */
         entry = pt_getpteindex(&as->pt, pte, lvl);
         nentries = pt_nentries(&as->pt, lvl);
         lvlsze = pt_lvlsize(&as->pt, lvl);
+        /* INFO("mem_alloc_vpage: walk lvl=%d entry=%d nentries=%d lvlsze=%lx pte_val=%lx\n", lvl, entry, nentries, lvlsze, *pte); */
 
         while ((entry < nentries) && (count < n) && !failed) {
+            /* INFO("mav: lvl=%lu entry=%lu count=%lu\n", lvl, entry, count);
+            INFO("mav: addr=%lx pte=%lx val=%lx\n", addr, pte, *pte);
+            INFO("mav: rsrv=%d valid=%d table=%d\n", pte_check_rsw(pte, PTE_RSW_RSRV), pte_valid(pte), pte_table(&as->pt, pte, lvl)); */
             if (pte_check_rsw(pte, PTE_RSW_RSRV) ||
                 (pte_valid(pte) && !pte_table(&as->pt, pte, lvl))) {
+                /* INFO("mem_alloc_vpage: occupied lvl=%d entry=%d addr=%lx at=%lx val=%lx\n", lvl, entry, addr, at, *pte); */
                 count = 0;
                 vpage = INVALID_VA;
                 if (at != INVALID_VA) {
@@ -367,19 +388,29 @@ vaddr_t mem_alloc_vpage(struct addr_space* as, as_sec_t section, vaddr_t at, siz
                     }
                     count += (lvlsze / PAGE_SIZE);
                 } else {
+                    /* INFO("mem_alloc_vpage: alloc_pt before lvl=%d addr=%lx pte=%lx val=%lx\n", lvl, addr, pte, *pte); */
                     if (mem_alloc_pt(as, pte, lvl, addr) == NULL) {
                         ERROR("failed to alloc page table\n");
                     }
+                    /* INFO("mem_alloc_vpage: alloc_pt after lvl=%d addr=%lx new_pt=%lx pte_val=%lx\n", lvl, addr, new_pt, *pte);
+                    if (new_pt == NULL) {
+                        ERROR("failed to alloc page table\n");
+                    } */
                 }
             }
 
             if (pte_table(&as->pt, pte, lvl)) {
+                /* INFO("mem_alloc_vpage: descend from lvl=%d addr=%lx pte_val=%lx\n", lvl, addr,
+                    *pte); */
                 lvl++;
                 break;
             } else {
+                /* INFO("mem_alloc_vpage: advance lvl=%d entry=%d addr=%lx lvlsze=%lx count=%d\n",
+                    lvl, entry, addr, lvlsze, count); */
                 pte++;
                 addr += lvlsze;
                 if (++entry >= nentries) {
+                    /* INFO("mem_alloc_vpage: end entries reset lvl addr=%lx\n", addr); */
                     lvl = 0;
                     break;
                 }
@@ -394,11 +425,18 @@ vaddr_t mem_alloc_vpage(struct addr_space* as, as_sec_t section, vaddr_t at, siz
         lvl = 0;
         while (count < n) {
             for (lvl = 0; lvl < as->pt.dscr->lvls; lvl++) {
+                /* INFO("mem_alloc_vpage: reserve get_pte lvl=%d addr=%lx count=%d\n", lvl, addr,
+                    count); */
                 pte = pt_get_pte(&as->pt, lvl, addr);
+                /* INFO("mem_alloc_vpage: reserve pte=%lx lvl=%d addr=%lx\n", pte, lvl, addr);
+                if (pte == NULL) {
+                    ERROR("invalid pte while reserving vpage\n");
+                } */
                 if (!pte_valid(pte)) {
                     break;
                 }
             }
+            /* INFO("mem_alloc_vpage: reserve set lvl=%d addr=%lx pte=%lx old=%lx\n", lvl, addr, pte, *pte); */
             pte_set_rsw(pte, PTE_RSW_RSRV);
             addr += pt_lvlsize(&as->pt, lvl);
             count += pt_lvlsize(&as->pt, lvl) / PAGE_SIZE;
@@ -410,6 +448,8 @@ vaddr_t mem_alloc_vpage(struct addr_space* as, as_sec_t section, vaddr_t at, siz
     }
 
     spin_unlock(&as->lock);
+/* 
+    INFO("mem_alloc_vpage: end ret=%lx failed=%d\n", vpage, failed); */
 
     return vpage;
 }
@@ -497,7 +537,10 @@ static bool mem_map(struct addr_space* as, vaddr_t va, struct ppages* ppages, si
     if ((sec == NULL) || (sec != mem_find_sec(as, vaddr + num_pages * PAGE_SIZE - 1))) {
         return false;
     }
+    /* INFO("mem_map: begin as=%d va=%lx pa=%lx n=%d flags=%lx\n",
+    as->type, va, ppages ? ppages->base : 0, num_pages, flags); */
 
+    /* INFO("mem_map: sec=%lx vaddr=%lx\n", sec, vaddr); */
     spin_lock(&as->lock);
     if (sec->shared) {
         spin_lock(&sec->lock);
@@ -531,8 +574,16 @@ static bool mem_map(struct addr_space* as, vaddr_t va, struct ppages* ppages, si
         paddr_t paddr = ppages ? ppages->base : 0;
         while (count < num_pages) {
             size_t lvl = 0;
+            /* INFO("mem_map: ppages colors=%lx all=%d\n",
+            ppages ? ppages->colors : 0, ppages ? all_clrs(ppages->colors) : -1);
+
+            INFO("mem_map: loop count=%d vaddr=%lx paddr=%lx\n", count, vaddr, paddr);
+            INFO("mem_map: lvls=%d root=%lx dscr=%lx\n", as->pt.dscr->lvls, as->pt.root,
+                as->pt.dscr); */
             for (lvl = 0; lvl < as->pt.dscr->lvls; lvl++) {
+                /* INFO("mem_map: get_pte lvl=%d vaddr=%lx\n", lvl, vaddr); */
                 pte = pt_get_pte(&as->pt, lvl, vaddr);
+                /* INFO("mem_map: got pte=%lx val=%lx lvl=%d\n", pte, pte ? *pte : 0, lvl); */
                 if (pt_lvl_terminal(&as->pt, lvl)) {
                     if (pt_pte_mappable(as, pte, lvl, num_pages - count, vaddr,
                             ppages ? paddr : 0)) {
@@ -579,7 +630,9 @@ static bool mem_map(struct addr_space* as, vaddr_t va, struct ppages* ppages, si
     }
 
     fence_sync();
-
+    if (as->type == AS_HYP) {
+        tlb_inv_all(as);
+    }
     if (sec->shared) {
         spin_unlock(&sec->lock);
         // TODO tlb shootdown?
@@ -941,6 +994,10 @@ void as_init(struct addr_space* as, enum AS_TYPE type, pte_t* root_pt, colormap_
     as->pt.root = root_pt;
 
     as_arch_init(as);
+    if (as->type == AS_HYP) {
+        fence_sync();
+        tlb_inv_all(as);
+    }
 }
 
 void mem_prot_init(void)

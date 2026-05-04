@@ -6,6 +6,7 @@
 #include <vmm.h>
 #include <io.h>
 #include <fences.h>
+#include <tlb.h>
 
 void vmm_io_init(void)
 {
@@ -28,4 +29,5 @@ void vmm_vm_install(struct vm_install_info* install_info)
     // We don't invalidate the TLB as we know there was no previous mapping or accesses to the
     // addresses in the VM section. Just make sure the write commited before leaving.
     fence_ord_write();
+    //tlb_inv_all(&cpu()->as);
 }

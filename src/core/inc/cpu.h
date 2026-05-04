@@ -12,6 +12,7 @@
 #include <spinlock.h>
 #include <mem.h>
 #include <list.h>
+#include <fences.h>
 
 #ifndef __ASSEMBLER__
 
@@ -102,6 +103,8 @@ static inline void cpu_sync_barrier(struct cpu_synctoken* token)
     size_t next_count = 0;
 
     while (!token->ready) { }
+    fence_ord_read();
+    fence_sync();
 
     spin_lock(&token->lock);
     token->count++;
@@ -109,6 +112,8 @@ static inline void cpu_sync_barrier(struct cpu_synctoken* token)
     spin_unlock(&token->lock);
 
     while (token->count < next_count) { }
+    fence_ord_read();
+    fence_sync();
 }
 
 static inline void cpu_sync_and_clear_msgs(struct cpu_synctoken* token)
@@ -116,22 +121,30 @@ static inline void cpu_sync_and_clear_msgs(struct cpu_synctoken* token)
     size_t next_count = 0;
 
     while (!token->ready) { }
+    //fence_ord_read();
+    fence_sync();
 
     spin_lock(&token->lock);
     token->count++;
     next_count = ALIGN(token->count, token->n);
     spin_unlock(&token->lock);
-
+    fence_sync();
     while (token->count < next_count) {
+        //fence_ord_read();
+        fence_sync();
         if (!cpu()->handling_msgs) {
             cpu_msg_handler();
         }
     }
 
+    //fence_ord_read();
+    fence_sync();
+
     if (!cpu()->handling_msgs) {
+        fence_sync();
         cpu_msg_handler();
     }
-
+    fence_sync();
     cpu_sync_barrier(token);
 }
 

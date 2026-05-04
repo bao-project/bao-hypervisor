@@ -41,8 +41,9 @@ void console_init(void)
 
 void console_write(const char* buf, size_t n)
 {
-    while (!console_ready)
-        ;
+    /* while (!console_ready)
+        ; */
+
     for (size_t i = 0; i < n; i++) {
         if (buf[i] == '\n') {
             uart_putc(uart, '\r');

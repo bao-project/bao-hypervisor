@@ -148,6 +148,8 @@ _reset_handler:
 .pushsection .data
 _boot_lock:
     .4byte 0
+_master_ready:
+    .4byte 0
 .popsection
     la      t0, _boot_lock
     li      t1, 1
@@ -158,7 +160,26 @@ _boot_lock:
     bnez    t2, 1b 
     la      t0, CPU_MASTER
     STORE      a0, 0(t0)
+/* 2: */
+    fence   rw, w
+    la      t0, _master_ready
+    li      t1, 1
+    sw      t1, 0(t0)
+    j       4f
+
 2:
+    /* Losers wait until CPU_MASTER is valid */
+    la      t0, _master_ready
+    li      t1, 1
+
+3:
+    lw    t2, 0(t0)
+    blt     t2, t1, 3b
+    fence   rw, rw
+
+    fence   r, rw
+
+4:
 #endif
 
     /* Setup bootstrap page tables. Assuming sv39 or sv32 support. */ 
@@ -225,6 +246,7 @@ wait_for_bsp:
 1:
     LOAD      t2, 0(t0)
     blt     t2, t1, 1b
+    fence   r, rw
 
 map_cpu:
     /* Calculate base phys address of CPU struct -> t0 */
@@ -338,6 +360,7 @@ wait_for_bsp_2:
 1:
     LOAD  t2, 0(t0)
     blt t2, t1, 1b
+    fence   r, rw
 
     j   init
 

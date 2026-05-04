@@ -298,12 +298,14 @@ static struct vm* vm_allocation_init(struct vm_allocation* vm_alloc)
 struct vm* vm_init(struct vm_allocation* vm_alloc, struct cpu_synctoken* vm_init_sync,
     const struct vm_config* vm_config, bool master, vmid_t vm_id)
 {
+    /* INFO("vm init 0\n"); */
     struct vm* vm = vm_allocation_init(vm_alloc);
 
     /**
      * Before anything else, initialize vm structure.
      */
     if (master) {
+        /* INFO("vm init 1\n"); */
         vm_master_init(vm, vm_config, vm_id);
     }
 
@@ -313,36 +315,44 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, struct cpu_synctoken* vm_init
      *  Initialize each core.
      */
     vm_cpu_init(vm);
-
+    /* INFO("vm init 3\n"); */
     cpu_sync_barrier(&vm->sync);
 
     /*
      *  Initialize each virtual core.
      */
+    /* INFO("vm init 4.1\n"); */
     vm_vcpu_init(vm, vm_config);
-
+    /* INFO("vm init 4\n"); */
     cpu_sync_barrier(&vm->sync);
 
     if (master) {
+        /* INFO("vm init 5\n"); */
         vm_mem_prot_init(vm, vm_config);
     }
-
+    /* INFO("vm init 6\n"); */
     cpu_sync_barrier(&vm->sync);
 
     /**
      * Perform architecture dependent initializations. This includes, for example, setting the page
      * table pointer and other virtualization extensions specifics.
      */
+    /* INFO("vm init 7\n"); */
     vm_arch_init(vm, vm_config);
 
     /**
      * Create the VM's address space according to configuration and where its image was loaded.
      */
     if (master) {
+        /* INFO("vm init 8\n"); */
         vm_init_mem_regions(vm, vm_config);
+        /* INFO("vm init 9\n"); */
         vm_init_dev(vm, vm_config);
+        /* INFO("vm init 10\n"); */
         vm_init_ipc(vm, vm_config);
+        /* INFO("vm init 11\n"); */
         vm_init_remio(vm, vm_config);
+        /* INFO("vm init 12\n"); */
     }
 
     cpu_sync_and_clear_msgs(&vm->sync);

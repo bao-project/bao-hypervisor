@@ -63,7 +63,7 @@ void vmm_arch_init()
      */
     if (CPU_HAS_EXTENSION(CPU_EXT_ZICBOM)) {
         csrs_henvcfg_set(HENVCFG_CBCFE | HENVCFG_CBIE_FLUSH);
-        bool zicbom_present = (csrs_henvcfg_read() & (HENVCFG_CBCFE | HENVCFG_CBIE_FLUSH)) == HENVCFG_CBCFE | HENVCFG_CBIE_FLUSH;
+        bool zicbom_present = (csrs_henvcfg_read() & (HENVCFG_CBCFE | HENVCFG_CBIE_FLUSH)) == (HENVCFG_CBCFE | HENVCFG_CBIE_FLUSH);
         if (cpu_is_master() && !zicbom_present) {
             ERROR("Platform configured to use ZICBOM extensions, but extension not present.\r\n");
         }
@@ -154,7 +154,6 @@ void vmm_arch_init()
             ERROR("AIA requires Sscsrind extension to be present.");
         }
         csrs_hstateen0_set(HSTATEEN_IMSIC | HSTATEEN_AIA | HSTATEEN_CSRIND);
-        INFO("\nM\n")
         bool aia_ctxt_en =
             (csrs_hstateen0_read() & (HSTATEEN_IMSIC | HSTATEEN_AIA | HSTATEEN_CSRIND)) ==
             (HSTATEEN_IMSIC | HSTATEEN_AIA | HSTATEEN_CSRIND);
@@ -186,7 +185,7 @@ void vmm_arch_init()
      * This helps compatibility and avoids unnecessary traps for guest
      * software that checks for the presence of state-enable CSRs.
      */
-    csrs_hstateen0_write(HSTATEEN_SEO);
+    csrs_hstateen0_set(HSTATEEN_SEO);
 #endif
     /**
      * TODO: consider delegating other exceptions e.g. breakpoint or ins misaligned

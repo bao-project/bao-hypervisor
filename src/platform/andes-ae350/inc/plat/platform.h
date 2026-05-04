@@ -15,6 +15,8 @@
 #define CPU_EXT_F 1
 #define CPU_EXT_C 0
 #define CPU_EXT_SDTRIG 0
+#define CPU_EXT_ZICBOM 1
+#define CPU_EXT_ZICBOZ 1
 
 #define IPIC_SBI    (1)
 #define IPIC_ACLINT (2)

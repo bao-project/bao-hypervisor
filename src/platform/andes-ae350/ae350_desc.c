@@ -7,7 +7,7 @@
 
 struct platform platform = {
 
-    .cpu_num = 1,
+    .cpu_num = 4,
 
     .region_num = 1,
     .regions = (struct mem_region[]) {
@@ -16,10 +16,40 @@ struct platform platform = {
              * 2 GiB DRAM at 0x0; first 2 MiB reserved for OpenSBI firmware.
              * Adjust .base/.size to match your actual firmware load address.
              */
-            .base = 0x00200000,
+            .base = 0x200000,
             .size = 0x7FE00000,
         },
     },
+
+    /* .cache = {
+        .lvls = 2,
+        .min_shared_lvl = 1,
+
+        .type = {
+            [0] = SEPARATE,
+            [1] = UNIFIED,
+        },
+
+        .indexed = {
+            [0] = { PIPT, PIPT },
+            [1] = { PIPT, PIPT },
+        },
+
+        .line_size = {
+            [0] = { 64, 64 },
+            [1] = { 64, 64 },
+        },
+
+        .assoc = {
+            [0] = { 4, 4 },
+            [1] = { 16, 16 },
+        },
+
+        .numset = {
+            [0] = { 256, 256 },
+            [1] = { 2048, 2048 },
+        },
+    }, */
 
     .arch = {
         /* Supervisor-level APLIC (delegates from M-level APLIC at 0xe4400000) */
