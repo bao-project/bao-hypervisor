@@ -28,8 +28,8 @@ static void vm_ipi_init(struct vm* vm, const struct vm_config* vm_config)
 
     for (unsigned long int i = 0; i < vm_config->platform.arch.gpsr_num; i++) {
         unsigned long group = (unsigned long)vm_config->platform.arch.gpsr_groups[i];
-        if (group == 0) {
-            ERROR("GPSR group 0 is reserved for Bao internal use.\n");
+        if (group == HYP_GPSR_GROUP) {
+            ERROR("GPSR group %d is reserved for Bao internal use.\n", HYP_GPSR_GROUP);
         }
         // We need to clear the group 1st because it allows access to everyone by default
         ir_clear_gpsr_group(group);
