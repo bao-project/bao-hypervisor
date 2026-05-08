@@ -50,7 +50,7 @@
     st.w [%a10] REGS_A8_OFF, %d0
 
     mfcr %d0, CSFR_HVHRA_A9
-    st.w [%a10] REGS_A8_OFF, %d0
+    st.w [%a10] REGS_A9_OFF, %d0
 .endm
 
 .macro VM_ENTRY
