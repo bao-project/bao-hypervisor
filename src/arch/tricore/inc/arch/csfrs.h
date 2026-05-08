@@ -14,7 +14,7 @@
 #define CSFR_DCON0    0x9040
 #define CSFR_CORECON  0xFE14
 #define CSFR_TCCON    0xFE6C
-#define CSFR_COREID   0xFE38
+#define CSFR_COREID   0xFE1C
 
 #define CSFR_CPXE_0   0xE000
 #define CSFR_CPXE_1   0xE004
