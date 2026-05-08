@@ -14,7 +14,7 @@
 
 #define IR_MAX_INTERRUPTS (2048U)
 #define HYP_GPSR_GROUP    (0)
-#define IPI_CPU_MSG       (GPSR_SRC_BASE)
+#define IPI_CPU_MSG       (GPSR_SRC_BASE + (HYP_GPSR_GROUP * 8))
 
 // Arch-specific platform data
 struct plat_device {
