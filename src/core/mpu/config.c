@@ -12,12 +12,14 @@
 #include <shmem.h>
 
 /**
- * @brief Initialize memory protection configuration for MPU-based systems
- * Enforce MPU-specific memory mapping design, where:
- * - All VM regions must use 1-to-1 physical mapping
- * - IPC object addresses must match their shared memory base addresses
- * - All shared memory regions must use 1-to-1 physical mapping
- * @see config, vm_config, vm_platform, paddr_t, vaddr_t, shmem, ipc
+ * @brief Initialize memory protection configuration for MPU-based systems.
+ *
+ * Ensure MPU-specific memory mapping design, where:
+ * - all VM regions must use 1-to-1 physical mapping;
+ * - IPC object addresses must match their shared memory base addresses; and
+ * - all shared memory regions must use 1-to-1 physical mapping.
+ *
+ * @see config, vm_config, vm_platform, paddr_t, vaddr_t, shmem, ipc.
  */
 void config_mem_prot_init(void)
 {

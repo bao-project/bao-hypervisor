@@ -3,15 +3,16 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  *
  * @file io.c
- * @brief   This source file does not implement any IO access control mechanism
- *          as the supported MPU-based systems do not posseess a similar mechanism.
+ * @brief   This source file provide stubs for the access control mechanism of
+ *          IO device (i.e. peripherals, non-CPU bus masters) as this mechanism
+ *          is not supported for MPU-based systems.
  */
 
 #include <io.h>
 #include <vm.h>
 
 /**
- * @brief Not implemented. IOMMU/SMMU is not supported by MPU-based systems.
+ * @brief Not implemented.
  */
 void io_init()
 {
@@ -19,10 +20,10 @@ void io_init()
 }
 
 /**
- * @brief Not implemented. IOMMU/SMMU is not supported by MPU-based systems.
+ * @brief Not implemented.
  * @param vm Unused.
  * @param config Unused.
- * @return bool Always returns true
+ * @return bool Always returns true.
  */
 bool io_vm_init(struct vm* vm, const struct vm_config* config)
 {
@@ -33,7 +34,7 @@ bool io_vm_init(struct vm* vm, const struct vm_config* config)
 }
 
 /**
- * @brief Not implemented. IOMMU/SMMU is not supported by MPU-based systems.
+ * @brief Not implemented.
  * @param vm Unused.
  * @param dev_id Unused.
  * @return bool Always returns true.

@@ -22,15 +22,15 @@ static bool console_ready = false;
 static spinlock_t console_lock = SPINLOCK_INITVAL;
 
 /**
- * @brief Initialize the hypervisor console
+ * @brief Initialize the hypervisor console.
  *
  * The master CPU initializes the configured UART device for the hypervisor
- * console and enables it. Other CPUs wait for initialization to complete.
+ * console and enables it. All other CPUs wait for the initialization to complete.
  *
  * @see cpu_is_master(), mem_alloc_map_dev(), uart_init(), uart_enable()
  *      platform, PAGE_OFFSET_MASK, NUM_PAGES, cpu_sync_and_clear_msgs()
  *      fence_sync_write(), cpu(), addr_space, AS_SEC, WARNING(), uart,
- *      console_ready, cpu_glb_sync
+ *      console_ready, cpu_glb_sync.
  */
 void console_init(void)
 {
@@ -54,11 +54,13 @@ void console_init(void)
 }
 
 /**
- * @brief Write to the console
+ * @brief Write to the console.
+ *
  * Writes a buffer of characters to the UART device, converting newlines
  * to carriage-return + newline sequences. Waits for console to be ready.
- * @param buf Pointer to the character buffer to write
- * @param n Number of characters to write from the buffer
+ *
+ * @param buf Pointer to the character buffer to write.
+ * @param n Number of characters to write from the buffer.
  * @see uart_putc(), console_ready, uart, console_ready, uart.
  */
 void console_write(const char* buf, size_t n)
@@ -77,11 +79,13 @@ void console_write(const char* buf, size_t n)
 static char console_bufffer[PRINTF_BUFFER_LEN];
 
 /**
- * @brief Print formatted output to the console
+ * @brief Print formatted output to the console.
+ *
  * Printf-style formatted output function that writes to the console.
- * Thread-safe using a spinlock. Breaks long output into chunks to
- * handle buffer size limitations.
- * @param fmt Printf-style format string
+ * Breaks long output into chunks to handle buffer size limitations.
+ *
+ * @note Thread-safe using a spinlock.
+ * @param fmt Printf-style format string.
  * @param ... Variable arguments for format string
  * @see vsnprintk(), console_write(), spin_lock(), spin_unlock(), console_bufffer,
  *      PRINTF_BUFFER_LEN, va_start, va_end, va_list, min(), console_lock

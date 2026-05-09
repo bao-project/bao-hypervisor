@@ -10,14 +10,13 @@
 #include <string.h>
 
 /**
- * @brief Initialize an object pool
+ * @brief Initialize an object pool.
  *
  * Clear out the object pool memory and its allocation bitmap,
  * and initialize the pool's spinlock.
  *
  * @param objpool Pointer to object pool structure to initialize
  * @see memset(), BITMAP_SIZE_IN_BYTES, SPINLOCK_INITVAL, objpool
- *
  */
 void objpool_init(struct objpool* objpool)
 {
@@ -32,12 +31,10 @@ void objpool_init(struct objpool* objpool)
  * Finds a free slot in the pool's bitmap, marks it as allocated,
  * and returns both the object pointer and optionally its ID.
  *
- * @param objpool Pointer to the object pool
- * @param id Optional pointer to receive the object's ID
- * @return void* Pointer to the allocated object, or NULL if pool is full
- * @see objpool, objpool_id_t, spin_lock()/spin_unlock(),
- * @see bitmap_find_nth(), bitmap_set()
- *
+ * @param objpool Pointer to the object pool.
+ * @param id Optional pointer to receive the object's ID.
+ * @return void* Pointer to the allocated object, or NULL if pool is full.
+ * @see objpool, objpool_id_t, spin_lock()/spin_unlock(), bitmap_find_nth(), bitmap_set().
  */
 void* objpool_alloc_with_id(struct objpool* objpool, objpool_id_t* id)
 {
@@ -56,14 +53,14 @@ void* objpool_alloc_with_id(struct objpool* objpool, objpool_id_t* id)
 }
 
 /**
- * @brief Allocate an object from a pool
+ * @brief Allocate an object from a pool.
  *
  * Convenience wrapper around objpool_alloc_with_id() that doesn't
  * return the object's ID.
  *
- * @param objpool Pointer to the object pool
- * @return void* Pointer to the allocated object, or NULL if pool is full
- * @see objpool_alloc_with_id()
+ * @param objpool Pointer to the object pool.
+ * @return void* Pointer to the allocated object, or NULL if pool is full.
+ * @see objpool_alloc_with_id().
  */
 void* objpool_alloc(struct objpool* objpool)
 {
@@ -77,10 +74,10 @@ void* objpool_alloc(struct objpool* objpool)
  * Validates that the object belongs to the pool and is properly aligned before
  * freeing.
  *
- * @param objpool Pointer to the object pool
- * @param obj Pointer to the object to free
- * @see in_range(), IS_ALIGNED, spin_lock(), spin_unlock(), bitmap_clear(), WARNING()
- * @see vaddr_t, objpool, spinlock_t, bitmap_t
+ * @param objpool Pointer to the object pool.
+ * @param obj Pointer to the object to free.
+ * @see in_range(), IS_ALIGNED, spin_lock(), spin_unlock(), bitmap_clear(), WARNING().
+ *      vaddr_t, objpool, spinlock_t, bitmap_t.
  *
  */
 void objpool_free(struct objpool* objpool, void* obj)

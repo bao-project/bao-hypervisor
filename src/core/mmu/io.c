@@ -16,9 +16,11 @@ struct iommu_device {
 
 /**
  * @brief Perform the initial configuration of the memory access control for IO devices.
+ *
  * Performs system-wide initialization of the IOMMU for MMU-based systems.
  * It entirely relies on the architecture-specific implementation of the IOMMU.
- * @see iommu_arch_init()
+ *
+ * @see iommu_arch_init().
  */
 void io_init(void)
 {
@@ -27,8 +29,10 @@ void io_init(void)
 
 /**
  * @brief Initialize the memory access control for IO devices to a VM-owned address space.
+ *
  * Performs the configuration of the IOMMU to grant an IO device access to
  * the specific VM's address space.
+ *
  * @param vm Pointer to the VM structure.
  * @param config Pointer to the VM's configuration.
  * @return bool True if initialization successful, false otherwise.
@@ -41,11 +45,13 @@ bool io_vm_init(struct vm* vm, const struct vm_config* config)
 
 /**
  * @brief Grant access to a VM address space to a specific device.
+ *
  * Associates a device with a VM's address space through the IOMMU.
+ *
  * @param vm Pointer to the VM structure.
  * @param dev_id Device identifier (0 for global mask).
  * @return bool True if device added successfully, false otherwise.
- * @see iommu_arch_vm_add_device(), vm, deviceid_t
+ * @see iommu_arch_vm_add_device(), vm, deviceid_t.
  */
 bool io_vm_add_device(struct vm* vm, deviceid_t dev_id)
 {

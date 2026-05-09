@@ -18,9 +18,9 @@ void vmm_io_init() { }
 
 /**
  * @brief Retrieve a VM's installation information from its allocation data.
- * @param vm_alloc Pointer to VM allocation structure
- * @return struct vm_install_info Installation information for the VM
- * @see vm_install_info, vm_allocation
+ * @param vm_alloc Pointer to VM allocation structure.
+ * @return struct vm_install_info Installation information for the VM.
+ * @see vm_install_info, vm_allocation.
  */
 struct vm_install_info vmm_get_vm_install_info(struct vm_allocation* vm_alloc)
 {

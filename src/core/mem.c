@@ -30,8 +30,10 @@ vaddr_t data_addr __attribute__((section(".datanocopy")));
 
 /**
  * @brief Allocate a bitmap for a page pool from a static bitmap pool.
+ *
  * Allocate a page pool bitmap to the platform's bitmap pool to fit the number
  * of pages.
+ *
  * @param pool_num_pages Number of pages that the bitmap must represent.
  * @param[out] bitmap Pointer to receive the allocated bitmap pointer on success.
  * @return true if allocation succeeded, false otherwise.
@@ -63,7 +65,7 @@ static bool pp_bitmap_alloc(size_t pool_num_pages, bitmap_t** bitmap)
 /**
  * @brief Calculate the size of the hypervisor root memory region.
  * @return Size in bytes of the root memory region.
- * @see _image_end, _data_vma_start, _image_start, MEM_NON_UNIFIED
+ * @see _image_end, _data_vma_start, _image_start, MEM_NON_UNIFIED.
  */
 static size_t calc_root_mem_size(void)
 {
@@ -76,10 +78,12 @@ static size_t calc_root_mem_size(void)
 
 /**
  * @brief Allocate a consecutive range of pages from a page pool.
+ *
  * Search the page pool bitmap for a contiguous run of 'num_pages' free
  * pages. If 'aligned' is true the returned allocation is aligned to the
  * size (num_pages).
- * @param pool Page pool to allocate from.
+ *
+ * @param pool Page pool from which the pages are allocated.
  * @param num_pages Number of pages to allocate.
  * @param aligned If true, returned block will be aligned to its size.
  * @param[out] ppages Pointer to the allocated physical pages.
@@ -173,8 +177,10 @@ static bool mem_ppages_in_pool(struct page_pool* ppool, struct ppages* ppages)
 
 /**
  * @brief Check whether the specified physical pages are already reserved in a pool.
- * Verifies that the physical pages are within the page pool and that the
+ *
+ * Verify that the physical pages are within the page pool and that the
  * corresponding bitmap bits are not already marked allocated.
+ *
  * @param ppool Page pool to check.
  * @param ppages Page region to verify.
  * @return true if the pages are reserved or overlap with allocated pages, false otherwise.
@@ -203,15 +209,17 @@ static bool mem_are_ppages_reserved_in_pool(struct page_pool* ppool, struct ppag
 
 /**
  * @brief Reserve a specific physical page region in the given page pool.
- * If the phydivsl paged falls within the pool, mark its bits in the pool
- * bitmap as allocated and decrement the pool free count. Returns whether
- * the region belonged to the pool and whether it was previously free.
+ *
+ * If the physical pages falls within the pool, mark its bits in the pool
+ * bitmap as allocated and decrement the pool free count.
+ * It is verified whether the region belonged to the pool and whether it was previously free.
+ *
  * @param pool Target page pool.
  * @param ppages Physical pages region to reserve.
  * @return false if the physical pages are in the page pool memory region or they
- *         were reversed *
+ *         were reversed.
  * @see range_in_range(), bitmap_set_consecutive(), NUM_PAGES(), page_pool, ppages
- *      PAGE_SIZE, paddr_t
+ *      PAGE_SIZE, paddr_t.
  */
 static bool mem_reserve_ppool_ppages(struct page_pool* pool, struct ppages* ppages)
 {
@@ -229,9 +237,11 @@ static bool mem_reserve_ppool_ppages(struct page_pool* pool, struct ppages* ppag
 
 /**
  * @brief Allocate pages and map them into the current CPU address space.
- * Request  physical pages (with optional physical alignment and
+ *
+ * Request physical pages (with optional physical alignment and
  * coloring) and maps them into the current CPU address space with default
  * hypervisor PTE flags.
+ *
  * @param num_pages Number of pages to allocate.
  * @param sec Address space security attribute (enum AS_SEC).
  * @param phys_aligned If true perform physical alignment to allocation size.
@@ -255,7 +265,7 @@ void* mem_alloc_page(size_t num_pages, as_sec_t sec, bool phys_aligned)
  * @brief Allocate the page pool bitmap tracking of hypervisor's root region pages.
  * @param root_pool Page pool representing the root memory region.
  * @return true on successful bitmap allocation, false otherwise.
- * @see pp_bitmap_alloc(), page_pool, bitmap_t
+ * @see pp_bitmap_alloc(), page_pool, bitmap_t.
  */
 static bool root_pool_set_up_bitmap(struct page_pool* root_pool)
 {
@@ -264,12 +274,14 @@ static bool root_pool_set_up_bitmap(struct page_pool* root_pool)
 
 /**
  * @brief Reserve the hypervisor load image region in the root pool.
- * Reserves the pages corresponding to the loaded image in the root pool
- * bitmap so they won't be re-used for other allocations.
+ *
+ * Reserve the pages corresponding to the loaded image in the root pool
+ * bitmap so they won't be re-used for ensuing allocations.
+ *
  * @param root_pool Root page pool.
  * @return true on success, false on failure.
  * @see _image_load_end, _image_start, mem_ppages_get(), mem_reserve_ppool_ppages(),
- *      NUM_PAGES(), ppages, page_pool
+ *      NUM_PAGES(), ppages, page_pool.
  */
 static bool pp_root_reserve_hyp_image_load(struct page_pool* root_pool)
 {
@@ -282,8 +294,10 @@ static bool pp_root_reserve_hyp_image_load(struct page_pool* root_pool)
 
 /**
  * @brief Reserve the hypervisor non-load image region in the root pool.
+ *
  * Reserves the non-loaded portion of the hypervisor image (data/bss/etc.)
  * following a loaded image and any VM image area.
+ *
  * @param root_pool Root page pool.
  * @return true on success, false on failure.
  * @see _image_load_end, _image_end, _vm_image_start, _vm_image_end,
@@ -305,8 +319,10 @@ static bool pp_root_reserve_hyp_image_noload(struct page_pool* root_pool)
 
 /**
  * @brief Reserve CPU-specific data pages in the root memory's page pool.
+ *
  * Calculate the memory to reserve for CPU-specific private memory area
  * and reserve it.
+ *
  * @param root_pool Root page pool.
  * @return true on success, false on failure.
  * @see mem_cpu_boot_alloc_size(), mem_ppages_get(), mem_reserve_ppool_ppages(),
@@ -337,7 +353,7 @@ static bool pp_root_reserve_cpus(struct page_pool* root_pool)
 
 /**
  * @brief Reserve hypervisor data region in the root pool.
- * @note used exclusively in non-unified memory architectures.
+ * @note Used exclusively in non-unified memory architectures.
  * @param root_pool Root page pool.
  * @return true on success, false on failure.
  * @see _image_end, _data_vma_start, mem_ppages_get(), mem_reserve_ppool_ppages(),
@@ -356,9 +372,9 @@ static bool pp_root_reserve_hyp_data(struct page_pool* root_pool)
 /**
  * @brief Reserve physical pages to store hypervisor-wide and CPU-private data.
  * @param root_pool Root page pool.
- * @return true on success, false on failure.
+ * @return true on success, false if any attempt to reserve the physical pages fails.
  * @see pp_root_reserve_hyp_data(), pp_root_reserve_cpus(), pp_root_reserve_hyp_image_load(),
- *      pp_root_reserve_hyp_image_noload()
+ *      pp_root_reserve_hyp_image_noload().
  */
 static bool pp_root_reserve_hyp_mem(struct page_pool* root_pool)
 {
@@ -376,10 +392,10 @@ static bool pp_root_reserve_hyp_mem(struct page_pool* root_pool)
 }
 
 /**
- * @brief Initialize the root page pool for a memory region.
- * @param root_region Memory region in which the root pool is shaped from.
+ * @brief Initialize the root page pool in the root memory region.
+ * @param root_region Memory region in which the root pool shall be allocated.
  * @return true on success, false on failure.
- * @see ALIGN(), PAGE_SIZE, pp_root_reserve_hyp_mem(), page_pool, mem_region
+ * @see ALIGN(), PAGE_SIZE, pp_root_reserve_hyp_mem(), page_pool, mem_region.
  */
 static bool pp_root_init(struct mem_region* root_region)
 {
@@ -407,7 +423,7 @@ static bool pp_root_init(struct mem_region* root_region)
  * @param size Size in bytes of the pool region.
  * @return true on successful allocation of the page pool, false otherwise.
  * @see memset(), pp_bitmap_alloc(), SPINLOCK_INITVAL, NUM_PAGES(), ALIGN(),
- *      paddr_tm, page_pool, PAGE_SIZE,
+ *      paddr_tm, page_pool, PAGE_SIZE.
  */
 static bool pp_init(struct page_pool* pool, paddr_t base, size_t size)
 {
@@ -459,7 +475,7 @@ static bool mem_vm_img_in_phys_rgn(struct vm_config* vm_config)
 static bool mem_hyp_image_no_load_reserved;
 
 /**
- * @brief Flag all statically allocated memory regions as reserved.
+ * @brief Flag all statically allocated memory regions to VM images as reserved.
  * @see MEM_NON_UNIFIED, vm_mem_region, mem_vm_img_in_phys_rgn(), vm_config,
  *      mem_hyp_image_no_load_reserved, config, vm_mem_region, shmem.
  */
@@ -553,7 +569,7 @@ static bool mem_check_reserved(void)
  * @param pool Page pool to reserve pages in (typically root pool).
  * @see pp_root_reserve_hyp_image_load(), mem_vm_img_in_phys_rgn(), mem_ppages_get(),
  *      mem_reserve_ppool_ppages(), NUM_PAGES(), page_pool, ppages,
- *      mem_hyp_image_no_load_reserved
+ *      mem_hyp_image_no_load_reserved.
  */
 static void mem_reserve_physical_memory(struct page_pool* pool)
 {
@@ -662,8 +678,8 @@ static struct mem_region* mem_find_root_region(void)
 /**
  * @brief Locate and initialize the root memory pool.
  * @param[out] root_mem_region Receives pointer to the found/initialized root region.
- * @return true on success, false otherwise.
- * @see mem_find_root_region(), pp_root_init(), mem_region,
+ * @return true on successful initialization, false otherwise.
+ * @see mem_find_root_region(), pp_root_init(), mem_region.
  */
 static bool mem_setup_root_pool(struct mem_region** root_mem_region)
 {
@@ -676,10 +692,10 @@ static bool mem_setup_root_pool(struct mem_region** root_mem_region)
 }
 
 /**
- * @brief Not implemented. It is specific to the supported memory accessl control mechanism.
+ * @brief Not implemented. It is specific to the supported memory access control mechanism.
  * @param load_addr Unused.
  * @param root_region Unused.
- * @see WARNING()
+ * @see WARNING().
  */
 __attribute__((weak)) void mem_color_hypervisor(const paddr_t load_addr,
     struct mem_region* root_region)
@@ -699,7 +715,7 @@ __attribute__((weak)) void mem_color_hypervisor(const paddr_t load_addr,
  * @param num_pages Unused.
  * @param flags Unused.
  * @return None.
- * @see: ERROR()
+ * @see: ERROR().
  */
 __attribute__((weak)) bool mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages,
     size_t num_pages, mem_flags_t flags)
@@ -720,7 +736,7 @@ __attribute__((weak)) bool mem_map_reclr(struct addr_space* as, vaddr_t va, stru
  * @param colors Unused.
  * @param ppages Unused.
  * @return None.
- * @see ERROR()
+ * @see ERROR().
  */
 __attribute__((weak)) bool pp_alloc_clr(struct page_pool* pool, size_t num_pages, colormap_t colors,
     struct ppages* ppages)
@@ -736,13 +752,15 @@ __attribute__((weak)) bool pp_alloc_clr(struct page_pool* pool, size_t num_pages
 
 /**
  * @brief Allocate physical pages from available page pools.
+ *
  * Iterates the global page_pool_list and attempts to allocate either
  * colored pages (if requested) or a normal allocation.
+ *
  * @param colors Colormap bitmask requesting coloring.
  * @param num_pages Number of pages to allocate.
  * @param aligned If true, request physically aligned allocation.
  * @return the request pages or an empty pages structure.
- * @see list_foreach(),  pp_alloc() pp_alloc_clr(), colormap_t, ppages, all_clrs()
+ * @see list_foreach(),  pp_alloc() pp_alloc_clr(), colormap_t, ppages, all_clrs().
  */
 struct ppages mem_alloc_ppages(colormap_t colors, size_t num_pages, bool aligned)
 {
@@ -761,10 +779,12 @@ struct ppages mem_alloc_ppages(colormap_t colors, size_t num_pages, bool aligned
 
 /**
  * @brief Initialize memory subsystem for the hypervisor.
+ *
  * Performs memory protection initialization, sets up the root pool, configures
  * page pools for other regions, reserves static physical memory regions,
- * colors the hypervisor image (if supported and configured)
- * @note All the CPUs under management are synchronized at the end
+ * colors the hypervisor image (if supported and configured).
+ *
+ * @note All the physical CPUs managed by the hypervisor are synchronized at the end.
  * @see mem_prot_init(), cache_enumerate(), mem_setup_root_pool(), list_init(),
  *      config_init(), mem_reserve_physical_memory(), mem_color_hypervisor(),
  *      mem_create_ppools(), cpu_sync_and_clear_msgs(), cpu_is_master(),

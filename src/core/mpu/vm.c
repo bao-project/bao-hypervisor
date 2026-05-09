@@ -11,10 +11,12 @@
 
 /**
  * @brief Initialize memory protection mechanism for a VM.
- * Initialize the MPU according to the the VM address space configuration and
- * the master CPU is responsible for initializing the MMIO regions.
- * @note The initialization of the MMIO region is performed only once by the master
- *       CPU to avoid potential interference scenarios.
+ *
+ * Initialize the MPU according to the VM address space configuration.
+ *
+ * @note The initialization of the MMIO regions is performed only once by the master
+ *       CPU to prevent race conditions.
+ *
  * @param[in,out] vm VM instance whose memory protection will be initialized.
  * @param[in] vm_config VM configuration (unused).
  * @see as_init, vm, vm_config, mem_mmio_init_regions, MMIO_SLAVE_SIDE_PROT,

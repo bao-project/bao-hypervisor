@@ -25,11 +25,11 @@ union ipc_msg_data {
 };
 
 /**
- * @brief Find an IPC object in a VM by its shared memory ID
- * @param vm Pointer to the VM structure to search
+ * @brief Find an IPC object in a VM by its shared memory ID.
+ * @param vm Pointer to the VM structure to search.
  * @param shmem_id ID of the shared memory region to be found.
  * @return struct ipc* Pointer to the found IPC object, or NULL if not found.
- * @see vm, ipc
+ * @see vm, ipc.
  */
 static struct ipc* ipc_find_by_shmemid(struct vm* vm, size_t shmem_id)
 {
@@ -46,10 +46,10 @@ static struct ipc* ipc_find_by_shmemid(struct vm* vm, size_t shmem_id)
 }
 
 /**
- * @brief Notify a VM of an IPC event by injecting an interrupt
- * @param shmem_id ID of the shared memory region allocated to the IPC channel
- * @param event_id Event identifier to trigger
- * @see ipc_find_by_shmemid(), cpu(), vcpu_inject_irq(), irqid_t, ipc, vcpu, vm
+ * @brief Notify a VM of an IPC event by injecting an interrupt.
+ * @param shmem_id ID of the shared memory region allocated to the IPC channel.
+ * @param event_id Event identifier to trigger.
+ * @see ipc_find_by_shmemid(), cpu(), vcpu_inject_irq(), irqid_t, ipc, vcpu, vm.
  */
 static void ipc_notify(size_t shmem_id, size_t event_id)
 {
@@ -61,10 +61,10 @@ static void ipc_notify(size_t shmem_id, size_t event_id)
 }
 
 /**
- * @brief Handle IPC events received via CPU messages
- * @param event Event type (e.g., IPC_NOTIFY)
- * @param data Message data containing shmem_id and event_id
- * @see ipc_notify(), WARNING(), ipc_msg_data, IPC_NOTIFY
+ * @brief Handle IPC events received via CPU messages.
+ * @param event Event type (e.g., IPC_NOTIFY).
+ * @param data Message data containing shmem_id and event_id.
+ * @see ipc_notify(), WARNING(), ipc_msg_data, IPC_NOTIFY.
  */
 static void ipc_handler(uint32_t event, uint64_t data)
 {
@@ -81,14 +81,16 @@ static void ipc_handler(uint32_t event, uint64_t data)
 CPU_MSG_HANDLER(ipc_handler, IPC_CPUMSG_ID)
 
 /**
- * @brief Handle IPC-related hypercalls from VMs
+ * @brief Handle IPC-related hypercalls from VMs.
+ *
  * Processes IPC hypercalls by sending IPC messages to target CPUs running
  * VMs that share memory regions. Validates the IPC and shared memory IDs
  * before sending notifications.
+ *
  * @return long int HC_E_SUCCESS on successful execution.
  * @return long int HC_E_INVAL_ARGS if the arguments are invalid.
  * @see hypercall_get_arg(), shmem_get(), cpu_send_msg(), cpu(), platform
- *      vcpu, shmem, ipc_msg_data, IPC_NOTIFY, IPC_CPUMSG_ID, vm, cpumap_t
+ *      vcpu, shmem, ipc_msg_data, IPC_NOTIFY, IPC_CPUMSG_ID, vm, cpumap_t.
  */
 long int ipc_hypercall(void)
 {

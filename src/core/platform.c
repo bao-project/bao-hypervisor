@@ -35,7 +35,7 @@ __attribute__((weak)) void plat_cpu_init(cpuid_t cpuid, paddr_t load_addr)
 
 /**
  * @brief Initialize platform-specific hardware and settings
- * @note Its execution relies on the platform-specific implementation.
+ * @note Its execution relies on platform-specific implementations.
  * @see platform_default_init(), platform_config_init()
  */
 void platform_init(void)

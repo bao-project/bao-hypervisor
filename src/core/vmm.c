@@ -27,10 +27,10 @@ static struct vm_assignment {
 } vm_assign[CONFIG_VM_NUM];
 
 /**
- * @brief Assign the current CPU to a VM as a vCPU
- * @param[out] master Set to true if this CPU becomes a VM's master
- * @param[out] vm_id ID of the VM this CPU is assigned to
- * @return bool true if CPU was assigned to a VM, false otherwise
+ * @brief Assign the current CPU to a VM according to CPU affinity configuration.
+ * @param[out] master Set to true if this CPU becomes a VM's master.
+ * @param[out] vm_id ID of the VM assigned to the executing CPU.
+ * @return bool true if the executing CPU is assigned to a VM, false otherwise.
  * @see config, vmid_t, vm_assignment, cpu(), cpumap_t, vm_allocation, vm_install_info
  *      cpu_sync_barrier(), spin_lock(), spin_unlock().
  */
@@ -88,15 +88,17 @@ static bool vmm_assign_vcpu(bool* master, vmid_t* vm_id)
 }
 
 /**
- * @brief Allocate memory for VM and VCPU structures
- * Allocates a contiguous block of memory for the VM structure and its VCPUs,
- * ensuring proper alignment of all fields. The allocation is page-aligned
- * and mapped in the hypervisor's address space.
- * @param[out] vm_alloc Output structure to receive allocation details
- * @param[in] vm_config Configuration describing the VM requirements
- * @return bool true if allocation successful, false otherwise
+ * @brief Allocate memory for VM and VCPU structures.
+ *
+ * Allocate a contiguous block of memory for the VM structure and its vCPUs,
+ * ensuring proper alignment of all fields.
+ * The allocation is page-aligned and mapped in the hypervisor's address space.
+ *
+ * @param[out] vm_alloc Output structure to receive allocation details.
+ * @param[in] vm_config Configuration describing the VM requirements.
+ * @return bool true if allocation successful, false otherwise.
  * @see mem_alloc_page(), memset(), ALIGN(), PAGE_SIZE, NUM_PAGES(), vcpu, vm
- *      vaddr_t, SEC_HYP_VM, MEM_ALIGN_NOT_REQ, vm_allocation, vm_platform, vm_config
+ *      vaddr_t, SEC_HYP_VM, MEM_ALIGN_NOT_REQ, vm_allocation, vm_platform, vm_config.
  */
 static bool vmm_alloc_vm(struct vm_allocation* vm_alloc, struct vm_config* vm_config)
 {
@@ -127,16 +129,18 @@ static bool vmm_alloc_vm(struct vm_allocation* vm_alloc, struct vm_config* vm_co
 }
 
 /**
- * @brief Allocate and install VM structures
+ * @brief Allocate and install VM structures.
+ *
  * The master CPU allocates VM structures and shares installation info
  * with other CPUs. Non-master CPUs wait for the master to prepare the
  * installation info before proceeding with their own installation.
- * @param vm_id ID of the VM to allocate/install
- * @param master true if this CPU is the VM's master
- * @return struct vm_allocation* Pointer to the VM allocation structure
+ *
+ * @param vm_id ID of the VM to allocate/install.
+ * @param master true if this CPU is the VM's master.
+ * @return struct vm_allocation* Pointer to the VM allocation structure.
  * @see vmm_alloc_vm(), vmm_get_vm_install_info(), vmm_vm_install(), config
  *      vm_assignment, fence_ord_read(), fence_ord_write(), ERROR(), vm_allocation
- *      vm_config, config, vm_install_info
+ *      vm_config, config, vm_install_info.
  */
 static struct vm_allocation* vmm_alloc_install_vm(vmid_t vm_id, bool master)
 {
@@ -160,13 +164,15 @@ static struct vm_allocation* vmm_alloc_install_vm(vmid_t vm_id, bool master)
 
 /**
  * @brief Initialize the hypervisor's VM management.
+ *
  * @note    This is the last step of the hypervisor initialization.
  *          Once all the CPU have executed this function, they are already
  *          executing within the VM's execution environment.
+ *
  * @see vmm_arch_init(), vmm_io_init(), shmem_init(), remio_init(), vmm_assign_vcpu()
  *      vmm_alloc_install_vm(), vm_init(), vcpu_run(), cpu_powerdown(), cpu_sync_barrier()
  *      vm_assignment, spinlock_t, vm_config, config, vm_platform, cpu_synctoken
- *      vmid_t, cpu(), vcpu
+ *      vmid_t, cpu(), vcpu.
  */
 void vmm_init()
 {

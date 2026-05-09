@@ -37,14 +37,19 @@ struct cpuif cpu_interfaces[PLAT_CPU_NUM];
 
 /**
  * @brief Initialize the calling CPU's state.
- * This function configures the currently executing cpu data structure, initializes
- * architecture-specific CPU state, initializes the CPU interface event list
- * and, if running on the master CPU, initializes the global
- * synchronization token and sets up inter-processor message handler IDs.
+ *
+ * This function:
+ * - configures the currently executing cpu data structure;
+ * - initializes architecture-specific CPU state;
+ * - initializes the CPU interface event list; and
+ * - sets up inter-processor message handler IDs.
+ *
+ * Also, if running on the master CPU, initializes the global CPU synchronization token.
+ *
  * @param cpu_id Identifier of the CPU to be initialized.
  * @see cpuid_t, cpu(), cpu_if(), cpu_arch_init(), list_init(), cpu_is_master(),
  *      cpu_sync_init(), cpu_sync_barrier(), platform, _ipi_cpumsg_handlers_id_start,
- *      _ipi_cpumsg_handlers_id_end, ipi_cpumsg_handlers, size_t
+ *      _ipi_cpumsg_handlers_id_end, ipi_cpumsg_handlers, size_t.
  */
 void cpu_init(cpuid_t cpu_id)
 {
@@ -71,13 +76,15 @@ void cpu_init(cpuid_t cpu_id)
 
 /**
  * @brief Send a message from the current CPU to a target CPU.
+ *
  * Allocates a message node from the message object pool, copies the
  * message into it and pushes it on the target CPU's event list, then
  * triggers an IPI to wake the target CPU.
+ *
  * @param trgtcpu Target CPU identifier.
  * @param msg Pointer to the message to send. The message contents are copied.
  * @see cpuid_t, cpu_msg, cpu_msg_node, node_t, objpool_alloc(), ERROR(),
- *      list_push(), cpu_if(), fence_sync_write(), interrupts_cpu_sendipi()
+ *      list_push(), cpu_if(), fence_sync_write(), interrupts_cpu_sendipi().
  */
 void cpu_send_msg(cpuid_t trgtcpu, struct cpu_msg* msg)
 {
@@ -93,12 +100,14 @@ void cpu_send_msg(cpuid_t trgtcpu, struct cpu_msg* msg)
 
 /**
  * @brief Retrieve the next CPU message from the calling CPU event list.
+ *
  * Pops a cpu_msg_node from the current CPU interface event list and copies
  * the contained message to the provided out-parameter. Frees the message
  * node back to the object pool.
+ *
  * @param[out] msg Pointer to storage that will receive the popped message.
  * @return true if a message was retrieved and copied; false if the event list was empty.
- * @see list_pop(), objpool_free(), cpu_msg, cpu_msg_node, cpu(), cpuif
+ * @see list_pop(), objpool_free(), cpu_msg, cpu_msg_node, cpu(), cpuif.
  */
 bool cpu_get_msg(struct cpu_msg* msg)
 {
@@ -113,12 +122,14 @@ bool cpu_get_msg(struct cpu_msg* msg)
 
 /**
  * @brief Handle all pending CPU messages for the current CPU.
+ *
  * This routine repeatedly fetches messages using cpu_get_msg() and invokes
  * the registered inter-processor message handler (ipi_cpumsg_handlers) for
  * each message. The cpu->handling_msgs flag is used to indicate message
  * processing is in progress.
+ *
  * @see cpu(), cpu_get_msg(), ipi_cpumsg_handlers[], ipi_cpumsg_handler_num
- *      cpu_msg_handler_t, cpu_msg
+ *      cpu_msg_handler_t, cpu_msg.
  */
 void cpu_msg_handler(void)
 {
@@ -134,10 +145,12 @@ void cpu_msg_handler(void)
 
 /**
  * @brief Put the CPU into a low-power standby state.
- * Calls the architecture-specific standby entry routine.
+ *
+ * Call the architecture-specific standby entry routine.
  * This function is expected not to return; if it does,
  * a spurious wake-up is reported as an error.
- * @see cpu_arch_standby(), ERROR()
+ *
+ * @see cpu_arch_standby(), ERROR().
  */
 void cpu_standby(void)
 {
@@ -152,9 +165,11 @@ void cpu_standby(void)
 
 /**
  * @brief Power down the CPU core.
+ *
  * This function calls an architecture-specific power-down routine. The function is
  * not expected to return; if it does, the function logs a spurious wake-up.
- * @see cpu_arch_powerdown(), ERROR()
+ *
+ * @see cpu_arch_powerdown(), ERROR().
  */
 void cpu_powerdown(void)
 {
@@ -169,11 +184,13 @@ void cpu_powerdown(void)
 
 /**
  * @brief Wakeup handler invoked when exiting standby mode.
+ *
  * Checks for pending IPIs and handles CPU messages, then resumes the
  * currently assigned vCPU (if any) or re-enters standby state.
  * It is intended to be called with a rewound stack by architecture-specific wakeup code.
+ *
  * @see interrupts_ipi_check(), interrupts_ipi_clear(), cpu_msg_handler(), vcpu_run(),
- *      cpu_standby(), cpu(), vcpu, cpu
+ *      cpu_standby(), cpu(), vcpu, cpu.
  */
 void cpu_standby_wakeup(void)
 {
@@ -191,10 +208,12 @@ void cpu_standby_wakeup(void)
 
 /**
  * @brief Wakeup handler invoked after powerdown exit.
- * Checks for IPIs and handles messages, then resumes
- * the vCPU if present or re-enters powerdown otherwise.
+ *
+ * Checks for IPIs and handles messages, then resumes the vCPU if present or
+ * re-enters powerdown otherwise.
+ *
  * @see interrupts_ipi_check(), interrupts_ipi_clear(), cpu_msg_handler(), vcpu_run()
- *      cpu_powerdown(), cpu(), cpu, vcpu
+ *      cpu_powerdown(), cpu(), cpu, vcpu.
  */
 void cpu_powerdown_wakeup(void)
 {

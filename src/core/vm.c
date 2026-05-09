@@ -16,13 +16,15 @@
 
 /**
  * @brief Assign the executing CPU as the VM's master CPU and synchronize the rest of the VM's CPUs.
+ *
  * To be noted, this is not a master/slave model.
  * The master CPU is a selected CPU that perform exclusive actions during the VM's initialization
  * that shall not be performed concurrently.
- * @param vm Pointer to VM structure to initialize
- * @param vm_config Configuration describing the VM
- * @param vm_id Unique identifier for the VM
- * @see cpu(), cpu, SPINLOCK_INITVAL, cpu_sync_init(), vm_mem_prot_init()
+ *
+ * @param vm Pointer to VM structure to initialize.
+ * @param vm_config Configuration describing the VM.
+ * @param vm_id Unique identifier for the VM.
+ * @see cpu(), cpu, SPINLOCK_INITVAL, cpu_sync_init(), vm_mem_prot_init().
  */
 static void vm_master_init(struct vm* vm, const struct vm_config* vm_config, vmid_t vm_id)
 {
@@ -38,8 +40,8 @@ static void vm_master_init(struct vm* vm, const struct vm_config* vm_config, vmi
 }
 
 /**
- * @brief Register current CPU as part of a VM
- * @param vm Pointer to the VM to update
+ * @brief Register current CPU as part of a VM.
+ * @param vm Pointer to the VM to update.
  * @see spin_lock(), spin_unlock(), cpu(), cpu.
  */
 static void vm_cpu_init(struct vm* vm)
@@ -51,8 +53,8 @@ static void vm_cpu_init(struct vm* vm)
 
 /**
  * @brief Calculate the Virtual CPU ID of the executing CPU.
- * @param vm Pointer to the VM whose CPU bitmap is used for the calculation
- * @return vcpuid_t The virtual CPU ID of the executing CPU within this VM
+ * @param vm Pointer to the VM whose CPU bitmap is used for the calculation.
+ * @return vcpuid_t The virtual CPU ID of the executing CPU within this VM.
  * @see bit_get(), cpu(), cpu, vcpuid_t
  */
 static vcpuid_t vm_calc_vcpu_id(struct vm* vm)
@@ -70,8 +72,8 @@ static vcpuid_t vm_calc_vcpu_id(struct vm* vm)
  * @brief Configure the virtualized CPU configuration for the executing physical CPU.
  * Set up the VCPU structure, links it to the VM and physical CPU,
  * and performs architecture-specific initialization and reset.
- * @param vm Pointer to the VM owning this VCPU
- * @param vm_config Configuration describing the VM and entry point
+ * @param vm Pointer to the VM owning this VCPU.
+ * @param vm_config Configuration describing the VM and entry point.
  * @see vm_calc_vcpu_id(), vm_get_vcpu(), vcpu_arch_init(), vcpu_arch_reset(),
  *      cpu(), cpu.
  */
@@ -91,12 +93,14 @@ static void vm_vcpu_init(struct vm* vm, const struct vm_config* vm_config)
 }
 
 /**
- * @brief Map a memory region into a VM's address space
- * Maps a memory region described by vm_mem_region into the VM's address
- * space. For physically placed regions, uses the specified physical address;
+ * @brief Map a memory region into a VM's address space.
+ *
+ * Maps a memory region described by vm_mem_region into the VM's address space.
+ * For physically placed regions, uses the specified physical address;
  * otherwise allocates new physical pages.
- * @param vm Pointer to the VM to map memory into
- * @param reg Memory region descriptor
+ *
+ * @param vm Pointer to the VM to map memory into.
+ * @param reg Memory region descriptor.
  * @see mem_ppages_get(), mem_alloc_map(), ERROR(), NUM_PAGES, vm, vm_mem_region,
  *      vaddr_t, SEC_VM_ANY, PTE_VM_FLAGS, ppages.
  */
@@ -121,13 +125,15 @@ static void vm_map_mem_region(struct vm* vm, struct vm_mem_region* reg)
 }
 
 /**
- * @brief Map a VM's image region in-place
+ * @brief Map a VM's image region in-place.
+ *
  * Maps a VM's image into its address space, handling the memory regions
  * before and after the image separately. Supports colored memory
  * configurations, by performing recoloring if needed.
+ *
  * @param vm Pointer to the VM data structure, for which the memory is mapped.
- * @param vm_config Configuration describing the VM and its image
- * @param reg Memory region descriptor for the image
+ * @param vm_config Configuration describing the VM and its image.
+ * @param reg Memory region descriptor for the image.
  * @see mem_alloc_map(), mem_map_reclr(), mem_ppages_get(), NUM_PAGES, PAGE_SIZE,
  *      all_clrs(), vm, vm_config, vm_mem_region, vaddr_t, ppages, SEC_VM_ANY.
  */
@@ -162,14 +168,16 @@ static void vm_map_img_rgn_inplace(struct vm* vm, const struct vm_config* vm_con
 
 /**
  * @brief Install a VM image into its configured memory region.
+ *
  * Copy the VM image from its load address to the runtime base address defined in the
  * VM configuration. If the image is already at its runtime address, return immediately.
+ *
  * @note If the load region and the runtime region overlap, trigger a fatal error.
  * @param vm Data structure of the VM to be installed.
- * @param reg Region in which the VM is to be installed
+ * @param reg Region in which the VM is to be installed.
  * @see vm, vm_mem_region, paddr_t, range_overlap_range(), ERROR, NUM_PAGES
  *      cpu(), addr_space, mem_alloc_map(), vaddr_t, ppages, mem_map_cpy()
- *      memcpy(), cache_flush_range(), mem_unmap()
+ *      memcpy(), cache_flush_range(), mem_unmap().
  */
 static void vm_install_image(struct vm* vm, struct vm_mem_region* reg)
 {
@@ -206,13 +214,15 @@ static void vm_install_image(struct vm* vm, struct vm_mem_region* reg)
 
 /**
  * @brief Map (and install) a VM image in a specified memory region.
+ *
  * If in-place image is configured (i.e. not copied, at a specific physical address),
  * installation is not performed.
- * @param vm virtual machine to be installed
- * @param vm_config VM installation configuration
+ *
+ * @param vm virtual machine to be installed.
+ * @param vm_config VM installation configuration.
  * @param reg Memory region in which the VM is mapped and installed.
  * @see vm, vm_config, vm_mem_region, vm_map_img_rgn_inplace(), vm_map_mem_region(),
- *      vm_install_image()
+ *      vm_install_image().
  */
 static void vm_map_img_rgn(struct vm* vm, const struct vm_config* vm_config,
     struct vm_mem_region* reg)
@@ -247,20 +257,23 @@ static void vm_init_mem_regions(struct vm* vm, const struct vm_config* vm_config
 }
 
 /**
- * @brief Initialize a VM's IPC resources
+ * @brief Initialize the IPC resources of a VM.
+ *
  * Map the VM's shared memory regions for inter-processor communication.
- * Its data structures are initialized and any configured physical interrupt is
- * assigned.
+ * Its data structures are initialized and any configured physical interrupt is assigned.
+ *
  * @note    If the shared memory configuration is not correct (invalid ID),
  *          the IPC will not be mapped. A warning wil be issued but a runtime error
  *          may be encountered when configured or used by the VM.
+ *
  * @note    If the configured IPC shared memory's size is larger than the respective
  *          shared memory region, then the mapped IPC shared memory will be truncated
  *          to the size of the memory region.
- * @param vm VM for which the IPCs are defined
+ *
+ * @param vm VM for which the IPCs are defined.
  * @param vm_config The VM configuration.
  * @see vm, vm_config, ipc, shmem, WARNING(), shmem_get(), interrupts_vm_assign(),
- *      spin_lock(), spin_unlock(), cpu(), vm_mem_region, vm_map_mem_region
+ *      spin_lock(), spin_unlock(), cpu(), vm_mem_region, vm_map_mem_region.
  */
 static void vm_init_ipc(struct vm* vm, const struct vm_config* vm_config)
 {
@@ -305,15 +318,18 @@ static void vm_init_ipc(struct vm* vm, const struct vm_config* vm_config)
 
 /**
  * @brief Initialize device regions and interrupts for a VM.
- * @note    If MMIO slave-side protection is enabled, architecture-specific access
- *          control is applied instead of direct mapping.
- * @note    If IOMMU virtualization is available and a device carries a valid ID,
- *          register it with the IOMMU.
+ *
+ * @note    If MMIO slave-side protection is supported (MMIO_SLAVE_SIDE_PROT),
+ *          architecture-specific access control is applied instead of direct mapping.
+ *
+ * @note    If IOMMU virtualization is supported and a device carries a valid ID,
+ *          the device is registered to the IOMMU.
+ *
  * @param vm Pointer to the VM to configure.
  * @param vm_config VM configuration describing the platform devices.
  * @see vm_arch_allow_mmio_access(), mem_alloc_map_dev(), interrupts_vm_assign(),
  *      io_vm_init(), io_vm_add_device(), vm_dev_region, vm, vm_config,
- *      INVALID_VA, PAGE_SIZE, ALIGN, ERROR()
+ *      INVALID_VA, PAGE_SIZE, ALIGN, ERROR(), MMIO_SLAVE_SIDE_PROT.
  */
 static void vm_init_dev(struct vm* vm, const struct vm_config* vm_config)
 {
@@ -348,14 +364,17 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* vm_config)
 
 /**
  * @brief Initialize a single Remote I/O device for a VM's CPU.
+ *
  * @note    A warning is issued if the shared memory configured for the remote I/O
  *          device is not sufficient to fit the device memory region's size.
- * @note A fatal error is triggered if the shared memory ID is invalid.
+ *
+ * @note If the shared memory ID is invalid, a fatal error is triggered.
+ *
  * @param vm Pointer to the VM to configure.
  * @param remio_dev Pointer to the remote I/O device descriptor.
  * @see shmem_get(), vm_map_mem_region(), vm_emul_add_mem(), remio_mmio_emul_handler(),
  *      spin_lock(), spin_unlock(), cpu(), shmem, remio_dev, vm_mem_region,
- *      WARNING(), ERROR(), REMIO_DEV_FRONTEND, emul_mem
+ *      WARNING(), ERROR(), REMIO_DEV_FRONTEND, emul_mem.
  */
 static void vm_init_remio_dev(struct vm* vm, struct remio_dev* remio_dev)
 {
@@ -393,10 +412,10 @@ static void vm_init_remio_dev(struct vm* vm, struct remio_dev* remio_dev)
 }
 
 /**
- * @brief Initialize all Remote I/O devices configured for a VM.
+ * @brief Initialize all remote I/O devices configured for a VM.
  * @param vm Pointer to the VM to configure.
  * @param vm_config VM configuration describing the remote I/O devices.
- * @see vm_init_remio_dev(), remio_assign_vm_cpus(), remio_dev, vm_config, vm
+ * @see vm_init_remio_dev(), remio_assign_vm_cpus(), remio_dev, vm_config, vm.
  */
 static void vm_init_remio(struct vm* vm, const struct vm_config* vm_config)
 {
@@ -418,7 +437,7 @@ static void vm_init_remio(struct vm* vm, const struct vm_config* vm_config)
  * @brief Initialize a VM from a pre-allocated VM allocation structure.
  * @param vm_alloc Pointer to the allocation structure carrying the VM and VCPU memory.
  * @return struct vm* Pointer to the initialized VM structure.
- * @see vm_allocation, vm
+ * @see vm_allocation, vm.
  */
 static struct vm* vm_allocation_init(struct vm_allocation* vm_alloc)
 {
@@ -428,18 +447,24 @@ static struct vm* vm_allocation_init(struct vm_allocation* vm_alloc)
 }
 
 /**
- * @brief Initialize a Virtual Machine
- * Perform complete initialization of a VM including master initialization,
- * CPU registration, VCPU setup, architecture-specific initialization,
- * memory regions, IPC setup, and device setup.
+ * @brief Initialize a Virtual Machine.
+ *
+ * Perform the complete initialization of a VM:
+ * - VM data structure;
+ * - CPU registration;
+ * - VCPUs setup;
+ * - architecture-specific initialization,
+ * - Set up of memory regions, IPCs, and devices.
+ *
  * @note    All CPUs' executions are synchronized at various stages to ensure
  *          VM state consistency during its initialization.
- * @param vm_alloc VM allocation structure with memory layout
+ *
+ * @param vm_alloc VM allocation structure with memory layout.
  * @param vm_init_sync Token used to synchronize all CPUs.
- * @param vm_config Configuration describing the VM
- * @param master true if this CPU is the VM's master
- * @param vm_id Unique identifier for the VM
- * @return struct vm* Pointer to the initialized VM structure
+ * @param vm_config Configuration describing the VM.
+ * @param master true if this CPU is the VM's master.
+ * @param vm_id Unique identifier for the VM.
+ * @return struct vm* Pointer to the initialized VM structure.
  * @see vm_allocation_init(), vm_master_init(), vm_cpu_init(), vm_vcpu_init(),
  *      vm_arch_init(), vm_init_mem_regions(), vm_init_ipc(), vm_init_dev(),
  *      vm_init_remio(), cpu_sync_barrier(), cpu_sync_and_clear_msgs().
@@ -503,7 +528,7 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, struct cpu_synctoken* vm_init
  * @brief Register a memory-mapped emulation handler with a VM.
  * @param vm Pointer to the VM for which the emulator is registered.
  * @param emu Pointer to the emulated memory region descriptor to register.
- * @see list_push(), vm, emul_mem
+ * @see list_push(), vm, emul_mem.
  */
 void vm_emul_add_mem(struct vm* vm, struct emul_mem* emu)
 {
@@ -514,7 +539,7 @@ void vm_emul_add_mem(struct vm* vm, struct emul_mem* emu)
  * @brief Register a register-level emulation handler with a VM.
  * @param vm Pointer to the VM for which the emulator is registered.
  * @param emu Pointer to the emulated register descriptor.
- * @see list_push(), vm, emul_reg
+ * @see list_push(), vm, emul_reg.
  */
 void vm_emul_add_reg(struct vm* vm, struct emul_reg* emu)
 {
@@ -527,7 +552,7 @@ void vm_emul_add_reg(struct vm* vm, struct emul_reg* emu)
  * @param addr Guest virtual address to look up.
  * @return  emul_handler_t Emulation handler registered for the memory address.
  *          NULL if no handler is registered for the address.
- * @see list_push(), vm, emul_mem
+ * @see list_push(), vm, emul_mem.
  */
 emul_handler_t vm_emul_get_mem(struct vm* vm, vaddr_t addr)
 {
@@ -547,7 +572,7 @@ emul_handler_t vm_emul_get_mem(struct vm* vm, vaddr_t addr)
  * @param vm Pointer to the VM that may own the register emulation handler.
  * @param addr Guest virtual address to look up.
  * @return emul_handler_t The handler for the matching region, or NULL if none found.
- * @see list_foreach(), vm, emul_mem, emul_handler_t, vaddr_t
+ * @see list_foreach(), vm, emul_mem, emul_handler_t, vaddr_t.
  * @note    The handler is identified by an address. the address may not
  *          correspond to an actual address, but a register ID instead.
  */
@@ -569,7 +594,7 @@ emul_handler_t vm_emul_get_reg(struct vm* vm, vaddr_t addr)
  * @note The callee do not receive the message.
  * @param vm Pointer to the VM whose CPU members receive the message.
  * @param msg Pointer to the message to broadcast.
- * @see cpu_send_msg(), cpu(), vm, cpu_msg
+ * @see cpu_send_msg(), cpu(), vm, cpu_msg.
  */
 void vm_msg_broadcast(struct vm* vm, struct cpu_msg* msg)
 {
@@ -609,7 +634,7 @@ __attribute__((weak)) cpumap_t vm_translate_to_pcpu_mask(struct vm* vm, cpumap_t
  * @param mask Physical CPU bitmask to translate.
  * @param len Number of bits in the mask to consider.
  * @return cpumap_t Virtual CPU bitmask corresponding to the input physical mask.
- * @see vm_translate_to_vcpuid(), vm, cpumap_t, vcpuid_t, INVALID_CPUID
+ * @see vm_translate_to_vcpuid(), vm, cpumap_t, vcpuid_t, INVALID_CPUID.
  */
 __attribute__((weak)) cpumap_t vm_translate_to_vcpu_mask(struct vm* vm, cpumap_t mask, size_t len)
 {
@@ -624,11 +649,13 @@ __attribute__((weak)) cpumap_t vm_translate_to_vcpu_mask(struct vm* vm, cpumap_t
 }
 
 /**
- * @brief Start an active virtual CPU
- * If the virtual CPU is power-on and it is active, the ISA-specific
+ * @brief Start an active virtual CPU.
+ *
+ * If the vCPU is powered on and it is active, the architecture-specific
  * entry point is reached (the hypervisor context is left).
- * If the CPU is not active, it is sent into stand-by mode.
- * If the virtual CPU is not powered on, it
+ * If the vCPU is not active, it is sent into stand-by mode.
+ * If the vCPU is not powered on, it will go into powerdown.
+ *
  * @param vcpu Pointer to the VCPU to run
  * @see vcpu_arch_is_on(), vcpu, vcpu_arch_entry(), cpu_standby(), cpu_powerdown().
  */
@@ -646,10 +673,10 @@ void vcpu_run(struct vcpu* vcpu)
 }
 
 /**
- * @brief Not implemented. It is ISA-specific
+ * @brief Not implemented. It is architecture-specific.
  * @param vm Unused.
  * @param dev Unused.
- * @see ERROR()
+ * @see ERROR().
  */
 __attribute__((weak)) void vm_arch_allow_mmio_access(struct vm* vm, struct vm_dev_region* dev)
 {

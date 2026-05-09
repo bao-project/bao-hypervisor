@@ -13,11 +13,13 @@
 #include <mem.h>
 
 /**
- * @brief Initialize memory access control for a VM in MMU-based systems
+ * @brief Initialize memory access control for a VM in MMU-based systems.
+ *
  * Sets up the address space for a VM with caches color map.
- * @param vm Pointer to the VM structure
- * @param vm_config Pointer to the VM's configuration
- * @see as_init, vm, vm_config, colormap_t, AS_TYPE
+ *
+ * @param vm Pointer to the VM structure.
+ * @param vm_config Pointer to the VM's configuration.
+ * @see as_init, vm, vm_config, colormap_t, AS_TYPE.
  */
 void vm_mem_prot_init(struct vm* vm, const struct vm_config* vm_config)
 {
