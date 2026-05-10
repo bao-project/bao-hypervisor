@@ -37,7 +37,7 @@ struct sbi_hsm {
 };
 
 void sbi_init(void);
-size_t sbi_vs_handler(void);
+bool sbi_vs_handler(size_t* inst_size);
 
 void sbi_console_putchar(int ch);
 

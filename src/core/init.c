@@ -18,7 +18,6 @@ void init(cpuid_t cpu_id)
     /**
      * These initializations must be executed first and in fixed order.
      */
-
     cpu_init(cpu_id);
     mem_init();
 
@@ -34,7 +33,6 @@ void init(cpuid_t cpu_id)
 
     interrupts_init();
 
-    INFO("Cpu %d VMM init\n\r", cpu_id);
     vmm_init();
 
     /* Should never reach here */

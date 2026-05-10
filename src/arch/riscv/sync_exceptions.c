@@ -41,9 +41,9 @@ static uint32_t read_ins(uintptr_t ins_addr)
     return ins;
 }
 
-typedef size_t (*sync_handler_t)(void);
+typedef bool (*sync_handler_t)(size_t* inst_size);
 
-extern size_t sbi_vs_handler(void);
+extern bool sbi_vs_handler(size_t* inst_size);
 
 static inline bool ins_ldst_decode(vaddr_t ins, struct emul_access* emul)
 {
@@ -78,14 +78,14 @@ static inline bool is_pseudo_ins(uint32_t ins)
     return ins == TINST_PSEUDO_STORE || ins == TINST_PSEUDO_LOAD;
 }
 
-static size_t guest_page_fault_handler(void)
+static bool guest_page_fault_handler(size_t* inst_size)
 {
+    bool fault_handled = false;
     vaddr_t addr = (csrs_htval_read() << 2) | (csrs_stval_read() & 0x3);
 
     emul_handler_t handler = vm_emul_get_mem(cpu()->vcpu->vm, addr);
     if (handler != NULL) {
         unsigned long ins = csrs_htinst_read();
-        size_t ins_size;
         if (ins == 0) {
             /**
              * If htinst does not provide information about the trap, we must read the instruction
@@ -93,37 +93,97 @@ static size_t guest_page_fault_handler(void)
              */
             vaddr_t ins_addr = csrs_sepc_read();
             ins = read_ins(ins_addr);
-            ins_size = INS_SIZE(ins);
-        } else if (is_pseudo_ins((uint32_t)ins)) {
-            // TODO: we should reinject this in the guest as a fault access
-            ERROR("fault on 1st stage page table walk\n");
-        } else {
+            *inst_size = INS_SIZE(ins);
+        } else if (!is_pseudo_ins((uint32_t)ins)) {
             /**
              * If htinst is valid and is not a pseudo isntruction make sure the opcode is valid
              * even if it was a compressed instruction, but before save the real instruction size.
              */
-            ins_size = TINST_INS_SIZE(ins);
+            *inst_size = TINST_INS_SIZE(ins);
             ins = ins | 0x2;
         }
 
         struct emul_access emul;
-        if (!ins_ldst_decode(ins, &emul)) {
-            ERROR("cant decode ld/st instruction\n");
+        if (ins_ldst_decode(ins, &emul)) {
+            /**
+             * TODO: check if the access is aligned. If not, inject an exception in the vm.
+             */
+            emul.addr = addr;
+            fault_handled = handler(&emul);
         }
-        emul.addr = addr;
-
-        /**
-         * TODO: check if the access is aligned. If not, inject an exception in the vm.
-         */
-
-        if (handler(&emul)) {
-            return ins_size;
-        } else {
-            ERROR("emulation handler failed (0x%x at 0x%x)\n", addr, csrs_sepc_read());
-        }
-    } else {
-        ERROR("no emulation handler for abort(0x%x at 0x%x)\n", addr, csrs_sepc_read());
     }
+
+    return fault_handled;
+}
+
+static bool vcpu_redirect_exception(void)
+{
+    /**
+     * This functions assumes we redirect the exception to the currently active vcpu.
+     * It also assumes we are always handling exceptions, not interrupts.
+     */
+
+    bool exception_redirected = false;
+
+    unsigned long vsepc = csrs_sepc_read();
+    unsigned long vstval = csrs_stval_read();
+    unsigned long exception_pc = csrs_vstvec_read() & ~STVEC_MODE_MSK;
+
+    unsigned long vsstatus = csrs_vsstatus_read();
+
+    vsstatus &= ~SSTATUS_SPP_BIT;
+    bool vcpu_in_vs = (cpu()->vcpu->regs.sstatus & SSTATUS_SPP_BIT) != 0;
+    if (vcpu_in_vs) {
+        vsstatus |= SSTATUS_SPP_BIT;
+    }
+    vsstatus &= ~SSTATUS_SPIE_BIT;
+    bool vcpu_interrupts_enabled = (vsstatus & SSTATUS_SIE_BIT) != 0;
+    if (vcpu_interrupts_enabled) {
+        vsstatus |= SSTATUS_SPIE_BIT;
+    }
+    vsstatus &= ~SSTATUS_SIE_BIT;
+
+    unsigned long vscause = 0;
+    bool cause_can_be_redirected = true;
+    unsigned long scause = csrs_scause_read();
+    switch (scause) {
+        case SCAUSE_CODE_IGPF:
+            vscause = SCAUSE_CODE_IAF;
+            break;
+        case SCAUSE_CODE_LGPF:
+            vscause = SCAUSE_CODE_LAF;
+            break;
+        case SCAUSE_CODE_SGPF:
+            vscause = SCAUSE_CODE_SAF;
+            break;
+        case SCAUSE_CODE_VRTI:
+            vscause = SCAUSE_CODE_ILI;
+            break;
+        case SCAUSE_CODE_IAM:
+        case SCAUSE_CODE_IAF:
+        case SCAUSE_CODE_ILI:
+        case SCAUSE_CODE_LAM:
+        case SCAUSE_CODE_LAF:
+        case SCAUSE_CODE_SAM:
+        case SCAUSE_CODE_SAF:
+            vscause = scause;
+            break;
+        default:
+            cause_can_be_redirected = false;
+            break;
+    }
+
+    if (cause_can_be_redirected) {
+        csrs_vsstatus_write(vsstatus);
+        csrs_vscause_write(vscause);
+        csrs_vsepc_write(vsepc);
+        csrs_vstval_write(vstval);
+        vcpu_writepc(cpu()->vcpu, exception_pc);
+        cpu()->vcpu->regs.sstatus |= SSTATUS_SPP_BIT;
+        exception_redirected = true;
+    }
+
+    return exception_redirected;
 }
 
 sync_handler_t sync_handler_table[] = {
@@ -138,22 +198,27 @@ void sync_exception_handler(void);
 void sync_exception_handler(void)
 {
     size_t pc_step = 0;
+    bool exception_handled = false;
     unsigned long _scause = csrs_scause_read();
 
     if (!(csrs_hstatus_read() & HSTATUS_SPV)) {
         internal_exception_handler(&cpu()->vcpu->regs.x[0]);
-    }
-
-    // TODO: Do we need to check call comes from VS-mode and not VU-mode or U-mode ?
-
-    if (_scause < sync_handler_table_size && sync_handler_table[_scause]) {
-        pc_step = sync_handler_table[_scause]();
     } else {
-        ERROR("unknown synchronous exception (%d) at 0x%x\n", _scause, vcpu_readpc(cpu()->vcpu));
-    }
+        // TODO: Do we need to check call comes from VS-mode and not VU-mode or U-mode ?
 
-    vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + pc_step);
-    if (vcpu_arch_is_on(cpu()->vcpu) && !cpu()->vcpu->active) {
-        cpu_standby();
+        if (_scause < sync_handler_table_size && sync_handler_table[_scause]) {
+            exception_handled = sync_handler_table[_scause](&pc_step);
+        }
+
+        if (exception_handled) {
+            vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + pc_step);
+        } else {
+            if (_scause == SCAUSE_CODE_ILI){
+                vcpu_redirect_exception();
+            } else {
+                ERROR("unknown synchronous exception (%d) at 0x%x\n", _scause, vcpu_readpc(cpu()->vcpu));
+                //vcpu_redirect_exception();
+            }
+        }
     }
 }

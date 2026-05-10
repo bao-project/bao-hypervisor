@@ -56,6 +56,15 @@ void vmm_arch_init()
         }
     }
 
+    if (CPU_HAS_EXTENSION(CPU_EXT_SVPBMT)) {
+        csrs_henvcfg_set(HENVCFG_PBMTE);
+        bool svpbmt_present = (csrs_henvcfg_read() & HENVCFG_PBMTE) != 0;
+        if (cpu_is_master() && !svpbmt_present) {
+            ERROR("Platform configured to use SVPBMT extensions, but extension not present.\r\n");
+        }
+    }
+
+
     /**
      * Enable and sanity check the Zicbom extension if the hypervisor was
      * configured to use it (via the CPU_EXT_ZICBOM macro). Otherwise, leave
@@ -99,6 +108,7 @@ void vmm_arch_init()
                 ERROR("Unsupported PMM mode for Ssnpm extension.\r\n");
             }
     }
+#endif
 #endif
     /**
      * Configure the State Enable mechanism (Ssstateen).

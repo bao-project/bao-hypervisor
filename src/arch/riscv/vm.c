@@ -64,6 +64,7 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
     csrs_vsstatus_write(SSTATUS_SD | SSTATUS_XS_DIRTY);
     if (CPU_HAS_EXTENSION(CPU_EXT_F)) {
         csrs_vsstatus_set(SSTATUS_FS_DIRTY);
+    }
     if (CPU_HAS_EXTENSION(CPU_EXT_V)) {
         csrs_vsstatus_set(SSTATUS_VS_DIRTY);
     }

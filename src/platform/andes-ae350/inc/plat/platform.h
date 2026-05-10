@@ -9,14 +9,18 @@
 #include <drivers/sbi_uart.h>
 
 /* Andes AX66 core implements the Sstc extension */
-#define CPU_EXT_SSTC 1
+#define CPU_EXT_SSTC      1
 #define CPU_EXT_SSSTATEEN 1
-#define CPU_EXT_SSCSRIND 1
-#define CPU_EXT_F 1
-#define CPU_EXT_C 0
-#define CPU_EXT_SDTRIG 0
-#define CPU_EXT_ZICBOM 1
-#define CPU_EXT_ZICBOZ 1
+#define CPU_EXT_SSCSRIND  1
+#define CPU_EXT_F         1
+#define CPU_EXT_V         1
+#define CPU_EXT_C         1
+#define CPU_EXT_SDTRIG    0
+#define CPU_EXT_ZICBOM    1
+#define CPU_EXT_ZICBOZ    1
+#define CPU_EXT_SSNPM     1
+#define CPU_EXT_SSNPM_PMM_MODE HENVCFG_PMM_PMLEN_7
+#define CPU_EXT_SVPBMT 1
 
 #define IPIC_SBI    (1)
 #define IPIC_ACLINT (2)
