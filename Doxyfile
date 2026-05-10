@@ -931,7 +931,7 @@ WARN_LINE_FORMAT       = "at line $line of file $file"
 # specified the warning and error messages are written to standard output
 # (stdout).
 
-WARN_LOGFILE           =
+WARN_LOGFILE           = doxywarn.log
 
 #---------------------------------------------------------------------------
 # Configuration options related to the input files
@@ -1058,7 +1058,8 @@ EXCLUDE_SYMLINKS       = NO
 # Note that the wildcards are matched against the file with absolute path, so to
 # exclude all test directories for example use the pattern */test/*
 
-EXCLUDE_PATTERNS       = */arch/* \
+EXCLUDE_PATTERNS       = */ci/* \
+                         */arch/* \
                          */platform/* \
                          */remio.* \
                          *.h
