@@ -173,7 +173,7 @@ static inline void vcpu_inject_irq(struct vcpu* vcpu, irqid_t id)
 
 /* ------------------------------------------------------------*/
 
-void vm_mem_prot_init(struct vm* vm, const struct vm_config* config);
+void vm_mem_prot_init(struct vm* vm, const struct vm_config* vm_config);
 
 /* ------------------------------------------------------------*/
 

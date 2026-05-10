@@ -63,7 +63,7 @@ struct cpu_synctoken {
 extern struct cpu_synctoken cpu_glb_sync;
 
 void cpu_init(cpuid_t cpu_id);
-void cpu_send_msg(cpuid_t cpu, struct cpu_msg* msg);
+void cpu_send_msg(cpuid_t trgtcpu, struct cpu_msg* msg);
 bool cpu_get_msg(struct cpu_msg* msg);
 void cpu_msg_handler(void);
 void cpu_msg_set_handler(cpuid_t id, cpu_msg_handler_t handler);
