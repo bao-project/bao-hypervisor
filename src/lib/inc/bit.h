@@ -9,8 +9,9 @@
 #include <bao.h>
 
 /**
+ * The bit mask macros support LEN within [1, BITS_PER_LONG]. LEN == 0 is not supported.
  * The extra shift is because both arm and riscv logical shift instructions support a maximum of
- * machine word length minus one bit shits. This covers the corner case of runtime full machine
+ * machine word length minus one bit shifts. This covers the corner case of runtime full machine
  * word length masks with the cost of an extra shift instruction. For static masks, there should be
  * no extra costs.
  */
