@@ -33,7 +33,8 @@ static inline bool emul_arch_is_bwop(struct emul_access_arch* acc)
 static inline uint8_t emul_arch_bwop_emul_acc(struct emul_access_arch* acc, uint8_t cur_val)
 {
     unsigned long psw = srs_gmpsw_read();
-    if (cur_val & acc->bit) {
+    uint8_t bitmask = (uint8_t)(1UL << acc->bit);
+    if (cur_val & bitmask) {
         srs_gmpsw_write(psw & ~PSW_Z);
     } else {
         srs_gmpsw_write(psw | PSW_Z);
@@ -41,15 +42,15 @@ static inline uint8_t emul_arch_bwop_emul_acc(struct emul_access_arch* acc, uint
     uint8_t val = 0;
     switch (acc->bwop) {
         case EMUL_ARCH_BWOP_SET1:
-            val = (uint8_t)(cur_val | acc->bit);
+            val = (uint8_t)(cur_val | bitmask);
             ;
             break;
         case EMUL_ARCH_BWOP_NOT1:
-            val = (uint8_t)(cur_val ^ acc->bit);
+            val = (uint8_t)(cur_val ^ bitmask);
             ;
             break;
         case EMUL_ARCH_BWOP_CLR1:
-            val = (uint8_t)(cur_val & (uint8_t)~acc->bit);
+            val = (uint8_t)(cur_val & (uint8_t)~bitmask);
             ;
             break;
             /* TST1 only modifies the PSW.Z flag */

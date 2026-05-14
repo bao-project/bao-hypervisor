@@ -70,27 +70,17 @@ static bool vipir_emul_handler(struct emul_access* acc)
     }
 
     if ((chan_idx != IPI_HYP_IRQ_ID) && (tgt_reg != NULL)) {
-        if (acc->write) {
-            unsigned long val;
-            if (emul_arch_is_bwop(&acc->arch)) {
-                val = (uint8_t)emul_arch_bwop_emul_acc(&acc->arch, *tgt_reg);
-            } else {
-                val = (uint8_t)vcpu_readreg(vcpu, acc->reg);
-            }
-            val = (uint8_t)vm_translate_to_pcpu_mask(vm, val, vm->cpu_num);
+        if (emul_arch_is_bwop(&acc->arch)) {
+            acc->arch.bit = (uint8_t)vm_translate_to_pcpuid(vm, acc->arch.bit);
+            *tgt_reg = emul_arch_bwop_emul_acc(&acc->arch, *tgt_reg);
+        } else if (acc->write) {
+            unsigned long val = (uint8_t)vcpu_readreg(vcpu, acc->reg);
+            val = (uint8_t)vm_translate_to_pcpu_mask(vm, val, PLAT_CPU_NUM);
             *tgt_reg = (uint8_t)((*tgt_reg & ~vm->cpus) | (val & vm->cpus));
         } else {
             uint8_t val = *tgt_reg;
-            if (emul_arch_is_bwop(&acc->arch)) {
-                /* translate vcpu_id bit to pcpu_id bit */
-                acc->arch.bit =
-                    (uint8_t)vm_translate_to_pcpu_mask(vm, val & acc->arch.bit, vm->cpu_num);
-                /* invoke emul to update gmpsw.z */
-                (void)emul_arch_bwop_emul_acc(&acc->arch, val);
-            } else {
-                val = (uint8_t)vm_translate_to_pcpu_mask(vm, val, vm->cpu_num);
-                vcpu_writereg(vcpu, acc->reg, val);
-            }
+            val = (uint8_t)vm_translate_to_vcpu_mask(vm, val, PLAT_CPU_NUM);
+            vcpu_writereg(vcpu, acc->reg, val);
         }
     }
 
