@@ -1,0 +1,41 @@
+name: Bao Kao Testing Framework
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+
+jobs:
+
+  run-tests:
+    runs-on: ubuntu-latest
+    container:
+      image: baoproject/bao:latest
+      options: --user root
+    strategy:
+      matrix:
+        platform: [
+          "qemu-aarch64-virt",
+          "qemu-riscv64-virt",
+          "fvp-a",
+          "fvp-r"
+        ]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Mark workspace as safe for Git
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+
+      - name: Checkout private benchmarks submodule
+        env:
+          TOKEN: ${{ secrets.BENCHMARKS_TOKEN }}
+        run: |
+          git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "git@github.com:"
+          git submodule update --init tests/benchs
+
+      - name: Run bao kao tests
+        run: make tests PLATFORM=${{ matrix.platform }}

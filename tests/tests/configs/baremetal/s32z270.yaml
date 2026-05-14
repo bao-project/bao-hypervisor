@@ -1,0 +1,43 @@
+
+
+# Bao Hypervisor VM Configuration
+# This YAML describes the fields needed to generate a C config file (config.c)
+
+setup:
+    name: "baremetal"
+    vms:
+      - vm1:
+        name: "baremetal"
+        build_options:
+        config:
+          image:
+            load_addr: 0x32200000
+            phys_addr: 0x32200000
+            size: 0x14000
+          entry: 0x32200000
+          platform:
+            cpu_num: 4
+            regions:
+              - base: 0x32200000
+                size: 0x100000
+              - base: 0x317C0000
+                size: 0x40000
+            devs:
+              - pa: 0x40170000
+                va: 0x40170000
+                size: 0x10000
+                interrupts:
+                  - 244
+              - pa: 0x40520000
+                va: 0x40520000
+                size: 0x10000
+              - pa: 0x40030000
+                va: 0x40030000
+                size: 0x500
+              - interrupts:
+                  - 27
+            arch:
+              gic:
+                gicc_addr: 0x2C000000
+                gicd_addr: 0x47800000
+                gicr_addr: 0x47900000
