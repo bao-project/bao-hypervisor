@@ -16,7 +16,8 @@
  */
 #define BIT32_MASK(OFF, LEN) ((((UINT32_C(1) << ((LEN) - 1)) << 1) - 1) << (OFF))
 #define BIT64_MASK(OFF, LEN) ((((UINT64_C(1) << ((LEN) - 1)) << 1) - 1) << (OFF))
-#define BIT_MASK(OFF, LEN)   (((((1UL) << ((LEN) - 1)) << 1) - 1) << (OFF))
+#define BIT_MASK(OFF, LEN) \
+    ((LEN) == 0 ? 0UL : ((((1UL << ((LEN) - 1)) << 1) - 1) << (OFF)))
 
 #ifndef __ASSEMBLER__
 
