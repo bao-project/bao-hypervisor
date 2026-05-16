@@ -22,6 +22,12 @@ void vmm_arch_init()
     csrs_hedeleg_write(HEDELEG_ECU | HEDELEG_IPF | HEDELEG_LPF | HEDELEG_SPF);
 
     /**
+     * Start from a clean slate for the entire HENVCFG CSR
+     * to avoid unintended side effects from any non-zero default bits
+     */
+    csrs_henvcfg_write(0);
+
+    /**
      * Enable and sanity check presence of Sstc extension if the hypervisor was
      * configured to use it (via the CPU_EXT_SSTC macro). Otherwise, make sure
      * it is disabled.
@@ -35,10 +41,33 @@ void vmm_arch_init()
         // Set stimecmp to infinity in case we enable the stimer interrupt somewhere else
         // and fail to set the timer to a point in the future.
         csrs_stimecmp_write(~0U);
-    } else {
-        csrs_henvcfg_clear(HENVCFG_STCE);
     }
 
+    /**
+     * Enable and sanity check the Zicboz extension if the hypervisor was
+     * configured to use it (via the CPU_EXT_ZICBOZ macro). Otherwise, leave
+     * the corresponding henvcfg bit cleared.
+     */
+    if (CPU_HAS_EXTENSION(CPU_EXT_ZICBOZ)) {
+        csrs_henvcfg_set(HENVCFG_CBZE);
+        bool zicboz_present = (csrs_henvcfg_read() & HENVCFG_CBZE) != 0;
+        if (cpu_is_master() && !zicboz_present) {
+            ERROR("Platform configured to use Zicboz extensions, but extension not present.\r\n");
+        }
+    }
+
+    /**
+     * Enable and sanity check the Zicbom extension if the hypervisor was
+     * configured to use it (via the CPU_EXT_ZICBOM macro). Otherwise, leave
+     * the corresponding henvcfg bits cleared.
+     */
+    if (CPU_HAS_EXTENSION(CPU_EXT_ZICBOM)) {
+        csrs_henvcfg_set(HENVCFG_CBCFE | HENVCFG_CBIE_FLUSH);
+        bool zicbom_present = (csrs_henvcfg_read() & (HENVCFG_CBCFE | HENVCFG_CBIE_FLUSH)) != 0;
+        if (cpu_is_master() && !zicbom_present) {
+            ERROR("Platform configured to use ZICBOM extensions, but extension not present.\r\n");
+        }
+    }
     /**
      * TODO: consider delegating other exceptions e.g. breakpoint or ins misaligned
      */
