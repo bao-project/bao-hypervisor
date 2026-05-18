@@ -12,13 +12,10 @@
 #include <spinlock.h>
 #include <mem.h>
 #include <list.h>
+#include <circular_queue.h>
 
 #ifndef __ASSEMBLER__
 
-struct cpuif {
-    struct list event_list;
-
-} __attribute__((aligned(PAGE_SIZE)));
 
 struct vcpu;
 
@@ -43,6 +40,12 @@ struct cpu_msg {
     uint32_t event;
     uint64_t data;
 };
+
+
+struct cpuif {
+#   define IPI_MAX_EVENTS 256
+    cq_define(struct cpu_msg, msgs, IPI_MAX_EVENTS);
+} __attribute__((aligned(PAGE_SIZE))) ;
 
 void cpu_send_msg(cpuid_t cpu, struct cpu_msg* msg);
 
