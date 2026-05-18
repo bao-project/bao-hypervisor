@@ -8,9 +8,13 @@
 
 #include <drivers/sbi_uart.h>
 
-#define CPU_EXT_SSTC 1
+#define CPU_EXT_SSTC      1
+#define CPU_EXT_F         1
+#define CPU_EXT_C         0
+#define CPU_EXT_SSSTATEEN 0
+#define CPU_EXT_SSCSRIND  0
 
-#define IPIC_SBI     (1)
-#define IPIC_ACLINT  (2)
+#define IPIC_SBI          (1)
+#define IPIC_ACLINT       (2)
 
 #endif
