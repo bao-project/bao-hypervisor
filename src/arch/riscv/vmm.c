@@ -34,7 +34,7 @@ void vmm_arch_init()
         }
         // Set stimecmp to infinity in case we enable the stimer interrupt somewhere else
         // and fail to set the timer to a point in the future.
-        csrs_stimecmp_write(~0U);
+        csrs_stimecmp_write(~0ULL);
     } else {
         csrs_henvcfg_clear(HENVCFG_STCE);
     }
