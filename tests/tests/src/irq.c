@@ -30,7 +30,7 @@ BAO_TEST(IRQ_CHECK, TIMER, BAREMETAL, "Check that timer interrupt is triggered a
         irq_set_handler(TIMER_IRQ_ID, test_interrupt_timer_callback);
         timer_set(TIMER_INTERVAL);
         irq_enable(TIMER_IRQ_ID);
-        irq_set_prio(TIMER_IRQ_ID, IRQ_MAX_PRIO);
+        irq_set_prio(TIMER_IRQ_ID, TIMER_IRQ_PRIO);
         timer_enable();
 
         while(!irq_en_timer);
@@ -47,7 +47,7 @@ BAO_TEST(IRQ_CHECK, UART, BAREMETAL, "Check that UART interrupt is triggered and
         irq_set_handler(UART_IRQ_ID, uart_rx_handler);
         uart_enable_rxirq();
         irq_enable(UART_IRQ_ID);
-        irq_set_prio(UART_IRQ_ID, IRQ_MAX_PRIO);
+        irq_set_prio(UART_IRQ_ID, UART_IRQ_PRIO);
         COMMAND_SEND_CHAR("a");
 
         timer_wait(TEST_TIME_WAIT);
