@@ -69,35 +69,42 @@ void vmm_arch_init()
         }
     }
 
-#if CPU_HAS_EXTENSION(CPU_EXT_SSNPM)
+#if defined(CPU_EXT_SSNPM) && (CPU_EXT_SSNPM == 1)
 #if defined(RV32)
 #error "Ssnpm extension is not available for RV32. Please disable CPU_EXT_SSNPM."
 #elif !defined(CPU_EXT_SSNPM_PMM_MODE)
 #error "Ssnpm extension PMM mode is not defined. Please define CPU_EXT_SSNPM_PMM_MODE."
 #else
     /**
-     * Program the guest-visible Ssnpm PMM mode if the hypervisor was
-     * configured to use it (via the CPU_EXT_SSNPM_PMM_MODE macro).
-     * Otherwise, henvcfg keeps the reset value written above.
-     */
+      * Program the guest-visible Ssnpm PMM mode if the hypervisor was
+      * configured to use it (via the CPU_EXT_SSNPM_PMM_MODE macro).
+      * Otherwise, henvcfg keeps the reset value written above.
+      */
+    uint64_t pmm_msk = 0;
+
     switch (CPU_EXT_SSNPM_PMM_MODE) {
         case HENVCFG_PMM_DISABLED:
-            /* Use the disable encoding to keep PMM effectively off. */
             if (cpu_is_master()) {
                 WARNING("Ssnpm extension is enabled but PMM mode is set to disabled.\r\n");
             }
-            csrs_henvcfg_set(HENVCFG_PMM_DISABLED << HENVCFG_PMM_OFF);
+            pmm_msk = HENVCFG_PMM_DISABLED << HENVCFG_PMM_OFF;
             break;
         case HENVCFG_PMM_PMLEN_7:
-            csrs_henvcfg_set(HENVCFG_PMM_PMLEN_7 << HENVCFG_PMM_OFF);
+            pmm_msk = HENVCFG_PMM_PMLEN_7 << HENVCFG_PMM_OFF;
             break;
         case HENVCFG_PMM_PMLEN_16:
-            csrs_henvcfg_set(HENVCFG_PMM_PMLEN_16 << HENVCFG_PMM_OFF);
+            pmm_msk = HENVCFG_PMM_PMLEN_16 << HENVCFG_PMM_OFF;
             break;
         default:
             if (cpu_is_master()) {
                 ERROR("Unsupported PMM mode for Ssnpm extension.\r\n");
             }
+    }
+
+    csrs_henvcfg_set(pmm_msk);
+    bool ssnpm_present = ((csrs_henvcfg_read() & pmm_msk) == pmm_msk);
+    if (cpu_is_master() && !ssnpm_present) {
+        ERROR("Platform configured to use Ssnpm extension, but extension not present.\r\n");
     }
 #endif
 #endif
