@@ -54,9 +54,6 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
 
     if (CPU_HAS_EXTENSION(CPU_EXT_SSSTATEEN)) {
         csrs_sstateen0_write(0);
-        csrs_sstateen1_write(0);
-        csrs_sstateen2_write(0);
-        csrs_sstateen3_write(0);
     }
     csrs_hcounteren_write(HCOUNTEREN_TM);
     csrs_htimedelta_write(0);
