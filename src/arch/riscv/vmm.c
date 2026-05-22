@@ -179,7 +179,8 @@ void vmm_arch_init()
      */
     if (CPU_HAS_EXTENSION(CPU_EXT_ZICBOM)) {
         csrs_henvcfg_set(HENVCFG_CBCFE | HENVCFG_CBIE_FLUSH);
-        bool zicbom_present = (csrs_henvcfg_read() & (HENVCFG_CBCFE | HENVCFG_CBIE_FLUSH)) != 0;
+        bool zicbom_present = ((csrs_henvcfg_read() & (HENVCFG_CBCFE | HENVCFG_CBIE_FLUSH)) ==
+            (HENVCFG_CBCFE | HENVCFG_CBIE_FLUSH));
         if (cpu_is_master() && !zicbom_present) {
             ERROR("Platform configured to use ZICBOM extensions, but extension not present.\r\n");
         }
