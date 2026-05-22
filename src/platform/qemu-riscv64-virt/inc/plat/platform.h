@@ -6,6 +6,8 @@
 #ifndef __PLAT_PLATFORM_H__
 #define __PLAT_PLATFORM_H__
 
+#include <plat/cpu_ext.h>
+
 #include <drivers/sbi_uart.h>
 
 #define CPU_EXT_SSTC      1
