@@ -126,7 +126,8 @@ void vmm_arch_init()
         }
         csrs_hstateen0_set(HSTATEEN_IMSIC | HSTATEEN_AIA);
         bool aia_ctxt_en =
-            (csrs_hstateen0_read() & (HSTATEEN_IMSIC | HSTATEEN_AIA | HSTATEEN_CSRIND)) != 0;
+            ((csrs_hstateen0_read() & (HSTATEEN_IMSIC | HSTATEEN_AIA | HSTATEEN_CSRIND)) ==
+                (HSTATEEN_IMSIC | HSTATEEN_AIA | HSTATEEN_CSRIND));
         if (cpu_is_master() && (!aia_ctxt_en)) {
             ERROR("Platform configured to use AIA and IMSIC extensions, but extensions not "
                   "available.\r\n");
