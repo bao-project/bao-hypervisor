@@ -5,6 +5,7 @@
 
 #include <vmm.h>
 #include <arch/csrs.h>
+#include <arch/page_table.h>
 
 void vmm_arch_init()
 {
@@ -43,6 +44,14 @@ void vmm_arch_init()
         csrs_stimecmp_write(~0ULL);
     } else {
         csrs_henvcfg_clear(HENVCFG_STCE);
+    }
+
+    if (CPU_HAS_EXTENSION(CPU_EXT_SVPBMT)) {
+        csrs_henvcfg_set(HENVCFG_PBMTE);
+        bool svpbmt_present = (csrs_henvcfg_read() & HENVCFG_PBMTE) != 0;
+        if (cpu_is_master() && !svpbmt_present) {
+            ERROR("Platform configured to use SVPBMT extensions, but extension not present.\r\n");
+        }
     }
 
     /**
