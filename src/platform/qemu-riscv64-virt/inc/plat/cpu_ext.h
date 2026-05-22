@@ -1,0 +1,18 @@
+/**
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright (c) Bao Project and Contributors. All rights reserved
+ */
+
+#ifndef __PLAT_CPU_EXT_H__
+#define __PLAT_CPU_EXT_H__
+
+#define CPU_EXT_SSTC      1
+#define CPU_EXT_F         1
+#define CPU_EXT_C         0
+#define CPU_EXT_SSSTATEEN 0
+#define CPU_EXT_SSCSRIND  0
+#define CPU_EXT_V    0
+#define CPU_EXT_ZICBOM 1
+#define CPU_EXT_ZICBOZ 1
+
+#endif
