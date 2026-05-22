@@ -146,20 +146,11 @@ void vmm_arch_init()
     }
 
     /**
-     * Enable the SEO bits in hstateen0-3 so VS-mode can access the sstateen
-     * CSRs.
+     * Enable the SEO bits in hstateen0 so VS-mode can access the sstateen0
+     * CSR.
      *
-     * Because hstateen[1..3] are initialized to zero except for the SEO bits,
-     * guests may probe or read these CSRs without obtaining access to any
-     * additional architectural state.
-     *
-     * This helps compatibility and avoids unnecessary traps for guest
-     * software that checks for the presence of state-enable CSRs.
      */
-    csrs_hstateen0_write(HSTATEEN_SEO);
-    csrs_hstateen1_write(HSTATEEN_SEO);
-    csrs_hstateen2_write(HSTATEEN_SEO);
-    csrs_hstateen3_write(HSTATEEN_SEO);
+    csrs_hstateen0_set(HSTATEEN_SEO);
 #endif
     /**
      * TODO: consider delegating other exceptions e.g. breakpoint or ins misaligned
