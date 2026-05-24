@@ -39,7 +39,7 @@ void cpu_init(cpuid_t cpu_id)
 
     cpu_arch_init(cpu_id, img_addr);
 
-    cq_init(cpu()->interface->msgs);
+    cq_init(cpu()->interface, msgs);
 
     if (cpu_is_master()) {
         cpu_sync_init(&cpu_glb_sync, platform.cpu_num);
@@ -56,18 +56,14 @@ void cpu_init(cpuid_t cpu_id)
 
 void cpu_send_msg(cpuid_t trgtcpu, struct cpu_msg* msg)
 {
-    bool ok;
-    cq_add(cpu_if(trgtcpu)->msgs, *msg, &ok);
-    
+    circular_queue_push(&cpu_if(trgtcpu)->msgs, msg);
     fence_sync_write();
     interrupts_cpu_sendipi(trgtcpu);
 }
 
 bool cpu_get_msg(struct cpu_msg* msg)
 {
-    bool ok;
-    cq_pop(cpu()->interface->msgs, msg, &ok);
-    return ok;
+    return circular_queue_pop(&cpu()->interface->msgs, msg);
 }
 
 void cpu_msg_handler(void)
