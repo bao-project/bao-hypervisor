@@ -223,6 +223,7 @@ struct gicr_hw {
 #define ICC_SGIR_TRGLSTFLT_MSK   BIT64_MASK(ICC_SGIR_TRGLSTFLT_OFF, ICC_SGIR_TRGLSTFLT_LEN)
 #define ICC_SGIR_TRGLSTFLT(sgir) bit64_extract(sgir, ICC_SGIR_TRGLSTFLT_OFF, ICC_SGIR_TRGLSTFLT_LEN)
 #define ICC_SGIR_AFF1_OFFSET     (16)
+#define ICC_SGIR_AFF2_OFFSET     (32)
 
 #define ICC_SRE_ENB_BIT          (0x8)
 #define ICC_SRE_DIB_BIT          (0x4)
