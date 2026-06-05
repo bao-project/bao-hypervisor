@@ -60,6 +60,23 @@
 #endif
 .endm
 
+/**
+ * Early boot-debug putc: write one character to the PHYSICAL K3 UART0
+ * (0xd4017000) by polling LSR.THRE (reg 5 << reg-shift 2 = offset 0x14, 32-bit;
+ * THR at offset 0). Valid ONLY before the MMU is enabled (after `csrw satp` the
+ * UART is no longer mapped). Uses t5/t6, which are not used anywhere else in this
+ * file, so it clobbers nothing live. TX-only, no OUT2/IER needed.
+ */
+.macro EARLY_PUTC ch
+    li      t5, 0xd4017000
+99:
+    lw      t6, 0x14(t5)
+    andi    t6, t6, 0x20
+    beqz    t6, 99b
+    li      t6, \ch
+    sw      t6, 0(t5)
+.endm
+
 .section ".rodata", "a"
 .balign REGLEN
 /* Symbol values */
@@ -105,6 +122,8 @@ _reset_handler:
     */
 
 .option norelax
+
+    EARLY_PUTC 'B'      /* reached Bao entry (_reset_handler) */
 
     mv      a2, a1
     la      a1, _image_start
@@ -161,7 +180,9 @@ _boot_lock:
 2:
 #endif
 
-    /* Setup bootstrap page tables. Assuming sv39 or sv32 support. */ 
+    EARLY_PUTC 'M'      /* CPU_MASTER resolved, known supervisor state */
+
+    /* Setup bootstrap page tables. Assuming sv39 or sv32 support. */
 
  	/* Skip initialy global page tables setup if not hart */
     LD_SYM  t0, CPU_MASTER
@@ -227,6 +248,7 @@ wait_for_bsp:
     blt     t2, t1, 1b
 
 map_cpu:
+    EARLY_PUTC 'C'      /* global PTs done (master); per-CPU mapping */
     /* Calculate base phys address of CPU struct -> t0 */
     la      t0, _dmem_phys_beg
     li      t1, (CPU_SIZE + (PT_SIZE*PT_LVLS))
@@ -256,6 +278,16 @@ map_cpu:
     PTE_PTR     t3, t1, 0, t3
     STORE       t2, 0(t3)
 
+    /* DEBUG: identity-map the 1GB region [0xc0000000,0x100000000) - which holds
+     * UART0 @0xd4017000 - as a leaf gigapage in this CPU's ROOT table, so
+     * EARLY_PUTC keeps working AFTER the MMU is enabled. t1 still points at the
+     * root table here; uses t2/t3 (+ s0/s1 inside PTE_PTR), all scratch. */
+    li          t2, 0xc0000000
+    PTE_PTR     t3, t1, 0, t2
+    li          t2, 0xc0000000
+    PTE_FILL    t2, t2, PTE_HYP_FLAGS | PTE_PAGE
+    STORE       t2, 0(t3)
+
 #if defined(RV64)
     add         t1, t1, t4
     add         t2, t1, t4
@@ -279,6 +311,7 @@ map_cpu:
     j       1b
     
 setup_cpu:
+    EARLY_PUTC 'S'      /* per-CPU PTs done; about to enable the MMU */
     la      t0, _dmem_phys_beg
     li      t1, (CPU_SIZE + (PT_SIZE*PT_LVLS))
     mul     t1, t1, a0
@@ -294,12 +327,15 @@ setup_cpu:
     or      t3, t3, STVEC_MODE_DIRECT
     csrw    stvec, t3
 
+    EARLY_PUTC 'V'      /* last pre-MMU point: enabling satp, jumping to VAS */
+
     sfence.vma
     csrw   satp, t0
 
     jr      t2
 
 _enter_vas:
+    EARLY_PUTC 'I'      /* MMU is ON; reached VAS (UART via identity gigapage) */
 	/* Remove temporary mapping - the L1 page holding it leaks */
 	/* TODO: clear TLB entries for this mapping */
 

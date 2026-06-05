@@ -7,27 +7,28 @@
 
 void uart_init(volatile struct uart8250_hw* uart)
 {
-    /* set baudrate */
-    uart->lcr |= UART8250_LCR_DLAB;
-    /**
-     * should set dll and dlh, to simplify instead lets assume the firmware did this for us.
-     * TODO: we should add uart clk and baudrate info to platform descrption and use this to
-     * calculate this values in runtime.
-     */
-    uart->lcr &= (uart8250_reg_t)~UART8250_LCR_DLAB;
+    UNUSED_ARG(uart);
+    // /* set baudrate */
+    // uart->lcr |= UART8250_LCR_DLAB;
+    // /**
+    //  * should set dll and dlh, to simplify instead lets assume the firmware did this for us.
+    //  * TODO: we should add uart clk and baudrate info to platform descrption and use this to
+    //  * calculate this values in runtime.
+    //  */
+    // uart->lcr &= (uart8250_reg_t)~UART8250_LCR_DLAB;
 
-    /* configure 8n1 */
-    uart->lcr = UART8250_LCR_8BIT;
+    // /* configure 8n1 */
+    // uart->lcr = UART8250_LCR_8BIT;
 
-    /* disable interrupts */
-    uart->ier = 0;
+    // /* disable interrupts */
+    // uart->ier = 0 | 0x40;
 
-    /* no modem */
-    uart->mcr = 0;
+    // /* no modem */
+    // uart->mcr = 0;
 
-    /* clear status */
-    (void)uart->lsr;
-    uart->msr = 0;
+    // /* clear status */
+    // (void)uart->lsr;
+    // uart->msr = 0;
 }
 
 void uart_enable(volatile struct uart8250_hw* uart)
