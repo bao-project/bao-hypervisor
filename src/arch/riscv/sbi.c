@@ -351,7 +351,7 @@ static struct sbiret sbi_hsm_start_handler(void)
                 ret.error = SBI_ERR_FAILURE;
             } else {
                 vaddr_t start_addr = vcpu_readreg(cpu()->vcpu, REG_A1);
-                unsigned priv = (unsigned)vcpu_readreg(cpu()->vcpu, REG_A2);
+                unsigned long priv = vcpu_readreg(cpu()->vcpu, REG_A2);
                 vcpu->arch.sbi_ctx.state = START_PENDING;
                 vcpu->arch.sbi_ctx.start_addr = start_addr;
                 vcpu->arch.sbi_ctx.priv = priv;
