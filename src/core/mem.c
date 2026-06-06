@@ -546,20 +546,9 @@ struct ppages mem_alloc_ppages(colormap_t colors, size_t num_pages, bool aligned
     return pages;
 }
 
-/* DEBUG: direct putc to physical K3 UART0 via the identity gigapage from boot.S
- * (reg-shift 2 => uint32 index = register: LSR=5, THR=0). Removed once Bao boots. */
-static inline void k3_dbg_putc(char ch)
-{
-    volatile uint32_t* uart = (volatile uint32_t*)0xd4017000UL;
-    while ((uart[5] & 0x20U) == 0U) { }
-    uart[0] = (uint32_t)ch;
-}
-
 void mem_init(void)
 {
-    k3_dbg_putc('1');
     mem_prot_init();
-    k3_dbg_putc('2');
 
     static struct mem_region* root_mem_region = NULL;
 
@@ -569,46 +558,34 @@ void mem_init(void)
         if (!mem_setup_root_pool(&root_mem_region)) {
             ERROR("couldn't not initialize root pool\n");
         }
-        k3_dbg_putc('3');
 
         /* Insert root pool in pool list */
         list_init(&page_pool_list);
         list_push(&page_pool_list, &(root_mem_region->page_pool.node));
 
         config_init();
-        k3_dbg_putc('4');
 
         mem_init_reserved();
-        k3_dbg_putc('5');
 
         mem_reserve_physical_memory(&root_mem_region->page_pool);
-        k3_dbg_putc('6');
     }
 
     cpu_sync_and_clear_msgs(&cpu_glb_sync);
-    k3_dbg_putc('7');   /* passed barrier #1 (all CPUs synced) */
 
     if (!all_clrs(config.hyp.colors)) {
         mem_color_hypervisor(img_addr, root_mem_region);
     }
-    k3_dbg_putc('8');
 
     if (cpu_is_master()) {
-        k3_dbg_putc('A');   /* entered master pool/reserve block */
         if (!mem_create_ppools(root_mem_region)) {
-            k3_dbg_putc('!');   /* mem_create_ppools returned FALSE -> ERROR (hangs, no console) */
             ERROR("couldn't create additional page pools\n");
         }
-        k3_dbg_putc('B');   /* mem_create_ppools ok */
 
         if (!mem_check_reserved()) {
-            k3_dbg_putc('@');   /* mem_check_reserved returned FALSE -> ERROR (hangs) */
             ERROR("Failed to reserved static allocated memory\n");
         }
-        k3_dbg_putc('9');   /* master block done */
     }
 
     /* Wait for master core to initialize memory management */
     cpu_sync_and_clear_msgs(&cpu_glb_sync);
-    k3_dbg_putc('0');   /* passed barrier #2 - mem_init done */
 }

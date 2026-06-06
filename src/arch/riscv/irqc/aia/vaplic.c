@@ -703,12 +703,12 @@ static void vaplic_set_sourcecfg(struct vcpu* vcpu, irqid_t intp_id, uint32_t ne
             new_val = APLIC_SOURCECFG_SM_INACTIVE;
         }
 
-        /** Only edge sense can be virtualized for now */
-        if (new_val == APLIC_SOURCECFG_SM_LEVEL_HIGH) {
-            new_val = APLIC_SOURCECFG_SM_EDGE_RISE;
-        } else if (new_val == APLIC_SOURCECFG_SM_LEVEL_LOW) {
-            new_val = APLIC_SOURCECFG_SM_EDGE_FALL;
-        }
+        // /** Only edge sense can be virtualized for now */
+        // if (new_val == APLIC_SOURCECFG_SM_LEVEL_HIGH) {
+        //     new_val = APLIC_SOURCECFG_SM_EDGE_RISE;
+        // } else if (new_val == APLIC_SOURCECFG_SM_LEVEL_LOW) {
+        //     new_val = APLIC_SOURCECFG_SM_EDGE_FALL;
+        // }
 
         if (vaplic_get_hw(vcpu, intp_id)) {
             aplic_set_sourcecfg(intp_id, new_val);
