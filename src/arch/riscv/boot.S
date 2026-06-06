@@ -161,7 +161,7 @@ _boot_lock:
 2:
 #endif
 
-    /* Setup bootstrap page tables. Assuming sv39 or sv32 support. */
+    /* Setup bootstrap page tables. Assuming sv39 or sv32 support. */ 
 
  	/* Skip initialy global page tables setup if not hart */
     LD_SYM  t0, CPU_MASTER
