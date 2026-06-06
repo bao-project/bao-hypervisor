@@ -58,6 +58,8 @@ struct uart8250_hw {
 #define UART8250_LCR_DLAB   (0x1 << 7)
 #define UART8250_LCR_8BIT   (0x3 << 0)
 
+#define UART8250_IER_UUE    (0x1 << 6)
+
 #define UART8250_FCR_TX_CLR (0x1 << 2)
 #define UART8250_FCR_RX_CLR (0x1 << 1)
 #define UART8250_FCR_EN     (0x1 << 0)
