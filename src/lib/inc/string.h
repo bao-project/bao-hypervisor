@@ -14,7 +14,7 @@ void* memset(void* dest, int c, size_t count);
 char* strcat(char* dest, char* src);
 size_t strlen(const char* s);
 size_t strnlen(const char* s, size_t n);
-char* strcpy(char* dest, char* src);
+char* strncpy(char* dest, const char* src, size_t n);
 int strcmp(char* str0, char* str1);
 
 #endif /* __STRING_H_ */

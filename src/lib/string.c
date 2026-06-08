@@ -79,11 +79,11 @@ size_t strnlen(const char* s, size_t n)
     return (size_t)((uintptr_t)str - (uintptr_t)s);
 }
 
-char* strcpy(char* dest, char* src)
+char* strncpy(char* dest, const char* src, size_t n)
 {
     char* tmp = dest;
 
-    while ((*dest++ = *src++) != '\0') {
+    while (n-- && (*dest++ = *src++) != '\0') {
         /* Just iterate */
     }
     return tmp;
