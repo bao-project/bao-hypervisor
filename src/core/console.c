@@ -39,7 +39,7 @@ void console_init(void)
     cpu_sync_and_clear_msgs(&cpu_glb_sync);
 }
 
-void console_write(const char* buf, size_t n)
+static void console_write(const char* buf, size_t n)
 {
     while (!console_ready)
         ;
