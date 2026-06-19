@@ -126,18 +126,6 @@ static void decode_access(struct emul_access* acc, unsigned long addr)
     if (opcode == F8_OPCODE) {
         bit = (inst & BITIDX_MASK) >> BITIDX_SHIFT;
         bwop = ((inst & SUB8_MASK) >> SUB8_SHIFT) + 1;
-        int16_t imm = (int16_t)(inst >> 16);
-        if (imm < 0) {
-            if ((unsigned long)(-imm) > addr) {
-                ERROR("bitwise addr underflow\n")
-            }
-        } else {
-            if (addr > UINT32_MAX - (unsigned long)imm) {
-                ERROR("bitwise addr overflow\n")
-            }
-        }
-
-        addr = (unsigned long)((signed long)addr + imm);
     } else if (opcode == F9_OPCODE && subopcode == F9_SUBOPCODE) {
         unsigned long reg_idx = (inst & REGIDX_MASK) >> REGIDX_SHIFT;
         /* only the three LSB of register val are used as bit index */
