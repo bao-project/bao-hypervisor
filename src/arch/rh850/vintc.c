@@ -48,7 +48,7 @@ static void emulate_intc_eic_access(struct emul_access* acc)
 
     size_t acc_intc2_offset = acc->addr - (unsigned long)intc2_hw;
     unsigned long bot = offsetof(struct intc2, EIC);
-    size_t reg_idx = (ALIGN(acc_intc2_offset - bot, 2)) / 2;
+    size_t reg_idx = (acc_intc2_offset - bot) / 2;
 
     unsigned long mask = BIT_MASK(0, acc->width * 8);
     size_t addr_off = acc->addr & 0x1UL;
@@ -85,7 +85,7 @@ static void emulate_intc_imr_access(struct emul_access* acc)
 
     size_t acc_intc2_offset = acc->addr - (unsigned long)intc2_hw;
     unsigned long bot = offsetof(struct intc2, IMR);
-    size_t reg_idx = (ALIGN(acc_intc2_offset - bot, 4)) / 4;
+    size_t reg_idx = (acc_intc2_offset - bot) / 4;
 
     unsigned long mask = BIT_MASK(0, acc->width * 8);
     size_t addr_off = acc->addr & 0x3UL;
@@ -141,7 +141,7 @@ static void emulate_intc_eibd_access(struct emul_access* acc)
 
     size_t acc_intc2_offset = acc->addr - (unsigned long)intc2_hw;
     unsigned long bot = offsetof(struct intc2, EIBD);
-    size_t reg_idx = (ALIGN(acc_intc2_offset - bot, 4)) / 4;
+    size_t reg_idx = (acc_intc2_offset - bot) / 4;
 
     unsigned long mask = BIT_MASK(0, acc->width * 8);
     size_t addr_off = acc->addr & 0x3UL;
@@ -192,7 +192,7 @@ static void emulate_intc_eeic_access(struct emul_access* acc)
 
     size_t acc_intc2_offset = acc->addr - (unsigned long)intc2_hw;
     unsigned long bot = offsetof(struct intc2, EEIC);
-    size_t reg_idx = (ALIGN(acc_intc2_offset - bot, 4)) / 4;
+    size_t reg_idx = (acc_intc2_offset - bot) / 4;
 
     unsigned long mask = BIT_MASK(0, acc->width * 8);
     size_t addr_off = acc->addr & 0x3UL;
