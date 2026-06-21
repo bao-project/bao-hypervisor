@@ -40,7 +40,7 @@ static inline uint32_t vcpu_read_sp_current_el1_mode(struct vcpu* vcpu)
             sp_val = sysreg_sp_und_read();
             break;
         default:
-            ERROR("Got reserved mode from SPSR_HYP.M");
+            ERROR("Got reserved mode from SPSR_HYP.M\n");
     }
 
     return sp_val;
@@ -69,7 +69,7 @@ static inline void vcpu_write_sp_current_el1_mode(struct vcpu* vcpu, uint32_t sp
             sysreg_sp_und_write(sp_val);
             break;
         default:
-            ERROR("Got reserved mode from SPSR_HYP.M");
+            ERROR("Got reserved mode from SPSR_HYP.M\n");
     }
 }
 
@@ -97,7 +97,7 @@ static inline uint32_t vcpu_read_lr_current_el1_mode(struct vcpu* vcpu)
             lr_val = sysreg_lr_und_read();
             break;
         default:
-            ERROR("Got reserved mode from SPSR_HYP.M");
+            ERROR("Got reserved mode from SPSR_HYP.M\n");
     }
 
     return lr_val;
@@ -126,7 +126,7 @@ static inline void vcpu_write_lr_current_el1_mode(struct vcpu* vcpu, uint32_t lr
             sysreg_lr_und_write(lr_val);
             break;
         default:
-            ERROR("Got reserved mode from SPSR_HYP.M");
+            ERROR("Got reserved mode from SPSR_HYP.M\n");
     }
 }
 

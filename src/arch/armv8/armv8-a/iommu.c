@@ -31,7 +31,7 @@ static ssize_t iommu_vm_arch_init_ctx(struct vm* vm)
             smmu_write_ctxbnk((size_t)ctx_id, rootpt, vm->id);
             vm->io.prot.mmu.ctx_id = ctx_id;
         } else {
-            INFO("iommu: smmuv2 could not allocate ctx for vm: %d", vm->id);
+            INFO("iommu: smmuv2 could not allocate ctx for vm: %d\n", vm->id);
         }
     }
 
@@ -54,7 +54,7 @@ static bool iommu_vm_arch_add(struct vm* vm, streamid_t mask, streamid_t id)
     if (!smmu_compatible_sme_exists(prep_mask, prep_id, (size_t)vm_ctx, group)) {
         ssize_t sme = smmu_alloc_sme();
         if (sme < 0) {
-            INFO("iommu: smmuv2 no more free sme available.");
+            INFO("iommu: smmuv2 no more free sme available.\n");
             return false;
         }
         smmu_write_sme((size_t)sme, prep_mask, prep_id, group);

@@ -44,7 +44,7 @@ static void psci_cpumsg_handler(uint32_t event, uint64_t data)
             psci_wake_from_off();
             break;
         default:
-            WARNING("Unknown PSCI IPI event");
+            WARNING("Unknown PSCI IPI event\n");
             break;
     }
 }
@@ -222,7 +222,7 @@ int32_t psci_smc_handler(uint32_t smc_fid, unsigned long x1, unsigned long x2, u
             break;
 
         default:
-            INFO("unknown psci smc_fid 0x%lx", smc_fid);
+            INFO("unknown psci smc_fid 0x%lx\n", smc_fid);
     }
 
     return ret;

@@ -1009,7 +1009,7 @@ void vgic_ipi_handler(uint32_t event, uint64_t data)
     uint64_t val = VGIC_MSG_VAL(data);
 
     if (vm_id != cpu()->vcpu->vm->id) {
-        ERROR("received vgic3 msg target to another vcpu");
+        ERROR("received vgic3 msg target to another vcpu\n");
         // TODO: need to fetch vcpu from other vm if the taget vm for this is not active
     }
 
@@ -1046,7 +1046,7 @@ void vgic_ipi_handler(uint32_t event, uint64_t data)
         } break;
 
         default:
-            WARNING("Unknown VGIC IPI event");
+            WARNING("Unknown VGIC IPI event\n");
             break;
     }
 }
@@ -1233,7 +1233,7 @@ void vgic_set_hw(struct vm* vm, irqid_t id)
             interrupt->hw = true;
             spin_unlock(&interrupt->lock);
         } else {
-            WARNING("trying to link non-existent virtual irq to physical irq");
+            WARNING("trying to link non-existent virtual irq to physical irq\n");
         }
     }
 }

@@ -5,6 +5,7 @@
 
 #include <vmm.h>
 #include <arch/csrs.h>
+#include <arch/page_table.h>
 
 void vmm_arch_init()
 {
@@ -22,6 +23,12 @@ void vmm_arch_init()
     csrs_hedeleg_write(HEDELEG_ECU | HEDELEG_IPF | HEDELEG_LPF | HEDELEG_SPF);
 
     /**
+     * Start from a clean slate for the entire HENVCFG CSR
+     * to avoid unintended side effects from any non-zero default bits
+     */
+    csrs_henvcfg_write(0);
+
+    /**
      * Enable and sanity check presence of Sstc extension if the hypervisor was
      * configured to use it (via the CPU_EXT_SSTC macro). Otherwise, make sure
      * it is disabled.
@@ -30,15 +37,163 @@ void vmm_arch_init()
         csrs_henvcfg_set(HENVCFG_STCE);
         bool sstc_present = (csrs_henvcfg_read() & HENVCFG_STCE) != 0;
         if (cpu_is_master() && !sstc_present) {
-            ERROR("Platform configured to use Sstc extension, but extension not present.");
+            ERROR("Platform configured to use Sstc extension, but extension not present.\n");
         }
         // Set stimecmp to infinity in case we enable the stimer interrupt somewhere else
         // and fail to set the timer to a point in the future.
-        csrs_stimecmp_write(~0U);
+        csrs_stimecmp_write(~0ULL);
     } else {
         csrs_henvcfg_clear(HENVCFG_STCE);
     }
 
+    if (CPU_HAS_EXTENSION(CPU_EXT_SVPBMT)) {
+        csrs_henvcfg_set(HENVCFG_PBMTE);
+        bool svpbmt_present = (csrs_henvcfg_read() & HENVCFG_PBMTE) != 0;
+        if (cpu_is_master() && !svpbmt_present) {
+            ERROR("Platform configured to use SVPBMT extensions, but extension not present.\r\n");
+        }
+    }
+
+    /**
+     * Enable and sanity check the Zicboz extension if the hypervisor was
+     * configured to use it (via the CPU_EXT_ZICBOZ macro). Otherwise, leave
+     * the corresponding henvcfg bit cleared.
+     */
+    if (CPU_HAS_EXTENSION(CPU_EXT_ZICBOZ)) {
+        csrs_henvcfg_set(HENVCFG_CBZE);
+        bool zicboz_present = (csrs_henvcfg_read() & HENVCFG_CBZE) != 0;
+        if (cpu_is_master() && !zicboz_present) {
+            ERROR("Platform configured to use Zicboz extensions, but extension not present.\r\n");
+        }
+    }
+
+    /**
+     * Enable and sanity check the Zicbom extension if the hypervisor was
+     * configured to use it (via the CPU_EXT_ZICBOM macro). Otherwise, leave
+     * the corresponding henvcfg bits cleared.
+     */
+    if (CPU_HAS_EXTENSION(CPU_EXT_ZICBOM)) {
+        csrs_henvcfg_set(HENVCFG_CBCFE | HENVCFG_CBIE_FLUSH);
+        bool zicbom_present = ((csrs_henvcfg_read() & (HENVCFG_CBCFE | HENVCFG_CBIE_FLUSH)) ==
+            (HENVCFG_CBCFE | HENVCFG_CBIE_FLUSH));
+        if (cpu_is_master() && !zicbom_present) {
+            ERROR("Platform configured to use ZICBOM extensions, but extension not present.\r\n");
+        }
+    }
+
+    /**
+     * Configure the State Enable mechanism (Ssstateen).
+     *
+     * State enable CSRs control whether less-privileged software may access
+     * selected architectural state and extension-specific CSRs.
+     *
+     * In Bao, this is used to define which optional privileged features are
+     * visible to VS-mode guests, while keeping the default policy restrictive.
+     *
+     * Execution reaches this block only when the Ssstateen extension is
+     * implemented by the platform.
+     */
+#if CPU_HAS_EXTENSION(CPU_EXT_SSSTATEEN)
+    /**
+     * Enable and sanity check the custom-state hstateen bit if the platform
+     * implements the compressed extension. Otherwise, keep the bit cleared.
+     *
+     * The write is verified through readback because hstateen fields are
+     * WARL: unsupported bits may read back as zero.
+     */
+    if (CPU_HAS_EXTENSION(CPU_EXT_C)) {
+        csrs_hstateen0_set(HSTATEEN_C);
+        bool custom_state_present = (csrs_hstateen0_read() & HSTATEEN_C) != 0;
+        if (cpu_is_master() && !custom_state_present) {
+            ERROR("Platform configured to allow access to custom state, but extension not "
+                  "avaialble.\r\n");
+        }
+    }
+
+    /**
+     * Enable and sanity check the FCSR-related hstateen bit when floating-point
+     * instructions operate on x registers. Otherwise, keep the bit cleared.
+     */
+    if (!CPU_HAS_EXTENSION(CPU_EXT_F)) {
+        csrs_hstateen0_set(HSTATEEN_FCSR);
+        bool fcsr_not_present = (csrs_hstateen0_read() & HSTATEEN_FCSR) != 0;
+        if (cpu_is_master() && !fcsr_not_present) {
+            ERROR("Platform configured so that floating-point instructions operate on integer "
+                  "registers, but floating-point unit is implemented.\r\n");
+        }
+    }
+
+    /**
+     * Enable and sanity check the context-state hstateen bit when Sdtrig is
+     * implemented. Otherwise, keep the bit cleared.
+     *
+     * This allows guests to access the scontext CSR if the
+     * platform supports it.
+     */
+    if (CPU_HAS_EXTENSION(CPU_EXT_SDTRIG)) {
+        csrs_hstateen0_set(HSTATEEN_CTX);
+        bool sdtrig_state_enabled = (csrs_hstateen0_read() & HSTATEEN_CTX) != 0;
+        if (cpu_is_master() && !sdtrig_state_enabled) {
+            ERROR("Platform configured to use Sdtrig extension, but extension not available.\r\n");
+        }
+    }
+
+    /**
+     * Enable and sanity check the indirect-CSR hstateen bit when Sscsrind is
+     * present. Otherwise, keep the bit cleared.
+     *
+     * Indirect CSR access is required by some optional privileged features,
+     * so it is enabled independently and verified with a WARL readback.
+     */
+    if (CPU_HAS_EXTENSION(CPU_EXT_SSCSRIND)) {
+        csrs_hstateen0_set(HSTATEEN_CSRIND);
+        bool sscrind_ctxt_en = (csrs_hstateen0_read() & HSTATEEN_CSRIND) != 0;
+        if (cpu_is_master() && !sscrind_ctxt_en) {
+            ERROR("Platform configured to use Sscsrind extension, but extension not "
+                  "available.\r\n");
+        }
+    }
+
+    /**
+     * Enable and sanity check the AIA and IMSIC hstateen bits when Bao is
+     * built to use AIA. Otherwise, keep those bits cleared.
+     *
+     * AIA guest support depends on the relevant AIA state being exposed
+     * through hstateen. Sscsrind is checked first because some IMSIC-related
+     * state is accessed through the indirect CSR mechanism.
+     */
+    if (IRQC == AIA) {
+        if (!CPU_HAS_EXTENSION(CPU_EXT_SSCSRIND)) {
+            ERROR("AIA requires Sscsrind extension to be present.");
+        }
+        csrs_hstateen0_set(HSTATEEN_IMSIC | HSTATEEN_AIA);
+        bool aia_ctxt_en =
+            ((csrs_hstateen0_read() & (HSTATEEN_IMSIC | HSTATEEN_AIA | HSTATEEN_CSRIND)) ==
+                (HSTATEEN_IMSIC | HSTATEEN_AIA | HSTATEEN_CSRIND));
+        if (cpu_is_master() && (!aia_ctxt_en)) {
+            ERROR("Platform configured to use AIA and IMSIC extensions, but extensions not "
+                  "available.\r\n");
+        }
+    }
+
+    /**
+     * Enable and sanity check the senvcfg hstateen bit so VS-mode can manage
+     * delegated environment configuration state.
+     */
+    csrs_hstateen0_set(HSTATEEN_ENVCFG);
+    bool senvcfg_ctxt_en = (csrs_hstateen0_read() & HSTATEEN_ENVCFG) != 0;
+    if (cpu_is_master() && (!senvcfg_ctxt_en)) {
+        ERROR("Platform configured to enable senvcfg access to VS-mode but this feature is not "
+              "available.\r\n");
+    }
+
+    /**
+     * Enable the SEO bits in hstateen0 so VS-mode can access the sstateen0
+     * CSR.
+     *
+     */
+    csrs_hstateen0_set(HSTATEEN_SEO);
+#endif
     /**
      * TODO: consider delegating other exceptions e.g. breakpoint or ins misaligned
      */

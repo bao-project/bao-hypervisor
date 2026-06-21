@@ -18,7 +18,7 @@ void port_init(void)
     vaddr_t port_ptr = mem_alloc_map_dev(&cpu()->as, SEC_HYP_PRIVATE, INVALID_VA,
         (paddr_t)(PLAT_PORT_BASE), NUM_PAGES(sizeof(struct port_hw)));
     if (port_ptr == INVALID_VA) {
-        ERROR("Maping PORT area failed");
+        ERROR("Maping PORT area failed\n");
     }
     port = (struct port_hw*)port_ptr;
 

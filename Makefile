@@ -54,7 +54,8 @@ PLATFORM=
 
 # Setup version
 
-version:= baoversion_$(subst -,_,$(shell  git describe --always --dirty --tag --match "v*\.*\.*"))
+version_str:= $(shell git describe --always --dirty --tag --match "v*\.*\.*")
+version:= baoversion_$(subst -,_,$(version_str))
 
 # Directories
 cur_dir:=$(current_directory)
@@ -240,7 +241,7 @@ else ifeq ($(CC_IS_CLANG),y)
 endif
 
 override CPPFLAGS+=$(addprefix -I, $(inc_dirs)) $(arch-cppflags) \
-	$(platform-cppflags) $(build_macros)
+	$(platform-cppflags) $(build_macros) -DBAO_VERSION=\"$(version_str)\"
 vpath:.=CPPFLAGS
 
 HOST_CPPFLAGS+=$(addprefix -I, $(inc_dirs)) $(arch-cppflags) \

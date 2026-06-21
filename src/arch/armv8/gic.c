@@ -69,7 +69,7 @@ static void gicd_init(void)
     gic_maintenance_id =
         interrupts_reserve(platform.arch.gic.maintenance_id, gic_maintenance_handler);
     if (gic_maintenance_id == INVALID_IRQID) {
-        ERROR("Failed to reserve GIC maintenance interrupt");
+        ERROR("Failed to reserve GIC maintenance interrupt\n");
     }
 }
 

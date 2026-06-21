@@ -22,7 +22,7 @@ void vmm_arch_profile_init()
             timer_freq = (uint32_t)platform.arch.generic_timer.fixed_freq;
         } else {
             if (platform.arch.generic_timer.base_addr == 0) {
-                ERROR("generic timer base_addr undefined; cannot init system counter");
+                ERROR("generic timer base_addr undefined; cannot init system counter\n");
             }
 
             volatile struct generic_timer_cntctrl* timer_ctl;
@@ -45,6 +45,6 @@ void vmm_arch_profile_init()
     /* Program CNTFRQ_EL0 and verify. */
     sysreg_cntfrq_el0_write(timer_freq);
     if (sysreg_cntfrq_el0_read() != (unsigned long)timer_freq) {
-        ERROR("failed to program CNTFRQ_EL0 to %u Hz", timer_freq);
+        ERROR("failed to program CNTFRQ_EL0 to %u Hz\n", timer_freq);
     }
 }

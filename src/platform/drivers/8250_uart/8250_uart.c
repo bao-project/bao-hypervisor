@@ -32,6 +32,13 @@ void uart_init(volatile struct uart8250_hw* uart)
 
 void uart_enable(volatile struct uart8250_hw* uart)
 {
+#ifdef UART8250_XSCALE
+    /**
+     * XScale/PXA-style ports gate the whole UART on the IER Unit Enable (UUE) bit, so it must be
+     * set for the unit to operate.
+     */
+    uart->ier |= UART8250_IER_UUE;
+#endif
     uart->fcr = UART8250_FCR_EN;
 }
 

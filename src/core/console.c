@@ -22,7 +22,7 @@ void console_init(void)
 {
     if (cpu_is_master()) {
         if ((platform.console.base & PAGE_OFFSET_MASK) != 0) {
-            WARNING("console base must be page aligned");
+            WARNING("console base must be page aligned\n");
         }
 
         uart = (void*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,

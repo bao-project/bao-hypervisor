@@ -73,7 +73,7 @@ bool vcpu_arch_is_on(struct vcpu* vcpu)
 unsigned long vcpu_readreg(struct vcpu* vcpu, unsigned long reg)
 {
     if (reg > 32) {
-        ERROR("reading register out of bounds");
+        ERROR("reading register out of bounds\n");
     }
 
     /* r0 is always 0x0 */
@@ -83,7 +83,7 @@ unsigned long vcpu_readreg(struct vcpu* vcpu, unsigned long reg)
 void vcpu_writereg(struct vcpu* vcpu, unsigned long reg, unsigned long val)
 {
     if (reg > 32) {
-        ERROR("writing register out of bounds");
+        ERROR("writing register out of bounds\n");
     }
 
     /* r0 is always 0x0 */

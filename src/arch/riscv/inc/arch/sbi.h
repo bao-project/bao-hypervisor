@@ -33,7 +33,10 @@ struct sbi_hsm {
     spinlock_t lock;
     enum { STARTED, STOPPED, START_PENDING, STOP_PENDING } state;
     vaddr_t start_addr;
-    unsigned priv;
+    /* SBI HSM hart_start 'opaque' arg, handed to the started hart in a1. It is a
+     * full xlen value (Linux passes a 64-bit guest-physical pointer here), so it
+     * must not be truncated. */
+    unsigned long priv;
 };
 
 void sbi_init(void);

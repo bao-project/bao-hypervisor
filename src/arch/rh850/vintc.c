@@ -31,7 +31,7 @@ extern volatile struct feinc* feinc_hw[PLAT_CPU_NUM];
 void vintc_inject(struct vcpu* vcpu, irqid_t int_id)
 {
     if (!vm_has_interrupt(vcpu->vm, int_id)) {
-        ERROR("Trying to inject unassigned interrupt in VM");
+        ERROR("Trying to inject unassigned interrupt in VM\n");
     }
     intc_set_pend(int_id, true);
 }
@@ -254,28 +254,28 @@ static bool vintc2_emul_handler(struct emul_access* acc)
 static bool vintif_emul_handler(struct emul_access* acc)
 {
     UNUSED_ARG(acc);
-    ERROR("%s not implemented", __func__);
+    ERROR("%s not implemented\n", __func__);
     return false;
 }
 
 static bool veint_emul_handler(struct emul_access* acc)
 {
     UNUSED_ARG(acc);
-    ERROR("%s not implemented", __func__);
+    ERROR("%s not implemented\n", __func__);
     return false;
 }
 
 static bool vfenc_emul_handler(struct emul_access* acc)
 {
     UNUSED_ARG(acc);
-    ERROR("%s not implemented", __func__);
+    ERROR("%s not implemented\n", __func__);
     return false;
 }
 
 static bool vfeinc_emul_handler(struct emul_access* acc)
 {
     UNUSED_ARG(acc);
-    ERROR("%s not implemented", __func__);
+    ERROR("%s not implemented\n", __func__);
     return false;
 }
 

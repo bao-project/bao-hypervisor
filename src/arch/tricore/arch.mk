@@ -9,6 +9,7 @@ arch-cppflags+=
 arch-ldflags=
 
 arch_mem_prot:=mpu
+phys_irqs_only:=y
 plat_mem:=non_unified
 PAGE_SIZE:=64
 mmio_slave_side_prot:=y

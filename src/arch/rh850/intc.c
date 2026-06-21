@@ -119,7 +119,7 @@ void intc_set_trgt(irqid_t int_id, cpuid_t cpu_id)
 {
     if (int_id < INTC_PRIVATE_IRQS_NUM) {
         if (cpu()->id != cpu_id) {
-            ERROR("setting private interrupt on another core");
+            ERROR("setting private interrupt on another core\n");
         }
     } else {
         irqid_t intc2_irq_id = int_id - INTC_PRIVATE_IRQS_NUM;
@@ -160,7 +160,7 @@ static void intc_map_global_mmio(void)
     vaddr_t intc1_ptr = mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
         platform.arch.intc.intc1_addr, NUM_PAGES(sizeof(struct intc1)));
     if (intc1_ptr == INVALID_VA) {
-        ERROR("maping intc1 failed");
+        ERROR("maping intc1 failed\n");
     }
     intc1_hw = (struct intc1*)intc1_ptr;
 
@@ -172,7 +172,7 @@ static void intc_map_global_mmio(void)
     vaddr_t global_ptr =
         mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA, global_start_addr, global_npages);
     if (global_ptr == INVALID_VA) {
-        ERROR("maping global interrupt controller region failed");
+        ERROR("maping global interrupt controller region failed\n");
     }
 
     intc2_hw = (struct intc2*)platform.arch.intc.intc2_addr;

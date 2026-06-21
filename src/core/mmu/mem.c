@@ -368,7 +368,7 @@ vaddr_t mem_alloc_vpage(struct addr_space* as, as_sec_t section, vaddr_t at, siz
                     count += (lvlsze / PAGE_SIZE);
                 } else {
                     if (mem_alloc_pt(as, pte, lvl, addr) == NULL) {
-                        ERROR("failed to alloc page table");
+                        ERROR("failed to alloc page table\n");
                     }
                 }
             }
@@ -430,7 +430,7 @@ void mem_unmap(struct addr_space* as, vaddr_t at, size_t num_pages, bool free_pp
     while (vaddr < top) {
         pte_t* pte = pt_get_pte(&as->pt, lvl, vaddr);
         if (pte == NULL) {
-            ERROR("invalid pte while freeing vpages");
+            ERROR("invalid pte while freeing vpages\n");
         } else if (!pte_valid(pte)) {
             size_t lvlsz = pt_lvlsize(&as->pt, lvl);
             vaddr += lvlsz;
@@ -511,7 +511,7 @@ static bool mem_map(struct addr_space* as, vaddr_t va, struct ppages* ppages, si
     if (ppages == NULL && !all_clrs(as->colors)) {
         temp_ppages = mem_alloc_ppages(as->colors, num_pages, MEM_ALIGN_NOT_REQ);
         if (temp_ppages.num_pages < num_pages) {
-            ERROR("failed to alloc colored physical pages");
+            ERROR("failed to alloc colored physical pages\n");
         }
         ppages = &temp_ppages;
     }
@@ -540,7 +540,7 @@ static bool mem_map(struct addr_space* as, vaddr_t va, struct ppages* ppages, si
                     } else if (!pte_valid(pte)) {
                         mem_alloc_pt(as, pte, lvl, vaddr);
                     } else if (!pte_table(&as->pt, pte, lvl)) {
-                        ERROR("trying to override previous mapping");
+                        ERROR("trying to override previous mapping\n");
                     }
                 }
             }
@@ -557,7 +557,7 @@ static bool mem_map(struct addr_space* as, vaddr_t va, struct ppages* ppages, si
                     if (temp.num_pages < lvlsz / PAGE_SIZE) {
                         if (lvl == (as->pt.dscr->lvls - 1)) {
                             // TODO: free previously allocated pages
-                            ERROR("failed to alloc physical pages");
+                            ERROR("failed to alloc physical pages\n");
                         } else {
                             pte = pt_get_pte(&as->pt, lvl, vaddr);
                             if (!pte_valid(pte)) {
@@ -593,7 +593,7 @@ bool mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages, siz
     mem_flags_t flags)
 {
     if (ppages == NULL) {
-        ERROR("no indication on what to recolor");
+        ERROR("no indication on what to recolor\n");
     }
 
     /**
@@ -776,7 +776,7 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
     va = mem_alloc_vpage(&cpu_new->as, SEC_HYP_PRIVATE, (vaddr_t)BAO_CPU_BASE,
         NUM_PAGES(sizeof(struct cpu)));
     if (va != (vaddr_t)BAO_CPU_BASE) {
-        ERROR("Can't allocate virtual address for cpuspace");
+        ERROR("Can't allocate virtual address for cpuspace\n");
     }
     mem_map(&cpu_new->as, va, &p_cpu, NUM_PAGES(sizeof(struct cpu)), PTE_HYP_FLAGS);
 
@@ -791,7 +791,7 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
     mem_translate(&cpu()->as, (vaddr_t)cpu_new->as.pt.root, &p_root_pt_addr);
     v_root_pt_addr = mem_alloc_vpage(&cpu_new->as, SEC_HYP_PRIVATE, INVALID_VA, root_pt_num_pages);
     if (va == INVALID_VA) {
-        ERROR("Can't allocate virtuall address space for root page table");
+        ERROR("Can't allocate virtuall address space for root page table\n");
     }
     struct ppages p_root_pt_pages = mem_ppages_get(p_root_pt_addr, root_pt_num_pages);
     mem_map(&cpu_new->as, v_root_pt_addr, &p_root_pt_pages, root_pt_num_pages, PTE_HYP_FLAGS);
@@ -809,7 +809,7 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
             NUM_PAGES(image_size));
 
         if (va != (vaddr_t)&_image_start) {
-            ERROR("Can't allocate virtual address for Bao Image");
+            ERROR("Can't allocate virtual address for Bao Image\n");
         }
 
         mem_map(&cpu_new->as, va, &p_image, NUM_PAGES(image_size), PTE_HYP_FLAGS);
@@ -837,7 +837,7 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
             NUM_PAGES(bitmap_size));
 
         if (va != (vaddr_t)root_pool->bitmap) {
-            ERROR("Can't allocate address for cpu interface");
+            ERROR("Can't allocate address for cpu interface\n");
         }
 
         mem_map(&cpu_new->as, va, &p_bitmap, NUM_PAGES(bitmap_size), PTE_HYP_FLAGS);

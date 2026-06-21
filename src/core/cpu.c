@@ -58,7 +58,7 @@ void cpu_send_msg(cpuid_t trgtcpu, struct cpu_msg* msg)
 {
     struct cpu_msg_node* node = objpool_alloc(&msg_pool);
     if (node == NULL) {
-        ERROR("cant allocate msg node");
+        ERROR("cant allocate msg node\n");
     }
     node->msg = *msg;
     list_push(&cpu_if(trgtcpu)->event_list, (node_t*)node);
@@ -97,7 +97,7 @@ void cpu_standby(void)
      * Should not return here. cpu should "wake up" from standby in cpu_standby_wakeup with a
      * rewinded stack.
      */
-    ERROR("Spurious standby wake up");
+    ERROR("Spurious standby wake up\n");
 }
 
 void cpu_powerdown(void)
@@ -108,7 +108,7 @@ void cpu_powerdown(void)
      * Should not return here. cpu should "wake up" from powerdown in cpu_powerdown_wakeup with a
      * rewinded stack.
      */
-    ERROR("Spurious powerdown wake up");
+    ERROR("Spurious powerdown wake up\n");
 }
 
 void cpu_standby_wakeup(void)

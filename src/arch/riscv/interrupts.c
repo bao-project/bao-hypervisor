@@ -119,7 +119,7 @@ void interrupts_arch_handle(void)
             irqc_handle();
             break;
         default:
-            WARNING("unknown interrupt");
+            WARNING("unknown interrupt\n");
             break;
     }
 }
@@ -155,7 +155,7 @@ void interrupts_arch_clear(irqid_t int_id)
         /**
          * It is not actually possible to clear timer by software.
          */
-        WARNING("trying to clear timer interrupt");
+        WARNING("trying to clear timer interrupt\n");
     } else {
         irqc_clr_pend(int_id);
     }

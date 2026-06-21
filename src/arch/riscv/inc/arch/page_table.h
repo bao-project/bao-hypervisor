@@ -8,6 +8,7 @@
 
 #include <bao.h>
 #include <bit.h>
+#include <plat/cpu_ext.h>
 
 #define HYP_ROOT_PT_SIZE (PAGE_SIZE)
 #define PAGE_SHIFT       (12)
@@ -23,7 +24,24 @@
 #define PTE_ADDR_MSK PTE_MASK(12, 44)
 #endif
 
-#define PTE_FLAGS_MSK             PTE_MASK(0, 8)
+#define PTE_PBMT_OFF 61
+#define PTE_PBMT_PMA (0ULL << PTE_PBMT_OFF)
+#define PTE_PBMT_NC  (1ULL << PTE_PBMT_OFF)
+#define PTE_PBMT_IO  (2ULL << PTE_PBMT_OFF)
+
+#if defined(RV64) && defined(CPU_EXT_SVPBMT) && (CPU_EXT_SVPBMT == 1)
+#define PTE_PBMT_FLAGS_MSK PTE_MASK(PTE_PBMT_OFF, 2)
+#define PTE_PBMT_DEV_FLAGS PTE_PBMT_IO
+#else
+#define PTE_PBMT_FLAGS_MSK 0ULL
+#define PTE_PBMT_DEV_FLAGS 0ULL
+#endif
+
+#define PTE_FLAGS_BASE_MSK        PTE_MASK(0, 8)
+#define PTE_FLAGS_EXT_MSK         PTE_PBMT_FLAGS_MSK
+#define PTE_FLAGS_MSK             (PTE_FLAGS_BASE_MSK | PTE_FLAGS_EXT_MSK)
+
+#define PTE_DEV_FLAGS             PTE_PBMT_DEV_FLAGS
 
 #define PTE_VALID                 (1ULL << 0)
 #define PTE_READ                  (1ULL << 1)
@@ -64,10 +82,10 @@
 
 #define PTE_INVALID               (0)
 #define PTE_HYP_FLAGS             (PTE_GLOBAL | PTE_ACCESS | PTE_DIRTY)
-#define PTE_HYP_DEV_FLAGS         PTE_HYP_FLAGS
+#define PTE_HYP_DEV_FLAGS         (PTE_HYP_FLAGS | PTE_DEV_FLAGS)
 
 #define PTE_VM_FLAGS              (PTE_ACCESS | PTE_DIRTY | PTE_USER)
-#define PTE_VM_DEV_FLAGS          PTE_VM_FLAGS
+#define PTE_VM_DEV_FLAGS          (PTE_VM_FLAGS | PTE_DEV_FLAGS)
 
 #ifndef __ASSEMBLER__
 

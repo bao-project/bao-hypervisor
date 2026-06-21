@@ -16,7 +16,7 @@
 #define PCXI_PCXO_OFF     0
 #define PCXI_PCXS_OFF     16
 #define PCXI_UL_OFF       20
-#define PCXI_PIE_OFF      20
+#define PCXI_PIE_OFF      21
 #define ADDR_PCXS_OFF     28
 #define ADDR_PCXS_LEN     4
 #define ADDR_PCXO_OFF     6

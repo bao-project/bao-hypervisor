@@ -52,7 +52,7 @@ static void ipc_handler(uint32_t event, uint64_t data)
             ipc_notify(ipc_data.shmem_id, ipc_data.event_id);
             break;
         default:
-            WARNING("Unknown IPC IPI event");
+            WARNING("Unknown IPC IPI event\n");
             break;
     }
 }

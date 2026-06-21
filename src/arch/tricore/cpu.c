@@ -52,7 +52,7 @@ void cpu_arch_powerdown(void)
 
     __asm__ volatile("j cpu_powerdown_wakeup");
 
-    ERROR("returned from powerdown wake up");
+    ERROR("returned from powerdown wake up\n");
 }
 
 void cpu_arch_standby(void)
@@ -64,7 +64,7 @@ void cpu_arch_standby(void)
 
     __asm__ volatile("j cpu_standby_wakeup");
 
-    ERROR("returned from standby wake up");
+    ERROR("returned from standby wake up\n");
 }
 
 /* The current GCC injects calls to abort() in some places, which
@@ -72,5 +72,5 @@ void cpu_arch_standby(void)
    For this reason we define our own abort() for this architecture. */
 void abort(void)
 {
-    ERROR("abort() reached!");
+    ERROR("abort() reached!\n");
 }

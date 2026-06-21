@@ -49,6 +49,7 @@ platforms is presented below:
 - [x] Toradex Verdin iMX8M Plus (w/ Dahlia Carrier Board)
 - [x] NXP S32G3
 - [x] BeagleBone AI-64
+- [x] NXP iMX8M Nano EVK
 
 **Armv7-A / Armv8-A AArch32**
 - [x] Arm Fixed Virtual Platforms
@@ -66,6 +67,7 @@ platforms is presented below:
 
 **RISC-V RV64**
 - [x] QEMU virt
+- [x] SpacemiT K3 CoM260 Kit (Banana Pi BPI-SM10)
 - [ ] SiFive HiFive Premier P550
 
 **RISC-V RV32**

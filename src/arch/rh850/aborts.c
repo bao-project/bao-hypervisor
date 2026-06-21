@@ -79,7 +79,7 @@ static unsigned long read_instruction(unsigned long pc)
     uint16_t* pc_ptr = (uint16_t*)(pc);
 
     if (pc & 0x1) {
-        ERROR("Trying to read guest unaligned instruction");
+        ERROR("Trying to read guest unaligned instruction\n");
     }
 
     /* Enable Hyp access to VM space */
@@ -129,11 +129,11 @@ static void decode_access(struct emul_access* acc, unsigned long addr)
         int16_t imm = (int16_t)(inst >> 16);
         if (imm < 0) {
             if ((unsigned long)(-imm) > addr) {
-                ERROR("bitwise addr underflow")
+                ERROR("bitwise addr underflow\n")
             }
         } else {
             if (addr > UINT32_MAX - (unsigned long)imm) {
-                ERROR("bitwise addr overflow")
+                ERROR("bitwise addr overflow\n")
             }
         }
 
@@ -169,10 +169,10 @@ static void data_abort(void)
             unsigned long pc_step = MEI_GET_LEN(mei);
             vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + pc_step);
         } else {
-            ERROR("Data abort emulation failed (0x%x)", addr);
+            ERROR("Data abort emulation failed (0x%x)\n", addr);
         }
     } else {
-        ERROR("No emulation handler for access to 0x%x, at 0x%x", addr, vcpu_readpc(cpu()->vcpu));
+        ERROR("No emulation handler for access to 0x%x, at 0x%x\n", addr, vcpu_readpc(cpu()->vcpu));
     }
 }
 
@@ -211,13 +211,13 @@ void abort(void)
             data_abort();
             break;
         case MDP_HOST:
-            ERROR("Host data abort");
+            ERROR("Host data abort\n");
             break;
         default:
             if (cause >= HVTRAP_LOW && cause <= HVTRAP_HIGH) {
                 hvtrap();
             } else {
-                WARNING("Exception not handled. Cause: 0x%lx", cause);
+                WARNING("Exception not handled. Cause: 0x%lx\n", cause);
             }
     }
 }

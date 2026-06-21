@@ -21,7 +21,7 @@ void cpu_arch_profile_init(cpuid_t cpuid, paddr_t load_addr)
             // TODO: pass config addr in contextid (x0 register)
             int32_t result = psci_cpu_on(mpidr, load_addr, 0);
             if (!(result == PSCI_E_SUCCESS || result == PSCI_E_ALREADY_ON)) {
-                ERROR("cant wake up cpu %d", cpu_core_id);
+                ERROR("cant wake up cpu %d\n", cpu_core_id);
             }
         }
     }
@@ -31,7 +31,7 @@ void cpu_arch_profile_standby()
 {
     int32_t err = psci_standby();
     if (err) {
-        ERROR("PSCI cpu%d standby failed with error %ld", cpu()->id, err);
+        ERROR("PSCI cpu%d standby failed with error %ld\n", cpu()->id, err);
     }
 }
 
@@ -39,7 +39,7 @@ void cpu_arch_profile_powerdown()
 {
     int32_t err = psci_power_down();
     if (err) {
-        ERROR("PSCI cpu%d power down failed with error %ld", cpu()->id, err);
+        ERROR("PSCI cpu%d power down failed with error %ld\n", cpu()->id, err);
     }
 
     /**

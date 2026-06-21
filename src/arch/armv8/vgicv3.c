@@ -334,7 +334,7 @@ void vgic_init(struct vm* vm, const struct vgic_dscrp* vgic_dscrp)
     vm->arch.vgicd.interrupts =
         mem_alloc_page(NUM_PAGES(vgic_int_size), SEC_HYP_VM, MEM_ALIGN_NOT_REQ);
     if (vm->arch.vgicd.interrupts == NULL) {
-        ERROR("failed to alloc vgic");
+        ERROR("failed to alloc vgic\n");
     }
 
     for (irqid_t i = 0; i < vm->arch.vgicd.int_num; i++) {

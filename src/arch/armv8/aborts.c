@@ -20,13 +20,13 @@ static void aborts_data_lower(unsigned long iss, unsigned long far, unsigned lon
     UNUSED_ARG(ec);
 
     if (!(iss & ESR_ISS_DA_ISV_BIT) || (iss & ESR_ISS_DA_FnV_BIT)) {
-        ERROR("no information to handle data abort (0x%x)", far);
+        ERROR("no information to handle data abort (0x%x)\n", far);
     }
 
     unsigned long DSFC = bit_extract(iss, ESR_ISS_DA_DSFC_OFF, ESR_ISS_DA_DSFC_LEN) & (0xf << 2);
 
     if (DSFC != ESR_ISS_DA_DSFC_TRNSLT && DSFC != ESR_ISS_DA_DSFC_PERMIS) {
-        ERROR("data abort is not translation fault - cant deal with it");
+        ERROR("data abort is not translation fault - cant deal with it\n");
     }
 
     vaddr_t addr = far;
@@ -46,10 +46,10 @@ static void aborts_data_lower(unsigned long iss, unsigned long far, unsigned lon
             unsigned long pc_step = 2 + (2 * il);
             vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + pc_step);
         } else {
-            ERROR("data abort emulation failed (0x%x)", far);
+            ERROR("data abort emulation failed (0x%x)\n", far);
         }
     } else {
-        ERROR("no emulation handler for abort(0x%x at 0x%x)", far, vcpu_readpc(cpu()->vcpu));
+        ERROR("no emulation handler for abort(0x%x at 0x%x)\n", far, vcpu_readpc(cpu()->vcpu));
     }
 }
 
@@ -67,7 +67,7 @@ static long int standard_service_call(unsigned long _fn_num)
     if (is_psci_fid(smc_fid)) {
         ret = psci_smc_handler((uint32_t)smc_fid, x1, x2, x3);
     } else {
-        INFO("unknown smc_fid 0x%lx", smc_fid);
+        INFO("unknown smc_fid 0x%lx\n", smc_fid);
     }
 
     return ret;
@@ -94,7 +94,7 @@ static inline void syscall_handler(unsigned long iss, unsigned long far, unsigne
             ret = hypercall(fid & SMCC_FID_FN_NUM_MSK);
             break;
         default:
-            WARNING("Unknown system call fid 0x%x", fid);
+            WARNING("Unknown system call fid 0x%x\n", fid);
     }
 
     vcpu_writereg(cpu()->vcpu, 0, (unsigned long)ret);
@@ -156,10 +156,10 @@ static void sysreg_handler(unsigned long iss, unsigned long far, unsigned long i
             unsigned long pc_step = 2 + (2 * il);
             vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + pc_step);
         } else {
-            ERROR("register access emulation failed (0x%x)", reg_addr);
+            ERROR("register access emulation failed (0x%x)\n", reg_addr);
         }
     } else {
-        ERROR("no emulation handler for register access (0x%x at 0x%x)", reg_addr,
+        ERROR("no emulation handler for register access (0x%x at 0x%x)\n", reg_addr,
             vcpu_readpc(cpu()->vcpu));
     }
 }
@@ -199,6 +199,6 @@ void aborts_sync_handler(void)
             cpu_standby();
         }
     } else {
-        ERROR("no handler for abort ec = 0x%x", ec); // unknown guest exception
+        ERROR("no handler for abort ec = 0x%x\n", ec); // unknown guest exception
     }
 }

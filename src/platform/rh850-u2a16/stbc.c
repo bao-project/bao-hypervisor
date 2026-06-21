@@ -13,7 +13,7 @@ void stbc_init(void)
     vaddr_t stbc_ptr = mem_alloc_map_dev(&cpu()->as, SEC_HYP_PRIVATE, INVALID_VA,
         (paddr_t)(PLAT_STBC_BASE), NUM_PAGES(sizeof(struct stbc_hw)));
     if (stbc_ptr == INVALID_VA) {
-        ERROR("Maping STBC MMIO failed");
+        ERROR("Maping STBC MMIO failed\n");
     }
     stbc = (struct stbc_hw*)stbc_ptr;
 
