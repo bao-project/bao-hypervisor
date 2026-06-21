@@ -14,9 +14,7 @@
  * @return The 32-bit value read from the register.
  */
 static inline uint32_t read_reg(paddr_t addr, paddr_t offset)
-{
-    return *((volatile uint32_t*)((paddr_t)(addr + offset)));
-}
+{ return *((volatile uint32_t*)((paddr_t)(addr + offset))); }
 
 /**
  * @brief Writes a 32-bit value to a memory-mapped register.
@@ -26,9 +24,7 @@ static inline uint32_t read_reg(paddr_t addr, paddr_t offset)
  * @param value The 32-bit value to write.
  */
 static inline void write_reg(paddr_t addr, paddr_t offset, uint32_t value)
-{
-    *((volatile uint32_t*)((paddr_t)(addr + offset))) = value;
-}
+{ *((volatile uint32_t*)((paddr_t)(addr + offset))) = value; }
 
 int32_t mbox_k3_sec_proxy_verify_thread(mbox_k3_sec_proxy_desc* sec_proxy_desc, uint8_t thread_id,
     uint8_t msg_drxn)
@@ -41,7 +37,7 @@ int32_t mbox_k3_sec_proxy_verify_thread(mbox_k3_sec_proxy_desc* sec_proxy_desc, 
     /* check for existing errors */
     if (read_reg(thread_rt_base, MBOX_K3_SEC_PROXY_RT_THREAD_STATUS_OFFSET) &
         MBOX_K3_SEC_PROXY_RT_STATUS_ERROR_MASK) {
-        ERROR("secure_proxy_thread_%d corrupted", thread_id);
+        ERROR("secure_proxy_thread_%d corrupted\n", thread_id);
         return MBOX_K3_SEC_PROXY_STATUS_CODE_THREAD_CORRUPTED;
     }
 
@@ -51,10 +47,10 @@ int32_t mbox_k3_sec_proxy_verify_thread(mbox_k3_sec_proxy_desc* sec_proxy_desc, 
             MBOX_K3_SEC_PROXY_SCFG_THREAD_CTRL_DIR_IDX !=
         msg_drxn) {
         if (MBOX_K3_SEC_PROXY_MSG_DRXN_WRITE == msg_drxn) {
-            ERROR("secure_proxy_thread_%d cannot READ on WRITE thread", thread_id);
+            ERROR("secure_proxy_thread_%d cannot READ on WRITE thread\n", thread_id);
             return MBOX_K3_SEC_PROXY_STATUS_CODE_INCORRECT_DRXN;
         } else {
-            ERROR("secure_proxy_thread_%d cannot WRITE on READ thread", thread_id);
+            ERROR("secure_proxy_thread_%d cannot WRITE on READ thread\n", thread_id);
             return MBOX_K3_SEC_PROXY_STATUS_CODE_INCORRECT_DRXN;
         }
     }
@@ -68,7 +64,6 @@ int32_t mbox_k3_sec_proxy_verify_thread(mbox_k3_sec_proxy_desc* sec_proxy_desc, 
                 MBOX_K3_SEC_PROXY_RT_STATUS_CUR_CNT_MASK)) {
             if ((sysreg_cntpct_el0_read() - tick_start) >
                 (sec_proxy_desc->read_timeout_us * ticks_per_us)) {
-                ERROR("secure_proxy_thread_%d no entries in message queue", thread_id);
                 return MBOX_K3_SEC_PROXY_STATUS_CODE_NO_DATA;
             }
         }
@@ -108,7 +103,11 @@ int32_t mbox_k3_sec_proxy_read(mbox_k3_sec_proxy_desc* sec_proxy_desc, uint8_t t
     int32_t read_status =
         mbox_k3_sec_proxy_verify_thread(sec_proxy_desc, thread_id, MBOX_K3_SEC_PROXY_MSG_DRXN_READ);
     if (MBOX_K3_SEC_PROXY_STATUS_CODE_NO_ERROR != read_status) {
-        ERROR("secure_proxy_thread_%d thread verif failed", thread_id);
+        if (MBOX_K3_SEC_PROXY_STATUS_CODE_NO_DATA == read_status) {
+            ERROR("secure_proxy_thread_%d no entries in message queue\n", thread_id);
+        } else {
+            ERROR("secure_proxy_thread_%d thread verif failed\n", thread_id);
+        }
         return read_status;
     }
 
@@ -143,7 +142,7 @@ int32_t mbox_k3_sec_proxy_read(mbox_k3_sec_proxy_desc* sec_proxy_desc, uint8_t t
         read_reg(data_reg, MBOX_K3_SEC_PROXY_DATA_END_OFFSET - MBOX_K3_SEC_PROXY_DATA_START_OFFSET);
     }
 
-    INFO("secure_proxy_thread_%d data READ success", thread_id);
+    INFO("secure_proxy_thread_%d data READ success\n", thread_id);
 
     return read_status;
 }
@@ -184,13 +183,13 @@ int32_t mbox_k3_sec_proxy_write(mbox_k3_sec_proxy_desc* sec_proxy_desc, uint8_t 
     int32_t write_status = mbox_k3_sec_proxy_verify_thread(sec_proxy_desc, thread_id,
         MBOX_K3_SEC_PROXY_MSG_DRXN_WRITE);
     if (MBOX_K3_SEC_PROXY_STATUS_CODE_NO_ERROR != write_status) {
-        ERROR("secure_proxy_thread_%d thread verif failed", thread_id);
+        ERROR("secure_proxy_thread_%d thread verif failed\n", thread_id);
         return write_status;
     }
 
     /* msg len check */
     if (len > sec_proxy_desc->thread_inst.max_msg_size) {
-        ERROR("secure_proxy_thread_%d msg len exceeds limit", thread_id);
+        ERROR("secure_proxy_thread_%d msg len exceeds limit\n", thread_id);
         return MBOX_K3_SEC_PROXY_STATUS_CODE_INVALID_MSG_LEN;
     }
 
@@ -228,7 +227,7 @@ int32_t mbox_k3_sec_proxy_write(mbox_k3_sec_proxy_desc* sec_proxy_desc, uint8_t 
         write_reg(data_reg, word_iterator++ * sizeof(uint32_t), 0U);
     }
 
-    INFO("secure_proxy_thread_%d data WRITE success", thread_id);
+    INFO("secure_proxy_thread_%d data WRITE success\n", thread_id);
 
     return write_status;
 }
@@ -238,7 +237,7 @@ int32_t mbox_k3_sec_proxy_clear(mbox_k3_sec_proxy_desc* sec_proxy_desc, uint8_t 
     int32_t clear_status =
         mbox_k3_sec_proxy_verify_thread(sec_proxy_desc, thread_id, MBOX_K3_SEC_PROXY_MSG_DRXN_READ);
     if (MBOX_K3_SEC_PROXY_STATUS_CODE_NO_ERROR != clear_status) {
-        ERROR("secure_proxy_thread_%d thread verif failed", thread_id);
+        ERROR("secure_proxy_thread_%d thread verif failed\n", thread_id);
         return clear_status;
     }
 
@@ -252,11 +251,11 @@ int32_t mbox_k3_sec_proxy_clear(mbox_k3_sec_proxy_desc* sec_proxy_desc, uint8_t 
         (read_reg(thread_rt_base, MBOX_K3_SEC_PROXY_RT_THREAD_STATUS_OFFSET) &
             MBOX_K3_SEC_PROXY_RT_STATUS_CUR_CNT_MASK)) {
         if (0 == (try_count--)) {
-            ERROR("secure_proxy_thread_%d mailbox clear failed", thread_id);
+            ERROR("secure_proxy_thread_%d mailbox clear failed\n", thread_id);
             return MBOX_K3_SEC_PROXY_STATUS_CODE_THREAD_CLEAR_FAILED;
         }
 
-        WARNING("secure_proxy_thread_%d mailbox clear in progress", thread_id);
+        WARNING("secure_proxy_thread_%d mailbox clear in progress\n", thread_id);
         read_reg(data_reg, MBOX_K3_SEC_PROXY_DATA_END_OFFSET);
     }
 
@@ -265,28 +264,14 @@ int32_t mbox_k3_sec_proxy_clear(mbox_k3_sec_proxy_desc* sec_proxy_desc, uint8_t 
 
 int32_t mbox_k3_sec_proxy_probe(mbox_k3_sec_proxy_desc* sec_proxy_desc, uint8_t thread_id)
 {
-    paddr_t thread_scfg_base =
-        sec_proxy_desc->thread_inst.scfg_base + MBOX_K3_SEC_PROXY_THREAD_OFFSET(thread_id);
-    uint32_t config = read_reg(thread_scfg_base, MBOX_K3_SEC_PROXY_SCFG_THREAD_CTRL_OFFSET);
-
-    uint8_t hw_host = (config >> 8) & 0xFF;
-    uint8_t expected_host = sec_proxy_desc->sec_proxy_thread_desc[thread_id].host_id;
-
-    /* [step-1] verify thread access/host ownership */
-    if (hw_host != expected_host) {
-        ERROR("sec_proxy_thread_%d probe failed (hw_host=%d, expected=%d)", thread_id, hw_host,
-            expected_host);
-        return MBOX_K3_SEC_PROXY_STATUS_CODE_THREAD_CORRUPTED;
-    }
-
-    /* [step-2] verify if thread is clean */
+    /* verify if thread is clean */
     int32_t probe_status = mbox_k3_sec_proxy_verify_thread(sec_proxy_desc, thread_id,
         sec_proxy_desc->sec_proxy_thread_desc[thread_id].msg_drxn);
 
     if (MBOX_K3_SEC_PROXY_MSG_DRXN_READ ==
             sec_proxy_desc->sec_proxy_thread_desc[thread_id].msg_drxn &&
         MBOX_K3_SEC_PROXY_STATUS_CODE_NO_ERROR == probe_status) {
-        ERROR("secure_proxy_thread_%d probe failed (message queue not clean)", thread_id);
+        ERROR("secure_proxy_thread_%d probe failed (message queue not clean)\n", thread_id);
         return MBOX_K3_SEC_PROXY_STATUS_CODE_DIRTY_HANDOFF;
     }
 
@@ -297,11 +282,11 @@ int32_t mbox_k3_sec_proxy_probe(mbox_k3_sec_proxy_desc* sec_proxy_desc, uint8_t 
     }
 
     if (MBOX_K3_SEC_PROXY_STATUS_CODE_NO_ERROR != probe_status) {
-        INFO("sec_proxy_thread_%d probe failed (error_id=%d)", thread_id, probe_status);
+        INFO("sec_proxy_thread_%d probe failed (error_id=%d)\n", thread_id, probe_status);
         return probe_status;
     }
 
-    INFO("sec_proxy_thread_%d probe success", thread_id);
+    INFO("sec_proxy_thread_%d probe success\n", thread_id);
     return probe_status;
 }
 

@@ -8,9 +8,11 @@
 
 #define UART8250_REG_WIDTH (4U)
 
+#ifndef GENERATING_DEFS
 #include <drivers/8250_uart.h>
 #include <drivers/k3_sec_proxy.h>
 #include <drivers/tisci.h>
+#endif
 
 /* j721e host id enumeration */
 #define J721E_HOST_ID_MAIN_A72_CONTEXT_0_SECURE     (10)
