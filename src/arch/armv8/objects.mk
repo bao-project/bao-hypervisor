@@ -13,6 +13,7 @@ cpu-objs-y+=vmm.o
 cpu-objs-y+=psci.o
 
 ifeq ($(ARCH_SUB),aarch64)
+cpu-objs-y+=generic_timer.o
 cpu-objs-y+=pmu.o
 endif
 
