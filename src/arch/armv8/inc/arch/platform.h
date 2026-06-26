@@ -35,6 +35,10 @@ struct arch_platform {
         uint32_t fixed_freq;
     } generic_timer;
 
+    struct {
+        irqid_t interrupt_id;
+    } events;
+
     struct clusters {
         size_t num;
         size_t* core_num;
