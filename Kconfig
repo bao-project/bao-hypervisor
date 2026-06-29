@@ -1,0 +1,3 @@
+mainmenu "Bao Hypervisor Configuration"
+
+source "src/core/Kconfig"

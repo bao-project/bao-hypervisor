@@ -129,7 +129,9 @@ void vmm_init()
     vmm_arch_init();
     vmm_io_init();
     shmem_init();
+#if CONFIG_REMIO
     remio_init();
+#endif
 
     if (cpu_is_master()) {
         for (size_t i = 0; i < CONFIG_VM_NUM; i++) {

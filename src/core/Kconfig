@@ -1,0 +1,15 @@
+menu "Core features"
+
+config MEM_BANDWIDTH_RESERVATION
+	bool "Memory Bandwidth Reservation"
+	default y
+	help
+	  Enable per-VM memory bandwidth reservation support.
+
+config REMIO
+	bool "Remote I/O (RemIO)"
+	default y
+	help
+	  Enable Remote I/O devices, emulation, and hypercall handling.
+
+endmenu

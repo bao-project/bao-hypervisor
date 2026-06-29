@@ -76,9 +76,9 @@ targets:=$(MAKECMDGOALS)
 ifeq ($(targets),)
 targets:=all
 endif
-non_build_targets+=ci clean
+non_build_targets+=ci clean menuconfig nconfig listconfig
 build_targets:=$(strip $(foreach target, $(targets), \
-	$(if $(findstring $(target),$(non_build_targets)),,$(target))))
+	$(if $(filter $(target),$(non_build_targets)),,$(target))))
 
 # Check platform target and set platform, driver and arch dirs based on it
 ifeq ($(PLATFORM),)
@@ -123,6 +123,22 @@ $(error Cant find file for $(CONFIG) config!)
 endif
 endif
 
+kconfig_file:=$(firstword $(wildcard $(config_dir)/.config))
+
+define kconfig_bool
+$(shell if [ -n "$(kconfig_file)" ]; then \
+	if grep -q '^$(1)=y$$' "$(kconfig_file)"; then printf y; else printf n; fi; \
+else \
+	printf y; \
+fi)
+endef
+
+CONFIG_MEM_BANDWIDTH_RESERVATION:=$(call kconfig_bool,CONFIG_MEM_BANDWIDTH_RESERVATION)
+CONFIG_REMIO:=$(call kconfig_bool,CONFIG_REMIO)
+MENUCONFIG?=$(firstword $(shell command -v kconfig-mconf 2>/dev/null) \
+	$(shell command -v mconf 2>/dev/null))
+NCONFIG?=$(firstword $(shell command -v kconfig-nconf 2>/dev/null) \
+	$(shell command -v nconf 2>/dev/null))
 
 build_dir:=$(cur_dir)/build/$(PLATFORM)/$(CONFIG)
 bin_dir:=$(cur_dir)/bin/$(PLATFORM)/$(CONFIG)
@@ -163,7 +179,8 @@ directories+=$(config_build_dir) $(platform_build_dir) $(scripts_build_dir)
 config_def_generator_src:=$(scripts_dir)/config_defs_gen.c
 config_def_generator:=$(scripts_build_dir)/config_defs_gen
 config_defs:=$(config_build_dir)/config_defs_gen.h
-gens+=$(config_def_generator) $(config_defs)
+kconfig_defs:=$(config_build_dir)/kconfig.h
+gens+=$(kconfig_defs) $(config_def_generator) $(config_defs)
 inc_dirs+=$(config_build_dir)
 
 platform_def_generator_src:=$(scripts_dir)/platform_defs_gen.c
@@ -371,9 +388,19 @@ $(config_dep): $(config_src)
 	@$(cc) $(CFLAGS) $(CPPFLAGS) -S $(config_src) -o - | grep ".incbin" | \
 		awk '{ gsub("\"", "", $$2); print "$(config_obj): " $$2 }' >> $@
 
-$(config_def_generator): $(config_def_generator_src) $(config_src)
+$(kconfig_defs): $(kconfig_file)
+	@echo "Generating header	$(patsubst $(cur_dir)/%,%, $@)"
+	@{ \
+		echo "#ifndef __KCONFIG_H__"; \
+		echo "#define __KCONFIG_H__"; \
+		echo "#define CONFIG_MEM_BANDWIDTH_RESERVATION $(if $(filter y,$(CONFIG_MEM_BANDWIDTH_RESERVATION)),1,0)"; \
+		echo "#define CONFIG_REMIO $(if $(filter y,$(CONFIG_REMIO)),1,0)"; \
+		echo "#endif /* __KCONFIG_H__ */"; \
+	} > $@
+
+$(config_def_generator): $(config_def_generator_src) $(config_src) $(kconfig_defs)
 	@echo "Compiling generator	$(patsubst $(cur_dir)/%,%, $@)"
-	@$(HOST_CC) $^ $(build_macros) $(HOST_CPPFLAGS) -DGENERATING_DEFS \
+	@$(HOST_CC) $(filter %.c, $^) $(build_macros) $(HOST_CPPFLAGS) -DGENERATING_DEFS \
 		$(addprefix -I, $(inc_dirs)) -o $@
 
 $(config_defs): $(config_def_generator)
@@ -403,6 +430,41 @@ $(directories):
 endif
 
 # Count lines of code for the exact target platform and configuration
+
+.PHONY: menuconfig nconfig listconfig
+menuconfig:
+ifeq ($(CONFIG),)
+	$(error Configuration (CONFIG) not defined.)
+endif
+ifeq ($(config_src),)
+	$(error Cant find file for $(CONFIG) config!)
+endif
+ifeq ($(MENUCONFIG),)
+	$(error No native Kconfig menu frontend found. Install kconfig-frontends or set MENUCONFIG=/path/to/mconf)
+endif
+	@cd $(cur_dir) && KCONFIG_CONFIG=$(config_dir)/.config $(MENUCONFIG) Kconfig
+
+nconfig:
+ifeq ($(CONFIG),)
+	$(error Configuration (CONFIG) not defined.)
+endif
+ifeq ($(config_src),)
+	$(error Cant find file for $(CONFIG) config!)
+endif
+ifeq ($(NCONFIG),)
+	$(error No native Kconfig nconfig frontend found. Install kconfig-frontends or set NCONFIG=/path/to/nconf)
+endif
+	@cd $(cur_dir) && KCONFIG_CONFIG=$(config_dir)/.config $(NCONFIG) Kconfig
+
+listconfig:
+ifeq ($(CONFIG),)
+	$(error Configuration (CONFIG) not defined.)
+endif
+ifeq ($(config_src),)
+	$(error Cant find file for $(CONFIG) config!)
+endif
+	@echo CONFIG_MEM_BANDWIDTH_RESERVATION=$(if $(filter y,$(CONFIG_MEM_BANDWIDTH_RESERVATION)),y,n)
+	@echo CONFIG_REMIO=$(if $(filter y,$(CONFIG_REMIO)),y,n)
 
 .PHONY: cloc
 cloc: | $(deps)

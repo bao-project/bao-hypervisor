@@ -7,6 +7,7 @@
 #define __CONFIG_H__
 
 #include <bao.h>
+#include <kconfig.h>
 #include <platform.h>
 #include <vm.h>
 #include <config_defs.h>

@@ -11,10 +11,12 @@
 #include <shmem.h>
 #include <objpool.h>
 #include <list.h>
+#if CONFIG_MEM_BANDWIDTH_RESERVATION
 #include <mem_throt.h>
 #include <events.h>
+#endif
 
-
+#if CONFIG_MEM_BANDWIDTH_RESERVATION
 static inline bool vm_mem_throt_enabled(const struct vm_config* vm_config)
 {
     return (vm_config->mem_throth.budget > 0U) && (vm_config->mem_throth.period_us > 0U);
@@ -25,6 +27,7 @@ static inline void vm_configure_pmu_counter_partition(const struct vm_config* vm
     size_t mem_throt_reserved = vm_mem_throt_enabled(vm_config) ? MEM_THROT_PMU_COUNTERS : 0U;
     events_configure_counter_partition(mem_throt_reserved);
 }
+#endif
 
 static void vm_master_init(struct vm* vm, const struct vm_config* vm_config, vmid_t vm_id)
 {
@@ -251,6 +254,7 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* vm_config)
     }
 }
 
+#if CONFIG_REMIO
 static void vm_init_remio_dev(struct vm* vm, struct remio_dev* remio_dev)
 {
     struct shmem* shmem = shmem_get(remio_dev->shmem.shmem_id);
@@ -301,6 +305,7 @@ static void vm_init_remio(struct vm* vm, const struct vm_config* vm_config)
     }
     remio_assign_vm_cpus(vm);
 }
+#endif
 
 static struct vm* vm_allocation_init(struct vm_allocation* vm_alloc)
 {
@@ -356,13 +361,17 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, struct cpu_synctoken* vm_init
         vm_init_mem_regions(vm, vm_config);
         vm_init_dev(vm, vm_config);
         vm_init_ipc(vm, vm_config);
+#if CONFIG_REMIO
         vm_init_remio(vm, vm_config);
+#endif
     }
 
+#if CONFIG_MEM_BANDWIDTH_RESERVATION
     vm_configure_pmu_counter_partition(vm_config);
     if (vm_mem_throt_enabled(vm_config)) {
         mem_throt_init(vm_config->mem_throth.budget, vm_config->mem_throth.period_us);
     }
+#endif
 
     cpu_sync_and_clear_msgs(&vm->sync);
 
