@@ -2,14 +2,20 @@ menu "Core features"
 
 config MEM_BANDWIDTH_RESERVATION
 	bool "Memory Bandwidth Reservation"
-	default y
+	default n
 	help
 	  Enable per-VM memory bandwidth reservation support.
 
 config REMIO
 	bool "Remote I/O (RemIO)"
-	default y
+	default n
 	help
 	  Enable Remote I/O devices, emulation, and hypercall handling.
+
+config CTX_SWITCH
+	bool "Context Switch feature"
+	default n
+	help
+	  Enable context switch support for the hypervisor.
 
 endmenu
