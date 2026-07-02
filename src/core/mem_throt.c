@@ -3,14 +3,10 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved
  */
 
+#include <arch/core_impl.h>
 #include <cpu.h>
 #include <mem_throt.h>
-#include <platform.h>
 #include <vm.h>
-
-#ifndef PLAT_MEM_THROT_EVENT
-#define PLAT_MEM_THROT_EVENT EVENTS_EVENT_INVALID
-#endif
 
 static mem_throt_t mem_throt_state[CPU_MAX];
 
@@ -37,10 +33,10 @@ static inline void mem_throt_rearm_counter(mem_throt_t* state)
 
 static inline events_event_t mem_throt_platform_event(void)
 {
-    events_event_t event = (events_event_t)PLAT_MEM_THROT_EVENT;
+    events_event_t event = (events_event_t)cpu_arch_mem_throt_event();
 
     if (event == EVENTS_EVENT_INVALID) {
-        ERROR("Missing platform memory throttling event\n");
+        ERROR("Missing CPU memory throttling event\n");
     }
 
     return event;
