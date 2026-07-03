@@ -28,6 +28,8 @@
 #define CORTEX_A72_EVENT_L2D_CACHE_REFILL        0x17U
 #define CORTEX_A72_EVENT_BUS_ACCESS              0x19U
 
+#define CPU_ARCH_EVENT_NUM 8
+
 
 struct cpu_arch_event_row {
     enum cpu_arch_id cpu_id;
@@ -100,11 +102,10 @@ size_t cpu_arch_event_id(enum cpu_arch_event event)
             return cpu_arch_event_matrix[i].events[event];
         }
     }
-
     return CPU_ARCH_EVENT_INVALID;
 }
 
 size_t cpu_arch_mem_throt_event(void)
 {
-    return cpu_arch_event_id(CPU_ARCH_EVENT_DATA_MEMORY_ACCESS);
+    return cpu_arch_event_id(CPU_ARCH_EVENT_L1D_CACHE_REFILL);
 }

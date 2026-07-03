@@ -22,6 +22,8 @@
 #define CORTEX_R52P_EVENT_BUS_ACCESS              CORTEX_R52_EVENT_BUS_ACCESS
 #define CORTEX_R52P_EVENT_EXTERNAL_MEMORY_REQUEST CORTEX_R52_EVENT_EXTERNAL_MEMORY_REQUEST
 
+#define CPU_ARCH_EVENT_NUM 8
+
 struct cpu_arch_event_row {
     enum cpu_arch_id cpu_id;
     const size_t events[CPU_ARCH_EVENT_NUM];
