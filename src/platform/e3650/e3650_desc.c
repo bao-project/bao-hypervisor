@@ -33,7 +33,7 @@ struct platform platform = {
         },
 
         .generic_timer = {
-            .fixed_freq = 600000000,
+            .fixed_freq = 6000000,
         },
 
         .clusters = {
