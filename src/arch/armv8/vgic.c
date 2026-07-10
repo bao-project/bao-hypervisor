@@ -789,7 +789,7 @@ struct vgic_reg_handler_info icpendr_info = {
     vgic_int_state_hw,
 };
 
-struct vgic_reg_handler_info iactiver_info = {
+struct vgic_reg_handler_info icactiver_info = {
     vgic_emul_generic_access,
     0x4,
     VGIC_ICACTIVER_ID,
@@ -894,7 +894,7 @@ struct vgic_reg_handler_info* reg_handler_info_table[VGIC_REG_HANDLER_ID_NUM] = 
     [VGIC_ISACTIVER_ID] = &isactiver_info,
     [VGIC_ICENABLER_ID] = &icenabler_info,
     [VGIC_ICPENDR_ID] = &icpendr_info,
-    [VGIC_ICACTIVER_ID] = &iactiver_info,
+    [VGIC_ICACTIVER_ID] = &icactiver_info,
     [VGIC_ICFGR_ID] = &icfgr_info,
     [VGIC_IROUTER_ID] = &irouter_info,
     [VGIC_IPRIORITYR_ID] = &ipriorityr_info,
@@ -942,7 +942,7 @@ bool vgicd_emul_handler(struct emul_access* acc)
             handler_info = &icpendr_info;
             break;
         case GICD_REG_GROUP(ICACTIVER):
-            handler_info = &iactiver_info;
+            handler_info = &icactiver_info;
             break;
         case GICD_REG_GROUP(ICFGR):
             handler_info = &icfgr_info;
