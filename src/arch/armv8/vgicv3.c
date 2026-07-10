@@ -175,7 +175,7 @@ extern struct vgic_reg_handler_info ispendr_info;
 extern struct vgic_reg_handler_info isactiver_info;
 extern struct vgic_reg_handler_info icenabler_info;
 extern struct vgic_reg_handler_info icpendr_info;
-extern struct vgic_reg_handler_info iactiver_info;
+extern struct vgic_reg_handler_info icactiver_info;
 extern struct vgic_reg_handler_info icfgr_info;
 extern struct vgic_reg_handler_info ipriorityr_info;
 extern struct vgic_reg_handler_info razwi_info;
@@ -241,7 +241,7 @@ static bool vgicr_emul_handler(struct emul_access* acc)
             handler_info = &ispendr_info;
             break;
         case GICR_REG_OFF(ISACTIVER0):
-            handler_info = &iactiver_info;
+            handler_info = &isactiver_info;
             break;
         case GICR_REG_OFF(ICENABLER0):
             handler_info = &icenabler_info;
@@ -250,7 +250,7 @@ static bool vgicr_emul_handler(struct emul_access* acc)
             handler_info = &icpendr_info;
             break;
         case GICR_REG_OFF(ICACTIVER0):
-            handler_info = &icfgr_info;
+            handler_info = &icactiver_info;
             break;
         case GICR_REG_OFF(ICFGR0):
         case GICR_REG_OFF(ICFGR1):
