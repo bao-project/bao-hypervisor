@@ -29,7 +29,11 @@ extern volatile const size_t VGIC_IPI_ID;
     (((offset) >= offsetof(struct gicd_hw, REG)) && \
         (offset) < (offsetof(struct gicd_hw, REG) + sizeof(gicd->REG)))
 #define GICD_REG_GROUP(REG) ((offsetof(struct gicd_hw, REG) & 0xff80) >> 7)
-#define GICD_REG_MASK(ADDR) ((ADDR) & (GIC_VERSION == GICV2 ? 0xfffUL : 0xffffUL))
+#if (GIC_VERSION == GICV2)
+#define GICD_REG_MASK(ADDR) ((ADDR) & 0xfffUL)
+#else
+#define GICD_REG_MASK(ADDR) ((ADDR) & 0xffffUL)
+#endif
 #define GICD_REG_IND(REG)   (offsetof(struct gicd_hw, REG) & 0x7f)
 
 #define VGIC_MSG_DATA(VM_ID, VGICRID, INT_ID, REG, VAL)                   \
@@ -919,10 +923,14 @@ bool vgic_check_reg_alignment(struct emul_access* acc, struct vgic_reg_handler_i
     }
 }
 
-bool vgicd_emul_handler(struct emul_access* acc)
+/**
+ * @brief Resolves the vgic_reg_handler_info for the GICD register targeted by acc.
+ */
+static struct vgic_reg_handler_info* vgicd_get_reg_handler_info(struct emul_access* acc)
 {
     struct vgic_reg_handler_info* handler_info = NULL;
-    switch (GICD_REG_MASK(acc->addr) >> 7) {
+    size_t acc_off = GICD_REG_MASK(acc->addr);
+    switch (acc_off >> 7) {
         case GICD_REG_GROUP(CTLR):
             handler_info = &vgicd_misc_info;
             break;
@@ -950,8 +958,7 @@ bool vgicd_emul_handler(struct emul_access* acc)
         case GICD_REG_GROUP(SGIR):
             handler_info = &sgir_info;
             break;
-        default: {
-            size_t acc_off = GICD_REG_MASK(acc->addr);
+        default:
             if (GICD_IS_REG(IPRIORITYR, acc_off)) {
                 handler_info = &ipriorityr_info;
             } else if (GICD_IS_REG(ITARGETSR, acc_off)) {
@@ -963,8 +970,13 @@ bool vgicd_emul_handler(struct emul_access* acc)
             } else {
                 handler_info = &razwi_info;
             }
-        }
     }
+    return handler_info;
+}
+
+bool vgicd_emul_handler(struct emul_access* acc)
+{
+    struct vgic_reg_handler_info* handler_info = vgicd_get_reg_handler_info(acc);
 
     if (vgic_check_reg_alignment(acc, handler_info)) {
         spin_lock(&cpu()->vcpu->vm->arch.vgicd.lock);

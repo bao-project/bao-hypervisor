@@ -18,7 +18,11 @@
         (offset) < (offsetof(struct gicr_hw, REG) + sizeof(gicr[0].REG)))
 #define GICR_REG_OFF(REG)   (offsetof(struct gicr_hw, REG) & 0x1ffff)
 #define GICR_REG_MASK(ADDR) ((ADDR) & 0x1ffff)
-#define GICD_REG_MASK(ADDR) ((ADDR) & (GIC_VERSION == GICV2 ? 0xfffUL : 0xffffUL))
+#if (GIC_VERSION == GICV2)
+#define GICD_REG_MASK(ADDR) ((ADDR) & 0xfffUL)
+#else
+#define GICD_REG_MASK(ADDR) ((ADDR) & 0xffffUL)
+#endif
 
 bool vgic_int_has_other_target(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
