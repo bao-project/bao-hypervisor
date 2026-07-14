@@ -26,7 +26,7 @@ clang_path:=$(dir $(wildcard $(abspath $(CROSS_COMPILE))))
 cpp=		$(clang_path)clang-cpp$(clang_version)
 sstrip= 	$(clang_path)llvm-strip$(clang_version)
 cc=			$(clang_path)clang$(clang_version)
-ld = 		$(clang_path)ld.lld$(clang_version)
+ld = 		$(clang_path)ld.lld
 as=			$(clang_path)llvm-as$(clang_version)
 objcopy=	$(clang_path)llvm-objcopy$(clang_version)
 objdump=	$(clang_path)llvm-objdump$(clang_version)
@@ -278,8 +278,9 @@ else ifeq ($(CC_IS_CLANG), y)
 endif
 
 override CFLAGS+=-O$(OPTIMIZATIONS) -Wall -Werror -Wextra $(cflags_warns) \
-	-ffreestanding -std=c11 -fno-pic -fno-pie \
-	$(arch-cflags) $(platform-cflags) $(CPPFLAGS) $(debug_flags)
+	-ffreestanding -std=c11 -fno-pic -fno-pie -Wno-pch-date-time \
+	$(arch-cflags) $(platform-cflags) $(CPPFLAGS) $(debug_flags) \
+	-fstack-usage
 
 override ASFLAGS+=$(CFLAGS) $(arch-asflags) $(platform-asflags)
 
@@ -339,6 +340,10 @@ $(build_dir)%.d : %.[c,S]
 $(objs-y):
 	@echo "Compiling source	$(patsubst $(cur_dir)/%,%, $<)"
 	@$(cc) $(CFLAGS) -c $< -o $@
+ifdef CC_IS_CLANG
+	@$(cc) $(CFLAGS) -Xclang -detailed-preprocessing-record \
+	-emit-ast $< -o $(patsubst %.o,%.ast,$@)
+endif
 
 %.bin: %.elf
 	@echo "Generating binary	$(patsubst $(cur_dir)/%,%, $@)"
