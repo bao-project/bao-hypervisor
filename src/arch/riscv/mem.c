@@ -7,6 +7,7 @@
 
 #include <platform.h>
 #include <cpu.h>
+#include <tlb.h>
 
 static inline void as_map_physical_identity(struct addr_space* as)
 {
@@ -68,4 +69,26 @@ bool mem_translate(struct addr_space* as, vaddr_t va, paddr_t* pa)
     } else {
         return false;
     }
+}
+
+/**
+ * RISC-V permits implementations to cache invalid PTEs unless Svvptc is
+ * implemented (the SiFive P550 does; QEMU does not, which masks the bug), so
+ * after an invalid->valid transition a hart may keep faulting on the new
+ * mapping until the cached negative entry is evicted. Invalidate so the
+ * walker re-reads the new PTEs. tlb_inv_all already scopes the fence to the
+ * address space: hfence.gvma restricted to the VM's VMID for guest address
+ * spaces, sfence.vma for the hypervisor's.
+ *
+ * TODO: for small num_pages a ranged invalidation over [va, va + num_pages)
+ * would preserve the rest of the VMID's cached translations, but ranged
+ * remote fences run as per-page loops in the SBI implementation, so bulk
+ * mappings (VM RAM regions) must keep the full flush; picking the crossover
+ * threshold needs measurement. The va/num_pages parameters exist for this.
+ */
+void mem_arch_map_sync_tlbs(struct addr_space* as, vaddr_t va, size_t num_pages)
+{
+    UNUSED_ARG(va);
+    UNUSED_ARG(num_pages);
+    tlb_inv_all(as);
 }

@@ -580,9 +580,10 @@ static bool mem_map(struct addr_space* as, vaddr_t va, struct ppages* ppages, si
 
     fence_sync();
 
+    mem_arch_map_sync_tlbs(as, va & ~((vaddr_t)(PAGE_SIZE - 1)), num_pages);
+
     if (sec->shared) {
         spin_unlock(&sec->lock);
-        // TODO tlb shootdown?
     }
     spin_unlock(&as->lock);
 
