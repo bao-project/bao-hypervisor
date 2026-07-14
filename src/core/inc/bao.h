@@ -14,13 +14,17 @@
 #include <console.h>
 #include <util.h>
 
+void panic(void) __attribute__((noreturn));
+
 #define INFO(...)    console_printk("BAO INFO: " __VA_ARGS__);
 
 #define WARNING(...) console_printk("BAO WARNING: " __VA_ARGS__);
 
-#define ERROR(...)                             \
-    console_printk("BAO ERROR: " __VA_ARGS__); \
-    while (true) { };
+#define ERROR(...)                                 \
+    {                                              \
+        console_printk("BAO ERROR: " __VA_ARGS__); \
+        panic();                                   \
+    }
 
 void init(cpuid_t cpu_id);
 
