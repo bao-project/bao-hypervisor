@@ -519,6 +519,21 @@ __attribute__((weak)) bool mem_map_reclr(struct addr_space* as, vaddr_t va, stru
     ERROR("Trying to recolor section but there is no coloring implementation\n");
 }
 
+/**
+ * Called after mem_map installs new (previously invalid) PTEs, before the
+ * address space locks are released. Architectures whose page-table walkers may
+ * cache invalid entries must override this to make the new mappings visible.
+ * The default is a no-op: Armv8, for instance, forbids caching invalid
+ * translations, so an invalid->valid transition needs no TLB maintenance.
+ */
+__attribute__((weak)) void mem_arch_map_sync_tlbs(struct addr_space* as, vaddr_t va,
+    size_t num_pages)
+{
+    UNUSED_ARG(as);
+    UNUSED_ARG(va);
+    UNUSED_ARG(num_pages);
+}
+
 __attribute__((weak)) bool pp_alloc_clr(struct page_pool* pool, size_t num_pages, colormap_t colors,
     struct ppages* ppages)
 {
