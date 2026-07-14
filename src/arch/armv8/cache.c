@@ -9,25 +9,16 @@
 #include <bit.h>
 #include <platform.h>
 
-void cache_arch_enumerate(struct cache* dscrp)
+/**
+ * @brief Determines the number of cache levels described by CLIDR_EL1 and each level's type.
+ */
+static void cache_detect_levels(struct cache* dscrp)
 {
-    if (platform.cache.lvls != 0) {
-        /**
-         * No need to probe cache registers, cache topology is described in the platform
-         * description.
-         */
-        *dscrp = platform.cache;
-
-        return;
-    }
-
-    uint64_t clidr = 0;
+    uint64_t clidr = sysreg_clidr_el1_read();
     uint64_t temp = 0;
-    bool first_unified = false;
 
     dscrp->lvls = 0;
 
-    clidr = sysreg_clidr_el1_read();
     for (size_t i = 0; i < CLIDR_CTYPE_NUM; i++) {
         if ((temp = bit64_extract(clidr, i * CLIDR_CTYPE_LEN, CLIDR_CTYPE_LEN)) != 0) {
             dscrp->lvls++;
@@ -52,54 +43,77 @@ void cache_arch_enumerate(struct cache* dscrp)
             break;
         }
     }
+}
 
+/**
+ * @brief Probes the CCSIDR/CTR registers for a single cache level, filling in its line size,
+ * associativity, set count, and indexing scheme.
+ */
+static void cache_probe_level(struct cache* dscrp, size_t lvl)
+{
+    unsigned long csselr = 0;
+    uint64_t ccsidr = 0;
+    unsigned long ctr = 0;
+    csselr = bit_insert(csselr, lvl, CSSELR_LVL_OFF, CSSELR_LVL_LEN);
+
+    if (dscrp->type[lvl] != INSTRUCTION) {
+        csselr = bit_clear(csselr, CSSELR_IND_BIT);
+        sysreg_csselr_el1_write(csselr);
+        ccsidr = sysreg_ccsidr_el1_read();
+
+        dscrp->line_size[lvl][0] = 1UL
+            << (bit64_extract(ccsidr, CCSIDR_LINESIZE_OFF, CCSIDR_LINESIZE_LEN) + 4);
+        dscrp->assoc[lvl][0] =
+            (size_t)bit64_extract(ccsidr, CCSIDR_ASSOCIATIVITY_OFF, CCSIDR_ASSOCIATIVITY_LEN) + 1;
+        dscrp->numset[lvl][0] =
+            (size_t)bit64_extract(ccsidr, CCSIDR_NUMSETS_OFF, CCSIDR_NUMSETS_LEN) + 1;
+
+        dscrp->indexed[lvl][0] = PIPT;
+    }
+
+    if (dscrp->type[lvl] == SEPARATE || dscrp->type[lvl] == INSTRUCTION) {
+        csselr = bit_set(csselr, CSSELR_IND_BIT);
+        sysreg_csselr_el1_write(csselr);
+        ccsidr = sysreg_ccsidr_el1_read();
+
+        dscrp->line_size[lvl][1] = 1UL
+            << (bit64_extract(ccsidr, CCSIDR_LINESIZE_OFF, CCSIDR_LINESIZE_LEN) + 4);
+        dscrp->assoc[lvl][1] =
+            (size_t)bit64_extract(ccsidr, CCSIDR_ASSOCIATIVITY_OFF, CCSIDR_ASSOCIATIVITY_LEN) + 1;
+        dscrp->numset[lvl][1] =
+            (size_t)bit64_extract(ccsidr, CCSIDR_NUMSETS_OFF, CCSIDR_NUMSETS_LEN) + 1;
+
+        ctr = sysreg_ctr_el0_read();
+        if ((ctr & BIT64_MASK(CTR_L1LP_OFF, CTR_L1LP_LEN)) == CTR_L1LP_PIPT) {
+            dscrp->indexed[lvl][1] = PIPT;
+        } else {
+            dscrp->indexed[lvl][1] = VIPT;
+        }
+    }
+}
+
+void cache_arch_enumerate(struct cache* dscrp)
+{
+    if (platform.cache.lvls != 0) {
+        /**
+         * No need to probe cache registers, cache topology is described in the platform
+         * description.
+         */
+        *dscrp = platform.cache;
+
+        return;
+    }
+
+    cache_detect_levels(dscrp);
+
+    /* The first (lowest-indexed) UNIFIED level is the minimum shared cache level. */
+    bool first_unified = false;
     for (size_t lvl = 0; lvl < dscrp->lvls; lvl++) {
-        unsigned long csselr = 0;
-        uint64_t ccsidr = 0;
-        unsigned long ctr = 0;
-        csselr = bit_insert(csselr, lvl, CSSELR_LVL_OFF, CSSELR_LVL_LEN);
-
-        if (dscrp->type[lvl] == UNIFIED && first_unified == false) {
+        if (dscrp->type[lvl] == UNIFIED && !first_unified) {
             first_unified = true;
             dscrp->min_shared_lvl = lvl;
         }
-
-        if (dscrp->type[lvl] != INSTRUCTION) {
-            csselr = bit_clear(csselr, CSSELR_IND_BIT);
-            sysreg_csselr_el1_write(csselr);
-            ccsidr = sysreg_ccsidr_el1_read();
-
-            dscrp->line_size[lvl][0] = 1UL
-                << (bit64_extract(ccsidr, CCSIDR_LINESIZE_OFF, CCSIDR_LINESIZE_LEN) + 4);
-            dscrp->assoc[lvl][0] =
-                (size_t)bit64_extract(ccsidr, CCSIDR_ASSOCIATIVITY_OFF, CCSIDR_ASSOCIATIVITY_LEN) +
-                1;
-            dscrp->numset[lvl][0] =
-                (size_t)bit64_extract(ccsidr, CCSIDR_NUMSETS_OFF, CCSIDR_NUMSETS_LEN) + 1;
-
-            dscrp->indexed[lvl][0] = PIPT;
-        }
-
-        if (dscrp->type[lvl] == SEPARATE || dscrp->type[lvl] == INSTRUCTION) {
-            csselr = bit_set(csselr, CSSELR_IND_BIT);
-            sysreg_csselr_el1_write(csselr);
-            ccsidr = sysreg_ccsidr_el1_read();
-
-            dscrp->line_size[lvl][1] = 1UL
-                << (bit64_extract(ccsidr, CCSIDR_LINESIZE_OFF, CCSIDR_LINESIZE_LEN) + 4);
-            dscrp->assoc[lvl][1] =
-                (size_t)bit64_extract(ccsidr, CCSIDR_ASSOCIATIVITY_OFF, CCSIDR_ASSOCIATIVITY_LEN) +
-                1;
-            dscrp->numset[lvl][1] =
-                (size_t)bit64_extract(ccsidr, CCSIDR_NUMSETS_OFF, CCSIDR_NUMSETS_LEN) + 1;
-
-            ctr = sysreg_ctr_el0_read();
-            if ((ctr & BIT64_MASK(CTR_L1LP_OFF, CTR_L1LP_LEN)) == CTR_L1LP_PIPT) {
-                dscrp->indexed[lvl][1] = PIPT;
-            } else {
-                dscrp->indexed[lvl][1] = VIPT;
-            }
-        }
+        cache_probe_level(dscrp, lvl);
     }
 }
 
