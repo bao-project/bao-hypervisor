@@ -227,7 +227,10 @@ static inline vcpuid_t vgicr_get_id(struct emul_access* acc)
     return (acc->addr - cpu()->vcpu->vm->arch.vgicr_addr) / sizeof(struct gicr_hw);
 }
 
-static bool vgicr_emul_handler(struct emul_access* acc)
+/**
+ * @brief Resolves the vgic_reg_handler_info for the GICR register targeted by acc.
+ */
+static struct vgic_reg_handler_info* vgicr_get_reg_handler_info(struct emul_access* acc)
 {
     struct vgic_reg_handler_info* handler_info = NULL;
     switch (GICR_REG_MASK(acc->addr)) {
@@ -270,6 +273,12 @@ static bool vgicr_emul_handler(struct emul_access* acc)
             }
         }
     }
+    return handler_info;
+}
+
+static bool vgicr_emul_handler(struct emul_access* acc)
+{
+    struct vgic_reg_handler_info* handler_info = vgicr_get_reg_handler_info(acc);
 
     if (vgic_check_reg_alignment(acc, handler_info)) {
         vcpuid_t vgicr_id = vgicr_get_id(acc);
