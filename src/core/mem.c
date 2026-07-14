@@ -395,14 +395,24 @@ static bool mem_check_reserved(void)
     return true;
 }
 
-static void mem_reserve_physical_memory(struct page_pool* pool)
+/**
+ * @brief Reserves the hypervisor image within the given page pool (non-unified memory case).
+ */
+static void mem_reserve_hyp_image(struct page_pool* pool)
 {
     if (DEFINED(MEM_NON_UNIFIED)) {
         if (pp_root_reserve_hyp_image_load(pool)) {
             mem_hyp_image_no_load_reserved = true;
         }
     }
+}
 
+/**
+ * @brief Reserves each VM's image load region and statically-placed physical memory regions
+ * within the given page pool.
+ */
+static void mem_reserve_vm_regions(struct page_pool* pool)
+{
     for (size_t i = 0; i < config.vmlist_size; i++) {
         struct vm_config* vm_cfg = &config.vmlist[i];
         size_t n_pg = NUM_PAGES(vm_cfg->image.size);
@@ -428,7 +438,13 @@ static void mem_reserve_physical_memory(struct page_pool* pool)
             }
         }
     }
+}
 
+/**
+ * @brief Reserves each statically-placed shared memory region within the given page pool.
+ */
+static void mem_reserve_shmem(struct page_pool* pool)
+{
     for (size_t i = 0; i < config.shmemlist_size; i++) {
         struct shmem* shmem = &config.shmemlist[i];
         if (shmem->place_phys && !shmem->reserved) {
@@ -440,6 +456,16 @@ static void mem_reserve_physical_memory(struct page_pool* pool)
             }
         }
     }
+}
+
+static void mem_reserve_physical_memory(struct page_pool* pool)
+{
+    /* Reserve the hypervisor image */
+    mem_reserve_hyp_image(pool);
+    /* Reserve VM images and statically-placed VM memory regions */
+    mem_reserve_vm_regions(pool);
+    /* Reserve statically-placed shared memory regions */
+    mem_reserve_shmem(pool);
 }
 
 static bool mem_create_ppools(struct mem_region* root_mem_region)
