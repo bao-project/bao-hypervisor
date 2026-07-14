@@ -123,6 +123,9 @@ struct remio_device {
 /** List of Remote I/O devices */
 struct list remio_device_list;
 
+/** Tracks how many Remote I/O devices of each type were created, keyed by enum REMIO_DEV_TYPE. */
+static size_t remio_dev_type[REMIO_NUM_DEV_TYPES];
+
 /**
  * @brief Remote I/O CPU message handler
  * @param event Message event (REMIO_CPU_MSG_*)
@@ -304,41 +307,72 @@ static void remio_cpu_send_msg(enum REMIO_CPU_MSG_EVENT event, unsigned long tar
     cpu_send_msg(target_cpu, &msg);
 }
 
-void remio_init(void)
+/**
+ * @brief Checks that every Remote I/O device's frontend and backend shared memory regions
+ * are aligned with each other.
+ */
+static void remio_check_shmem_alignment(void)
 {
-    size_t counter[REMIO_NUM_DEV_TYPES] = { 0 };
-
-    /** Only execute the Remote I/O initialization routine on the master CPU */
-    if (!cpu_is_master()) {
-        return;
+    list_foreach (remio_device_list, struct remio_device, dev) {
+        if (dev->config.backend.shmem.base != dev->config.frontend.shmem.base ||
+            dev->config.backend.shmem.size != dev->config.frontend.shmem.size ||
+            dev->config.backend.shmem.shmem_id != dev->config.frontend.shmem.shmem_id) {
+            ERROR("Invalid shared memory region configuration for Remote I/O device %d.\n"
+                  "The frontend and backend shared memory regions must be the aligned.",
+                dev->bind_key);
+        }
     }
+}
 
-    objpool_init(&remio_device_pool);
-    objpool_init(&remio_request_pool);
-    list_init(&remio_device_list);
+/** @brief Checks there is a 1-to-1 mapping between Remote I/O backends and frontends. */
+static void remio_check_device_pairing(void)
+{
+    if (remio_dev_type[REMIO_DEV_FRONTEND] != remio_dev_type[REMIO_DEV_BACKEND]) {
+        ERROR("There is no 1-to-1 mapping between a Remote I/O backend and Remote I/O frontend\n");
+    }
+}
 
-    /** Create the Remote I/O devices based on the VM configuration */
+/**
+ * @brief Finds the Remote I/O device that a VM's Remote I/O device configuration entry should
+ * link to, matching by bind key. Raises a fatal error if that (bind key, type) pairing is
+ * already claimed by another device.
+ * @param dev VM's Remote I/O device configuration entry
+ * @return Returns the device to link to, or NULL if no existing device matches the bind key.
+ */
+static struct remio_device* remio_find_dev_to_link(struct remio_dev* dev)
+{
+    struct remio_device* device = NULL;
+    list_foreach (remio_device_list, struct remio_device, remio_device) {
+        if ((dev->bind_key == remio_device->config.backend.bind_key &&
+                dev->type == REMIO_DEV_BACKEND) ||
+            (dev->bind_key == remio_device->config.frontend.bind_key &&
+                dev->type == REMIO_DEV_FRONTEND)) {
+            ERROR("Failed to link backend to the frontend, more than one %s was "
+                  "atributed to the Remote I/O device %d\n",
+                dev->type == REMIO_DEV_BACKEND ? "backend" : "frontend", dev->bind_key);
+        } else if ((dev->type == REMIO_DEV_BACKEND &&
+                       dev->bind_key == remio_device->config.frontend.bind_key) ||
+            (dev->type == REMIO_DEV_FRONTEND &&
+                dev->bind_key == remio_device->config.backend.bind_key)) {
+            device = remio_device;
+            break;
+        }
+    }
+    return device;
+}
+
+/**
+ * @brief Creates the Remote I/O devices based on the VM configuration, linking each backend
+ * to its matching frontend, and tallies how many of each device type were created into
+ * remio_dev_type.
+ */
+static void remio_create_devices(void)
+{
     for (size_t vm_id = 0; vm_id < config.vmlist_size; vm_id++) {
         struct vm_config* vm_config = &config.vmlist[vm_id];
         for (size_t i = 0; i < vm_config->platform.remio_dev_num; i++) {
             struct remio_dev* dev = &vm_config->platform.remio_devs[i];
-            struct remio_device* device = NULL;
-            list_foreach (remio_device_list, struct remio_device, remio_device) {
-                if ((dev->bind_key == remio_device->config.backend.bind_key &&
-                        dev->type == REMIO_DEV_BACKEND) ||
-                    (dev->bind_key == remio_device->config.frontend.bind_key &&
-                        dev->type == REMIO_DEV_FRONTEND)) {
-                    ERROR("Failed to link backend to the frontend, more than one %s was "
-                          "atributed to the Remote I/O device %d\n",
-                        dev->type == REMIO_DEV_BACKEND ? "backend" : "frontend", dev->bind_key);
-                } else if ((dev->type == REMIO_DEV_BACKEND &&
-                               dev->bind_key == remio_device->config.frontend.bind_key) ||
-                    (dev->type == REMIO_DEV_FRONTEND &&
-                        dev->bind_key == remio_device->config.backend.bind_key)) {
-                    device = remio_device;
-                    break;
-                }
-            }
+            struct remio_device* device = remio_find_dev_to_link(dev);
             if (device == NULL) {
                 device = objpool_alloc(&remio_device_pool);
                 if (device == NULL) {
@@ -362,27 +396,17 @@ void remio_init(void)
             } else {
                 ERROR("Unknown Remote I/O device type\n");
             }
-            counter[dev->type]++;
+            remio_dev_type[dev->type]++;
         }
     }
+}
 
-    /** Check if there is a 1-to-1 mapping between a Remote I/O backend and Remote I/O frontend */
-    if (counter[REMIO_DEV_FRONTEND] != counter[REMIO_DEV_BACKEND]) {
-        ERROR("There is no 1-to-1 mapping between a Remote I/O backend and Remote I/O frontend\n");
-    }
-
-    /** Check if the shared memory regions are correctly configured */
-    list_foreach (remio_device_list, struct remio_device, dev) {
-        if (dev->config.backend.shmem.base != dev->config.frontend.shmem.base ||
-            dev->config.backend.shmem.size != dev->config.frontend.shmem.size ||
-            dev->config.backend.shmem.shmem_id != dev->config.frontend.shmem.shmem_id) {
-            ERROR("Invalid shared memory region configuration for Remote I/O device %d.\n"
-                  "The frontend and backend shared memory regions must be the aligned.",
-                dev->bind_key);
-        }
-    }
-
-    /** Update the Remote I/O device configuration */
+/**
+ * @brief Updates each Remote I/O device's per-VM configuration (VM ID, interrupt, CPU ID) for
+ * both its backend and frontend sides, based on the VM configuration.
+ */
+static void remio_update_devices(void)
+{
     for (size_t vm_id = 0; vm_id < config.vmlist_size; vm_id++) {
         struct vm_config* vm_config = &config.vmlist[vm_id];
         for (size_t i = 0; i < vm_config->platform.remio_dev_num; i++) {
@@ -404,6 +428,30 @@ void remio_init(void)
             }
         }
     }
+}
+
+void remio_init(void)
+{
+    /** Only execute the Remote I/O initialization routine on the master CPU */
+    if (!cpu_is_master()) {
+        return;
+    }
+
+    objpool_init(&remio_device_pool);
+    objpool_init(&remio_request_pool);
+    list_init(&remio_device_list);
+
+    /** Create the Remote I/O devices based on the VM configuration */
+    remio_create_devices();
+
+    /** Check if there is a 1-to-1 mapping between Remote I/O backends and frontends */
+    remio_check_device_pairing();
+
+    /** Check if the shared memory regions are correctly configured */
+    remio_check_shmem_alignment();
+
+    /** Update the Remote I/O device configuration */
+    remio_update_devices();
 }
 
 void remio_assign_vm_cpus(struct vm* vm)
