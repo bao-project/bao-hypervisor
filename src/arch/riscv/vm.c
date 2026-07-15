@@ -62,7 +62,10 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
         csrs_sstateen0_write(0);
     }
 
+    /* senvcfg is priv-1.12 like henvcfg (see vmm.c); gate on RISCV_PRIV_VERSION. */
+#if RISCV_PRIV_VERSION >= RISCV_PRIV_VERSION_1_12
     csrs_senvcfg_write(0);
+#endif
     csrs_hcounteren_write(HCOUNTEREN_TM);
     csrs_htimedelta_write(0);
     csrs_vsstatus_write(SSTATUS_SD | SSTATUS_FS_DIRTY | SSTATUS_XS_DIRTY);
