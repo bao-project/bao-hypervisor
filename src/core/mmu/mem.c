@@ -33,6 +33,14 @@ struct mem_map_cursor {
     size_t count;
 };
 
+/** Tracks progress through a mem_alloc_vpage_search: current level/address/run-start/run-length. */
+struct mem_alloc_vpage_cursor {
+    size_t lvl;
+    vaddr_t vaddr;
+    vaddr_t vpage;
+    size_t count;
+};
+
 /**
  * An important note about sections its that they must have diferent entries at the root page
  * table.
@@ -310,18 +318,112 @@ static void mem_inflate_pt(struct addr_space* as, vaddr_t va, size_t length)
     }
 }
 
+static bool mem_alloc_vpage_fits_remaining(vaddr_t addr, vaddr_t top, size_t n)
+{
+    // The corner case of top being the highest address in the address space and the target
+    // address being 0 is handled separately
+    bool full_as = (addr == 0) && (top == MAX_VA);
+    return full_as || (((top + 1 - addr) / PAGE_SIZE) >= n);
+}
+
+/**
+ * Scans one page-table level's worth of entries starting at cur->vaddr for n contiguous free
+ * pages, advancing cur->lvl/vaddr/vpage/count. If must_fit and an occupied entry is found, returns
+ * false to signal that the whole search must abort (a fixed address was requested and is taken).
+ */
+static bool mem_alloc_vpage_scan_level(struct addr_space* as, size_t n, bool must_fit,
+    struct mem_alloc_vpage_cursor* cur)
+{
+    pte_t* pte = pt_get_pte(&as->pt, cur->lvl, cur->vaddr);
+    size_t entry = pt_getpteindex(&as->pt, pte, cur->lvl);
+    size_t nentries = pt_nentries(&as->pt, cur->lvl);
+    size_t lvlsze = pt_lvlsize(&as->pt, cur->lvl);
+
+    while ((entry < nentries) && (cur->count < n)) {
+        if (pte_check_rsw(pte, PTE_RSW_RSRV) ||
+            (pte_valid(pte) && !pte_table(&as->pt, pte, cur->lvl))) {
+            cur->count = 0;
+            cur->vpage = INVALID_VA;
+            if (must_fit) {
+                return false;
+            }
+        } else if (!pte_valid(pte)) {
+            if (pte_allocable(as, pte, cur->lvl, n - cur->count, cur->vaddr)) {
+                if (cur->count == 0) {
+                    cur->vpage = cur->vaddr;
+                }
+                cur->count += (lvlsze / PAGE_SIZE);
+            } else {
+                if (mem_alloc_pt(as, pte, cur->lvl, cur->vaddr) == NULL) {
+                    ERROR("failed to alloc page table\n");
+                }
+            }
+        }
+
+        if (pte_table(&as->pt, pte, cur->lvl)) {
+            cur->lvl++;
+            break;
+        } else {
+            pte++;
+            cur->vaddr += lvlsze;
+            if (++entry >= nentries) {
+                cur->lvl = 0;
+                break;
+            }
+        }
+    }
+
+    return true;
+}
+
+/** Searches [addr, top] for n contiguous free virtual pages. Returns their start, or INVALID_VA. */
+static vaddr_t mem_alloc_vpage_search(struct addr_space* as, vaddr_t addr, vaddr_t top, size_t n,
+    bool must_fit)
+{
+    struct mem_alloc_vpage_cursor cur = {
+        .lvl = 0,
+        .vaddr = addr,
+        .vpage = INVALID_VA,
+        .count = 0,
+    };
+
+    while (cur.count < n) {
+        if (!mem_alloc_vpage_fits_remaining(cur.vaddr, top, n)) {
+            return INVALID_VA;
+        }
+        if (!mem_alloc_vpage_scan_level(as, n, must_fit, &cur)) {
+            return INVALID_VA;
+        }
+    }
+
+    return cur.vpage;
+}
+
+static void mem_alloc_vpage_reserve(struct addr_space* as, vaddr_t vpage, size_t n)
+{
+    size_t count = 0;
+    vaddr_t addr = vpage;
+
+    while (count < n) {
+        size_t lvl = 0;
+        pte_t* pte = NULL;
+        for (lvl = 0; lvl < as->pt.dscr->lvls; lvl++) {
+            pte = pt_get_pte(&as->pt, lvl, addr);
+            if (!pte_valid(pte)) {
+                break;
+            }
+        }
+        pte_set_rsw(pte, PTE_RSW_RSRV);
+        addr += pt_lvlsize(&as->pt, lvl);
+        count += pt_lvlsize(&as->pt, lvl) / PAGE_SIZE;
+    }
+}
+
 vaddr_t mem_alloc_vpage(struct addr_space* as, as_sec_t section, vaddr_t at, size_t n)
 {
-    size_t lvl = 0;
-    size_t entry = 0;
-    size_t nentries = 0;
-    size_t lvlsze = 0;
-    size_t count = 0;
     vaddr_t addr = INVALID_VA;
     vaddr_t vpage = INVALID_VA;
     vaddr_t top = MAX_VA;
-    pte_t* pte = NULL;
-    bool failed = false;
 
     // TODO: maybe some bound checking here would be nice
     struct section* sec = &sections[as->type].sec[section];
@@ -344,74 +446,11 @@ vaddr_t mem_alloc_vpage(struct addr_space* as, as_sec_t section, vaddr_t at, siz
         spin_lock(&sec->lock);
     }
 
-    while (count < n && !failed) {
-        // Check if there is still enough space in the address space. The corner case of top being
-        // the highest address in the address space and the target address being 0 is handled
-        // separate
-        size_t full_as = (addr == 0) && (top == MAX_VA);
-        if (!full_as && (((top + 1 - addr) / PAGE_SIZE) < n)) {
-            vpage = INVALID_VA;
-            failed = true;
-            break;
-        }
+    vpage = mem_alloc_vpage_search(as, addr, top, n, at != INVALID_VA);
 
-        pte = pt_get_pte(&as->pt, lvl, addr);
-        entry = pt_getpteindex(&as->pt, pte, lvl);
-        nentries = pt_nentries(&as->pt, lvl);
-        lvlsze = pt_lvlsize(&as->pt, lvl);
-
-        while ((entry < nentries) && (count < n) && !failed) {
-            if (pte_check_rsw(pte, PTE_RSW_RSRV) ||
-                (pte_valid(pte) && !pte_table(&as->pt, pte, lvl))) {
-                count = 0;
-                vpage = INVALID_VA;
-                if (at != INVALID_VA) {
-                    failed = true;
-                    break;
-                }
-            } else if (!pte_valid(pte)) {
-                if (pte_allocable(as, pte, lvl, n - count, addr)) {
-                    if (count == 0) {
-                        vpage = addr;
-                    }
-                    count += (lvlsze / PAGE_SIZE);
-                } else {
-                    if (mem_alloc_pt(as, pte, lvl, addr) == NULL) {
-                        ERROR("failed to alloc page table\n");
-                    }
-                }
-            }
-
-            if (pte_table(&as->pt, pte, lvl)) {
-                lvl++;
-                break;
-            } else {
-                pte++;
-                addr += lvlsze;
-                if (++entry >= nentries) {
-                    lvl = 0;
-                    break;
-                }
-            }
-        }
-    }
-
-    // mark page trable entries as reserved
-    if (vpage != INVALID_VA && !failed) {
-        count = 0;
-        addr = vpage;
-        lvl = 0;
-        while (count < n) {
-            for (lvl = 0; lvl < as->pt.dscr->lvls; lvl++) {
-                pte = pt_get_pte(&as->pt, lvl, addr);
-                if (!pte_valid(pte)) {
-                    break;
-                }
-            }
-            pte_set_rsw(pte, PTE_RSW_RSRV);
-            addr += pt_lvlsize(&as->pt, lvl);
-            count += pt_lvlsize(&as->pt, lvl) / PAGE_SIZE;
-        }
+    // mark page table entries as reserved
+    if (vpage != INVALID_VA) {
+        mem_alloc_vpage_reserve(as, vpage, n);
     }
 
     if (sec->shared) {
