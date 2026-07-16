@@ -24,6 +24,15 @@ extern uint8_t _image_start, _image_load_end, _image_end, _dmem_phys_beg, _dmem_
 
 void switch_space(struct cpu*, paddr_t);
 
+/** Tracks progress through a contiguous mem_map: current pte/level and vaddr/paddr/count. */
+struct mem_map_cursor {
+    pte_t* pte;
+    size_t lvl;
+    vaddr_t vaddr;
+    paddr_t paddr;
+    size_t count;
+};
+
 /**
  * An important note about sections its that they must have diferent entries at the root page
  * table.
@@ -485,11 +494,102 @@ void mem_unmap(struct addr_space* as, vaddr_t at, size_t num_pages, bool free_pp
     spin_unlock(&as->lock);
 }
 
+static void mem_map_colored(struct addr_space* as, vaddr_t vaddr, struct ppages* ppages,
+    size_t num_pages, mem_flags_t flags)
+{
+    size_t index = 0;
+    mem_inflate_pt(as, vaddr, num_pages * PAGE_SIZE);
+    for (size_t i = 0; i < ppages->num_pages; i++) {
+        pte_t* pte = pt_get_pte(&as->pt, as->pt.dscr->lvls - 1, vaddr);
+        index = pp_next_clr(ppages->base, index, ppages->colors);
+        paddr_t paddr = ppages->base + (index * PAGE_SIZE);
+        pte_set(pte, paddr, PTE_PAGE, flags);
+        vaddr += PAGE_SIZE;
+        index++;
+    }
+}
+
+/**
+ * Searches page-table levels for the terminal pte covering cur->vaddr that can map the remaining
+ * (num_pages - cur->count) pages, allocating intermediate table levels as needed. Updates
+ * cur->pte and cur->lvl to the pte and level found.
+ */
+static void mem_map_find_pte(struct addr_space* as, size_t num_pages, struct ppages* ppages,
+    struct mem_map_cursor* cur)
+{
+    for (cur->lvl = 0; cur->lvl < as->pt.dscr->lvls; cur->lvl++) {
+        cur->pte = pt_get_pte(&as->pt, cur->lvl, cur->vaddr);
+        if (pt_lvl_terminal(&as->pt, cur->lvl)) {
+            if (pt_pte_mappable(as, cur->pte, cur->lvl, num_pages - cur->count, cur->vaddr,
+                    ppages ? cur->paddr : 0)) {
+                break;
+            } else if (!pte_valid(cur->pte)) {
+                mem_alloc_pt(as, cur->pte, cur->lvl, cur->vaddr);
+            } else if (!pte_table(&as->pt, cur->pte, cur->lvl)) {
+                ERROR("trying to override previous mapping\n");
+            }
+        }
+    }
+}
+
+/**
+ * Writes as many contiguous ptes as possible at cur->lvl starting from cur->pte and cur->vaddr,
+ * advancing cur accordingly. When ppages is NULL, physical pages are allocated per chunk; if that
+ * allocation can't satisfy a non-terminal level's chunk size, the pte is prepared for a
+ * deeper-level retry and the loop stops so the caller searches again.
+ */
+static void mem_map_write_entries(struct addr_space* as, size_t num_pages, struct ppages* ppages,
+    mem_flags_t flags, struct mem_map_cursor* cur)
+{
+    size_t entry = pt_getpteindex(&as->pt, cur->pte, cur->lvl);
+    size_t nentries = pt_nentries(&as->pt, cur->lvl);
+    size_t lvlsz = pt_lvlsize(&as->pt, cur->lvl);
+
+    while ((entry < nentries) && (cur->count < num_pages) &&
+        (num_pages - cur->count >= lvlsz / PAGE_SIZE)) {
+        if (ppages == NULL) {
+            struct ppages temp = mem_alloc_ppages(as->colors, lvlsz / PAGE_SIZE, MEM_ALIGN_REQ);
+            if (temp.num_pages < lvlsz / PAGE_SIZE) {
+                if (cur->lvl == (as->pt.dscr->lvls - 1)) {
+                    // TODO: free previously allocated pages
+                    ERROR("failed to alloc physical pages\n");
+                } else {
+                    cur->pte = pt_get_pte(&as->pt, cur->lvl, cur->vaddr);
+                    if (!pte_valid(cur->pte)) {
+                        mem_alloc_pt(as, cur->pte, cur->lvl, cur->vaddr);
+                    }
+                    break;
+                }
+            }
+            cur->paddr = temp.base;
+        }
+        pte_set(cur->pte, cur->paddr, pt_page_type(&as->pt, cur->lvl), flags);
+        cur->vaddr += lvlsz;
+        cur->paddr += lvlsz;
+        cur->count += lvlsz / PAGE_SIZE;
+        cur->pte++;
+        entry++;
+    }
+}
+
+static void mem_map_contiguous(struct addr_space* as, vaddr_t vaddr, struct ppages* ppages,
+    size_t num_pages, mem_flags_t flags)
+{
+    struct mem_map_cursor cur = {
+        .vaddr = vaddr,
+        .paddr = ppages ? ppages->base : 0,
+        .count = 0,
+    };
+
+    while (cur.count < num_pages) {
+        mem_map_find_pte(as, num_pages, ppages, &cur);
+        mem_map_write_entries(as, num_pages, ppages, flags, &cur);
+    }
+}
+
 static bool mem_map(struct addr_space* as, vaddr_t va, struct ppages* ppages, size_t num_pages,
     mem_flags_t flags)
 {
-    size_t count = 0;
-    pte_t* pte = NULL;
     vaddr_t vaddr = va & ~((vaddr_t)(PAGE_SIZE - 1));
 
     struct section* sec = mem_find_sec(as, vaddr);
@@ -517,65 +617,9 @@ static bool mem_map(struct addr_space* as, vaddr_t va, struct ppages* ppages, si
     }
 
     if (ppages && !all_clrs(ppages->colors)) {
-        size_t index = 0;
-        mem_inflate_pt(as, vaddr, num_pages * PAGE_SIZE);
-        for (size_t i = 0; i < ppages->num_pages; i++) {
-            pte = pt_get_pte(&as->pt, as->pt.dscr->lvls - 1, vaddr);
-            index = pp_next_clr(ppages->base, index, ppages->colors);
-            paddr_t paddr = ppages->base + (index * PAGE_SIZE);
-            pte_set(pte, paddr, PTE_PAGE, flags);
-            vaddr += PAGE_SIZE;
-            index++;
-        }
+        mem_map_colored(as, vaddr, ppages, num_pages, flags);
     } else {
-        paddr_t paddr = ppages ? ppages->base : 0;
-        while (count < num_pages) {
-            size_t lvl = 0;
-            for (lvl = 0; lvl < as->pt.dscr->lvls; lvl++) {
-                pte = pt_get_pte(&as->pt, lvl, vaddr);
-                if (pt_lvl_terminal(&as->pt, lvl)) {
-                    if (pt_pte_mappable(as, pte, lvl, num_pages - count, vaddr,
-                            ppages ? paddr : 0)) {
-                        break;
-                    } else if (!pte_valid(pte)) {
-                        mem_alloc_pt(as, pte, lvl, vaddr);
-                    } else if (!pte_table(&as->pt, pte, lvl)) {
-                        ERROR("trying to override previous mapping\n");
-                    }
-                }
-            }
-
-            size_t entry = pt_getpteindex(&as->pt, pte, lvl);
-            size_t nentries = pt_nentries(&as->pt, lvl);
-            size_t lvlsz = pt_lvlsize(&as->pt, lvl);
-
-            while ((entry < nentries) && (count < num_pages) &&
-                (num_pages - count >= lvlsz / PAGE_SIZE)) {
-                if (ppages == NULL) {
-                    struct ppages temp =
-                        mem_alloc_ppages(as->colors, lvlsz / PAGE_SIZE, MEM_ALIGN_REQ);
-                    if (temp.num_pages < lvlsz / PAGE_SIZE) {
-                        if (lvl == (as->pt.dscr->lvls - 1)) {
-                            // TODO: free previously allocated pages
-                            ERROR("failed to alloc physical pages\n");
-                        } else {
-                            pte = pt_get_pte(&as->pt, lvl, vaddr);
-                            if (!pte_valid(pte)) {
-                                mem_alloc_pt(as, pte, lvl, vaddr);
-                            }
-                            break;
-                        }
-                    }
-                    paddr = temp.base;
-                }
-                pte_set(pte, paddr, pt_page_type(&as->pt, lvl), flags);
-                vaddr += lvlsz;
-                paddr += lvlsz;
-                count += lvlsz / PAGE_SIZE;
-                pte++;
-                entry++;
-            }
-        }
+        mem_map_contiguous(as, vaddr, ppages, num_pages, flags);
     }
 
     fence_sync();
