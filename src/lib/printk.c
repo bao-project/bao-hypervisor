@@ -82,6 +82,87 @@ static size_t vprintd(char** buf, unsigned int flags, va_list* args)
 }
 
 /**
+ * Parses an optional 'l' or 'll' length modifier at *fmt_it, advancing past it, and returns the
+ * corresponding flags (F_LONG, or 0 if no modifier is present). 'll' is treated the same as 'l'.
+ */
+static unsigned int vsnprintk_parse_length(const char** fmt_it)
+{
+    unsigned int flags = 0;
+
+    if (**fmt_it == 'l') {
+        (*fmt_it)++;
+        flags = flags | F_LONG;
+        if (**fmt_it == 'l') {
+            (*fmt_it)++;
+        } // ignore long long
+    }
+
+    return flags;
+}
+
+/**
+ * Parses and writes a single '%' format specifier starting at *fmt_it (which must point at the
+ * character following '%'). Advances *fmt_it and *buf_it accordingly and returns the number of
+ * characters the specifier would produce, regardless of whether they fit in buf_left.
+ */
+static size_t vsnprintk_write_spec(char** buf_it, const char** fmt_it, size_t buf_left,
+    va_list* args)
+{
+    unsigned int flags;
+    bool ignore_char;
+    size_t arg_char_count = 0;
+    va_list args_tmp;
+
+    (*fmt_it)++;
+    flags = vsnprintk_parse_length(fmt_it);
+
+    do {
+        ignore_char = false;
+        switch (**fmt_it) {
+            case 'x':
+            case 'X':
+                flags = flags | F_BASE16;
+                __attribute__((fallthrough));
+            case 'u':
+                flags = flags | F_UNSIGNED;
+                __attribute__((fallthrough));
+            case 'd':
+            case 'i':
+                va_copy(args_tmp, *args);
+                arg_char_count = vprintd(NULL, flags, &args_tmp);
+                if (arg_char_count <= buf_left) {
+                    (void)vprintd(buf_it, flags, args);
+                }
+                break;
+            case 's':
+                va_copy(args_tmp, *args);
+                arg_char_count = prints(NULL, va_arg(args_tmp, char*));
+                if (arg_char_count <= buf_left) {
+                    (void)prints(buf_it, va_arg(*args, char*));
+                }
+                break;
+            case 'c':
+                arg_char_count = 1;
+                if (arg_char_count <= buf_left) {
+                    printc(buf_it, (char)va_arg(args_tmp, int));
+                }
+                break;
+            case '%':
+                arg_char_count = 1;
+                if (arg_char_count <= buf_left) {
+                    printc(buf_it, **fmt_it);
+                }
+                break;
+            default:
+                ignore_char = true;
+                break;
+        }
+    } while (ignore_char);
+
+    return arg_char_count;
+}
+
+/**
  * This is a limited printf implementation. The format string only supports integer, string and
  * char arguments. That is, 'd', 'u' or 'x', 's' and 'c' specifiers, respectively. For integers, it
  * only supports the none and 'l' lengths. It does not support any flags, width or precision
@@ -96,69 +177,13 @@ size_t vsnprintk(char* buf, size_t buf_size, const char** fmt, va_list* args)
     char* buf_it = buf;
     size_t buf_left = buf_size;
     const char* fmt_it = *fmt;
-    va_list args_tmp;
 
     while ((*fmt_it != '\0') && (buf_left > 0U)) {
         if ((*fmt_it) != '%') {
             printc(&buf_it, *fmt_it);
             buf_left--;
         } else {
-            unsigned int flags;
-            bool ignore_char;
-            size_t arg_char_count = 0;
-
-            fmt_it++;
-            flags = 0;
-            if (*fmt_it == 'l') {
-                fmt_it++;
-                flags = flags | F_LONG;
-                if (*fmt_it == 'l') {
-                    fmt_it++;
-                } // ignore long long
-            }
-
-            do {
-                ignore_char = false;
-                switch (*fmt_it) {
-                    case 'x':
-                    case 'X':
-                        flags = flags | F_BASE16;
-                        __attribute__((fallthrough));
-                    case 'u':
-                        flags = flags | F_UNSIGNED;
-                        __attribute__((fallthrough));
-                    case 'd':
-                    case 'i':
-                        va_copy(args_tmp, *args);
-                        arg_char_count = vprintd(NULL, flags, &args_tmp);
-                        if (arg_char_count <= buf_left) {
-                            (void)vprintd(&buf_it, flags, args);
-                        }
-                        break;
-                    case 's':
-                        va_copy(args_tmp, *args);
-                        arg_char_count = prints(NULL, va_arg(args_tmp, char*));
-                        if (arg_char_count <= buf_left) {
-                            (void)prints(&buf_it, va_arg(*args, char*));
-                        }
-                        break;
-                    case 'c':
-                        arg_char_count = 1;
-                        if (arg_char_count <= buf_left) {
-                            printc(&buf_it, (char)va_arg(args_tmp, int));
-                        }
-                        break;
-                    case '%':
-                        arg_char_count = 1;
-                        if (arg_char_count <= buf_left) {
-                            printc(&buf_it, *fmt_it);
-                        }
-                        break;
-                    default:
-                        ignore_char = true;
-                        break;
-                }
-            } while (ignore_char);
+            size_t arg_char_count = vsnprintk_write_spec(&buf_it, &fmt_it, buf_left, args);
 
             if (arg_char_count <= buf_left) {
                 buf_left -= arg_char_count;
