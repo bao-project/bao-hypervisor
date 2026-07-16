@@ -34,7 +34,7 @@ extern volatile const size_t VGIC_IPI_ID;
 #else
 #define GICD_REG_MASK(ADDR) ((ADDR) & 0xffffUL)
 #endif
-#define GICD_REG_IND(REG)   (offsetof(struct gicd_hw, REG) & 0x7f)
+#define GICD_REG_IND(REG) (offsetof(struct gicd_hw, REG) & 0x7f)
 
 #define VGIC_MSG_DATA(VM_ID, VGICRID, INT_ID, REG, VAL)                   \
     (((uint64_t)(VM_ID) << 48) | (((uint64_t)(VGICRID) & 0xffff) << 32) | \
@@ -315,6 +315,53 @@ static void vgic_spill_lr(struct vcpu* vcpu, size_t lr_ind)
     }
 }
 
+static ssize_t vgic_find_free_lr(void)
+{
+    uint64_t elrsr = gich_get_elrsr();
+    for (size_t i = 0; i < NUM_LRS; i++) {
+        if (bit64_get(elrsr, i)) {
+            return (ssize_t)i;
+        }
+    }
+
+    return -1;
+}
+
+static ssize_t vgic_find_lr_to_spill(struct vgic_int* interrupt)
+{
+    unsigned min_prio_pend = interrupt->prio, min_prio_act = interrupt->prio;
+    unsigned min_id_act = interrupt->id, min_id_pend = interrupt->id;
+    size_t pend_found = 0;
+    ssize_t pend_ind = -1, act_ind = -1;
+
+    for (size_t i = 0; i < NUM_LRS; i++) {
+        gic_lr_t lr = (gic_lr_t)gich_read_lr(i);
+        irqid_t lr_id = (irqid_t)GICH_LR_VID(lr);
+        unsigned lr_prio = (lr & GICH_LR_PRIO_MSK) >> GICH_LR_PRIO_OFF;
+        if (GIC_VERSION == GICV2) {
+            lr_prio = lr_prio << 3;
+        }
+        gic_lr_t lr_state = (lr & GICH_LR_STATE_MSK);
+
+        if (lr_state & GICH_LR_STATE_ACT) {
+            if (lr_prio > min_prio_act || (lr_prio == min_prio_act && lr_id > min_id_act)) {
+                min_id_act = lr_id;
+                min_prio_act = lr_prio;
+                act_ind = (ssize_t)i;
+            }
+        } else if (lr_state & GICH_LR_STATE_PND) {
+            if (lr_prio > min_prio_pend || (lr_prio == min_prio_pend && lr_id > min_id_pend)) {
+                min_id_pend = lr_id;
+                min_prio_pend = lr_prio;
+                pend_ind = (ssize_t)i;
+            }
+            pend_found++;
+        }
+    }
+
+    return (pend_found > 1) ? pend_ind : act_ind;
+}
+
 bool vgic_add_lr(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
     bool ret = false;
@@ -323,52 +370,10 @@ bool vgic_add_lr(struct vcpu* vcpu, struct vgic_int* interrupt)
         return ret;
     }
 
-    ssize_t lr_ind = -1;
-    uint64_t elrsr = gich_get_elrsr();
-    for (size_t i = 0; i < NUM_LRS; i++) {
-        if (bit64_get(elrsr, i)) {
-            lr_ind = (ssize_t)i;
-            break;
-        }
-    }
+    ssize_t lr_ind = vgic_find_free_lr();
 
     if (lr_ind < 0) {
-        unsigned min_prio_pend = interrupt->prio, min_prio_act = interrupt->prio;
-        unsigned min_id_act = interrupt->id, min_id_pend = interrupt->id;
-        size_t pend_found = 0;
-        ssize_t pend_ind = -1, act_ind = -1;
-
-        for (size_t i = 0; i < NUM_LRS; i++) {
-            gic_lr_t lr = (gic_lr_t)gich_read_lr(i);
-            irqid_t lr_id = (irqid_t)GICH_LR_VID(lr);
-            unsigned lr_prio = (lr & GICH_LR_PRIO_MSK) >> GICH_LR_PRIO_OFF;
-            if (GIC_VERSION == GICV2) {
-                lr_prio = lr_prio << 3;
-            }
-            gic_lr_t lr_state = (lr & GICH_LR_STATE_MSK);
-
-            if (lr_state & GICH_LR_STATE_ACT) {
-                if (lr_prio > min_prio_act || (lr_prio == min_prio_act && lr_id > min_id_act)) {
-                    min_id_act = lr_id;
-                    min_prio_act = lr_prio;
-                    act_ind = (ssize_t)i;
-                }
-            } else if (lr_state & GICH_LR_STATE_PND) {
-                if (lr_prio > min_prio_pend || (lr_prio == min_prio_pend && lr_id > min_id_pend)) {
-                    min_id_pend = lr_id;
-                    min_prio_pend = lr_prio;
-                    pend_ind = (ssize_t)i;
-                }
-                pend_found++;
-            }
-        }
-
-        if (pend_found > 1) {
-            lr_ind = pend_ind;
-        } else {
-            lr_ind = act_ind;
-        }
-
+        lr_ind = vgic_find_lr_to_spill(interrupt);
         if (lr_ind >= 0) {
             vgic_spill_lr(vcpu, (size_t)lr_ind);
         }
