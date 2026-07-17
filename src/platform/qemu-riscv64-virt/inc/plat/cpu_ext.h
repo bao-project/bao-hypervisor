@@ -6,7 +6,9 @@
 #ifndef __PLAT_CPU_EXT_H__
 #define __PLAT_CPU_EXT_H__
 
-#define CPU_EXT_SSTC   1
+#define CPU_EXT_SSTC 1
+#if !defined(RV32)
 #define CPU_EXT_SVPBMT 1
+#endif
 
 #endif
