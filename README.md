@@ -49,6 +49,7 @@ platforms is presented below:
 - [x] Toradex Verdin iMX8M Plus (w/ Dahlia Carrier Board)
 - [x] NXP S32G3
 - [x] NXP iMX8M Nano EVK
+- [x] Altera Agilex 5 SoC FPGA
 
 **Armv7-A / Armv8-A AArch32**
 - [x] Arm Fixed Virtual Platforms
