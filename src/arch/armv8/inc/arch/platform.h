@@ -8,7 +8,7 @@
 
 #include <bao.h>
 #ifdef MEM_PROT_MMU
-#include <arch/smmuv2.h>
+#include <arch/smmu.h>
 #endif
 
 struct arch_platform {
@@ -26,7 +26,10 @@ struct arch_platform {
     struct {
         paddr_t base;
         irqid_t interrupt_id;
+        /* SMMUv2 stream-match don't-care bits. SMMUv3 indexes by StreamID. */
+#if (SMMU_VERSION != 3)
         streamid_t global_mask;
+#endif
     } smmu;
 #endif
 
