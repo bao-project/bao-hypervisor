@@ -9,6 +9,65 @@
 #include <mem.h>
 #include <config.h>
 
+#if (SMMU_VERSION == 3)
+
+bool iommu_arch_init(void)
+{
+    if (cpu_is_master() && platform.arch.smmu.base) {
+        smmuv3_init();
+        return true;
+    }
+
+    return false;
+}
+
+/* Install a stage-2-only STE for every stream id covered by {mask, id}. */
+static bool iommu_vm_arch_add(struct vm* vm, streamid_t mask, streamid_t id)
+{
+    paddr_t rootpt;
+    mem_translate(&cpu()->as, (vaddr_t)vm->as.pt.root, &rootpt);
+
+    /*
+     * A zero mask is the common case (a single device). A non-zero mask means
+     * "every stream id that matches id under this mask" -- iterate the masked
+     * bits and bind each concrete stream id to the same stage-2 config. SMMUv3
+     * has a flat stream table (no stream-match registers), so we materialise
+     * one STE per id rather than relying on a hardware mask.
+     */
+    streamid_t base = id & (streamid_t)~mask;
+    for (streamid_t sub = 0;; sub++) {
+        streamid_t sid = base | (sub & mask);
+        if (!smmuv3_write_ste_s2(sid, rootpt, (uint16_t)vm->id)) {
+            return false;
+        }
+        if (sub == mask) {
+            break;
+        }
+    }
+
+    vm->io.prot.mmu.initialized = true;
+    return true;
+}
+
+bool iommu_arch_vm_add_device(struct vm* vm, streamid_t id)
+{ return iommu_vm_arch_add(vm, 0, id); }
+
+bool iommu_arch_vm_init(struct vm* vm, const struct vm_config* vm_config)
+{
+    vm->io.prot.mmu.initialized = false;
+
+    for (size_t i = 0; i < vm_config->platform.arch.smmu.group_num; i++) {
+        const struct smmu_group* group = &vm_config->platform.arch.smmu.groups[i];
+        if (!iommu_vm_arch_add(vm, group->mask, group->id)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+#else  /* SMMU_VERSION != 3 -> SMMUv2 */
+
 bool iommu_arch_init(void)
 {
     if (cpu_is_master() && platform.arch.smmu.base) {
@@ -65,9 +124,7 @@ static bool iommu_vm_arch_add(struct vm* vm, streamid_t mask, streamid_t id)
 }
 
 bool iommu_arch_vm_add_device(struct vm* vm, streamid_t id)
-{
-    return iommu_vm_arch_add(vm, 0, id);
-}
+{ return iommu_vm_arch_add(vm, 0, id); }
 
 bool iommu_arch_vm_init(struct vm* vm, const struct vm_config* vm_config)
 {
@@ -86,3 +143,5 @@ bool iommu_arch_vm_init(struct vm* vm, const struct vm_config* vm_config)
 
     return true;
 }
+
+#endif /* SMMU_VERSION */
