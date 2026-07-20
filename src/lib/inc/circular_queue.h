@@ -26,12 +26,12 @@ struct circular_queue {
  * The buffer is named __cq_buf_<name> to avoid collisions with user identifiers.
  *
  * Usage inside a struct:
- *   cq_define(struct cpu_msg, msgs, 256);
+ *   CQ_DEFINE(struct cpu_msg, msgs, 256);
  * expands to:
  *   struct cpu_msg __cq_buf_msgs[256];
  *   struct circular_queue msgs;
  */
-#define cq_define(type, name, N) \
+#define CQ_DEFINE(type, name, N) \
     type __cq_buf_##name[(N)];   \
     struct circular_queue name
 
@@ -41,10 +41,10 @@ struct circular_queue {
  * Takes a pointer to the struct that contains the queue (and its buffer) and the
  * bare field name so the macro can resolve __cq_buf_<name> automatically.
  *
- * Usage:  cq_init(container_ptr, field_name)
- * e.g.:   cq_init(cpu()->interface, msgs)
+ * Usage:  CQ_INIT(container_ptr, field_name)
+ * e.g.:   CQ_INIT(cpu()->interface, msgs)
  */
-#define cq_init(container, name)                                          \
+#define CQ_INIT(container, name)                                          \
     circular_queue_init(&(container)->name, (container)->__cq_buf_##name, \
         sizeof((container)->__cq_buf_##name[0]),                          \
         sizeof((container)->__cq_buf_##name) / sizeof((container)->__cq_buf_##name[0]))
