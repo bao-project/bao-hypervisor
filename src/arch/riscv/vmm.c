@@ -20,7 +20,7 @@ void vmm_arch_init()
      */
 
     csrs_hideleg_write(HIDELEG_VSSI | HIDELEG_VSTI | HIDELEG_VSEI);
-    csrs_hedeleg_write(HEDELEG_ECU | HEDELEG_IPF | HEDELEG_LPF | HEDELEG_SPF);
+    csrs_hedeleg_write(HEDELEG_BKP | HEDELEG_ECU | HEDELEG_IPF | HEDELEG_LPF | HEDELEG_SPF);
 
     /**
      * Start from a clean slate for the entire HENVCFG CSR
