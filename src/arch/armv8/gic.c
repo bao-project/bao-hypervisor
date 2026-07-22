@@ -106,6 +106,7 @@ void gic_handle()
         if (res == HANDLED_BY_HYP) {
             gicc_dir(ack);
         }
+        interrupts_post_handler();
     }
 }
 
