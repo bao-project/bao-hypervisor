@@ -6,21 +6,8 @@
 #include <cpu.h>
 #include <interrupts.h>
 #include <platform.h>
-#include <objpool.h>
 #include <vm.h>
 #include <fences.h>
-
-struct cpu_msg_node {
-    node_t node;
-    struct cpu_msg msg;
-};
-
-#define CPU_MSG_POOL_SIZE_DEFAULT (128)
-#ifndef CPU_MSG_POOL_SIZE
-#define CPU_MSG_POOL_SIZE CPU_MSG_POOL_SIZE_DEFAULT
-#endif
-
-OBJPOOL_ALLOC(msg_pool, struct cpu_msg_node, CPU_MSG_POOL_SIZE);
 
 struct cpu_synctoken cpu_glb_sync = { .ready = false };
 
@@ -39,7 +26,7 @@ void cpu_init(cpuid_t cpu_id)
 
     cpu_arch_init(cpu_id, img_addr);
 
-    list_init(&cpu()->interface->event_list);
+    CQ_INIT(cpu()->interface, msgs);
 
     if (cpu_is_master()) {
         cpu_sync_init(&cpu_glb_sync, platform.cpu_num);
@@ -56,25 +43,18 @@ void cpu_init(cpuid_t cpu_id)
 
 void cpu_send_msg(cpuid_t trgtcpu, struct cpu_msg* msg)
 {
-    struct cpu_msg_node* node = objpool_alloc(&msg_pool);
-    if (node == NULL) {
-        ERROR("cant allocate msg node\n");
+    bool ok = circular_queue_push(&cpu_if(trgtcpu)->msgs, msg);
+    if (ok) {
+        fence_sync_write();
+        interrupts_cpu_sendipi(trgtcpu);
+    } else {
+        WARNING("Can't add message to target cpu (%d) interface\n", trgtcpu);
     }
-    node->msg = *msg;
-    list_push(&cpu_if(trgtcpu)->event_list, (node_t*)node);
-    fence_sync_write();
-    interrupts_cpu_sendipi(trgtcpu);
 }
 
 bool cpu_get_msg(struct cpu_msg* msg)
 {
-    struct cpu_msg_node* node = NULL;
-    if ((node = (struct cpu_msg_node*)list_pop(&cpu()->interface->event_list)) != NULL) {
-        *msg = node->msg;
-        objpool_free(&msg_pool, node);
-        return true;
-    }
-    return false;
+    return circular_queue_pop(&cpu()->interface->msgs, msg);
 }
 
 void cpu_msg_handler(void)
