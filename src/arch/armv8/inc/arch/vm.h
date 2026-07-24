@@ -11,7 +11,7 @@
 #include <arch/vgic.h>
 #include <arch/psci.h>
 #ifdef MEM_PROT_MMU
-#include <arch/smmuv2.h>
+#include <arch/smmu.h>
 #endif
 #include <list.h>
 
@@ -27,6 +27,10 @@ struct arch_vm_platform {
     struct {
         streamid_t global_mask;
         size_t group_num;
+        /* A streamID is only unique within a single SMMU instance. The drivers
+         * currently assume one SMMU per SoC; multi-SMMU support would add a
+         * per-group instance selector here (e.g. an "smmu_idx" field) so each
+         * group can target a specific SMMU without breaking this interface. */
         struct smmu_group {
             streamid_t mask;
             streamid_t id;
