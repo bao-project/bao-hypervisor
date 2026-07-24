@@ -62,7 +62,15 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
         csrs_sstateen0_write(0);
     }
 
+    /*
+     * senvcfg, like henvcfg, is a priv-1.12 CSR that may be absent on older
+     * cores (e.g. SiFive P550) where accessing it traps; only touch it when a
+     * feature that lives in envcfg is configured.
+     */
+#if CPU_HAS_EXTENSION(CPU_EXT_SSTC) || CPU_HAS_EXTENSION(CPU_EXT_SVPBMT) || \
+    CPU_HAS_EXTENSION(CPU_EXT_ZICBOZ) || CPU_HAS_EXTENSION(CPU_EXT_ZICBOM)
     csrs_senvcfg_write(0);
+#endif
     csrs_hcounteren_write(HCOUNTEREN_TM);
     csrs_htimedelta_write(0);
     csrs_vsstatus_write(SSTATUS_SD | SSTATUS_FS_DIRTY | SSTATUS_XS_DIRTY);

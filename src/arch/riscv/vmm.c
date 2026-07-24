@@ -24,9 +24,15 @@ void vmm_arch_init()
 
     /**
      * Start from a clean slate for the entire HENVCFG CSR
-     * to avoid unintended side effects from any non-zero default bits
+     * to avoid unintended side effects from any non-zero default bits.
+     * henvcfg is a priv-1.12 CSR: on cores implementing none of the features
+     * that live in it (e.g. SiFive P550, priv 1.11) accessing it traps with
+     * illegal instruction -- only touch it when a feature needs it.
      */
+#if CPU_HAS_EXTENSION(CPU_EXT_SSTC) || CPU_HAS_EXTENSION(CPU_EXT_SVPBMT) || \
+    CPU_HAS_EXTENSION(CPU_EXT_ZICBOZ) || CPU_HAS_EXTENSION(CPU_EXT_ZICBOM)
     csrs_henvcfg_write(0);
+#endif
 
     /**
      * Enable and sanity check presence of Sstc extension if the hypervisor was
@@ -42,9 +48,12 @@ void vmm_arch_init()
         // Set stimecmp to infinity in case we enable the stimer interrupt somewhere else
         // and fail to set the timer to a point in the future.
         csrs_stimecmp_write(~0ULL);
-    } else {
-        csrs_henvcfg_clear(HENVCFG_STCE);
     }
+    /*
+     * No else-clear: the guarded clean-slate write above already left STCE=0
+     * wherever henvcfg exists, and on cores without henvcfg (no Sstc) the
+     * clear itself would trap.
+     */
 
     if (CPU_HAS_EXTENSION(CPU_EXT_SVPBMT)) {
         csrs_henvcfg_set(HENVCFG_PBMTE);
