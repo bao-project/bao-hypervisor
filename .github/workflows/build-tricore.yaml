@@ -10,7 +10,6 @@ jobs:
 
   build-tricore:
     runs-on: ubuntu-latest
-    container: baoproject/bao:latest
     strategy:
       matrix:
         platform: [
@@ -23,5 +22,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - run: make PLATFORM=${{ matrix.platform }} \
+      - uses: ./.github/actions/bao-container-run
+        with:
+          run: make PLATFORM=${{ matrix.platform }}
             CONFIG=null ${{ matrix.cross_compile }}

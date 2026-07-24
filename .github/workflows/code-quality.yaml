@@ -10,10 +10,11 @@ jobs:
   
   coding-style:
     runs-on: ubuntu-latest
-    container: baoproject/bao:latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: recursive
-      - run: make format-check
+      - uses: ./.github/actions/bao-container-run
+        with:
+          run: make format-check

@@ -10,7 +10,6 @@ jobs:
 
   build-arm:
     runs-on: ubuntu-latest
-    container: baoproject/bao:latest
     strategy:
       matrix:
         platform: [
@@ -31,5 +30,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - run: make PLATFORM=${{ matrix.platform }} GIC_VERSION=${{ matrix.gic }} \
+      - uses: ./.github/actions/bao-container-run
+        with:
+          run: make PLATFORM=${{ matrix.platform }} GIC_VERSION=${{ matrix.gic }}
             CONFIG=null ${{ matrix.cross_compile }}

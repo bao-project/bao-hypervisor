@@ -1,0 +1,26 @@
+name: Run in Bao CI container
+description: >
+  Frees runner disk space and runs a command inside the baoproject/bao
+  container. Stopgap while the CI image is too large for the free disk on
+  GitHub-hosted runners (see bao-project/bao-ci#94): with the `container:`
+  directive the image is pulled before any step can clean up, so jobs mount
+  the workspace and run the container explicitly instead.
+inputs:
+  run:
+    description: Command to run inside the container
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Free runner disk space
+      shell: bash
+      run: >
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+    - name: Run in container
+      shell: bash
+      run: >
+        docker run --rm -v "${{ github.workspace }}:/bao" -w /bao
+        baoproject/bao:latest
+        bash -c "git config --global --add safe.directory '*' &&
+        ${{ inputs.run }}"
