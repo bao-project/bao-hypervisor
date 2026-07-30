@@ -105,7 +105,7 @@ static int32_t psci_cpu_on_handler(unsigned long target_cpu, unsigned long entry
 
     if (target_vcpu != NULL) {
         bool already_on = true;
-        spin_lock(&cpu()->vcpu->arch.psci_ctx.lock);
+        spin_lock(&target_vcpu->arch.psci_ctx.lock);
         if (target_vcpu->arch.psci_ctx.state == OFF) {
             target_vcpu->arch.psci_ctx.state = ON_PENDING;
             target_vcpu->arch.psci_ctx.entrypoint = entrypoint;
@@ -113,7 +113,7 @@ static int32_t psci_cpu_on_handler(unsigned long target_cpu, unsigned long entry
             fence_sync_write();
             already_on = false;
         }
-        spin_unlock(&cpu()->vcpu->arch.psci_ctx.lock);
+        spin_unlock(&target_vcpu->arch.psci_ctx.lock);
 
         if (already_on) {
             return PSCI_E_ALREADY_ON;
