@@ -849,6 +849,15 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
          * tracked by the bitmap being copied.
          */
         memcpy(image_cpy, &_image_start, image_size);
+
+        /**
+         * The image, .text included, was relocated with a data-side copy only. Clean it to the PoC
+         * through the temporary mapping, as the image virtual addresses still translate to the
+         * original pages, so that instruction fetch sees the relocated instructions once
+         * switch_space() repoints them at the colored pages. The flush after switch_space() cannot
+         * serve this purpose, as execution resumed from those pages already.
+         */
+        cache_flush_range((vaddr_t)image_cpy, image_size);
     }
     cpu_sync_barrier(&cpu_glb_sync);
 
