@@ -83,10 +83,17 @@ switch_space:
     mov x30, x8
 
     /**
-     * Invalidate TLB
+     * Invalidate the TLB and the instruction cache.
+     *
+     * This routine returns into a copy of the image the caller relocated with a data-side copy and
+     * cleaned to the PoC. The image virtual addresses are about to be repointed at that copy, so
+     * drop any instruction cache lines this PE holds for the new physical pages, otherwise the
+     * fetches after the switch may hit stale instructions. Do this before writing TTBR0_EL2: after
+     * that write, execution comes from the colored pages.
      */
     dsb ishst
     tlbi alle2
+    ic iallu
     dsb ish
     isb
 
