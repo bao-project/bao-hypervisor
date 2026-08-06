@@ -747,7 +747,7 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
     struct cpu* cpu_new;
     struct ppages p_cpu;
     struct ppages p_image;
-    struct ppages p_bitmap;
+    void* image_cpy = NULL;
 
     size_t image_load_size = (size_t)(&_image_load_end - &_image_start);
     size_t image_noload_size = (size_t)(&_image_end - &_image_load_end);
@@ -755,10 +755,16 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
     size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);
     size_t cpu_boot_size = mem_cpu_boot_alloc_size();
     struct page_pool* root_pool = &root_region->page_pool;
-    size_t bitmap_size =
-        (root_pool->num_pages / (8 * PAGE_SIZE) + !!(root_pool->num_pages % (8 * PAGE_SIZE) != 0)) *
-        PAGE_SIZE;
     colormap_t colors = config.hyp.colors;
+
+    /**
+     * The root page pool bitmap is relocated as part of the image, so it must live inside it, which
+     * is what pp_bitmap_alloc() guarantees.
+     */
+    if (!range_in_range((vaddr_t)root_pool->bitmap, BITMAP_SIZE_IN_BYTES(root_pool->num_pages),
+            (vaddr_t)&_image_start, image_size)) {
+        ERROR("Root page pool bitmap is not part of the hypervisor image\n");
+    }
 
     /* Set hypervisor colors in current address space */
     cpu()->as.colors = config.hyp.colors;
@@ -804,7 +810,7 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
      * to access it.
      */
     if (cpu_is_master()) {
-        copy_space(&_image_start, image_size, &p_image);
+        image_cpy = copy_space(&_image_start, image_size, &p_image);
         va = mem_alloc_vpage(&cpu_new->as, SEC_HYP_IMAGE, (vaddr_t)&_image_start,
             NUM_PAGES(image_size));
 
@@ -831,16 +837,18 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
      * thing to be copied, as after that, no physical allocation will be tracked.
      */
     if (cpu_is_master()) {
-        /* Copy root pool bitmap */
-        copy_space((void*)root_pool->bitmap, bitmap_size, &p_bitmap);
-        va = mem_alloc_vpage(&cpu_new->as, SEC_HYP_GLOBAL, (vaddr_t)root_pool->bitmap,
-            NUM_PAGES(bitmap_size));
-
-        if (va != (vaddr_t)root_pool->bitmap) {
-            ERROR("Can't allocate address for cpu interface\n");
-        }
-
-        mem_map(&cpu_new->as, va, &p_bitmap, NUM_PAGES(bitmap_size), PTE_HYP_FLAGS);
+        /**
+         * Refresh the root page pool bitmap in the colored image.
+         *
+         * The bitmap lives inside the image, so the copy above already relocated it, but that
+         * snapshot is stale: it predates the page tables allocated to map the image in the new
+         * address space. Every CPU is past the barrier and no allocation is left to be done, so
+         * re-copy the image over the mapping copy_space() left behind to pick up the final bitmap,
+         * along with the rest of the page pool bookkeeping. Copying the image again takes no
+         * allocation, which a separate bitmap copy would, and that allocation would no longer be
+         * tracked by the bitmap being copied.
+         */
+        memcpy(image_cpy, &_image_start, image_size);
     }
     cpu_sync_barrier(&cpu_glb_sync);
 
@@ -873,8 +881,7 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
     /*
      * Clear the old region that have been copied.
      *
-     * CPU space regions and Hypervisor image region are contingent, starting from `load_addr`. The
-     * bitmap region is on top of the root pool region.
+     * CPU space regions and Hypervisor image region are contingent, starting from `load_addr`.
      */
     if (cpu_is_master()) {
         p_image = mem_ppages_get(load_addr, NUM_PAGES(image_load_size));
@@ -889,15 +896,6 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
         mem_map(&cpu()->as, va, &p_image, p_image.num_pages, PTE_HYP_FLAGS);
         memset((void*)va, 0, p_image.num_pages * PAGE_SIZE);
         mem_unmap(&cpu()->as, va, p_image.num_pages, MEM_FREE_PAGES);
-
-        p_bitmap = mem_ppages_get(load_addr + image_size + vm_image_size +
-                (cpu_boot_size * platform.cpu_num),
-            NUM_PAGES(bitmap_size));
-
-        va = mem_alloc_vpage(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA, p_bitmap.num_pages);
-        mem_map(&cpu()->as, va, &p_bitmap, p_bitmap.num_pages, PTE_HYP_FLAGS);
-        memset((void*)va, 0, p_bitmap.num_pages * PAGE_SIZE);
-        mem_unmap(&cpu()->as, va, p_bitmap.num_pages, MEM_FREE_PAGES);
     }
 
     p_cpu = mem_ppages_get(load_addr + image_size + vm_image_size + (cpu_boot_size * cpu()->id),
