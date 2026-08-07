@@ -53,6 +53,9 @@ switch_space:
     sub a6, a6, a4
     sub a0, a0, a4
 
+    /* Synchronize instruction fetch with the data-side copy of the relocated image */
+    fence.i
+
     /* Update root page table pointer */
     srl a1, a1, PAGE_SHIFT
     li  t0, SATP_MODE_DFLT
