@@ -114,5 +114,6 @@ void cache_flush_range(vaddr_t base, size_t size)
         cache_addr += min_line_size;
     }
 
-    DMB(ish);
+    /* Ensure the cache maintenance operations complete before returning */
+    DSB(ish);
 }
