@@ -1,11 +1,9 @@
 /**
  * SPDX-License-Identifier: Apache-2.0
  * Copyright (c) Bao Project and Contributors. All rights reserved.
- */
-
-/**
+ *
  * @file remio.c
- * @brief This source file contains the Remote I/O implementation
+ * @brief This source file contains the Remote I/O implementation.
  */
 
 #include <remio.h>

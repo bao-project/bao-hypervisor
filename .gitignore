@@ -4,6 +4,7 @@ build/*
 *.elf
 *.bin
 *.d
+*.log
 
 configs/*
 !configs/configs.mk
