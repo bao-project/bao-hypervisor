@@ -467,7 +467,7 @@ endif
 
 tests:
 	@echo "Running bao-kao tests for $(PLATFORM)..."
-	@python3 $(kao_dir)/kao.py -t -p $(PLATFORM)
+	@python3 $(kao_dir)/kao.py -t -p $(PLATFORM) --hyp-srcs $(cur_dir)
 
 .PHONY: benchs
 
