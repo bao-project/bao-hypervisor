@@ -1,6 +1,6 @@
 bin/*
 build/*
-**/wrkdir/
+tests/wrkdir/
 *.o
 *.elf
 *.bin

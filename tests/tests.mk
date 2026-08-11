@@ -20,4 +20,4 @@ check-kao:
 tests: check-kao
 	@echo "Running bao-kao tests for $(PLATFORM)..."
 	@python3 $(kao_script) -t $(KAO_TESTS) -p $(PLATFORM) \
-		--hyp-srcs $(cur_dir) $(KAO_ARGS)
+		--hyp-srcs $(cur_dir) --wrkdir $(tests_dir)/wrkdir $(KAO_ARGS)
