@@ -4,7 +4,7 @@
 vms:
   - vm1:
     name: "baremetal"
-    build_options:
+    build_options: "IRQC=AIA"
     config:
       image:
         base_addr: 0x80200000
