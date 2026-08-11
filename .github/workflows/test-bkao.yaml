@@ -11,9 +11,6 @@ jobs:
 
   run-tests:
     runs-on: ubuntu-latest
-    container:
-      image: baoproject/bao:latest
-      options: --user root
     strategy:
       matrix:
         platform: [
@@ -27,11 +24,9 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Mark workspace as safe for Git
-        run: git config --global --add safe.directory $GITHUB_WORKSPACE
-
-      - name: Use HTTPS for GitHub submodules
-        run: git config --global url."https://github.com/".insteadOf "git@github.com:"
-
-      - name: Run bao kao tests
-        run: make tests PLATFORM=${{ matrix.platform }}
+      - name: Run Bao Kao tests
+        uses: ./.github/actions/bao-container-run
+        with:
+          run: >
+            git config --global url.https://github.com/.insteadOf git@github.com:
+            && make tests PLATFORM=${{ matrix.platform }}
