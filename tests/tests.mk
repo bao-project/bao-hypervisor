@@ -7,7 +7,7 @@ kao_script:=$(kao_dir)/kao.py
 KAO_TESTS?=all
 KAO_ARGS?=
 
-non_build_targets+=tests benchs check-kao
+non_build_targets+=tests check-kao
 
 .PHONY: check-kao
 check-kao:
@@ -21,8 +21,3 @@ tests: check-kao
 	@echo "Running bao-kao tests for $(PLATFORM)..."
 	@python3 $(kao_script) -t $(KAO_TESTS) -p $(PLATFORM) \
 		--hyp-srcs $(cur_dir) $(KAO_ARGS)
-
-.PHONY: benchs
-benchs: check-kao
-	@echo "Running bao-kao benchmarks for $(PLATFORM)..."
-	@python3 $(kao_script) -b -p $(PLATFORM)

@@ -30,12 +30,8 @@ jobs:
       - name: Mark workspace as safe for Git
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
-      - name: Checkout private benchmarks submodule
-        env:
-          TOKEN: ${{ secrets.BENCHMARKS_TOKEN }}
-        run: |
-          git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "git@github.com:"
-          git submodule update --init tests/benchs
+      - name: Use HTTPS for GitHub submodules
+        run: git config --global url."https://github.com/".insteadOf "git@github.com:"
 
       - name: Run bao kao tests
         run: make tests PLATFORM=${{ matrix.platform }}
