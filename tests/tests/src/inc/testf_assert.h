@@ -52,7 +52,12 @@
         }                         \
     } while (0)
 
-#define TESTF_PASS(message) printf("    Message: %s\n", message);
+#define TESTF_PASS(message)                     \
+    do {                                        \
+        if (TESTF_LOG_LEVEL > 1) {              \
+            printf("    Message: %s\n", message); \
+        }                                       \
+    } while (0)
 
 #define TESTF_FAIL(message) \
     (*failures)++;          \
