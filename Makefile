@@ -69,18 +69,18 @@ CONFIG_REPO?=$(configs_dir)
 scripts_dir:=$(cur_dir)/scripts
 ci_dir:=$(cur_dir)/ci
 tests_dir:=$(cur_dir)/tests
-kao_dir:=$(tests_dir)/kao/src
 src_dirs:=
 
 all:
 
 -include $(ci_dir)/ci.mk
+-include $(tests_dir)/tests.mk
 
 targets:=$(MAKECMDGOALS)
 ifeq ($(targets),)
 targets:=all
 endif
-non_build_targets+=ci clean tests benchs
+non_build_targets+=ci clean
 build_targets:=$(strip $(foreach target, $(targets), \
 	$(if $(findstring $(target),$(non_build_targets)),,$(target))))
 
@@ -460,17 +460,3 @@ $(call ci, format, $(all_c_files))
 ci: license-check format-check
 
 endif
-
--include $(tests_dir)/tests.mk
-
-.PHONY: tests
-
-tests:
-	@echo "Running bao-kao tests for $(PLATFORM)..."
-	@python3 $(kao_dir)/kao.py -t -p $(PLATFORM) --hyp-srcs $(cur_dir)
-
-.PHONY: benchs
-
-benchs:
-	@echo "Running bao-kao benchmarks for $(PLATFORM)..."
-	@python3 $(kao_dir)/kao.py -b -p $(PLATFORM)
