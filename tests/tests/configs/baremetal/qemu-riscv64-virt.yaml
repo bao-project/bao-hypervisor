@@ -22,5 +22,8 @@ vms:
               - 10
         arch:
           irqc:
-            plic:
-              base: 0xc000000
+            aia:
+              aplic:
+                base: 0xd000000
+              imsic:
+                base: 0x28000000
