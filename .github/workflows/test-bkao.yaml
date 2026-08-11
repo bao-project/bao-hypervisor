@@ -39,3 +39,4 @@ jobs:
           run: >
             git config --global url.https://github.com/.insteadOf git@github.com:
             && make tests PLATFORM=${{ matrix.platform }}
+            KAO_ARGS=--no-toolchain-build
