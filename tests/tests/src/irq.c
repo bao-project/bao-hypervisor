@@ -19,7 +19,6 @@ volatile bool irq_en_timer = false;
 volatile bool irq_en_uart = false;
 
 #define TIMER_INTERVAL  (TIME_MS(100))
-#define TEST_TIME_WAIT  (TIME_MS(200))
 #define TEST_TIMEOUT    "300"
 
 BAO_TEST(IRQ_CHECK, TIMER, BAREMETAL, "Check that timer interrupt is triggered and handled successfully")
@@ -50,7 +49,7 @@ BAO_TEST(IRQ_CHECK, UART, BAREMETAL, "Check that UART interrupt is triggered and
         irq_set_prio(UART_IRQ_ID, UART_IRQ_PRIO);
         COMMAND_SEND_CHAR("a");
 
-        timer_wait(TEST_TIME_WAIT);
+        while(!irq_en_uart);
         EXPECTED_TRUE(irq_en_uart);
         COMMAND_CLEAR_TIMEOUT();
     }
