@@ -686,7 +686,7 @@ void vgic_emul_razwi(struct emul_access* acc, struct vgic_reg_handler_info* hand
 }
 
 void vgic_int_set_field(struct vgic_reg_handler_info* handlers, struct vcpu* vcpu,
-    struct vgic_int* interrupt, unsigned long data)
+    struct vgic_int* interrupt, unsigned long data, vcpuid_t vgicr_id)
 {
     spin_lock(&interrupt->lock);
     if (vgic_get_ownership(vcpu, interrupt)) {
@@ -699,6 +699,7 @@ void vgic_int_set_field(struct vgic_reg_handler_info* handlers, struct vcpu* vcp
     } else {
         union vgic_msg_data msg_data = {
             .vm_id = (uint16_t)vcpu->vm->id,
+            .vgicr_id = (uint16_t)vgicr_id,
             .int_id = (uint16_t)interrupt->id,
             .reg = (uint8_t)handlers->regid,
             .val = (uint8_t)data,
@@ -727,7 +728,7 @@ void vgic_emul_generic_access(struct emul_access* acc, struct vgic_reg_handler_i
             }
             if (acc->write) {
                 unsigned long data = bit_extract(val, i * field_width, field_width);
-                vgic_int_set_field(handlers, cpu()->vcpu, interrupt, data);
+                vgic_int_set_field(handlers, cpu()->vcpu, interrupt, data, vgicr_id);
             } else {
                 val |= (handlers->read_field(cpu()->vcpu, interrupt) & mask) << (i * field_width);
             }
@@ -1001,7 +1002,7 @@ void vgic_inject(struct vcpu* vcpu, irqid_t id, vcpuid_t source)
         } else if (GIC_VERSION == GICV2 && gic_is_sgi(id)) {
             vgic_inject_sgi(vcpu, interrupt, source);
         } else {
-            vgic_int_set_field(&ispendr_info, vcpu, interrupt, true);
+            vgic_int_set_field(&ispendr_info, vcpu, interrupt, true, vcpu->id);
         }
     }
 }
@@ -1047,7 +1048,8 @@ void vgic_ipi_handler(uint32_t event, uint64_t data)
             struct vgic_reg_handler_info* handlers = vgic_get_reg_handler_info(reg_id);
             struct vgic_int* interrupt = vgic_get_int(cpu()->vcpu, int_id, vgicr_id);
             if (handlers != NULL && interrupt != NULL) {
-                vgic_int_set_field(handlers, cpu()->vcpu, interrupt, (unsigned long)val);
+                vgic_int_set_field(handlers, cpu()->vcpu, interrupt, (unsigned long)val,
+                    vgicr_id);
             }
         } break;
 

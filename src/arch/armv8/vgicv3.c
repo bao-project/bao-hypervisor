@@ -166,7 +166,7 @@ static void vgicd_emul_router_access(struct emul_access* acc,
         } else {
             route = reg_value;
         }
-        vgic_int_set_field(handlers, cpu()->vcpu, interrupt, (unsigned long)route);
+        vgic_int_set_field(handlers, cpu()->vcpu, interrupt, (unsigned long)route, vgicr_id);
     }
 }
 
