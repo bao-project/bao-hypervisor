@@ -32,14 +32,16 @@ extern volatile const size_t VGIC_IPI_ID;
 #define GICD_REG_MASK(ADDR) ((ADDR) & (GIC_VERSION == GICV2 ? 0xfffUL : 0xffffUL))
 #define GICD_REG_IND(REG)   (offsetof(struct gicd_hw, REG) & 0x7f)
 
-#define VGIC_MSG_DATA(VM_ID, VGICRID, INT_ID, REG, VAL)                   \
-    (((uint64_t)(VM_ID) << 48) | (((uint64_t)(VGICRID) & 0xffff) << 32) | \
-        (((INT_ID) & 0x7fff) << 16) | (((REG) & 0xff) << 8) | ((VAL) & 0xff))
-#define VGIC_MSG_VM(DATA)      ((DATA) >> 48)
-#define VGIC_MSG_VGICRID(DATA) (((DATA) >> 32) & 0xffff)
-#define VGIC_MSG_INTID(DATA)   (((DATA) >> 16) & 0x7fff)
-#define VGIC_MSG_REG(DATA)     (((DATA) >> 8) & 0xff)
-#define VGIC_MSG_VAL(DATA)     ((DATA) & 0xff)
+union vgic_msg_data {
+    struct {
+        uint16_t vm_id;
+        uint16_t vgicr_id;
+        uint16_t int_id;
+        uint8_t reg;
+        uint8_t val;
+    };
+    uint64_t raw;
+};
 
 void vgic_ipi_handler(uint32_t event, uint64_t data);
 CPU_MSG_HANDLER(vgic_ipi_handler, VGIC_IPI_ID)
@@ -131,11 +133,12 @@ void vgic_send_sgi_msg(struct vcpu* vcpu, cpumap_t pcpu_mask, irqid_t int_id)
 {
     UNUSED_ARG(vcpu);
 
-    struct cpu_msg msg = {
-        (uint32_t)VGIC_IPI_ID,
-        VGIC_INJECT,
-        VGIC_MSG_DATA(cpu()->vcpu->vm->id, 0, int_id, 0, cpu()->vcpu->id),
+    union vgic_msg_data data = {
+        .vm_id = (uint16_t)cpu()->vcpu->vm->id,
+        .int_id = (uint16_t)int_id,
+        .val = (uint8_t)cpu()->vcpu->id,
     };
+    struct cpu_msg msg = { (uint32_t)VGIC_IPI_ID, VGIC_INJECT, data.raw };
 
     for (size_t i = 0; i < platform.cpu_num; i++) {
         if (pcpu_mask & (1ULL << i)) {
@@ -155,11 +158,12 @@ static void vgic_route(struct vcpu* vcpu, struct vgic_int* interrupt)
     }
 
     if (!interrupt->in_lr && vgic_int_has_other_target(vcpu, interrupt)) {
-        struct cpu_msg msg = {
-            (uint32_t)VGIC_IPI_ID,
-            VGIC_ROUTE,
-            VGIC_MSG_DATA(vcpu->vm->id, vcpu->id, interrupt->id, 0, 0),
+        union vgic_msg_data data = {
+            .vm_id = (uint16_t)vcpu->vm->id,
+            .vgicr_id = (uint16_t)vcpu->id,
+            .int_id = (uint16_t)interrupt->id,
         };
+        struct cpu_msg msg = { (uint32_t)VGIC_IPI_ID, VGIC_ROUTE, data.raw };
         vgic_yield_ownership(vcpu, interrupt);
         cpumap_t trgtlist = vgic_int_ptarget_mask(vcpu, interrupt) & ~(1UL << vcpu->phys_id);
         for (size_t i = 0; i < platform.cpu_num; i++) {
@@ -410,11 +414,10 @@ static void vgicd_emul_misc_access(struct emul_access* acc, struct vgic_reg_hand
                 vgicd->CTLR = vcpu_readreg(cpu()->vcpu, acc->reg) & VGIC_ENABLE_MASK;
                 if (prev_ctrl ^ vgicd->CTLR) {
                     vgic_update_enable(cpu()->vcpu);
-                    struct cpu_msg msg = {
-                        (uint32_t)VGIC_IPI_ID,
-                        VGIC_UPDATE_ENABLE,
-                        VGIC_MSG_DATA(cpu()->vcpu->vm->id, 0, 0, 0, 0),
+                    union vgic_msg_data data = {
+                        .vm_id = (uint16_t)cpu()->vcpu->vm->id,
                     };
+                    struct cpu_msg msg = { (uint32_t)VGIC_IPI_ID, VGIC_UPDATE_ENABLE, data.raw };
                     vm_msg_broadcast(cpu()->vcpu->vm, &msg);
                 }
             } else {
@@ -694,11 +697,13 @@ void vgic_int_set_field(struct vgic_reg_handler_info* handlers, struct vcpu* vcp
         vgic_route(vcpu, interrupt);
         vgic_yield_ownership(vcpu, interrupt);
     } else {
-        struct cpu_msg msg = {
-            (uint32_t)VGIC_IPI_ID,
-            VGIC_SET_REG,
-            VGIC_MSG_DATA(vcpu->vm->id, 0, interrupt->id, handlers->regid, data),
+        union vgic_msg_data msg_data = {
+            .vm_id = (uint16_t)vcpu->vm->id,
+            .int_id = (uint16_t)interrupt->id,
+            .reg = (uint8_t)handlers->regid,
+            .val = (uint8_t)data,
         };
+        struct cpu_msg msg = { (uint32_t)VGIC_IPI_ID, VGIC_SET_REG, msg_data.raw };
         cpu_send_msg(interrupt->owner->phys_id, &msg);
     }
     spin_unlock(&interrupt->lock);
@@ -1003,10 +1008,11 @@ void vgic_inject(struct vcpu* vcpu, irqid_t id, vcpuid_t source)
 
 void vgic_ipi_handler(uint32_t event, uint64_t data)
 {
-    uint16_t vm_id = (uint16_t)VGIC_MSG_VM(data);
-    uint16_t vgicr_id = (uint16_t)VGIC_MSG_VGICRID(data);
-    irqid_t int_id = VGIC_MSG_INTID(data);
-    uint64_t val = VGIC_MSG_VAL(data);
+    union vgic_msg_data msg = { .raw = data };
+    uint16_t vm_id = msg.vm_id;
+    uint16_t vgicr_id = msg.vgicr_id;
+    irqid_t int_id = msg.int_id;
+    uint64_t val = msg.val;
 
     if (vm_id != cpu()->vcpu->vm->id) {
         ERROR("received vgic3 msg target to another vcpu\n");
@@ -1037,7 +1043,7 @@ void vgic_ipi_handler(uint32_t event, uint64_t data)
         } break;
 
         case VGIC_SET_REG: {
-            uint64_t reg_id = VGIC_MSG_REG(data);
+            uint64_t reg_id = msg.reg;
             struct vgic_reg_handler_info* handlers = vgic_get_reg_handler_info(reg_id);
             struct vgic_int* interrupt = vgic_get_int(cpu()->vcpu, int_id, vgicr_id);
             if (handlers != NULL && interrupt != NULL) {
