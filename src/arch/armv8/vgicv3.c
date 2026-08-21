@@ -155,7 +155,7 @@ static void vgicd_emul_router_access(struct emul_access* acc,
         } else if (word_access) {
             vcpu_writereg(cpu()->vcpu, acc->reg, (uint32_t)route);
         } else {
-            vcpu_writereg(cpu()->vcpu, acc->reg, (uint32_t)route);
+            vcpu_writereg(cpu()->vcpu, acc->reg, (unsigned long)route);
         }
     } else {
         uint64_t reg_value = vcpu_readreg(cpu()->vcpu, acc->reg);
