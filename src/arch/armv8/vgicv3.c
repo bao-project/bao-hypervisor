@@ -159,6 +159,14 @@ static void vgicd_emul_router_access(struct emul_access* acc,
         }
     } else {
         uint64_t reg_value = vcpu_readreg(cpu()->vcpu, acc->reg);
+
+        /**
+         * The route is updated here, under the interrupt lock, so partial word writes always
+         * merge against the current value. Only the routing side effects are deferred to the
+         * interrupt owner through vgic_int_reroute.
+         */
+        spin_lock(&interrupt->lock);
+        route = vgic_int_get_route(cpu()->vcpu, interrupt);
         if (top_access) {
             route = (route & BIT64_MASK(0, 32)) | ((reg_value & BIT64_MASK(0, 32)) << 32);
         } else if (word_access) {
@@ -166,7 +174,13 @@ static void vgicd_emul_router_access(struct emul_access* acc,
         } else {
             route = reg_value;
         }
-        vgic_int_set_field(handlers, cpu()->vcpu, interrupt, (unsigned long)route, vgicr_id);
+        /* spis only past this point, so hw status does not depend on the sgi check */
+        if (vgic_int_set_route(cpu()->vcpu, interrupt, (unsigned long)route) && interrupt->hw) {
+            vgic_int_set_route_hw(cpu()->vcpu, interrupt);
+        }
+        spin_unlock(&interrupt->lock);
+
+        vgic_int_reroute(cpu()->vcpu, interrupt);
     }
 }
 

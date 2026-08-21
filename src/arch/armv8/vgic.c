@@ -710,6 +710,30 @@ void vgic_int_set_field(struct vgic_reg_handler_info* handlers, struct vcpu* vcp
     spin_unlock(&interrupt->lock);
 }
 
+/**
+ * Applies the side effects of a route change: pulls the interrupt out of the previous target's
+ * list registers and re-delivers it according to the current route. The route value itself is
+ * updated at the emulation site, so the message forwarded to a remote owner carries no data.
+ */
+void vgic_int_reroute(struct vcpu* vcpu, struct vgic_int* interrupt)
+{
+    spin_lock(&interrupt->lock);
+    if (vgic_get_ownership(vcpu, interrupt)) {
+        vgic_remove_lr(vcpu, interrupt);
+        vgic_route(vcpu, interrupt);
+        vgic_yield_ownership(vcpu, interrupt);
+    } else {
+        union vgic_msg_data msg_data = {
+            .vm_id = (uint16_t)vcpu->vm->id,
+            .int_id = (uint16_t)interrupt->id,
+            .reg = (uint8_t)VGIC_IROUTER_ID,
+        };
+        struct cpu_msg msg = { (uint32_t)VGIC_IPI_ID, VGIC_SET_REG, msg_data.raw };
+        cpu_send_msg(interrupt->owner->phys_id, &msg);
+    }
+    spin_unlock(&interrupt->lock);
+}
+
 void vgic_emul_generic_access(struct emul_access* acc, struct vgic_reg_handler_info* handlers,
     bool gicr_access, cpuid_t vgicr_id)
 {
@@ -1047,9 +1071,10 @@ void vgic_ipi_handler(uint32_t event, uint64_t data)
             uint64_t reg_id = msg.reg;
             struct vgic_reg_handler_info* handlers = vgic_get_reg_handler_info(reg_id);
             struct vgic_int* interrupt = vgic_get_int(cpu()->vcpu, int_id, vgicr_id);
-            if (handlers != NULL && interrupt != NULL) {
-                vgic_int_set_field(handlers, cpu()->vcpu, interrupt, (unsigned long)val,
-                    vgicr_id);
+            if (interrupt != NULL && reg_id == VGIC_IROUTER_ID) {
+                vgic_int_reroute(cpu()->vcpu, interrupt);
+            } else if (handlers != NULL && interrupt != NULL) {
+                vgic_int_set_field(handlers, cpu()->vcpu, interrupt, (unsigned long)val, vgicr_id);
             }
         } break;
 
