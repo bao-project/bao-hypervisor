@@ -40,6 +40,15 @@ endchoice
 config PLATFORM
 	string
 
+config MEM_NON_UNIFIED
+	bool
+	help
+	  Split instruction and data memory buses with separate hypervisor
+	  images per memory - fixed by the platform.
+
+config PLAT_HAS_MMIO_SLAVE_SIDE_PROT
+	bool
+
 
 source "src/platform/agilex5/Kconfig"
 source "src/platform/e3650/Kconfig"
@@ -90,5 +99,11 @@ comment "Interrupt controller: @IRQC@"
 
 comment "IPI controller: @IPIC@"
 	depends on IPIC != ""
+
+comment "Memory model: non-unified"
+	depends on MEM_NON_UNIFIED
+
+comment "Physical interrupts only"
+	depends on PHYS_IRQS_ONLY
 
 endmenu

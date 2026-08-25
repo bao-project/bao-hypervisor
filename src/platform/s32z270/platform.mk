@@ -9,7 +9,6 @@ drivers = linflexd_uart
 
 platform_description:=s32z270_desc.c
 
-plat_mem:=non_unified
 
 platform-cppflags =
 platform-cflags =

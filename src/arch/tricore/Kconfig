@@ -6,3 +6,12 @@ config ARCH_TRICORE
 
 config ARCH
 	default "tricore" if ARCH_TRICORE
+
+config MEM_PROT_MPU
+	default y if ARCH_TRICORE
+
+config MEM_NON_UNIFIED
+	default y if ARCH_TRICORE
+
+config PHYS_IRQS_ONLY
+	default y if ARCH_TRICORE

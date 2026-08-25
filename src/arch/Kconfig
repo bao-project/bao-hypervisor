@@ -12,6 +12,16 @@ config ARCH_SUB
 config ARCH_PROFILE
 	string
 
+config MEM_PROT_MPU
+	bool
+
+config MEM_PROT_MMU
+	bool
+	default y if !MEM_PROT_MPU
+
+config PHYS_IRQS_ONLY
+	bool
+
 source "src/arch/armv8/Kconfig"
 source "src/arch/riscv/Kconfig"
 source "src/arch/rh850/Kconfig"

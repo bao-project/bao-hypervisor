@@ -10,4 +10,3 @@ platform-cflags = -gdwarf-4
 platform-asflags = -gdwarf-4
 platform-ldflags =
 
-plat_mem:=non_unified

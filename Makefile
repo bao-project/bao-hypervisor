@@ -192,6 +192,7 @@ CPU:=$(CONFIG_CPU)
 GIC_VERSION:=$(CONFIG_GIC_VERSION)
 IRQC:=$(CONFIG_IRQC)
 IPIC:=$(CONFIG_IPIC)
+arch_mem_prot:=$(if $(filter y,$(CONFIG_MEM_PROT_MPU)),mpu,mmu)
 
 # Warn when a seed defconfig changed after this build was configured;
 # the working copy is authoritative and is never silently reseeded
@@ -296,29 +297,11 @@ objs-y:=$(abspath $(sort $(objs-y)))
 
 # Toolchain flags
 
-build_macros:=
-ifeq ($(arch_mem_prot),mmu)
-	build_macros+=-DMEM_PROT_MMU
-endif
-ifeq ($(arch_mem_prot),mpu)
-	build_macros+=-DMEM_PROT_MPU
-endif
-ifeq ($(plat_mem),non_unified)
-	ifeq ($(ARCH),aarch64)
-		$(error AArch64 with non_unified memory is not supported)
-	endif
-	build_macros+=-DMEM_NON_UNIFIED
-endif
-ifeq ($(phys_irqs_only),y)
-	build_macros+=-DPHYS_IRQS_ONLY
-endif
-ifeq ($(mmio_slave_side_prot),y)
-	build_macros+=-DMMIO_SLAVE_SIDE_PROT
-
-	ifneq ($(arch_mem_prot),mpu)
-		$(error mmio_slave_side_prot=y requires arch_mem_prot=mpu)
-	endif
-endif
+# Bridge kconfig-owned symbols to the unprefixed macro names the code uses
+kconfig_macros:=MEM_PROT_MMU MEM_PROT_MPU MEM_NON_UNIFIED PHYS_IRQS_ONLY \
+	MMIO_SLAVE_SIDE_PROT
+build_macros:=$(strip $(foreach m, $(kconfig_macros), \
+	$(if $(filter y, $(CONFIG_$(m))), -D$(m))))
 
 ifeq ($(CC_IS_GCC),y)
 	build_macros+=-DCC_IS_GCC

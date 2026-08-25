@@ -6,3 +6,9 @@ config ARCH_RH850
 
 config ARCH
 	default "rh850" if ARCH_RH850
+
+config MEM_PROT_MPU
+	default y if ARCH_RH850
+
+config PHYS_IRQS_ONLY
+	default y if ARCH_RH850

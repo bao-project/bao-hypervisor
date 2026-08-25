@@ -4,3 +4,4 @@
 config PLAT_RH850_U2A16
 	bool "rh850-u2a16"
 	select ARCH_RH850
+	select PLAT_HAS_MMIO_SLAVE_SIDE_PROT

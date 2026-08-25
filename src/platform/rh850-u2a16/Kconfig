@@ -7,3 +7,6 @@ config PLATFORM
 config ARCH_PROFILE
 	default "main" if PLAT_RH850_U2A16
 
+
+config MEM_NON_UNIFIED
+	default y if PLAT_RH850_U2A16

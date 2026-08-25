@@ -13,3 +13,6 @@ config ARCH_PROFILE
 config GIC_VERSION
 	default "GICV3" if PLAT_S32Z270
 
+
+config MEM_NON_UNIFIED
+	default y if PLAT_S32Z270
