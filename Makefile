@@ -80,7 +80,7 @@ targets:=all
 endif
 non_build_targets+=ci clean
 build_targets:=$(strip $(foreach target, $(targets), \
-	$(if $(findstring $(target),$(non_build_targets)),,$(target))))
+	$(if $(filter $(target),$(non_build_targets)),,$(target))))
 
 # Check platform target and set platform, driver and arch dirs based on it
 ifeq ($(PLATFORM),)
