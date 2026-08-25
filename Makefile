@@ -78,13 +78,18 @@ targets:=$(MAKECMDGOALS)
 ifeq ($(targets),)
 targets:=all
 endif
-non_build_targets+=ci clean
+# Targets that are not build targets but still operate on a specific
+# platform/configuration pair
+config_targets:=menuconfig listconfig
+non_build_targets+=ci clean distclean $(config_targets)
 build_targets:=$(strip $(foreach target, $(targets), \
 	$(if $(filter $(target),$(non_build_targets)),,$(target))))
+plat_cfg_targets:=$(strip $(build_targets) \
+	$(filter $(config_targets), $(targets)))
 
 # Check platform target and set platform, driver and arch dirs based on it
 ifeq ($(PLATFORM),)
-ifneq ($(build_targets),)
+ifneq ($(plat_cfg_targets),)
  $(error Target platform argument (PLATFORM) not specified)
 endif
 endif
@@ -94,13 +99,6 @@ drivers_dir=$(platforms_dir)/drivers
 
 ifeq ($(wildcard $(platform_dir)),)
  $(error Target platform $(PLATFORM) is not supported)
-endif
-
--include $(platform_dir)/platform.mk	# must define ARCH and CPU variables
-cpu_arch_dir=$(src_dir)/arch/$(ARCH)
--include $(cpu_arch_dir)/arch.mk
-ifneq ($(MAKECMDGOALS), clean)
- core_mem_prot_dir:=$(core_dir)/$(arch_mem_prot)
 endif
 
 # Check configuration exists and set configurtion sources based on it
@@ -116,7 +114,7 @@ ifeq ($(config_src),)
   endif
 endif
 
-ifneq ($(build_targets),)
+ifneq ($(plat_cfg_targets),)
 ifeq ($(CONFIG),)
 $(error Configuration (CONFIG) not defined.)
 endif
@@ -128,7 +126,79 @@ endif
 
 build_dir:=$(cur_dir)/build/$(PLATFORM)/$(CONFIG)
 bin_dir:=$(cur_dir)/bin/$(PLATFORM)/$(CONFIG)
-directories:=$(build_dir) $(bin_dir)
+config_build_dir:=$(build_dir)/config
+platform_build_dir:=$(build_dir)/platform
+scripts_build_dir:=$(build_dir)/scripts
+directories:=$(build_dir) $(bin_dir) $(config_build_dir) \
+	$(config_build_dir)/inc $(platform_build_dir) $(scripts_build_dir)
+
+# Defconfig infrastructure: each build instance carries its own .config,
+# seeded from the defconfig lookup below, and synced by scripts/kconfig.py
+# into a make fragment (auto.conf) and a C header (autoconf.h) force-included
+# in every compilation unit
+kconfig_file:=$(build_dir)/.config
+kconfig_auto_conf:=$(config_build_dir)/auto.conf
+kconfig_auto_hdr:=$(config_build_dir)/autoconf.h
+kconfig_srcs:=$(shell find $(src_dir) -name Kconfig)
+kconfig_tool:=$(scripts_dir)/kconfig.py
+kconfig_env:=srctree=$(cur_dir) KCONFIG_ROOT=$(src_dir)/Kconfig \
+	KCONFIG_CONFIG=$(kconfig_file) BAO_PLATFORM=$(PLATFORM)
+# Seeding layers, applied in order: the platform's base defconfig, then the
+# VM config folder's defconfig (folder configurations only) overriding it,
+# then pure Kconfig defaults for whatever neither mentions
+seed_plat_defconfig:=$(wildcard $(platform_dir)/defconfig)
+seed_config_defconfig:=$(strip $(if $(filter-out $(CONFIG_REPO),$(config_dir)), \
+	$(wildcard $(config_dir)/defconfig)))
+seed_defconfigs:=$(seed_plat_defconfig) $(seed_config_defconfig)
+seed_defconfig_args:=\
+	$(if $(seed_plat_defconfig),--platform-defconfig $(seed_plat_defconfig)) \
+	$(if $(seed_config_defconfig),--config-defconfig $(seed_config_defconfig))
+
+$(kconfig_file):
+	@echo "Seeding config		$(patsubst $(cur_dir)/%,%, $@)"
+	@mkdir -p $(dir $@)
+	@$(kconfig_env) python3 $(kconfig_tool) seed $(seed_defconfig_args)
+
+$(kconfig_auto_conf): $(kconfig_file) $(kconfig_srcs) $(kconfig_tool)
+	@echo "Generating config	$(patsubst $(cur_dir)/%,%, $@)"
+	@mkdir -p $(config_build_dir)
+	@$(kconfig_env) python3 $(kconfig_tool) sync --auto-conf $@ \
+		--auto-header $(kconfig_auto_hdr)
+
+# The sync recipe above writes both files; a two-target rule would run it
+# once per target (racing under -j) and grouped targets (&:) need make 4.3+,
+# so the header instead tracks auto.conf through a recipe-less rule
+$(kconfig_auto_hdr): $(kconfig_auto_conf)
+
+# Configuration options are owned by Kconfig, which resolves their
+# dependencies; setting them out-of-band would bypass that resolution
+config_cli_overrides:=$(strip $(foreach v, \
+	$(filter-out CONFIG_REPO, $(filter CONFIG_%, $(.VARIABLES))), \
+	$(if $(filter command% override, $(origin $(v))), $(v))))
+ifneq ($(config_cli_overrides),)
+$(error Configuration options cannot be set on the command line \
+	($(config_cli_overrides)); change them via menuconfig or the defconfig)
+endif
+
+ifneq ($(build_targets),)
+-include $(kconfig_auto_conf)
+
+# Warn when a seed defconfig changed after this build was configured;
+# the working copy is authoritative and is never silently reseeded
+ifneq ($(wildcard $(kconfig_file)),)
+$(foreach d, $(seed_defconfigs), \
+	$(if $(shell test $(d) -nt $(kconfig_file) && echo y), \
+		$(warning $(d) is newer than this build's .config; remove \
+			$(kconfig_file) to adopt it)))
+endif
+endif
+
+-include $(platform_dir)/platform.mk	# must define ARCH and CPU variables
+cpu_arch_dir=$(src_dir)/arch/$(ARCH)
+-include $(cpu_arch_dir)/arch.mk
+ifneq ($(arch_mem_prot),)
+ core_mem_prot_dir:=$(core_dir)/$(arch_mem_prot)
+endif
 
 src_dirs+=$(cpu_arch_dir) $(lib_dir) $(core_dir) $(core_mem_prot_dir) \
 	$(platform_dir) $(addprefix $(drivers_dir)/, $(drivers)) $(config_dir)
@@ -155,12 +225,8 @@ inc_dirs+=$(patsubst $(cur_dir)%, $(build_dir)%, $(cpu_arch_dir))/inc
 deps+=$(asm_defs_hdr).d
 
 gens:=
+gens+=$(kconfig_auto_hdr)
 gens+=$(asm_defs_hdr)
-
-config_build_dir:=$(build_dir)/config
-platform_build_dir:=$(build_dir)/platform
-scripts_build_dir:=$(build_dir)/scripts
-directories+=$(config_build_dir) $(config_build_dir)/inc $(platform_build_dir) $(scripts_build_dir)
 
 config_def_generator_src:=$(scripts_dir)/config_defs_gen.c
 config_def_generator:=$(scripts_build_dir)/config_defs_gen
@@ -251,11 +317,12 @@ else ifeq ($(CC_IS_CLANG),y)
 endif
 
 override CPPFLAGS+=$(addprefix -I, $(inc_dirs)) $(arch-cppflags) \
-	$(platform-cppflags) $(build_macros) -DBAO_VERSION=\"$(version_str)\"
+	$(platform-cppflags) $(build_macros) -include $(kconfig_auto_hdr) \
+	-DBAO_VERSION=\"$(version_str)\"
 vpath:.=CPPFLAGS
 
 HOST_CPPFLAGS+=$(addprefix -I, $(inc_dirs)) $(arch-cppflags) \
-	$(platform-cppflags) $(build_macros)
+	$(platform-cppflags) $(build_macros) -include $(kconfig_auto_hdr)
 
 ifeq ($(DEBUG), y)
 	debug_flags:=-g
@@ -366,6 +433,10 @@ $(objs-y):
 	@echo "Generating binary	$(patsubst $(cur_dir)/%,%, $@)"
 	@$(objcopy) -S -O binary $< $@
 
+# Every generator compiles with the force-included kconfig header, so none
+# may run before it exists
+$(filter-out $(kconfig_auto_hdr), $(gens)) $(ld_script_temp): $(kconfig_auto_hdr)
+
 $(deps): | $(gens)
 
 #Generate assembly macro definitions from arch/$(ARCH)/$(asm_defs_src) if such
@@ -423,6 +494,16 @@ $(directories):
 
 endif
 
+# Configuration frontends operating on this build's .config
+
+.PHONY: menuconfig
+menuconfig: $(kconfig_file)
+	@$(kconfig_env) python3 $(kconfig_tool) menuconfig
+
+.PHONY: listconfig
+listconfig: $(kconfig_file)
+	@$(kconfig_env) python3 $(kconfig_tool) list $(seed_defconfig_args)
+
 # Count lines of code for the exact target platform and configuration
 
 .PHONY: cloc
@@ -431,11 +512,28 @@ cloc: | $(deps)
 
 #Clean all object, dependency and generated files
 
+# clean keeps the build's .config (a dotfile, unmatched by the wildcard);
+# distclean erases the configuration as well
+
 .PHONY: clean
 clean:
 	@echo "Erasing directories..."
+ifeq ($(PLATFORM),)
+	-rm -rf $(cur_dir)/build $(cur_dir)/bin
+else
+	-rm -rf $(wildcard $(build_dir)/*)
+	-rm -rf $(bin_dir)
+endif
+
+.PHONY: distclean
+distclean:
+	@echo "Erasing directories and configuration..."
+ifeq ($(PLATFORM),)
+	-rm -rf $(cur_dir)/build $(cur_dir)/bin
+else
 	-rm -rf $(build_dir)
 	-rm -rf $(bin_dir)
+endif
 
 # Instantiate CI rules
 
