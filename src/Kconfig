@@ -5,3 +5,4 @@ mainmenu "Bao Hypervisor Configuration"
 
 source "src/arch/Kconfig"
 source "src/platform/Kconfig"
+source "src/core/Kconfig"

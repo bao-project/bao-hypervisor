@@ -1,0 +1,27 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+menu "Core features"
+
+config IPC
+	bool "Inter-VM communication"
+	default y
+	help
+	  Inter-VM communication via shared memory
+	  Includes the associated notification hypercalls.
+
+config MMIO_SLAVE_SIDE_PROT
+	bool "MMIO slave-side protection"
+	depends on PLAT_HAS_MMIO_SLAVE_SIDE_PROT && MEM_PROT_MPU
+	help
+	  Enforce MMIO access control at the bus slave side instead of
+	  through MPU entries on the master side.
+
+config IPI_MAX_EVENTS
+	int "Depth of the per-cpu message queue"
+	default 253
+	help
+	  Depth of the per-cpu message queue
+	  The default keeps the cpu interface within a single 4K page.
+
+endmenu

@@ -15,3 +15,6 @@ config MEM_NON_UNIFIED
 
 config PHYS_IRQS_ONLY
 	default y if ARCH_TRICORE
+
+config MMIO_SLAVE_SIDE_PROT
+	default y if ARCH_TRICORE
