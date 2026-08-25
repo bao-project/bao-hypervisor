@@ -7,8 +7,34 @@ config PLATFORM
 config ARCH_SUB
 	default "riscv64" if PLAT_QEMU_RISCV64_VIRT
 
+choice
+	prompt "Interrupt controller"
+	depends on PLAT_QEMU_RISCV64_VIRT
+
+config QEMU_RISCV64_VIRT_IRQC_AIA
+	bool "AIA"
+
+config QEMU_RISCV64_VIRT_IRQC_PLIC
+	bool "PLIC"
+
+endchoice
+
 config IRQC
-	default "AIA" if PLAT_QEMU_RISCV64_VIRT
+	default "AIA" if QEMU_RISCV64_VIRT_IRQC_AIA
+	default "PLIC" if QEMU_RISCV64_VIRT_IRQC_PLIC
+
+choice
+	prompt "IPI controller"
+	depends on PLAT_QEMU_RISCV64_VIRT
+
+config QEMU_RISCV64_VIRT_IPIC_SBI
+	bool "SBI"
+
+config QEMU_RISCV64_VIRT_IPIC_ACLINT
+	bool "ACLINT"
+
+endchoice
 
 config IPIC
-	default "IPIC_SBI" if PLAT_QEMU_RISCV64_VIRT
+	default "IPIC_SBI" if QEMU_RISCV64_VIRT_IPIC_SBI
+	default "IPIC_ACLINT" if QEMU_RISCV64_VIRT_IPIC_ACLINT
