@@ -1,0 +1,14 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config PLATFORM
+	default "fvp-a-aarch32" if PLAT_FVP_A_AARCH32
+
+config ARCH_SUB
+	default "aarch32" if PLAT_FVP_A_AARCH32
+
+config ARCH_PROFILE
+	default "armv8-a" if PLAT_FVP_A_AARCH32
+
+config GIC_VERSION
+	default "GICV3" if PLAT_FVP_A_AARCH32

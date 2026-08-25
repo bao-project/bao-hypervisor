@@ -39,29 +39,56 @@ endchoice
 
 config PLATFORM
 	string
-	default "agilex5" if PLAT_AGILEX5
-	default "e3650" if PLAT_E3650
-	default "fvp-a" if PLAT_FVP_A
-	default "fvp-a-aarch32" if PLAT_FVP_A_AARCH32
-	default "fvp-r" if PLAT_FVP_R
-	default "fvp-r-aarch32" if PLAT_FVP_R_AARCH32
-	default "hikey960" if PLAT_HIKEY960
-	default "imx8mn" if PLAT_IMX8MN
-	default "imx8mp-verdin" if PLAT_IMX8MP_VERDIN
-	default "imx8qm" if PLAT_IMX8QM
-	default "k3-com260" if PLAT_K3_COM260
-	default "mps3-an536" if PLAT_MPS3_AN536
-	default "qemu-aarch64-virt" if PLAT_QEMU_AARCH64_VIRT
-	default "qemu-riscv32-virt" if PLAT_QEMU_RISCV32_VIRT
-	default "qemu-riscv64-virt" if PLAT_QEMU_RISCV64_VIRT
-	default "rh850-u2a16" if PLAT_RH850_U2A16
-	default "rpi4" if PLAT_RPI4
-	default "s32g3" if PLAT_S32G3
-	default "s32z270" if PLAT_S32Z270
-	default "tc4dx" if PLAT_TC4DX
-	default "tx2" if PLAT_TX2
-	default "ultra96" if PLAT_ULTRA96
-	default "zcu102" if PLAT_ZCU102
-	default "zcu104" if PLAT_ZCU104
+
+
+source "src/platform/agilex5/Kconfig"
+source "src/platform/e3650/Kconfig"
+source "src/platform/fvp-a/Kconfig"
+source "src/platform/fvp-a-aarch32/Kconfig"
+source "src/platform/fvp-r/Kconfig"
+source "src/platform/fvp-r-aarch32/Kconfig"
+source "src/platform/hikey960/Kconfig"
+source "src/platform/imx8mn/Kconfig"
+source "src/platform/imx8mp-verdin/Kconfig"
+source "src/platform/imx8qm/Kconfig"
+source "src/platform/k3-com260/Kconfig"
+source "src/platform/mps3-an536/Kconfig"
+source "src/platform/qemu-aarch64-virt/Kconfig"
+source "src/platform/qemu-riscv32-virt/Kconfig"
+source "src/platform/qemu-riscv64-virt/Kconfig"
+source "src/platform/rh850-u2a16/Kconfig"
+source "src/platform/rpi4/Kconfig"
+source "src/platform/s32g3/Kconfig"
+source "src/platform/s32z270/Kconfig"
+source "src/platform/tc4dx/Kconfig"
+source "src/platform/tx2/Kconfig"
+source "src/platform/ultra96/Kconfig"
+source "src/platform/zcu102/Kconfig"
+source "src/platform/zcu104/Kconfig"
+
+# Written once for all platforms: @SYM@ placeholders are expanded to
+# the resolved values by the menuconfig frontend at display time
+comment ""
+
+comment "Architecture: @ARCH@"
+	depends on ARCH != ""
+
+comment "Sub-architecture: @ARCH_SUB@"
+	depends on ARCH_SUB != ""
+
+comment "Architecture profile: @ARCH_PROFILE@"
+	depends on ARCH_PROFILE != ""
+
+comment "CPU: @CPU@"
+	depends on CPU != ""
+
+comment "GIC version: @GIC_VERSION@"
+	depends on GIC_VERSION != ""
+
+comment "Interrupt controller: @IRQC@"
+	depends on IRQC != ""
+
+comment "IPI controller: @IPIC@"
+	depends on IPIC != ""
 
 endmenu

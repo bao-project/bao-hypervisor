@@ -1,0 +1,8 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config ARCH_RH850
+	bool
+
+config ARCH
+	default "rh850" if ARCH_RH850

@@ -3,3 +3,4 @@
 
 config PLAT_TC4DX
 	bool "tc4dx"
+	select ARCH_TRICORE

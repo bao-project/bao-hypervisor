@@ -183,6 +183,16 @@ endif
 ifneq ($(build_targets),)
 -include $(kconfig_auto_conf)
 
+# Platform facts are resolved by the platform choice in Kconfig; the
+# makefiles below only consume them
+ARCH:=$(CONFIG_ARCH)
+ARCH_SUB:=$(CONFIG_ARCH_SUB)
+ARCH_PROFILE:=$(CONFIG_ARCH_PROFILE)
+CPU:=$(CONFIG_CPU)
+GIC_VERSION:=$(CONFIG_GIC_VERSION)
+IRQC:=$(CONFIG_IRQC)
+IPIC:=$(CONFIG_IPIC)
+
 # Warn when a seed defconfig changed after this build was configured;
 # the working copy is authoritative and is never silently reseeded
 ifneq ($(wildcard $(kconfig_file)),)
@@ -193,7 +203,7 @@ $(foreach d, $(seed_defconfigs), \
 endif
 endif
 
--include $(platform_dir)/platform.mk	# must define ARCH and CPU variables
+-include $(platform_dir)/platform.mk	# platform build mechanics
 cpu_arch_dir=$(src_dir)/arch/$(ARCH)
 -include $(cpu_arch_dir)/arch.mk
 ifneq ($(arch_mem_prot),)

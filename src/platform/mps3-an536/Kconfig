@@ -1,0 +1,27 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config PLATFORM
+	default "mps3-an536" if PLAT_MPS3_AN536
+
+config ARCH_SUB
+	default "aarch32" if PLAT_MPS3_AN536
+
+config ARCH_PROFILE
+	default "armv8-r" if PLAT_MPS3_AN536
+
+choice
+	prompt "GIC version"
+	depends on PLAT_MPS3_AN536
+
+config MPS3_AN536_GIC_V3
+	bool "GICv3"
+
+config MPS3_AN536_GIC_V2
+	bool "GICv2"
+
+endchoice
+
+config GIC_VERSION
+	default "GICV3" if MPS3_AN536_GIC_V3
+	default "GICV2" if MPS3_AN536_GIC_V2

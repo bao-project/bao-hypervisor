@@ -3,3 +3,4 @@
 
 config PLAT_TX2
 	bool "tx2"
+	select ARCH_ARMV8

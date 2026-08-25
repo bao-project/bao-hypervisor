@@ -1,0 +1,9 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config PLATFORM
+	default "rh850-u2a16" if PLAT_RH850_U2A16
+
+config ARCH_PROFILE
+	default "main" if PLAT_RH850_U2A16
+

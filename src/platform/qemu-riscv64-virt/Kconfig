@@ -1,0 +1,14 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config PLATFORM
+	default "qemu-riscv64-virt" if PLAT_QEMU_RISCV64_VIRT
+
+config ARCH_SUB
+	default "riscv64" if PLAT_QEMU_RISCV64_VIRT
+
+config IRQC
+	default "AIA" if PLAT_QEMU_RISCV64_VIRT
+
+config IPIC
+	default "IPIC_SBI" if PLAT_QEMU_RISCV64_VIRT

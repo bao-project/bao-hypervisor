@@ -1,0 +1,14 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config ARCH_ARMV8
+	bool
+
+config ARCH
+	default "armv8" if ARCH_ARMV8
+
+config CPU
+	string
+
+config GIC_VERSION
+	string

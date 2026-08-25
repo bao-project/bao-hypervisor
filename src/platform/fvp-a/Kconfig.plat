@@ -3,3 +3,4 @@
 
 config PLAT_FVP_A
 	bool "fvp-a"
+	select ARCH_ARMV8

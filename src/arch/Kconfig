@@ -1,0 +1,18 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+# Each architecture declares its own facts and options in its Kconfig file;
+# only the shared ARCH symbol is declared here
+config ARCH
+	string
+
+config ARCH_SUB
+	string
+
+config ARCH_PROFILE
+	string
+
+source "src/arch/armv8/Kconfig"
+source "src/arch/riscv/Kconfig"
+source "src/arch/rh850/Kconfig"
+source "src/arch/tricore/Kconfig"

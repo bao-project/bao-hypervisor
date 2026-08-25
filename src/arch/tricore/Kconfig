@@ -1,0 +1,8 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config ARCH_TRICORE
+	bool
+
+config ARCH
+	default "tricore" if ARCH_TRICORE

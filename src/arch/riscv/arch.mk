@@ -1,7 +1,6 @@
 ## SPDX-License-Identifier: Apache-2.0
 ## Copyright (c) Bao Project and Contributors. All rights reserved.
 
-ARCH_SUB?=riscv64
 
 ifeq ($(ARCH_SUB), riscv64)
 CROSS_COMPILE ?= riscv64-unknown-elf-

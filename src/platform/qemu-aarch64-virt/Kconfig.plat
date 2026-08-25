@@ -3,3 +3,4 @@
 
 config PLAT_QEMU_AARCH64_VIRT
 	bool "qemu-aarch64-virt"
+	select ARCH_ARMV8
