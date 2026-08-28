@@ -40,6 +40,15 @@ def check_pin(kconf):
                      'use another directory')
 
 
+def apply_config_src(kconf, src):
+    if not kconf.syms['CONFIG_SRC'].visibility and \
+            kconf.syms['CONFIG_SRC'].str_value != src:
+        sys.exit('kconfig: the VM configuration is pinned to '
+                 f"{kconf.syms['CONFIG_SRC'].str_value}; reseed with "
+                 'a <platform>_defconfig target to change it')
+    kconf.syms['CONFIG_SRC'].set_value(src)
+
+
 def write_build_pin(kconf, pin_platform, pin_config):
     path = os.environ.get('BAO_BUILD_PIN')
     if not (pin_platform or pin_config) or path == '/dev/null' or \
@@ -57,6 +66,9 @@ def write_build_pin(kconf, pin_platform, pin_config):
         if pin_config and src:
             f.write('\nconfig CONFIG_PINNED\n\tdefault y\n\n'
                     f'config CONFIG_SRC\n\tdefault "{src}"\n')
+            repo = kconf.syms['CONFIG_REPO'].str_value
+            if repo:
+                f.write(f'\nconfig CONFIG_REPO\n\tdefault "{repo}"\n')
 
 
 def check_platform(kconf, platform):
@@ -95,8 +107,9 @@ def write_auto_conf(kconf, path):
 def write_auto_conf_header(kconf, path):
     with open(path, 'w') as f:
         for sym in emitted_syms(kconf):
-            # CONFIG_SRC is a build input consumed by make, not by code
-            if sym.name == 'CONFIG_SRC':
+            # The configuration lookup is a build input consumed by make,
+            # not by code
+            if sym.name in ('CONFIG_SRC', 'CONFIG_REPO'):
                 continue
             if sym.orig_type in (kconfiglib.BOOL, kconfiglib.TRISTATE):
                 if sym.tri_value > 0:
@@ -237,6 +250,7 @@ def main():
     parser.add_argument('--platform-defconfig')
     parser.add_argument('--config-defconfig')
     parser.add_argument('--config-src')
+    parser.add_argument('--config-repo')
     parser.add_argument('--pin-platform', action='store_true')
     parser.add_argument('--pin-config', action='store_true')
     parser.add_argument('--auto-conf')
@@ -261,12 +275,9 @@ def main():
         load_defconfigs(kconf, defconfigs)
         platform_symbol(kconf, platform).set_value(2)
         if args.config_src:
-            if not kconf.syms['CONFIG_SRC'].visibility and \
-                    kconf.syms['CONFIG_SRC'].str_value != args.config_src:
-                sys.exit('kconfig: the VM configuration is pinned to '
-                         f"{kconf.syms['CONFIG_SRC'].str_value}; reseed with "
-                         'a <platform>_defconfig target to change it')
-            kconf.syms['CONFIG_SRC'].set_value(args.config_src)
+            apply_config_src(kconf, args.config_src)
+        if args.config_repo:
+            kconf.syms['CONFIG_REPO'].set_value(args.config_repo)
         check_warnings(kconf)
         check_platform(kconf, platform)
         check_pin(kconf)

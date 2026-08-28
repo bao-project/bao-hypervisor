@@ -66,6 +66,7 @@ lib_dir=$(src_dir)/lib
 core_dir=$(src_dir)/core
 platforms_dir=$(src_dir)/platform
 configs_dir=$(cur_dir)/configs
+config_repo_arg:=$(filter command environment,$(origin CONFIG_REPO))
 CONFIG_REPO?=$(configs_dir)
 scripts_dir:=$(cur_dir)/scripts
 ci_dir:=$(cur_dir)/ci
@@ -193,7 +194,8 @@ seed_plat_defconfig=$(wildcard $(platform_dir)/defconfig)
 seed_config_defconfig=$(strip $(if $(filter-out $(CONFIG_REPO),$(config_dir)), \
 	$(wildcard $(config_dir)/defconfig)))
 seed_defconfigs=$(seed_plat_defconfig) $(seed_config_defconfig)
-seed_config_src_arg=$(if $(config_src),--config-src $(abspath $(config_src)))
+seed_config_src_arg=$(if $(CONFIG),--config-src $(CONFIG)) \
+	$(if $(config_repo_arg),--config-repo $(CONFIG_REPO))
 seed_defconfig_args=\
 	$(if $(seed_plat_defconfig),--platform-defconfig $(seed_plat_defconfig)) \
 	$(if $(seed_config_defconfig),--config-defconfig $(seed_config_defconfig)) \
@@ -201,7 +203,7 @@ seed_defconfig_args=\
 
 $(kconfig_file):
 	$(if $(PLATFORM),,$(error No configuration in $(build_dir): pass \
-		PLATFORM= and CONFIG=, or run make \
+		PLATFORM= and CONFIG= for a classic build, or run make \
 		$(if $(default_o),,O=$(O) )<platform>_defconfig first))
 	@echo "Seeding config		$(patsubst $(cur_dir)/%,%, $@)"
 	@mkdir -p $(dir $@)
@@ -247,28 +249,57 @@ endif
 ifneq ($(strip $(build_targets) $(filter listconfig,$(targets))),)
 -include $(kconfig_auto_conf)
 
+# A missing or out-of-date auto.conf is about to be (re)generated, after
+# which make restarts: validation against its values only runs once it is
+# current, never against stale ones
+kconfig_auto_stale:=$(if $(wildcard $(kconfig_auto_conf)),$(shell \
+	test $(kconfig_file) -nt $(kconfig_auto_conf) && echo y),y)
+
 ifneq ($(O),)
-# In the O= workflow the .config owns the platform and the VM configuration.
-# PLATFORM= must then agree with it and CONFIG= overrides the configuration
-# source for this invocation only. The checks are skipped while auto.conf is
-# still being (re)generated; make restarts with the resolved values
+# In the O= workflow the .config owns the platform and the VM configuration
 PLATFORM:=$(CONFIG_PLATFORM)
-ifneq ($(wildcard $(kconfig_auto_conf)),)
+ifeq ($(kconfig_auto_stale),)
 ifneq ($(PLATFORM),)
 ifeq ($(wildcard $(platform_dir)),)
  $(error Target platform $(PLATFORM) is not supported)
 endif
 endif
 ifeq ($(config_src),)
-config_src:=$(CONFIG_CONFIG_SRC)
-config_dir:=$(patsubst %/,%,$(dir $(config_src)))
-ifeq ($(notdir $(config_src)),config.c)
+config_spec:=$(CONFIG_CONFIG_SRC)
+config_repo:=$(strip $(if $(config_repo_arg),$(CONFIG_REPO), \
+	$(if $(CONFIG_CONFIG_REPO),$(CONFIG_CONFIG_REPO),$(configs_dir))))
+ifneq ($(build_targets),)
+ifeq ($(config_spec),)
+$(error No VM configuration set in $(kconfig_file): set it via menuconfig)
+endif
+endif
+# The stored configuration is a name looked up in the repository, a
+# configuration folder, or a config.c path
+ifeq ($(findstring /,$(config_spec)),)
+config_src:=$(wildcard $(config_repo)/$(config_spec).c)
+ifeq ($(config_src),)
+config_dir:=$(config_repo)/$(config_spec)
 -include $(config_dir)/config.mk
+ifeq ($(config_src),)
+config_src:=$(wildcard $(config_dir)/config.c)
+endif
+else
+config_dir:=$(config_repo)
+endif
+else ifeq ($(filter %.c,$(config_spec)),)
+config_dir:=$(patsubst %/,%,$(config_spec))
+-include $(config_dir)/config.mk
+ifeq ($(config_src),)
+config_src:=$(wildcard $(config_dir)/config.c)
+endif
+else
+config_src:=$(config_spec)
+config_dir:=$(patsubst %/,%,$(dir $(config_spec)))
 endif
 endif
 ifneq ($(build_targets),)
-ifeq ($(config_src),)
-$(error No VM configuration: pass CONFIG= or set CONFIG_SRC in menuconfig)
+ifeq ($(wildcard $(config_src)),)
+$(error VM configuration $(if $(config_spec),$(config_spec),$(CONFIG)) not found)
 endif
 endif
 endif
@@ -584,11 +615,11 @@ endif
 # Configuration frontends operating on this build's .config
 
 .PHONY: menuconfig
-menuconfig: $(if $(O),$(if $(PLATFORM),$(kconfig_file)),$(kconfig_file))
+menuconfig: $(if $(O),,$(kconfig_file))
 	@$(kconfig_env) python3 $(kconfig_tool) menuconfig
 
 .PHONY: listconfig
-listconfig: $(kconfig_file)
+listconfig: $(if $(O),,$(kconfig_file))
 	@$(kconfig_env) python3 $(kconfig_tool) list $(seed_defconfig_args)
 
 # Seed the build's .config without building
