@@ -51,6 +51,7 @@ DEBUG:=n
 OPTIMIZATIONS:=2
 CONFIG=
 PLATFORM=
+O?=
 
 # Setup version
 
@@ -80,25 +81,51 @@ targets:=all
 endif
 # Targets that are not build targets but still operate on a specific
 # platform/configuration pair
-config_targets:=menuconfig listconfig
-non_build_targets+=ci clean distclean $(config_targets)
+config_targets:=menuconfig listconfig defconfig
+plat_defconfig_targets:=$(addsuffix _defconfig, \
+	$(notdir $(patsubst %/,%,$(dir $(wildcard $(platforms_dir)/*/Kconfig.plat)))))
+non_build_targets+=ci clean distclean $(config_targets) $(plat_defconfig_targets)
 build_targets:=$(strip $(foreach target, $(targets), \
 	$(if $(filter $(target),$(non_build_targets)),,$(target))))
 plat_cfg_targets:=$(strip $(build_targets) \
 	$(filter $(config_targets), $(targets)))
 
-# Check platform target and set platform, driver and arch dirs based on it
+# Two workflows: PLATFORM=/CONFIG= on the command line select the classic
+# per-target build (both must be given, as before kconfig); everything else
+# operates on an output directory, explicit O= or the default build/ (with
+# binaries in bin/), seeded by the <platform>_defconfig targets
+ifneq ($(strip $(PLATFORM)$(CONFIG)),)
+ifneq ($(filter $(plat_defconfig_targets),$(targets)),)
+$(error PLATFORM=/CONFIG= cannot be combined with a defconfig target; the \
+	VM configuration of an output directory is set via menuconfig)
+endif
+ifneq ($(O),)
+$(error PLATFORM=/CONFIG= select the classic per-target build and cannot \
+	be combined with O=; seed the output directory with make O=$(O) \
+	<platform>_defconfig instead)
+endif
+else ifeq ($(O),)
+override O:=$(cur_dir)/build
+default_o:=y
+endif
+
+# Check platform target and set platform, driver and arch dirs based on it.
+# With O= the platform may instead come from the output directory's .config
+ifeq ($(O),)
 ifeq ($(PLATFORM),)
 ifneq ($(plat_cfg_targets),)
  $(error Target platform argument (PLATFORM) not specified)
+endif
 endif
 endif
 
 platform_dir=$(platforms_dir)/$(PLATFORM)
 drivers_dir=$(platforms_dir)/drivers
 
+ifneq ($(PLATFORM),)
 ifeq ($(wildcard $(platform_dir)),)
  $(error Target platform $(PLATFORM) is not supported)
+endif
 endif
 
 # Check configuration exists and set configurtion sources based on it
@@ -115,53 +142,87 @@ ifeq ($(config_src),)
 endif
 
 ifneq ($(plat_cfg_targets),)
+ifeq ($(O),)
 ifeq ($(CONFIG),)
 $(error Configuration (CONFIG) not defined.)
 endif
+endif
+endif
+ifneq ($(CONFIG),)
 ifeq ($(config_src),)
 $(error Cant find file for $(CONFIG) config!)
 endif
 endif
 
 
+ifeq ($(O),)
 build_dir:=$(cur_dir)/build/$(PLATFORM)/$(CONFIG)
 bin_dir:=$(cur_dir)/bin/$(PLATFORM)/$(CONFIG)
 config_build_dir:=$(build_dir)/config
+else
+build_dir:=$(abspath $(O))
+bin_dir:=$(if $(default_o),$(cur_dir)/bin,$(build_dir))
+$(shell mkdir -p $(build_dir))
+# The output directory is shared between configurations, so each keeps its
+# own object tree; config_name is only known once the .config is read
+config_build_dir=$(kconfig_out_dir)/$(config_name)
+endif
+kconfig_out_dir:=$(build_dir)/config
 platform_build_dir:=$(build_dir)/platform
 scripts_build_dir:=$(build_dir)/scripts
-directories:=$(build_dir) $(bin_dir) $(config_build_dir) \
-	$(config_build_dir)/inc $(platform_build_dir) $(scripts_build_dir)
+directories:=$(build_dir) $(bin_dir) $(kconfig_out_dir) \
+	$(platform_build_dir) $(scripts_build_dir)
 
 # Defconfig infrastructure: each build instance carries its own .config,
 # seeded from the defconfig lookup below, and synced by scripts/kconfig.py
 # into a make fragment (auto.conf) and a C header (autoconf.h) force-included
 # in every compilation unit
 kconfig_file:=$(build_dir)/.config
-kconfig_auto_conf:=$(config_build_dir)/auto.conf
-kconfig_auto_hdr:=$(config_build_dir)/autoconf.h
+kconfig_auto_conf:=$(kconfig_out_dir)/auto.conf
+kconfig_auto_hdr:=$(kconfig_out_dir)/autoconf.h
 kconfig_srcs:=$(shell find $(src_dir) -name Kconfig)
 kconfig_tool:=$(scripts_dir)/kconfig.py
-kconfig_env:=srctree=$(cur_dir) KCONFIG_ROOT=$(src_dir)/Kconfig \
-	KCONFIG_CONFIG=$(kconfig_file) BAO_PLATFORM=$(PLATFORM)
+kconfig_env=srctree=$(cur_dir) KCONFIG_ROOT=$(src_dir)/Kconfig \
+	KCONFIG_CONFIG=$(kconfig_file) $(if $(PLATFORM),BAO_PLATFORM=$(PLATFORM))
 # Seeding layers, applied in order: the platform's base defconfig, then the
 # VM config folder's defconfig (folder configurations only) overriding it,
 # then pure Kconfig defaults for whatever neither mentions
-seed_plat_defconfig:=$(wildcard $(platform_dir)/defconfig)
-seed_config_defconfig:=$(strip $(if $(filter-out $(CONFIG_REPO),$(config_dir)), \
+seed_plat_defconfig=$(wildcard $(platform_dir)/defconfig)
+seed_config_defconfig=$(strip $(if $(filter-out $(CONFIG_REPO),$(config_dir)), \
 	$(wildcard $(config_dir)/defconfig)))
-seed_defconfigs:=$(seed_plat_defconfig) $(seed_config_defconfig)
-seed_defconfig_args:=\
+seed_defconfigs=$(seed_plat_defconfig) $(seed_config_defconfig)
+seed_config_src_arg=$(if $(config_src),--config-src $(abspath $(config_src)))
+seed_defconfig_args=\
 	$(if $(seed_plat_defconfig),--platform-defconfig $(seed_plat_defconfig)) \
-	$(if $(seed_config_defconfig),--config-defconfig $(seed_config_defconfig))
+	$(if $(seed_config_defconfig),--config-defconfig $(seed_config_defconfig)) \
+	$(seed_config_src_arg)
 
 $(kconfig_file):
+	$(if $(PLATFORM),,$(error No configuration in $(build_dir): pass \
+		PLATFORM= and CONFIG=, or run make \
+		$(if $(default_o),,O=$(O) )<platform>_defconfig first))
 	@echo "Seeding config		$(patsubst $(cur_dir)/%,%, $@)"
 	@mkdir -p $(dir $@)
 	@$(kconfig_env) python3 $(kconfig_tool) seed $(seed_defconfig_args)
 
+# Kernel-style seeding of an O= output directory: the target stem names the
+# platform, and CONFIG= additionally records the VM configuration source
+.PHONY: $(plat_defconfig_targets)
+$(plat_defconfig_targets): %_defconfig:
+	$(if $(O),,$(error $@ requires an output directory (O=<dir>)))
+	@echo "Seeding config		$(kconfig_file)"
+	@mkdir -p $(build_dir)
+	@srctree=$(cur_dir) KCONFIG_ROOT=$(src_dir)/Kconfig \
+		KCONFIG_CONFIG=$(kconfig_file) BAO_PLATFORM=$* \
+		python3 $(kconfig_tool) seed \
+		$(if $(wildcard $(platforms_dir)/$*/defconfig), \
+			--platform-defconfig $(platforms_dir)/$*/defconfig) \
+		$(if $(seed_config_defconfig),--config-defconfig $(seed_config_defconfig)) \
+		$(seed_config_src_arg)
+
 $(kconfig_auto_conf): $(kconfig_file) $(kconfig_srcs) $(kconfig_tool)
 	@echo "Generating config	$(patsubst $(cur_dir)/%,%, $@)"
-	@mkdir -p $(config_build_dir)
+	@mkdir -p $(kconfig_out_dir)
 	@$(kconfig_env) python3 $(kconfig_tool) sync --auto-conf $@ \
 		--auto-header $(kconfig_auto_hdr)
 
@@ -180,8 +241,38 @@ $(error Configuration options cannot be set on the command line \
 	($(config_cli_overrides)); change them via menuconfig or the defconfig)
 endif
 
-ifneq ($(build_targets),)
+ifneq ($(strip $(build_targets) $(filter listconfig,$(targets))),)
 -include $(kconfig_auto_conf)
+
+ifneq ($(O),)
+# In the O= workflow the .config owns the platform and the VM configuration.
+# PLATFORM= must then agree with it and CONFIG= overrides the configuration
+# source for this invocation only. The checks are skipped while auto.conf is
+# still being (re)generated; make restarts with the resolved values
+PLATFORM:=$(CONFIG_PLATFORM)
+ifneq ($(wildcard $(kconfig_auto_conf)),)
+ifneq ($(PLATFORM),)
+ifeq ($(wildcard $(platform_dir)),)
+ $(error Target platform $(PLATFORM) is not supported)
+endif
+endif
+ifeq ($(config_src),)
+config_src:=$(CONFIG_CONFIG_SRC)
+config_dir:=$(patsubst %/,%,$(dir $(config_src)))
+ifeq ($(notdir $(config_src)),config.c)
+-include $(config_dir)/config.mk
+endif
+endif
+ifneq ($(build_targets),)
+ifeq ($(config_src),)
+$(error No VM configuration: pass CONFIG= or set CONFIG_SRC in menuconfig)
+endif
+endif
+endif
+config_name:=$(strip $(if $(filter config.c,$(notdir $(config_src))), \
+	$(notdir $(patsubst %/,%,$(dir $(config_src)))), \
+	$(basename $(notdir $(config_src)))))
+endif
 
 # Platform facts are resolved by the platform choice in Kconfig; the
 # makefiles below only consume them
@@ -216,7 +307,7 @@ src_dirs+=$(cpu_arch_dir) $(lib_dir) $(core_dir) $(core_mem_prot_dir) \
 inc_dirs:=$(addsuffix /inc, $(src_dirs))
 
 build_dirs:=$(patsubst $(cur_dir)%, $(build_dir)%, $(src_dirs) $(inc_dirs))
-directories+=$(build_dirs)
+directories+=$(build_dirs) $(config_build_dir) $(config_build_dir)/inc
 
 
 # Setup list of targets for compilation
@@ -240,7 +331,7 @@ gens+=$(kconfig_auto_hdr)
 gens+=$(asm_defs_hdr)
 
 config_def_generator_src:=$(scripts_dir)/config_defs_gen.c
-config_def_generator:=$(scripts_build_dir)/config_defs_gen
+config_def_generator:=$(if $(O),$(config_build_dir),$(scripts_build_dir))/config_defs_gen
 config_defs:=$(config_build_dir)/inc/config_defs_gen.h
 gens+=$(config_def_generator) $(config_defs)
 inc_dirs+=$(config_build_dir)/inc
@@ -291,7 +382,7 @@ directories+=$(abspath $(dir $(objs-y)))
 
 # Make sure that are no duplicates in directories, deps and objs-y.
 # These variables should not be modified beyong this point.
-directories:=$(abspath $(sort $(directories)))
+directories:=$(sort $(abspath $(directories)))
 deps:=$(abspath $(sort $(deps)))
 objs-y:=$(abspath $(sort $(objs-y)))
 
@@ -490,12 +581,16 @@ endif
 # Configuration frontends operating on this build's .config
 
 .PHONY: menuconfig
-menuconfig: $(kconfig_file)
+menuconfig: $(if $(O),$(if $(PLATFORM),$(kconfig_file)),$(kconfig_file))
 	@$(kconfig_env) python3 $(kconfig_tool) menuconfig
 
 .PHONY: listconfig
 listconfig: $(kconfig_file)
 	@$(kconfig_env) python3 $(kconfig_tool) list $(seed_defconfig_args)
+
+# Seed the build's .config without building
+.PHONY: defconfig
+defconfig: $(kconfig_file)
 
 # Count lines of code for the exact target platform and configuration
 
@@ -511,8 +606,10 @@ cloc: | $(deps)
 .PHONY: clean
 clean:
 	@echo "Erasing directories..."
-ifeq ($(PLATFORM),)
-	-rm -rf $(cur_dir)/build $(cur_dir)/bin
+ifneq ($(default_o),)
+	-rm -rf $(build_dir) $(bin_dir)
+else ifneq ($(O),)
+	-rm -rf $(wildcard $(build_dir)/*) $(wildcard $(bin_dir)/*)
 else
 	-rm -rf $(wildcard $(build_dir)/*)
 	-rm -rf $(bin_dir)
@@ -521,8 +618,11 @@ endif
 .PHONY: distclean
 distclean:
 	@echo "Erasing directories and configuration..."
-ifeq ($(PLATFORM),)
-	-rm -rf $(cur_dir)/build $(cur_dir)/bin
+ifneq ($(default_o),)
+	-rm -rf $(build_dir) $(bin_dir)
+else ifneq ($(O),)
+	-rm -rf $(wildcard $(build_dir)/*) $(wildcard $(bin_dir)/*) \
+		$(wildcard $(build_dir)/.config)
 else
 	-rm -rf $(build_dir)
 	-rm -rf $(bin_dir)

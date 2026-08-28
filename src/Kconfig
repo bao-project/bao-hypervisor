@@ -3,6 +3,14 @@
 
 mainmenu "Bao Hypervisor Configuration"
 
+config CONFIG_SRC
+	string "VM configuration (config.c path)"
+	help
+	  Fully resolved path of the VM configuration source this build
+	  compiles. Filled in when the configuration is seeded with CONFIG=
+	  on the make command line; passing CONFIG= to a later build
+	  overrides it for that invocation without changing it here.
+
 source "src/arch/Kconfig"
 source "src/platform/Kconfig"
 source "src/core/Kconfig"

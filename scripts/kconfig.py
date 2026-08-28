@@ -61,6 +61,9 @@ def write_auto_conf(kconf, path):
 def write_auto_conf_header(kconf, path):
     with open(path, 'w') as f:
         for sym in emitted_syms(kconf):
+            # CONFIG_SRC is a build input consumed by make, not by code
+            if sym.name == 'CONFIG_SRC':
+                continue
             if sym.orig_type in (kconfiglib.BOOL, kconfiglib.TRISTATE):
                 if sym.tri_value > 0:
                     f.write(f'#define CONFIG_{sym.name} 1\n')
@@ -107,11 +110,14 @@ def load_defconfigs(kconf, paths):
         kconf.load_config(path, replace=(i == 0))
 
 
-def list_options(kconf, platform, plat_file, cfg_file):
+def list_options(kconf, platform, plat_file, cfg_file, config_src):
     plat_keys = defconfig_keys(plat_file) if plat_file else set()
     cfg_keys = defconfig_keys(cfg_file) if cfg_file else set()
     load_defconfigs(kconf, [f for f in (plat_file, cfg_file) if f])
     platform_symbol(kconf, platform).set_value(2)
+    if config_src:
+        kconf.syms['CONFIG_SRC'].set_value(config_src)
+        cfg_keys.add('CONFIG_SRC')
     expected = {sym.name: sym.str_value for sym in kconf.unique_defined_syms}
     if os.path.exists(os.environ.get('KCONFIG_CONFIG', '.config')):
         kconf.load_config()
@@ -138,6 +144,17 @@ def list_options(kconf, platform, plat_file, cfg_file):
             print(f'CONFIG_{sym.name:<21} fixed {sym.str_value}')
 
 
+def peek_platform():
+    # O= builds carry the platform in the .config rather than the environment
+    if not os.path.exists(os.environ.get('KCONFIG_CONFIG', '.config')):
+        sys.exit('kconfig: no .config yet; seed one with a '
+                 '<platform>_defconfig target first')
+    peek = kconfiglib.Kconfig(os.environ.get('KCONFIG_ROOT', 'Kconfig'),
+                              suppress_traceback=True)
+    peek.load_config()
+    return peek.syms['PLATFORM'].str_value
+
+
 def run_menuconfig():
     import menuconfig
 
@@ -162,12 +179,13 @@ def main():
     parser.add_argument('command', choices=['seed', 'sync', 'list', 'menuconfig'])
     parser.add_argument('--platform-defconfig')
     parser.add_argument('--config-defconfig')
+    parser.add_argument('--config-src')
     parser.add_argument('--auto-conf')
     parser.add_argument('--auto-header')
     args = parser.parse_args()
 
     platform = os.environ.get('BAO_PLATFORM')
-    if not platform:
+    if not platform and args.command == 'seed':
         sys.exit('kconfig: BAO_PLATFORM not set')
 
     if args.command == 'menuconfig':
@@ -182,19 +200,24 @@ def main():
     if args.command == 'seed':
         load_defconfigs(kconf, defconfigs)
         platform_symbol(kconf, platform).set_value(2)
+        if args.config_src:
+            kconf.syms['CONFIG_SRC'].set_value(args.config_src)
         check_warnings(kconf)
         check_platform(kconf, platform)
         kconf.write_config()
     elif args.command == 'sync':
         kconf.load_config()
         check_warnings(kconf)
-        check_platform(kconf, platform)
+        if platform:
+            check_platform(kconf, platform)
         kconf.write_config()
         write_auto_conf_header(kconf, args.auto_header)
         write_auto_conf(kconf, args.auto_conf)
     else:
+        if not platform:
+            platform = peek_platform()
         list_options(kconf, platform, args.platform_defconfig,
-                     args.config_defconfig)
+                     args.config_defconfig, args.config_src)
 
 
 if __name__ == '__main__':
