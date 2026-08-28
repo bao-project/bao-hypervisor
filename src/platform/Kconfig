@@ -7,7 +7,7 @@
 
 menu "Platform"
 
-choice
+choice PLATFORM_SEL
 	prompt "Target platform"
 
 source "src/platform/agilex5/Kconfig.plat"

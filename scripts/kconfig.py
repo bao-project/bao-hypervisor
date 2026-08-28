@@ -31,6 +31,34 @@ def platform_symbol(kconf, platform):
     return sym
 
 
+def check_pin(kconf):
+    if kconf.syms['PLATFORM_PINNED'].tri_value == 2:
+        pinned = kconf.syms['PLATFORM_PINNED_VALUE'].str_value
+        if kconf.syms['PLATFORM'].str_value != pinned:
+            sys.exit(f'kconfig: this build directory is pinned to platform '
+                     f'{pinned}; reseed it with make {pinned}_defconfig or '
+                     'use another directory')
+
+
+def write_build_pin(kconf, pin_platform, pin_config):
+    path = os.environ.get('BAO_BUILD_PIN')
+    if not (pin_platform or pin_config) or path == '/dev/null' or \
+            os.path.exists(path):
+        return
+    src = kconf.syms['CONFIG_SRC'].str_value
+    with open(path, 'w') as f:
+        f.write('## Pins recorded from explicit PLATFORM=/CONFIG= command\n'
+                '## line arguments; reseed with a <platform>_defconfig\n'
+                '## target to replace them\n')
+        if pin_platform:
+            f.write('\nconfig PLATFORM_PINNED\n\tdefault y\n\n'
+                    'config PLATFORM_PINNED_VALUE\n'
+                    f'\tdefault "{kconf.syms["PLATFORM"].str_value}"\n')
+        if pin_config and src:
+            f.write('\nconfig CONFIG_PINNED\n\tdefault y\n\n'
+                    f'config CONFIG_SRC\n\tdefault "{src}"\n')
+
+
 def check_platform(kconf, platform):
     configured = kconf.syms['PLATFORM'].str_value
     if configured != platform:
@@ -39,11 +67,17 @@ def check_platform(kconf, platform):
                  'reconfigure')
 
 
+PIN_SYMS = ('PLATFORM_PINNED', 'CONFIG_PINNED', 'PLATFORM_PINNED_VALUE')
+
+
 def emitted_syms(kconf):
-    # Artifacts expose facts and values, not choice selector symbols; the
-    # platform identity symbol is the exception as code gates on it
+    # Artifacts expose facts and values, not choice selector symbols or the
+    # build pin machinery; the platform identity symbol is the exception as
+    # code gates on it
     for sym in kconf.unique_defined_syms:
         if sym.choice and not sym.name.startswith('PLAT_'):
+            continue
+        if sym.name in PIN_SYMS:
             continue
         yield sym
 
@@ -80,13 +114,17 @@ def check_warnings(kconf):
             print(warning, file=sys.stderr)
         sys.exit('kconfig: invalid configuration input')
     for sym in kconf.unique_defined_syms:
-        if sym.user_value is None or sym.visibility:
+        if sym.user_value is None or sym.visibility or sym.name in PIN_SYMS:
             continue
         if sym.orig_type in (kconfiglib.BOOL, kconfiglib.TRISTATE):
             mismatch = sym.user_value != sym.tri_value
         else:
             mismatch = sym.user_value != sym.str_value
         if mismatch:
+            if sym.name == 'CONFIG_SRC':
+                sys.exit('kconfig: the VM configuration is pinned for this '
+                         'build directory; pass CONFIG= to override it for '
+                         'a build, or reseed to change it')
             sys.exit(f'kconfig: CONFIG_{sym.name} is fixed by the platform '
                      'selection and cannot be set in a defconfig')
 
@@ -140,7 +178,7 @@ def list_options(kconf, platform, plat_file, cfg_file, config_src):
               f'{sym.str_value:<8} (default {default}) [{source}] {help_text}')
     for sym in kconf.unique_defined_syms:
         if sym.orig_type is kconfiglib.STRING and sym.str_value and \
-                not any(node.prompt for node in sym.nodes):
+                not sym.visibility and sym.name not in PIN_SYMS:
             print(f'CONFIG_{sym.name:<21} fixed {sym.str_value}')
 
 
@@ -159,17 +197,36 @@ def run_menuconfig():
     import menuconfig
 
     node_str = menuconfig._node_str
+    change_node = menuconfig._change_node
+
+    def pinned(item):
+        return menuconfig._kconf.syms['PLATFORM_PINNED'].tri_value == 2 and \
+            isinstance(item, kconfiglib.Symbol) and \
+            item.choice is menuconfig._kconf.named_choices.get('PLATFORM_SEL')
+
+    def pin_aware_change_node(node):
+        # The platform of a pinned build directory cannot be switched
+        return True if pinned(node.item) else change_node(node)
 
     def blank_aware_node_str(node):
         # Empty comments separate option and fact blocks in the menu view
         if node.item is kconfiglib.COMMENT and not node.prompt[0]:
             return ''
+        text = node_str(node)
+        # Tag only the pinned platform itself and the choice heading, not
+        # every (unselectable) alternative
+        item = node.item
+        if menuconfig._kconf.syms['PLATFORM_PINNED'].tri_value == 2 and \
+                (item is menuconfig._kconf.named_choices.get('PLATFORM_SEL') or
+                 (pinned(item) and item.tri_value == 2)):
+            text += ' (pinned)'
         # @SYM@ placeholders in comments display the resolved symbol value
         return re.sub(r'@([A-Z0-9_]+)@',
                       lambda m: menuconfig._kconf.syms[m.group(1)].str_value,
-                      node_str(node))
+                      text)
 
     menuconfig._node_str = blank_aware_node_str
+    menuconfig._change_node = pin_aware_change_node
     sys.argv = [sys.argv[0], os.environ.get('KCONFIG_ROOT', 'Kconfig')]
     menuconfig._main()
 
@@ -180,10 +237,13 @@ def main():
     parser.add_argument('--platform-defconfig')
     parser.add_argument('--config-defconfig')
     parser.add_argument('--config-src')
+    parser.add_argument('--pin-platform', action='store_true')
+    parser.add_argument('--pin-config', action='store_true')
     parser.add_argument('--auto-conf')
     parser.add_argument('--auto-header')
     args = parser.parse_args()
 
+    os.environ.setdefault('BAO_BUILD_PIN', '/dev/null')
     platform = os.environ.get('BAO_PLATFORM')
     if not platform and args.command == 'seed':
         sys.exit('kconfig: BAO_PLATFORM not set')
@@ -201,15 +261,23 @@ def main():
         load_defconfigs(kconf, defconfigs)
         platform_symbol(kconf, platform).set_value(2)
         if args.config_src:
+            if not kconf.syms['CONFIG_SRC'].visibility and \
+                    kconf.syms['CONFIG_SRC'].str_value != args.config_src:
+                sys.exit('kconfig: the VM configuration is pinned to '
+                         f"{kconf.syms['CONFIG_SRC'].str_value}; reseed with "
+                         'a <platform>_defconfig target to change it')
             kconf.syms['CONFIG_SRC'].set_value(args.config_src)
         check_warnings(kconf)
         check_platform(kconf, platform)
+        check_pin(kconf)
         kconf.write_config()
+        write_build_pin(kconf, args.pin_platform, args.pin_config)
     elif args.command == 'sync':
         kconf.load_config()
         check_warnings(kconf)
         if platform:
             check_platform(kconf, platform)
+        check_pin(kconf)
         kconf.write_config()
         write_auto_conf_header(kconf, args.auto_header)
         write_auto_conf(kconf, args.auto_conf)

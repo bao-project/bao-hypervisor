@@ -182,8 +182,10 @@ kconfig_auto_conf:=$(kconfig_out_dir)/auto.conf
 kconfig_auto_hdr:=$(kconfig_out_dir)/autoconf.h
 kconfig_srcs:=$(shell find $(src_dir) -name Kconfig)
 kconfig_tool:=$(scripts_dir)/kconfig.py
+kconfig_pin:=$(build_dir)/.pin
 kconfig_env=srctree=$(cur_dir) KCONFIG_ROOT=$(src_dir)/Kconfig \
-	KCONFIG_CONFIG=$(kconfig_file) $(if $(PLATFORM),BAO_PLATFORM=$(PLATFORM))
+	KCONFIG_CONFIG=$(kconfig_file) BAO_BUILD_PIN=$(kconfig_pin) \
+	$(if $(PLATFORM),BAO_PLATFORM=$(PLATFORM))
 # Seeding layers, applied in order: the platform's base defconfig, then the
 # VM config folder's defconfig (folder configurations only) overriding it,
 # then pure Kconfig defaults for whatever neither mentions
@@ -203,7 +205,8 @@ $(kconfig_file):
 		$(if $(default_o),,O=$(O) )<platform>_defconfig first))
 	@echo "Seeding config		$(patsubst $(cur_dir)/%,%, $@)"
 	@mkdir -p $(dir $@)
-	@$(kconfig_env) python3 $(kconfig_tool) seed $(seed_defconfig_args)
+	@$(kconfig_env) python3 $(kconfig_tool) seed $(seed_defconfig_args) \
+		--pin-platform --pin-config
 
 # Kernel-style seeding of an O= output directory: the target stem names the
 # platform, and CONFIG= additionally records the VM configuration source
@@ -212,13 +215,13 @@ $(plat_defconfig_targets): %_defconfig:
 	$(if $(O),,$(error $@ requires an output directory (O=<dir>)))
 	@echo "Seeding config		$(kconfig_file)"
 	@mkdir -p $(build_dir)
+	@rm -f $(kconfig_pin)
 	@srctree=$(cur_dir) KCONFIG_ROOT=$(src_dir)/Kconfig \
-		KCONFIG_CONFIG=$(kconfig_file) BAO_PLATFORM=$* \
+		KCONFIG_CONFIG=$(kconfig_file) BAO_BUILD_PIN=$(kconfig_pin) \
+		BAO_PLATFORM=$* \
 		python3 $(kconfig_tool) seed \
 		$(if $(wildcard $(platforms_dir)/$*/defconfig), \
-			--platform-defconfig $(platforms_dir)/$*/defconfig) \
-		$(if $(seed_config_defconfig),--config-defconfig $(seed_config_defconfig)) \
-		$(seed_config_src_arg)
+			--platform-defconfig $(platforms_dir)/$*/defconfig)
 
 $(kconfig_auto_conf): $(kconfig_file) $(kconfig_srcs) $(kconfig_tool)
 	@echo "Generating config	$(patsubst $(cur_dir)/%,%, $@)"
@@ -622,7 +625,7 @@ ifneq ($(default_o),)
 	-rm -rf $(build_dir) $(bin_dir)
 else ifneq ($(O),)
 	-rm -rf $(wildcard $(build_dir)/*) $(wildcard $(bin_dir)/*) \
-		$(wildcard $(build_dir)/.config)
+		$(wildcard $(build_dir)/.config) $(wildcard $(kconfig_pin))
 else
 	-rm -rf $(build_dir)
 	-rm -rf $(bin_dir)

@@ -4,13 +4,31 @@
 mainmenu "Bao Hypervisor Configuration"
 
 config CONFIG_SRC
-	string "VM configuration (config.c path)"
+	string "VM configuration (config.c path)" if !CONFIG_PINNED
 	help
 	  Fully resolved path of the VM configuration source this build
 	  compiles. Filled in when the configuration is seeded with CONFIG=
 	  on the make command line; passing CONFIG= to a later build
 	  overrides it for that invocation without changing it here.
 
+comment "VM configuration: @CONFIG_SRC@ (pinned)"
+	depends on CONFIG_PINNED
+
+# Build directory pins. An explicit PLATFORM= or CONFIG= on the command
+# line fixes that choice for the build directory through a generated pin
+# fragment; defconfig targets seed without pinning, and reseeding through
+# one replaces the pins
+config PLATFORM_PINNED
+	bool
+
+config CONFIG_PINNED
+	bool
+
+config PLATFORM_PINNED_VALUE
+	string
+
 source "src/arch/Kconfig"
 source "src/platform/Kconfig"
 source "src/core/Kconfig"
+
+osource "$(BAO_BUILD_PIN)"
