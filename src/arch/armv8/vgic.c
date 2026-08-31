@@ -121,8 +121,8 @@ static bool vgic_owns(struct vcpu* vcpu, struct vgic_int* interrupt)
 
 void vgic_yield_ownership(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
-    if ((GIC_VERSION == GICV2 && gic_is_priv(interrupt->id)) || !vgic_owns(vcpu, interrupt) ||
-        interrupt->in_lr || (vgic_get_state(interrupt) & ACT)) {
+    if (gic_is_priv(interrupt->id) || !vgic_owns(vcpu, interrupt) || interrupt->in_lr ||
+        (vgic_get_state(interrupt) & ACT)) {
         return;
     }
 
