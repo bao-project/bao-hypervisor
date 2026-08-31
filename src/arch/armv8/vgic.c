@@ -144,6 +144,10 @@ void vgic_send_sgi_msg(struct vcpu* vcpu, cpumap_t pcpu_mask, irqid_t int_id)
     }
 }
 
+/**
+ * Track an interrupt that could not be placed in an LR so it gets injected
+ * when an LR slot becomes available.
+ */
 static void vgic_add_spilled(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
     spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
@@ -156,9 +160,9 @@ static void vgic_add_spilled(struct vcpu* vcpu, struct vgic_int* interrupt)
         }
         list_push(spilled_list, (node_t*)interrupt);
         interrupt->in_spilled = true;
+        gich_set_hcr(gich_get_hcr() | GICH_HCR_NPIE_BIT);
     }
     spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
-    gich_set_hcr(gich_get_hcr() | GICH_HCR_NPIE_BIT);
 }
 
 static void vgic_route(struct vcpu* vcpu, struct vgic_int* interrupt)
@@ -185,7 +189,9 @@ static void vgic_route(struct vcpu* vcpu, struct vgic_int* interrupt)
      * cannot be yielded while the interrupt is active, so any IPI would
      * be silently ignored by the recipient.
      */
-    if (!interrupt->in_lr && !(interrupt->state & ACT) && vgic_int_has_other_target(vcpu, interrupt)) {
+    bool forwarded = false;
+    if (!interrupt->in_lr && !(interrupt->state & ACT) &&
+        vgic_int_has_other_target(vcpu, interrupt)) {
         struct cpu_msg msg = {
             (uint32_t)VGIC_IPI_ID,
             VGIC_ROUTE,
@@ -196,16 +202,12 @@ static void vgic_route(struct vcpu* vcpu, struct vgic_int* interrupt)
         for (size_t i = 0; i < platform.cpu_num; i++) {
             if (trgtlist & (1ULL << i)) {
                 cpu_send_msg(i, &msg);
+                forwarded = true;
             }
         }
     }
 
-    /**
-     * If the interrupt was not placed in an LR or forwarded to another CPU,
-     * track it in the spilled list so it gets injected when an LR slot
-     * becomes available.
-     */
-    if (!interrupt->in_lr && !interrupt->in_spilled) {
+    if (!interrupt->in_lr && !forwarded) {
         vgic_add_spilled(vcpu, interrupt);
     }
 }
@@ -333,9 +335,8 @@ bool vgic_remove_lr(struct vcpu* vcpu, struct vgic_int* interrupt)
 /* Must be called holding vgic_spilled_lock */
 static void vgic_remove_spilled(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
-    struct list* spilled_list = gic_is_priv(interrupt->id)
-        ? &vcpu->arch.vgic_spilled
-        : &vcpu->vm->arch.vgic_spilled;
+    struct list* spilled_list =
+        gic_is_priv(interrupt->id) ? &vcpu->arch.vgic_spilled : &vcpu->vm->arch.vgic_spilled;
     list_rm(spilled_list, &interrupt->node);
     interrupt->in_spilled = false;
 }
