@@ -401,7 +401,7 @@ void vgic_init(struct vm* vm, const struct vgic_dscrp* vgic_dscrp)
 void vgic_cpu_init(struct vcpu* vcpu)
 {
     for (irqid_t i = 0; i < GIC_CPU_PRIV; i++) {
-        vcpu->arch.vgic_priv.interrupts[i].owner = NULL;
+        vcpu->arch.vgic_priv.interrupts[i].owner = vcpu;
         vcpu->arch.vgic_priv.interrupts[i].lock = SPINLOCK_INITVAL;
         vcpu->arch.vgic_priv.interrupts[i].id = i;
         vcpu->arch.vgic_priv.interrupts[i].state = INV;
