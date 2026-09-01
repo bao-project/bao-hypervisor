@@ -82,7 +82,7 @@
     ldsr r20, 2, 0     /* set FEPC */
     br 2f
 1:
-    ldsr r20, 2, 0     /* set EIPC */
+    ldsr r20, 0, 0     /* set EIPC */
 2:
     mov r30, r31
 
