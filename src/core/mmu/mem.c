@@ -111,22 +111,26 @@ bool pp_alloc_clr(struct page_pool* pool, size_t n, colormap_t colors, struct pp
 
     /**
      * Lets start the search at the first available color after the last known free position to the
-     * top of the pool.
+     * top of the pool. During this first part of the search, we'll go until the end of the pool.
      */
     size_t index = pp_next_clr(pool->base, pool->last, colors);
     size_t top = pool->num_pages;
+    size_t first_index_limit = top;
 
     /**
      * Two iterations. One starting from the last known free page, other starting from the
      * beggining of page pool to the start of the previous iteration.
      */
     for (size_t i = 0; i < 2 && !ok; i++) {
-        while ((allocated < n) && (index < top)) {
+        while ((allocated < n) && (index < first_index_limit)) {
             allocated = 0;
 
             /* Find first free page on the target colors */
-            while ((index < top) && bitmap_get(pool->bitmap, index)) {
+            while ((index < first_index_limit) && bitmap_get(pool->bitmap, index)) {
                 index = pp_next_clr(pool->base, ++index, colors);
+            }
+            if (index >= first_index_limit) {
+                break;
             }
             first_index = index;
 
@@ -157,10 +161,11 @@ bool pp_alloc_clr(struct page_pool* pool, size_t n, colormap_t colors, struct pp
             break;
         } else {
             /**
-             * If this is the first iteration, setup index and top to search from base of the page
-             * pool until the previous iteration start point
+             * If this is the first iteration, setup index and first_index_limit to search from
+             * base of the page pool until the previous iteration start point
              */
             index = pp_next_clr(pool->base, 0, colors);
+            first_index_limit = pool->last;
         }
     }
 
