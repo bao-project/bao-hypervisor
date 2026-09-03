@@ -107,8 +107,8 @@ static inline bool list_rm(struct list* list, node_t* node)
                 list->head = *temp;
             }
 
-            if (list->head == NULL) {
-                list->tail = NULL;
+            if (list->tail == node) {
+                list->tail = temp_prev;
             }
         }
 
