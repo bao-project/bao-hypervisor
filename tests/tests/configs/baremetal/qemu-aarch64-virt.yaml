@@ -1,4 +1,5 @@
-
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) Bao Project and Contributors. All rights reserved.
 
 # Bao Hypervisor VM Configuration
 # This YAML describes the fields needed to generate a C config file (config.c)

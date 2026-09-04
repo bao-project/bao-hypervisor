@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright (c) Bao Project and Contributors. All rights reserved.
+ */
+
 #include "testf.h"
 #include <core.h>
 #include <stdlib.h>
@@ -14,16 +19,16 @@
 void test_interrupt_timer_callback();
 void uart_rx_handler();
 
-
 volatile bool irq_en_timer = false;
 volatile bool irq_en_uart = false;
 
-#define TIMER_INTERVAL  (TIME_MS(100))
-#define TEST_TIMEOUT    "300"
+#define TIMER_INTERVAL (TIME_MS(100))
+#define TEST_TIMEOUT   "300"
 
-BAO_TEST(IRQ_CHECK, TIMER, BAREMETAL, "Check that timer interrupt is triggered and handled successfully")
+BAO_TEST(IRQ_CHECK, TIMER, BAREMETAL,
+    "Check that timer interrupt is triggered and handled successfully")
 {
-    if(cpu_is_master()) {
+    if (cpu_is_master()) {
         COMMAND_SET_TIMEOUT(TEST_TIMEOUT);
 
         irq_set_handler(TIMER_IRQ_ID, test_interrupt_timer_callback);
@@ -32,15 +37,17 @@ BAO_TEST(IRQ_CHECK, TIMER, BAREMETAL, "Check that timer interrupt is triggered a
         irq_set_prio(TIMER_IRQ_ID, TIMER_IRQ_PRIO);
         timer_enable();
 
-        while(!irq_en_timer);
+        while (!irq_en_timer)
+            ;
         EXPECTED_TRUE(irq_en_timer);
         COMMAND_CLEAR_TIMEOUT();
     }
 }
 
-BAO_TEST(IRQ_CHECK, UART, BAREMETAL, "Check that UART interrupt is triggered and handled successfully")
+BAO_TEST(IRQ_CHECK, UART, BAREMETAL,
+    "Check that UART interrupt is triggered and handled successfully")
 {
-    if(cpu_is_master()) {
+    if (cpu_is_master()) {
         COMMAND_SET_TIMEOUT(TEST_TIMEOUT);
 
         irq_set_handler(UART_IRQ_ID, uart_rx_handler);
@@ -49,7 +56,8 @@ BAO_TEST(IRQ_CHECK, UART, BAREMETAL, "Check that UART interrupt is triggered and
         irq_set_prio(UART_IRQ_ID, UART_IRQ_PRIO);
         COMMAND_SEND_CHAR("a");
 
-        while(!irq_en_uart);
+        while (!irq_en_uart)
+            ;
         EXPECTED_TRUE(irq_en_uart);
         COMMAND_CLEAR_TIMEOUT();
     }
@@ -61,7 +69,8 @@ void test_interrupt_timer_callback()
     timer_set(TIMER_INTERVAL);
 }
 
-void uart_rx_handler(){
+void uart_rx_handler()
+{
     uart_clear_rxirq();
     irq_en_uart = true;
 }
