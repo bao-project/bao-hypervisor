@@ -11,6 +11,10 @@ non_build_targets+=tests check-kao
 
 .PHONY: check-kao
 check-kao:
+	@if [ -z "$(PLATFORM)" ]; then \
+		echo "Target platform argument (PLATFORM) not specified."; \
+		exit 1; \
+	fi
 	@if [ ! -f $(kao_script) ]; then \
 		echo "Bao Kao is not initialized; run 'git submodule update --init --recursive tests/kao'."; \
 		exit 1; \
