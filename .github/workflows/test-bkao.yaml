@@ -29,6 +29,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
+            tests/wrkdir/.kao-wrkdir
             tests/wrkdir/platforms/fvp_a/FVP_Model_A
             tests/wrkdir/platforms/fvp_r/FVP_Model_R
           key: ${{ runner.os }}-${{ matrix.platform }}-fvp-11.28_23
