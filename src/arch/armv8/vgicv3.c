@@ -30,12 +30,18 @@ bool vgic_int_has_other_target(struct vcpu* vcpu, struct vgic_int* interrupt)
     return any || (!routed_here && route_valid);
 }
 
-uint8_t vgic_int_ptarget_mask(struct vcpu* vcpu, struct vgic_int* interrupt)
+cpumap_t vgic_int_ptarget_mask(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
     if (vgic_broadcast(vcpu, interrupt)) {
-        return (uint8_t)(cpu()->vcpu->vm->cpus & ~(1U << cpu()->vcpu->phys_id));
+        return cpu()->vcpu->vm->cpus & ~(1UL << cpu()->vcpu->phys_id);
     } else {
-        return (uint8_t)(1U << interrupt->phys.route);
+        unsigned long route = interrupt->phys.route & MPIDR_AFF_MSK;
+        for (cpuid_t i = 0; i < platform.cpu_num; i++) {
+            if ((cpu_id_to_mpidr(i) & MPIDR_AFF_MSK) == route) {
+                return (cpumap_t)(1UL << i);
+            }
+        }
+        return 0;
     }
 }
 
