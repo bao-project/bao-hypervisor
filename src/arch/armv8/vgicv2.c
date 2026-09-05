@@ -22,11 +22,11 @@ bool vgic_int_has_other_target(struct vcpu* vcpu, struct vgic_int* interrupt)
     return !priv && has_other_targets;
 }
 
-uint8_t vgic_int_ptarget_mask(struct vcpu* vcpu, struct vgic_int* interrupt)
+cpumap_t vgic_int_ptarget_mask(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
     UNUSED_ARG(vcpu);
 
-    return interrupt->targets;
+    return (cpumap_t)interrupt->targets;
 }
 
 static bool vgicd_set_trgt(struct vcpu* vcpu, struct vgic_int* interrupt, unsigned long targets)
