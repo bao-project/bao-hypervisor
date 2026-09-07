@@ -34,13 +34,9 @@ cpumap_t vgic_int_ptarget_mask(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
     if (vgic_broadcast(vcpu, interrupt)) {
         return cpu()->vcpu->vm->cpus & ~(1UL << cpu()->vcpu->phys_id);
+    } else if (interrupt->phys.cpu != INVALID_CPUID) {
+        return (cpumap_t)(1UL << interrupt->phys.cpu);
     } else {
-        unsigned long route = interrupt->phys.route & MPIDR_AFF_MSK;
-        for (cpuid_t i = 0; i < platform.cpu_num; i++) {
-            if ((cpu_id_to_mpidr(i) & MPIDR_AFF_MSK) == route) {
-                return (cpumap_t)(1UL << i);
-            }
-        }
         return 0;
     }
 }
@@ -48,6 +44,7 @@ cpumap_t vgic_int_ptarget_mask(struct vcpu* vcpu, struct vgic_int* interrupt)
 static bool vgic_int_set_route(struct vcpu* vcpu, struct vgic_int* interrupt, unsigned long route)
 {
     uint64_t phys_route;
+    cpuid_t phys_cpu;
     uint64_t prev_route = interrupt->route;
 
     if (gic_is_priv(interrupt->id)) {
@@ -56,15 +53,19 @@ static bool vgic_int_set_route(struct vcpu* vcpu, struct vgic_int* interrupt, un
 
     if (route & GICD_IROUTER_IRM_BIT) {
         phys_route = cpu_id_to_mpidr(vcpu->phys_id);
+        phys_cpu = vcpu->phys_id;
     } else {
         struct vcpu* tvcpu = vm_get_vcpu_by_mpidr(vcpu->vm, route & MPIDR_AFF_MSK);
         if (tvcpu != NULL) {
             phys_route = cpu_id_to_mpidr(tvcpu->phys_id) & MPIDR_AFF_MSK;
+            phys_cpu = tvcpu->phys_id;
         } else {
             phys_route = GICD_IROUTER_INV;
+            phys_cpu = INVALID_CPUID;
         }
     }
     interrupt->phys.route = (uint32_t)phys_route;
+    interrupt->phys.cpu = phys_cpu;
 
     interrupt->route = route & GICD_IROUTER_RES0_MSK;
     return prev_route != interrupt->route;
@@ -352,6 +353,7 @@ void vgic_init(struct vm* vm, const struct vgic_dscrp* vgic_dscrp)
         vm->arch.vgicd.interrupts[i].cfg = 0;
         vm->arch.vgicd.interrupts[i].route = GICD_IROUTER_INV;
         vm->arch.vgicd.interrupts[i].phys.route = GICD_IROUTER_INV;
+        vm->arch.vgicd.interrupts[i].phys.cpu = INVALID_CPUID;
         vm->arch.vgicd.interrupts[i].hw = false;
         vm->arch.vgicd.interrupts[i].in_lr = false;
         vm->arch.vgicd.interrupts[i].enabled = false;
@@ -400,7 +402,7 @@ void vgic_cpu_init(struct vcpu* vcpu)
         vcpu->arch.vgic_priv.interrupts[i].prio = GIC_LOWEST_PRIO;
         vcpu->arch.vgic_priv.interrupts[i].cfg = 0;
         vcpu->arch.vgic_priv.interrupts[i].route = GICD_IROUTER_INV;
-        vcpu->arch.vgic_priv.interrupts[i].phys.redist = vcpu->phys_id;
+        vcpu->arch.vgic_priv.interrupts[i].phys.cpu = vcpu->phys_id;
         vcpu->arch.vgic_priv.interrupts[i].hw = false;
         vcpu->arch.vgic_priv.interrupts[i].in_lr = false;
         vcpu->arch.vgic_priv.interrupts[i].enabled = false;
