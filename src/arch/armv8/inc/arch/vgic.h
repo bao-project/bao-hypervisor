@@ -25,9 +25,9 @@ struct vgic_int {
     struct vcpu* owner;
 #if (GIC_VERSION != GICV2)
     unsigned long route;
-    union {
-        vcpuid_t redist;
+    struct {
         unsigned long route;
+        cpuid_t cpu;
     } phys;
 #endif
     spinlock_t lock;
