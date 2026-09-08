@@ -471,7 +471,7 @@ static void vgic_int_enable_hw(struct vcpu* vcpu, struct vgic_int* interrupt)
 
 #if (GIC_VERSION != GICV2)
     if (gic_is_priv(interrupt->id)) {
-        gicr_set_enable(interrupt->id, interrupt->enabled, interrupt->phys.cpu);
+        gicr_set_enable(interrupt->id, interrupt->enabled, interrupt->phys.redist);
     } else {
         gicd_set_enable(interrupt->id, interrupt->enabled);
     }
@@ -536,8 +536,8 @@ static void vgic_int_state_hw(struct vcpu* vcpu, struct vgic_int* interrupt)
     bool act = (state & ACT) != 0;
 #if (GIC_VERSION != GICV2)
     if (gic_is_priv(interrupt->id)) {
-        gicr_set_act(interrupt->id, act, interrupt->phys.cpu);
-        gicr_set_pend(interrupt->id, pend, interrupt->phys.cpu);
+        gicr_set_act(interrupt->id, act, interrupt->phys.redist);
+        gicr_set_pend(interrupt->id, pend, interrupt->phys.redist);
     } else {
         gicd_set_act(interrupt->id, act);
         gicd_set_pend(interrupt->id, pend);
@@ -633,7 +633,7 @@ static void vgic_int_set_cfg_hw(struct vcpu* vcpu, struct vgic_int* interrupt)
     UNUSED_ARG(vcpu);
 #if (GIC_VERSION != GICV2)
     if (gic_is_priv(interrupt->id)) {
-        gicr_set_icfgr(interrupt->id, interrupt->cfg, interrupt->phys.cpu);
+        gicr_set_icfgr(interrupt->id, interrupt->cfg, interrupt->phys.redist);
     } else {
         gicd_set_icfgr(interrupt->id, interrupt->cfg);
     }
@@ -661,7 +661,7 @@ static void vgic_int_set_prio_hw(struct vcpu* vcpu, struct vgic_int* interrupt)
     UNUSED_ARG(vcpu);
 #if (GIC_VERSION != GICV2)
     if (gic_is_priv(interrupt->id)) {
-        gicr_set_prio(interrupt->id, interrupt->prio, interrupt->phys.cpu);
+        gicr_set_prio(interrupt->id, interrupt->prio, interrupt->phys.redist);
     } else {
         gicd_set_prio(interrupt->id, interrupt->prio);
     }

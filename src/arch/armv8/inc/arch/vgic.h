@@ -26,8 +26,11 @@ struct vgic_int {
 #if (GIC_VERSION != GICV2)
     unsigned long route;
     struct {
+        union {
+            cpuid_t redist;
+            cpuid_t cpu;
+        };
         unsigned long route;
-        cpuid_t cpu;
     } phys;
 #endif
     spinlock_t lock;

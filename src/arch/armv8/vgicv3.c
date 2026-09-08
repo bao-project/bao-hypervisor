@@ -402,7 +402,7 @@ void vgic_cpu_init(struct vcpu* vcpu)
         vcpu->arch.vgic_priv.interrupts[i].prio = GIC_LOWEST_PRIO;
         vcpu->arch.vgic_priv.interrupts[i].cfg = 0;
         vcpu->arch.vgic_priv.interrupts[i].route = GICD_IROUTER_INV;
-        vcpu->arch.vgic_priv.interrupts[i].phys.cpu = vcpu->phys_id;
+        vcpu->arch.vgic_priv.interrupts[i].phys.redist = vcpu->phys_id;
         vcpu->arch.vgic_priv.interrupts[i].hw = false;
         vcpu->arch.vgic_priv.interrupts[i].in_lr = false;
         vcpu->arch.vgic_priv.interrupts[i].enabled = false;
