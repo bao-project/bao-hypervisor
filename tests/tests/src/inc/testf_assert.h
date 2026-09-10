@@ -14,34 +14,34 @@
 #define EXPECTED_PTR_NULL(x)     TESTF_ASSERT_OP(x, NULL, ==)
 #define EXPECTED_PTR_NOT_NULL(x) TESTF_ASSERT_OP(x, NULL, !=)
 
-#define EXPECTED_ARRAY_EQUAL(ptr1, ptr2, count, type)           \
-    do {                                                        \
-        unsigned int intra_fails = 0;                           \
-        for (int i = 0; i < (count); i = i + 1) {               \
+#define EXPECTED_ARRAY_EQUAL(ptr1, ptr2, count, type)                   \
+    do {                                                                \
+        unsigned int intra_fails = 0;                                   \
+        for (int i = 0; i < (count); i = i + 1) {                       \
             if (((const type*)(ptr1))[i] != ((const type*)(ptr2))[i]) { \
-                (*failures)++;                                  \
-                intra_fails++;                                  \
-                if (intra_fails == 1)                           \
-                    LOG_FAILURE();                              \
-                if (TESTF_LOG_LEVEL > 1) {                      \
-                    printf("    Index: %d\n", i);               \
-                }                                               \
-            }                                                   \
-        }                                                       \
+                (*failures)++;                                          \
+                intra_fails++;                                          \
+                if (intra_fails == 1)                                   \
+                    LOG_FAILURE();                                      \
+                if (TESTF_LOG_LEVEL > 1) {                              \
+                    printf("    Index: %d\n", i);                       \
+                }                                                       \
+            }                                                           \
+        }                                                               \
     } while (0)
 
-#define EXPECTED_ARRAY_NOT_EQUAL(ptr1, ptr2, count, type)       \
-    do {                                                        \
-        unsigned int intra_fails = 0;                           \
-        for (int i = 0; i < (count); i = i + 1) {               \
+#define EXPECTED_ARRAY_NOT_EQUAL(ptr1, ptr2, count, type)               \
+    do {                                                                \
+        unsigned int intra_fails = 0;                                   \
+        for (int i = 0; i < (count); i = i + 1) {                       \
             if (((const type*)(ptr1))[i] != ((const type*)(ptr2))[i]) { \
-                intra_fails++;                                  \
-            }                                                   \
-        }                                                       \
-        if (intra_fails == 0) {                                 \
-            (*failures)++;                                      \
-            LOG_FAILURE();                                      \
-        }                                                       \
+                intra_fails++;                                          \
+            }                                                           \
+        }                                                               \
+        if (intra_fails == 0) {                                         \
+            (*failures)++;                                              \
+            LOG_FAILURE();                                              \
+        }                                                               \
     } while (0)
 
 #define TESTF_ASSERT_OP(x, y, op) \
@@ -59,10 +59,10 @@
         }                                         \
     } while (0)
 
-#define TESTF_FAIL(message)                     \
-    do {                                        \
-        (*failures)++;                          \
-        LOG_FAILURE();                          \
+#define TESTF_FAIL(message)                   \
+    do {                                      \
+        (*failures)++;                        \
+        LOG_FAILURE();                        \
         printf("    Message: %s\n", message); \
     } while (0)
 
