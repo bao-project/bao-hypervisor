@@ -59,9 +59,11 @@
         }                                         \
     } while (0)
 
-#define TESTF_FAIL(message) \
-    (*failures)++;          \
-    LOG_FAILURE();          \
-    printf("    Message: %s\n", message);
+#define TESTF_FAIL(message)                     \
+    do {                                        \
+        (*failures)++;                          \
+        LOG_FAILURE();                          \
+        printf("    Message: %s\n", message); \
+    } while (0)
 
 #endif // TESTF_ASSERT_H
