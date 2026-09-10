@@ -18,7 +18,7 @@
     do {                                                        \
         unsigned int intra_fails = 0;                           \
         for (int i = 0; i < (count); i = i + 1) {               \
-            if (*(type*)((ptr1) + i) != *(type*)((ptr2) + i)) { \
+            if (((const type*)(ptr1))[i] != ((const type*)(ptr2))[i]) { \
                 (*failures)++;                                  \
                 intra_fails++;                                  \
                 if (intra_fails == 1)                           \
@@ -34,7 +34,7 @@
     do {                                                        \
         unsigned int intra_fails = 0;                           \
         for (int i = 0; i < (count); i = i + 1) {               \
-            if (*(type*)((ptr1) + i) != *(type*)((ptr2) + i)) { \
+            if (((const type*)(ptr1))[i] != ((const type*)(ptr2))[i]) { \
                 intra_fails++;                                  \
             }                                                   \
         }                                                       \
