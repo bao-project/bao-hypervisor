@@ -24,9 +24,9 @@ void init(cpuid_t cpu_id)
 
     /* -------------------------------------------------------------- */
 
-    platform_init();
-
     console_init();
+
+    platform_init();
 
     if (cpu_is_master()) {
         console_printk("Bao Hypervisor %s (%s - %s)\n\r", BAO_VERSION, __DATE__, __TIME__);
