@@ -47,6 +47,7 @@ struct vgic_int {
 #endif
     bool hw;
     bool in_lr;
+    bool in_spilled;
     bool enabled;
 };
 

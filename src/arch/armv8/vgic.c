@@ -144,9 +144,39 @@ void vgic_send_sgi_msg(struct vcpu* vcpu, cpumap_t pcpu_mask, irqid_t int_id)
     }
 }
 
+/**
+ * Track an interrupt that could not be placed in an LR so it gets injected
+ * when an LR slot becomes available.
+ */
+static void vgic_add_spilled(struct vcpu* vcpu, struct vgic_int* interrupt)
+{
+    spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
+    if (!interrupt->in_lr && !interrupt->in_spilled) {
+        struct list* spilled_list = NULL;
+        if (gic_is_priv(interrupt->id)) {
+            spilled_list = &vcpu->arch.vgic_spilled;
+        } else {
+            spilled_list = &vcpu->vm->arch.vgic_spilled;
+        }
+        list_push(spilled_list, (node_t*)interrupt);
+        interrupt->in_spilled = true;
+        gich_set_hcr(gich_get_hcr() | GICH_HCR_NPIE_BIT);
+    }
+    spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
+}
+
 static void vgic_route(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
-    if ((interrupt->state == INV) || !interrupt->enabled) {
+    if (interrupt->state == INV) {
+        return;
+    }
+
+    /**
+     * A disabled interrupt that is still active must be placed in an LR so
+     * the guest can EOI it directly, avoiding an unnecessary LRENP maintenance
+     * interrupt trap.
+     */
+    if (!interrupt->enabled && !(interrupt->state & ACT)) {
         return;
     }
 
@@ -154,7 +184,14 @@ static void vgic_route(struct vcpu* vcpu, struct vgic_int* interrupt)
         vgic_add_lr(vcpu, interrupt);
     }
 
-    if (!interrupt->in_lr && vgic_int_has_other_target(vcpu, interrupt)) {
+    /**
+     * An active interrupt cannot be forwarded to another CPU — ownership
+     * cannot be yielded while the interrupt is active, so any IPI would
+     * be silently ignored by the recipient.
+     */
+    bool forwarded = false;
+    if (!interrupt->in_lr && !(interrupt->state & ACT) &&
+        vgic_int_has_other_target(vcpu, interrupt)) {
         struct cpu_msg msg = {
             (uint32_t)VGIC_IPI_ID,
             VGIC_ROUTE,
@@ -165,8 +202,13 @@ static void vgic_route(struct vcpu* vcpu, struct vgic_int* interrupt)
         for (size_t i = 0; i < platform.cpu_num; i++) {
             if (trgtlist & (1ULL << i)) {
                 cpu_send_msg(i, &msg);
+                forwarded = true;
             }
         }
+    }
+
+    if (!interrupt->in_lr && !forwarded) {
+        vgic_add_spilled(vcpu, interrupt);
     }
 }
 
@@ -234,10 +276,17 @@ static inline void vgic_write_lr(struct vcpu* vcpu, struct vgic_int* interrupt, 
             lr |= GICH_LR_EOI_BIT;
         }
 
-        lr |= ((gic_lr_t)state << GICH_LR_STATE_OFF) & GICH_LR_STATE_MSK;
+        /**
+         * If the interrupt is disabled, strip PEND from the LR so the guest
+         * only EOIs the active portion and the interrupt is not re-delivered
+         * while disabled. The PEND bit is preserved in interrupt->state so
+         * it is restored when the interrupt is re-enabled.
+         */
+        unsigned lr_state = !interrupt->enabled ? (state & (unsigned)~PEND) : state;
+        lr |= ((gic_lr_t)lr_state << GICH_LR_STATE_OFF) & GICH_LR_STATE_MSK;
     }
 
-    interrupt->state = (uint8_t)INV;
+    interrupt->state = !interrupt->enabled ? (uint8_t)(state & PEND) : (uint8_t)INV;
     interrupt->in_lr = true;
     interrupt->lr = (uint8_t)lr_ind;
     vcpu->arch.vgic_priv.curr_lrs[lr_ind] = interrupt->id;
@@ -261,7 +310,7 @@ bool vgic_remove_lr(struct vcpu* vcpu, struct vgic_int* interrupt)
     interrupt->in_lr = false;
 
     if (GICH_LR_STATE(lr_val) != INV) {
-        interrupt->state = (uint8_t)GICH_LR_STATE(lr_val);
+        interrupt->state = (uint8_t)(GICH_LR_STATE(lr_val) | (interrupt->state & PEND));
 #if (GIC_VERSION == GICV2)
         if (interrupt->id < GIC_MAX_SGIS) {
             if (interrupt->state & ACT) {
@@ -283,18 +332,13 @@ bool vgic_remove_lr(struct vcpu* vcpu, struct vgic_int* interrupt)
     return ret;
 }
 
-static void vgic_add_spilled(struct vcpu* vcpu, struct vgic_int* interrupt)
+/* Must be called holding vgic_spilled_lock */
+static void vgic_remove_spilled(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
-    spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
-    struct list* spilled_list = NULL;
-    if (gic_is_priv(interrupt->id)) {
-        spilled_list = &vcpu->arch.vgic_spilled;
-    } else {
-        spilled_list = &vcpu->vm->arch.vgic_spilled;
-    }
-    list_push(spilled_list, (node_t*)interrupt);
-    spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
-    gich_set_hcr(gich_get_hcr() | GICH_HCR_NPIE_BIT);
+    struct list* spilled_list =
+        gic_is_priv(interrupt->id) ? &vcpu->arch.vgic_spilled : &vcpu->vm->arch.vgic_spilled;
+    list_rm(spilled_list, &interrupt->node);
+    interrupt->in_spilled = false;
 }
 
 static void vgic_spill_lr(struct vcpu* vcpu, size_t lr_ind)
@@ -315,7 +359,7 @@ bool vgic_add_lr(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
     bool ret = false;
 
-    if (!interrupt->enabled || interrupt->in_lr) {
+    if ((!interrupt->enabled && !(interrupt->state & ACT)) || interrupt->in_lr) {
         return ret;
     }
 
@@ -359,7 +403,7 @@ bool vgic_add_lr(struct vcpu* vcpu, struct vgic_int* interrupt)
             }
         }
 
-        if (pend_found > 1) {
+        if (pend_found > 1 && pend_ind >= 0) {
             lr_ind = pend_ind;
         } else {
             lr_ind = act_ind;
@@ -371,6 +415,11 @@ bool vgic_add_lr(struct vcpu* vcpu, struct vgic_int* interrupt)
     }
 
     if (lr_ind >= 0) {
+        if (interrupt->in_spilled) {
+            spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
+            vgic_remove_spilled(vcpu, interrupt);
+            spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
+        }
         vgic_write_lr(vcpu, interrupt, (size_t)lr_ind);
         ret = true;
     } else {
@@ -1054,8 +1103,7 @@ void vgic_ipi_handler(uint32_t event, uint64_t data)
 /**
  * Must be called holding the vgic_spilled_lock
  */
-static inline struct vgic_int* vgic_highest_prio_spilled(struct vcpu* vcpu, unsigned flags,
-    struct list** outlist)
+static inline struct vgic_int* vgic_highest_prio_spilled(struct vcpu* vcpu, unsigned flags)
 {
     struct vgic_int* irq = NULL;
     struct list* spilled_lists[] = {
@@ -1077,7 +1125,6 @@ static inline struct vgic_int* vgic_highest_prio_spilled(struct vcpu* vcpu, unsi
             bool is_lower_id = temp_irq->id < irq_id;
             if (is_higher_prio || (is_same_prio && is_lower_id)) {
                 irq = temp_irq;
-                *outlist = list;
             }
         }
     }
@@ -1089,51 +1136,85 @@ static void vgic_refill_lrs(struct vcpu* vcpu, bool npie)
     uint64_t elrsr = gich_get_elrsr();
     ssize_t lr_ind = bit64_ffs(elrsr & BIT64_MASK(0, NUM_LRS));
     unsigned flags = npie ? PEND : ACT | PEND;
-    spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
     while (lr_ind >= 0) {
-        struct list* list = NULL;
-        struct vgic_int* irq = vgic_highest_prio_spilled(vcpu, flags, &list);
-        if (irq != NULL) {
-            spin_lock(&irq->lock);
-            bool got_ownership = vgic_get_ownership(vcpu, irq);
-            if (got_ownership) {
-                list_rm(list, &irq->node);
-                vgic_write_lr(vcpu, irq, (size_t)lr_ind);
-            }
-            spin_unlock(&irq->lock);
-            if (!got_ownership) {
-                continue;
-            }
-        } else {
+        spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
+        struct vgic_int* irq = vgic_highest_prio_spilled(vcpu, flags);
+        if (irq == NULL) {
             uint32_t hcr = gich_get_hcr();
             gich_set_hcr(hcr & ~(GICH_HCR_NPIE_BIT | GICH_HCR_UIE_BIT));
+            spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
             break;
         }
-        flags = ACT | PEND;
-        elrsr = gich_get_elrsr();
-        lr_ind = bit64_ffs(elrsr & BIT64_MASK(0, NUM_LRS));
+        spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
+
+        /**
+         * The candidate was picked without holding its lock, so between the
+         * list walk and locking it here it may have left the list or changed
+         * state. Revalidate under both locks, taken in the canonical order
+         * (interrupt lock first, spilled lock inside), and rescan if it is
+         * no longer an eligible candidate.
+         */
+        spin_lock(&irq->lock);
+        spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
+        bool eligible = irq->in_spilled && ((vgic_get_state(irq) & flags) != 0) &&
+            vgic_get_ownership(vcpu, irq);
+        if (eligible) {
+            vgic_remove_spilled(vcpu, irq);
+        }
+        spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
+        /**
+         * Writing the LR may take the previous occupant's interrupt lock, so
+         * it must happen after the spilled lock is released to preserve the
+         * canonical lock order.
+         */
+        if (eligible) {
+            vgic_write_lr(vcpu, irq, (size_t)lr_ind);
+            flags = ACT | PEND;
+            elrsr = gich_get_elrsr();
+            lr_ind = bit64_ffs(elrsr & BIT64_MASK(0, NUM_LRS));
+        }
+        spin_unlock(&irq->lock);
     }
-    spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
 }
 
 static void vgic_eoir_highest_spilled_active(struct vcpu* vcpu)
 {
-    struct list* list = NULL;
-    struct vgic_int* interrupt = vgic_highest_prio_spilled(vcpu, ACT, &list);
+    bool done = false;
 
-    if (interrupt != NULL) {
-        spin_lock(&interrupt->lock);
-        if (vgic_get_ownership(vcpu, interrupt)) {
-            interrupt->state &= (uint8_t)~ACT;
-            if (vgic_int_is_hw(interrupt)) {
-                gic_set_act(interrupt->id, false);
-            } else {
-                if (interrupt->state & PEND) {
-                    vgic_add_lr(vcpu, interrupt);
+    while (!done) {
+        spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
+        struct vgic_int* interrupt = vgic_highest_prio_spilled(vcpu, ACT);
+        spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
+
+        if (interrupt == NULL) {
+            done = true;
+        } else {
+            /**
+             * As in vgic_refill_lrs, the candidate was picked without holding
+             * its lock; revalidate it under both locks in the canonical order
+             * and rescan if it raced off the list.
+             */
+            spin_lock(&interrupt->lock);
+            spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
+            bool listed = interrupt->in_spilled && ((vgic_get_state(interrupt) & ACT) != 0);
+            bool eligible = listed && vgic_get_ownership(vcpu, interrupt);
+            if (eligible) {
+                vgic_remove_spilled(vcpu, interrupt);
+            }
+            spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
+            if (eligible) {
+                interrupt->state &= (uint8_t)~ACT;
+                if (vgic_int_is_hw(interrupt)) {
+                    gic_set_act(interrupt->id, false);
+                } else {
+                    if (interrupt->state & PEND) {
+                        vgic_add_lr(vcpu, interrupt);
+                    }
                 }
             }
+            spin_unlock(&interrupt->lock);
+            done = listed;
         }
-        spin_unlock(&interrupt->lock);
     }
 }
 
