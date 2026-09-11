@@ -17,6 +17,10 @@ irq_handler_t interrupt_handlers[MAX_INTERRUPT_HANDLERS];
 
 irqid_t interrupts_ipi_id;
 
+__attribute__((weak)) void interrupts_post_handler(void)
+{
+}
+
 void interrupts_cpu_sendipi(cpuid_t target_cpu)
 {
     interrupts_arch_ipi_send(target_cpu);

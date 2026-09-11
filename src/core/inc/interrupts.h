@@ -40,6 +40,7 @@ void interrupts_ipi_clear(void);
 
 enum irq_res { HANDLED_BY_HYP, FORWARD_TO_VM };
 enum irq_res interrupts_handle(irqid_t int_id);
+void interrupts_post_handler(void);
 
 bool interrupts_vm_assign(struct vm* vm, irqid_t id);
 
