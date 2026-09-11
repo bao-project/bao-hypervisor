@@ -49,6 +49,6 @@ tests: check-test-ids
 	@echo "Running bao-kao tests for $(PLATFORM)..."
 	@python3 $(kao_script) -t $(KAO_TESTS) -p $(PLATFORM) \
 		--hyp-srcs $(cur_dir) --wrkdir $(tests_dir)/wrkdir \
-		--tests-root $(kao_tests) --configs $(kao_tests)/configs \
+		--tests-root $(kao_tests) --envs $(kao_tests)/envs \
 		$(if $(KAO_EXCLUDE_TAGS),--exclude-tags $(KAO_EXCLUDE_TAGS)) \
 		$(addprefix --tests-src , $(kao_src_dirs)) $(KAO_ARGS)
