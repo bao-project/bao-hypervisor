@@ -3,35 +3,39 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
-#include "testf.h"
-#include <core.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include "kao.h"
 #include <cpu.h>
-#include <wfi.h>
-#include <spinlock.h>
 #include <plat.h>
 #include <irq.h>
 #include <uart.h>
 #include <timer.h>
 
-void test_interrupt_timer_callback();
-void uart_rx_handler();
-
-volatile bool irq_en_timer = false;
-volatile bool irq_en_uart = false;
+static volatile bool irq_en_timer = false;
+static volatile bool irq_en_uart = false;
 
 #define TIMER_INTERVAL (TIME_MS(100))
 #define TEST_TIMEOUT   "300"
 
-BAO_TEST(IRQ_CHECK, TIMER, BAREMETAL,
-    "Check that timer interrupt is triggered and handled successfully")
+static void timer_callback(unsigned int id)
+{
+    (void)id;
+    irq_en_timer = true;
+    timer_set(TIMER_INTERVAL);
+}
+
+static void uart_rx_handler(unsigned int id)
+{
+    (void)id;
+    uart_clear_rxirq();
+    irq_en_uart = true;
+}
+
+static void timer_irq(void)
 {
     if (cpu_is_master()) {
         COMMAND_SET_TIMEOUT(TEST_TIMEOUT);
 
-        irq_set_handler(TIMER_IRQ_ID, test_interrupt_timer_callback);
+        irq_set_handler(TIMER_IRQ_ID, timer_callback);
         timer_set(TIMER_INTERVAL);
         irq_enable(TIMER_IRQ_ID);
         irq_set_prio(TIMER_IRQ_ID, TIMER_IRQ_PRIO);
@@ -43,9 +47,10 @@ BAO_TEST(IRQ_CHECK, TIMER, BAREMETAL,
         COMMAND_CLEAR_TIMEOUT();
     }
 }
+KAO_TEST(00_00_01_00, timer_irq, TAGS(functional, irq, timer), ENVS(baremetal),
+    "Check that timer interrupt is triggered and handled successfully");
 
-BAO_TEST(IRQ_CHECK, UART, BAREMETAL,
-    "Check that UART interrupt is triggered and handled successfully")
+static void uart_irq(void)
 {
     if (cpu_is_master()) {
         COMMAND_SET_TIMEOUT(TEST_TIMEOUT);
@@ -62,15 +67,5 @@ BAO_TEST(IRQ_CHECK, UART, BAREMETAL,
         COMMAND_CLEAR_TIMEOUT();
     }
 }
-
-void test_interrupt_timer_callback()
-{
-    irq_en_timer = true;
-    timer_set(TIMER_INTERVAL);
-}
-
-void uart_rx_handler()
-{
-    uart_clear_rxirq();
-    irq_en_uart = true;
-}
+KAO_TEST(00_00_01_01, uart_irq, TAGS(functional, irq, uart), ENVS(baremetal),
+    "Check that UART interrupt is triggered and handled successfully");

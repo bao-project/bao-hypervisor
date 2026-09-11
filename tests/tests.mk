@@ -4,6 +4,7 @@
 kao_dir:=$(tests_dir)/kao/src
 kao_script:=$(kao_dir)/kao.py
 kao_tests:=$(tests_dir)/tests
+kao_check_ids:=$(kao_tests)/check_ids.py
 
 KAO_TESTS?=all
 KAO_EXCLUDE_TAGS?=nightly,manual
@@ -26,7 +27,7 @@ kao_src_dirs=$(wildcard $(kao_tests)/src/00_generic) \
 	$(wildcard $(addprefix $(kao_arch_dir)/,$(kao_arch_variants))) \
 	$(wildcard $(kao_tests)/src/02_platform/*_$(PLATFORM))
 
-non_build_targets+=tests
+non_build_targets+=tests check-test-ids
 
 # Checked at parse time, like PLATFORM for build targets in the top Makefile,
 # but only when tests are requested so clean and ci keep working without it.
@@ -39,8 +40,12 @@ $(error Bao Kao is not initialized; run 'git submodule update --init --recursive
 endif
 endif
 
+.PHONY: check-test-ids
+check-test-ids:
+	@python3 $(kao_check_ids) $(kao_tests)/src
+
 .PHONY: tests
-tests:
+tests: check-test-ids
 	@echo "Running bao-kao tests for $(PLATFORM)..."
 	@python3 $(kao_script) -t $(KAO_TESTS) -p $(PLATFORM) \
 		--hyp-srcs $(cur_dir) --wrkdir $(tests_dir)/wrkdir \
