@@ -22,11 +22,14 @@ void vmm_arch_init()
     csrs_hideleg_write(HIDELEG_VSSI | HIDELEG_VSTI | HIDELEG_VSEI);
     csrs_hedeleg_write(HEDELEG_BKP | HEDELEG_ECU | HEDELEG_IPF | HEDELEG_LPF | HEDELEG_SPF);
 
-    /**
-     * Start from a clean slate for the entire HENVCFG CSR
-     * to avoid unintended side effects from any non-zero default bits
+    /*
+     * Clean-slate the whole HENVCFG CSR (avoid stale default bits). It is a
+     * priv-1.12 CSR: on pre-1.12 cores (e.g. SiFive P550) it is absent and the
+     * access traps, so gate on the platform's RISCV_PRIV_VERSION.
      */
+#if RISCV_PRIV_VERSION >= RISCV_PRIV_VERSION_1_12
     csrs_henvcfg_write(0);
+#endif
 
     /**
      * Enable and sanity check presence of Sstc extension if the hypervisor was
@@ -42,8 +45,6 @@ void vmm_arch_init()
         // Set stimecmp to infinity in case we enable the stimer interrupt somewhere else
         // and fail to set the timer to a point in the future.
         csrs_stimecmp_write(~0ULL);
-    } else {
-        csrs_henvcfg_clear(HENVCFG_STCE);
     }
 
     if (CPU_HAS_EXTENSION(CPU_EXT_SVPBMT)) {

@@ -6,6 +6,11 @@
 #ifndef __ARCH_CSR_H__
 #define __ARCH_CSR_H__
 
+/* Privileged-arch version (set per-platform in platform.mk); selects CSR availability. */
+#define RISCV_PRIV_VERSION_1_11 (11)
+#define RISCV_PRIV_VERSION_1_12 (12)
+#define RISCV_PRIV_VERSION_1_13 (13)
+
 #include <bao.h>
 
 #define CSR_SISELECT      0x150
