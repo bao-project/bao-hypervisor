@@ -1,0 +1,6 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config PLAT_QEMU_AARCH64_VIRT
+	bool "qemu-aarch64-virt"
+	select ARCH_ARMV8

@@ -1,0 +1,17 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config PLATFORM
+	default "rpi4" if PLAT_RPI4
+
+config ARCH_SUB
+	default "aarch64" if PLAT_RPI4
+
+config ARCH_PROFILE
+	default "armv8-a" if PLAT_RPI4
+
+config CPU
+	default "cortex-a72" if PLAT_RPI4
+
+config GIC_VERSION
+	default "GICV2" if PLAT_RPI4

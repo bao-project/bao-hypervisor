@@ -1,0 +1,109 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+# Platform registry. Each platform defines its own choice entry in its
+# Kconfig.plat (sourced inside the choice, which the syntax requires to
+# be a separate file) and everything else in its Kconfig.
+
+menu "Platform"
+
+choice PLATFORM_SEL
+	prompt "Target platform"
+
+source "src/platform/agilex5/Kconfig.plat"
+source "src/platform/e3650/Kconfig.plat"
+source "src/platform/fvp-a/Kconfig.plat"
+source "src/platform/fvp-a-aarch32/Kconfig.plat"
+source "src/platform/fvp-r/Kconfig.plat"
+source "src/platform/fvp-r-aarch32/Kconfig.plat"
+source "src/platform/hikey960/Kconfig.plat"
+source "src/platform/imx8mn/Kconfig.plat"
+source "src/platform/imx8mp-verdin/Kconfig.plat"
+source "src/platform/imx8qm/Kconfig.plat"
+source "src/platform/k3-com260/Kconfig.plat"
+source "src/platform/mps3-an536/Kconfig.plat"
+source "src/platform/qemu-aarch64-virt/Kconfig.plat"
+source "src/platform/qemu-riscv32-virt/Kconfig.plat"
+source "src/platform/qemu-riscv64-virt/Kconfig.plat"
+source "src/platform/rh850-u2a16/Kconfig.plat"
+source "src/platform/rpi4/Kconfig.plat"
+source "src/platform/s32g3/Kconfig.plat"
+source "src/platform/s32z270/Kconfig.plat"
+source "src/platform/tc4dx/Kconfig.plat"
+source "src/platform/tx2/Kconfig.plat"
+source "src/platform/ultra96/Kconfig.plat"
+source "src/platform/zcu102/Kconfig.plat"
+source "src/platform/zcu104/Kconfig.plat"
+
+endchoice
+
+config PLATFORM
+	string
+
+config MEM_NON_UNIFIED
+	bool
+	help
+	  Split instruction and data memory buses with separate hypervisor
+	  images per memory - fixed by the platform.
+
+config PLAT_HAS_MMIO_SLAVE_SIDE_PROT
+	bool
+
+
+source "src/platform/agilex5/Kconfig"
+source "src/platform/e3650/Kconfig"
+source "src/platform/fvp-a/Kconfig"
+source "src/platform/fvp-a-aarch32/Kconfig"
+source "src/platform/fvp-r/Kconfig"
+source "src/platform/fvp-r-aarch32/Kconfig"
+source "src/platform/hikey960/Kconfig"
+source "src/platform/imx8mn/Kconfig"
+source "src/platform/imx8mp-verdin/Kconfig"
+source "src/platform/imx8qm/Kconfig"
+source "src/platform/k3-com260/Kconfig"
+source "src/platform/mps3-an536/Kconfig"
+source "src/platform/qemu-aarch64-virt/Kconfig"
+source "src/platform/qemu-riscv32-virt/Kconfig"
+source "src/platform/qemu-riscv64-virt/Kconfig"
+source "src/platform/rh850-u2a16/Kconfig"
+source "src/platform/rpi4/Kconfig"
+source "src/platform/s32g3/Kconfig"
+source "src/platform/s32z270/Kconfig"
+source "src/platform/tc4dx/Kconfig"
+source "src/platform/tx2/Kconfig"
+source "src/platform/ultra96/Kconfig"
+source "src/platform/zcu102/Kconfig"
+source "src/platform/zcu104/Kconfig"
+
+# Written once for all platforms: @SYM@ placeholders are expanded to
+# the resolved values by the menuconfig frontend at display time
+comment ""
+
+comment "Architecture: @ARCH@"
+	depends on ARCH != ""
+
+comment "Sub-architecture: @ARCH_SUB@"
+	depends on ARCH_SUB != ""
+
+comment "Architecture profile: @ARCH_PROFILE@"
+	depends on ARCH_PROFILE != ""
+
+comment "CPU: @CPU@"
+	depends on CPU != ""
+
+comment "GIC version: @GIC_VERSION@"
+	depends on GIC_VERSION != ""
+
+comment "Interrupt controller: @IRQC@"
+	depends on IRQC != ""
+
+comment "IPI controller: @IPIC@"
+	depends on IPIC != ""
+
+comment "Memory model: non-unified"
+	depends on MEM_NON_UNIFIED
+
+comment "Physical interrupts only"
+	depends on PHYS_IRQS_ONLY
+
+endmenu
