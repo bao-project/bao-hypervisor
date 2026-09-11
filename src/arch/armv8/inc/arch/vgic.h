@@ -25,8 +25,11 @@ struct vgic_int {
     struct vcpu* owner;
 #if (GIC_VERSION != GICV2)
     unsigned long route;
-    union {
-        vcpuid_t redist;
+    struct {
+        union {
+            cpuid_t redist;
+            cpuid_t cpu;
+        };
         unsigned long route;
     } phys;
 #endif
@@ -126,7 +129,7 @@ void vgic_emul_razwi(struct emul_access* acc, struct vgic_reg_handler_info* hand
 
 /* interface for version specific vgic */
 bool vgic_int_has_other_target(struct vcpu* vcpu, struct vgic_int* interrupt);
-uint8_t vgic_int_ptarget_mask(struct vcpu* vcpu, struct vgic_int* interrupt);
+cpumap_t vgic_int_ptarget_mask(struct vcpu* vcpu, struct vgic_int* interrupt);
 void vgic_inject_sgi(struct vcpu* vcpu, struct vgic_int* interrupt, vcpuid_t source);
 
 #endif /* __VGIC_H__ */
