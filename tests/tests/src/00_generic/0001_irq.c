@@ -30,7 +30,7 @@ static void uart_rx_handler(unsigned int id)
     irq_en_uart = true;
 }
 
-static void timer_irq(void)
+static void gen_irq_timer(void)
 {
     if (cpu_is_master()) {
         COMMAND_SET_TIMEOUT(TEST_TIMEOUT);
@@ -47,10 +47,10 @@ static void timer_irq(void)
         COMMAND_CLEAR_TIMEOUT();
     }
 }
-KAO_TEST(00_00_01_00, timer_irq, TAGS(functional, irq, timer), ENVS(baremetal),
+KAO_TEST(00_00_01_00, gen_irq_timer, TAGS(functional, irq, timer), ENVS(baremetal),
     "Check that timer interrupt is triggered and handled successfully");
 
-static void uart_irq(void)
+static void gen_irq_uart(void)
 {
     if (cpu_is_master()) {
         COMMAND_SET_TIMEOUT(TEST_TIMEOUT);
@@ -67,5 +67,5 @@ static void uart_irq(void)
         COMMAND_CLEAR_TIMEOUT();
     }
 }
-KAO_TEST(00_00_01_01, uart_irq, TAGS(functional, irq, uart), ENVS(baremetal),
+KAO_TEST(00_00_01_01, gen_irq_uart, TAGS(functional, irq, uart), ENVS(baremetal),
     "Check that UART interrupt is triggered and handled successfully");
