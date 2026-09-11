@@ -10,5 +10,7 @@
 #if !defined(RV32)
 #define CPU_EXT_SVPBMT 1
 #endif
+#define CPU_EXT_SSNPM          0
+#define CPU_EXT_SSNPM_PMM_MODE HENVCFG_PMM_DISABLED
 
 #endif
