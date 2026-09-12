@@ -141,6 +141,7 @@ _reset_handler:
     la      t0, CPU_MASTER
     li      t1, CPU_MASTER_FIXED
     STORE   t1, 0(t0)
+	bne     a0, t1, wait_for_bsp
 #else
 /**
  * The first hart to grab the lock is CPU_MASTER.
@@ -153,19 +154,15 @@ _boot_lock:
     li      t1, 1
 1:
     lr.w    t2, (t0)
-    bnez    t2, 2f
+    /* Skip global page table setup if this is not the boot hart */
+    bnez    t2, wait_for_bsp /* Another hart already won */
     sc.w    t2, t1, (t0)   
     bnez    t2, 1b 
     la      t0, CPU_MASTER
     STORE      a0, 0(t0)
-2:
 #endif
 
     /* Setup bootstrap page tables. Assuming sv39 or sv32 support. */ 
-
- 	/* Skip initialy global page tables setup if not hart */
-    LD_SYM  t0, CPU_MASTER
-	bne     a0, t0, wait_for_bsp   
 
  	la	    a3, _page_tables_start	
 	la	    a4, _page_tables_end	
