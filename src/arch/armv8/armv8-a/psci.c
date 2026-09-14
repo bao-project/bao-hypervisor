@@ -5,6 +5,7 @@
 
 #include <arch/psci.h>
 #include <arch/smc.h>
+#include <arch/sysregs.h>
 #include <vm.h>
 #include <cpu.h>
 #include <mem.h>
@@ -121,5 +122,6 @@ int32_t psci_cpu_suspend(uint32_t power_state, unsigned long entrypoint, unsigne
 
 int32_t psci_cpu_on(unsigned long target_cpu, unsigned long entrypoint, unsigned long context_id)
 {
-    return (int32_t)smc_call(PSCI_CPU_ON, target_cpu, entrypoint, context_id, NULL);
+    unsigned long psci_target = target_cpu & MPIDR_AFF_MSK;
+    return (int32_t)smc_call(PSCI_CPU_ON, psci_target, entrypoint, context_id, NULL);
 }
