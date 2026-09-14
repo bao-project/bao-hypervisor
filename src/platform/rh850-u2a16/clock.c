@@ -72,7 +72,7 @@ void clock_init(void)
     clk_ctl_iso->CLKKCPROT1 = CLKKCPROT1_DISABLE_WR;
 
     mem_unmap(&cpu()->as, (vaddr_t)(PLAT_CLK_ISO_BASE), NUM_PAGES(sizeof(struct clk_ctl_iso_hw)),
-        true);
+        MEM_FREE_PAGES);
     mem_unmap(&cpu()->as, (vaddr_t)(PLAT_CLK_AWO_BASE), NUM_PAGES(sizeof(struct clk_ctl_awo_hw)),
-        true);
+        MEM_FREE_PAGES);
 }

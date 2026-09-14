@@ -65,7 +65,7 @@ static void plat_iomux(void)
     siul2_5->IMCR[SIUL2_IMCR_UART9_RX_OFF] = SIUL2_IMCR_RX;
 
     /* Unmap SIUL2_5 region */
-    mem_unmap(&cpu()->as, SIUL2_5_BASE, NUM_PAGES(sizeof(struct siul2_hw)), false);
+    mem_unmap(&cpu()->as, SIUL2_5_BASE, NUM_PAGES(sizeof(struct siul2_hw)), MEM_DONT_FREE_PAGES);
 }
 
 static void plat_clock(void)
@@ -85,7 +85,7 @@ static void plat_clock(void)
     mc_cgm_5->MUX_2_DC_0 = MC_CGM_5_MUX_2_DC_0_DE;
 
     /* Unmap MC_CGM_5 region */
-    mem_unmap(&cpu()->as, MC_CGM_5_BASE, NUM_PAGES(sizeof(struct mc_cgm_hw)), false);
+    mem_unmap(&cpu()->as, MC_CGM_5_BASE, NUM_PAGES(sizeof(struct mc_cgm_hw)), MEM_DONT_FREE_PAGES);
 }
 
 void platform_default_init(void)
