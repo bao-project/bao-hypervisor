@@ -135,7 +135,7 @@ static inline void prot_write(volatile prottos_t* prottos, unsigned long cpu, un
     unsigned long state)
 {
     unsigned long temp = PROT_ODEF_MASK | PROT_OWEN_MASK;
-    temp |= PROT_VMID_MASK(vm);
+    temp |= PROT_VMEN_MASK | PROT_VMID_MASK(vm);
     temp |= PROT_CPU_MASK(cpu);
     temp |= PROT_SWEN_MASK | (state << PROT_STATE_POS);
 
