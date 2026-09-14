@@ -113,5 +113,6 @@ void port_init(void)
     port->PWE = 0;
     port->PKCPROT = PORT_PKCPROT_DISABLE_WR;
 
-    mem_unmap(&cpu()->as, (vaddr_t)(PLAT_PORT_BASE), NUM_PAGES(sizeof(struct port_hw)), true);
+    mem_unmap(&cpu()->as, (vaddr_t)(PLAT_PORT_BASE), NUM_PAGES(sizeof(struct port_hw)),
+        MEM_FREE_PAGES);
 }

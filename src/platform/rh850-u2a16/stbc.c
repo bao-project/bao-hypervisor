@@ -26,5 +26,6 @@ void stbc_init(void)
     stbc->MSR_OSTM = 0;
     stbc->MSRKCPROT = MSRKCPROT_DISABLE_WR;
 
-    mem_unmap(&cpu()->as, (vaddr_t)(PLAT_STBC_BASE), NUM_PAGES(sizeof(struct stbc_hw)), true);
+    mem_unmap(&cpu()->as, (vaddr_t)(PLAT_STBC_BASE), NUM_PAGES(sizeof(struct stbc_hw)),
+        MEM_FREE_PAGES);
 }
