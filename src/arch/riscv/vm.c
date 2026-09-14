@@ -11,6 +11,38 @@
 #include <string.h>
 #include <config.h>
 
+static void vcpu_arch_config_ssnpm(enum npm_mode npm_mode)
+{
+    uint64_t pmm_val;
+
+    switch (npm_mode) {
+        case NPM_MODE_DISABLED:
+            pmm_val = HENVCFG_PMM_DISABLED;
+            break;
+        case NPM_MODE_PMLEN_7:
+            pmm_val = HENVCFG_PMM_PMLEN_7;
+            break;
+        case NPM_MODE_PMLEN_16:
+            pmm_val = HENVCFG_PMM_PMLEN_16;
+            break;
+        default:
+            ERROR("Invalid VM arch.npm_mode.\n");
+    }
+
+#if defined(RV32)
+    if (npm_mode != NPM_MODE_DISABLED) {
+        ERROR("Ssnpm pointer masking is not available on RV32.\n");
+    }
+#endif
+
+    pmm_val <<= HENVCFG_PMM_OFF;
+    csrs_henvcfg_clear(HENVCFG_PMM_MSK);
+    csrs_henvcfg_set(pmm_val);
+    if ((csrs_henvcfg_read() & HENVCFG_PMM_MSK) != pmm_val) {
+        ERROR("Configured Ssnpm pointer masking mode is not supported by this hart.\n");
+    }
+}
+
 void vm_arch_init(struct vm* vm, const struct vm_config* vm_config)
 {
     paddr_t root_pt_pa;
@@ -42,6 +74,14 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
 
     if (DEFINED(RV64)) {
         vcpu->regs.hstatus |= HSTATUS_VSXL_64;
+    }
+
+    /* Apply the VM policy on this hart, including when an SBI hart is restarted. */
+    enum npm_mode npm_mode = vcpu->vm->config->arch.npm_mode;
+    if (CPU_HAS_EXTENSION(CPU_EXT_SSNPM)) {
+        vcpu_arch_config_ssnpm(npm_mode);
+    } else if (npm_mode != NPM_MODE_DISABLED) {
+        ERROR("VM requests pointer masking, but CPU_EXT_SSNPM is not configured.\n");
     }
 
     vcpu->regs.sstatus = SSTATUS_SPP_BIT | SSTATUS_FS_DIRTY | SSTATUS_XS_DIRTY;
