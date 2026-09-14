@@ -49,7 +49,7 @@ static bool vgic_int_set_route(struct vcpu* vcpu, struct vgic_int* interrupt, un
     }
 
     if (route & GICD_IROUTER_IRM_BIT) {
-        phys_route = cpu_id_to_mpidr(vcpu->phys_id);
+        phys_route = cpu_id_to_mpidr(vcpu->phys_id) & MPIDR_AFF_MSK;
     } else {
         struct vcpu* tvcpu = vm_get_vcpu_by_mpidr(vcpu->vm, route & MPIDR_AFF_MSK);
         if (tvcpu != NULL) {

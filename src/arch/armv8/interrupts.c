@@ -39,7 +39,7 @@ void interrupts_arch_enable(irqid_t int_id, bool en)
     if (GIC_VERSION == GICV2) {
         gicd_set_trgt(int_id, (uint8_t)(1U << cpu()->id));
     } else {
-        gicd_set_route(int_id, cpu()->arch.mpidr);
+        gicd_set_route(int_id, cpu()->arch.mpidr & MPIDR_AFF_MSK);
     }
 }
 
