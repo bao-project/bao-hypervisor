@@ -14,7 +14,6 @@
 #include <config.h>
 
 extern volatile const size_t VIR_IPI_ID;
-extern volatile bitmap_granule_t* valid;
 
 #define GUEST_SRC_ACCESS (~IR_SRC_VM_MASK)
 
