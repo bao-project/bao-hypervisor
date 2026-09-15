@@ -169,57 +169,41 @@ static inline cpuid_t vaplic_vcpuid_to_pcpuid(struct vcpu* vcpu, vcpuid_t vhart)
     return vm_translate_to_pcpuid(vcpu->vm, vhart);
 }
 
-/**
- * @brief Updates the topi register with with the highest pend & en interrupt id
- *
- * @param vcpu virtual cpu
- * @return true if topi was updated, requiring the handling of the interrupt
- * @return false if there is no new interrupt to handle
- */
-static bool vaplic_update_topi(struct vcpu* vcpu)
+/* Caller holds vaplic->lock, including when refreshing another vCPU's tree. */
+static void vaplic_refresh_group(struct vcpu* vcpu, size_t group)
 {
     struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
-    bool ret = false;
-    uint32_t intp_prio = APLIC_MIN_PRIO;
-    irqid_t intp_id = APLIC_MAX_INTERRUPTS;
-    uint32_t prio = 0;
-    uint32_t idc_threshold = 0;
-    bool domain_enbl = false;
-    bool idc_enbl = false;
-    bool idc_force = false;
-    uint32_t update_topi = 0;
+    uint32_t candidates = vaplic->active[group] & vaplic->ip[group] & vaplic->ie[group];
+    uint32_t target_hart = (uint32_t)vcpu->id;
+    vaplic_selector_update(&vcpu->arch.aplic_selector, vaplic->target, group, candidates,
+        target_hart);
+}
 
-    /** Find highest pending and enabled interrupt */
-    for (irqid_t i = 1; i < APLIC_MAX_INTERRUPTS; i++) {
-        if (vaplic_get_hart_index(vcpu, i) == vcpu->id) {
-            if (vaplic_get_pend(vcpu, i) && vaplic_get_enbl(vcpu, i)) {
-                prio = vaplic_get_target(vcpu, i) & APLIC_TARGET_IPRIO_MASK;
-                if (prio < intp_prio) {
-                    intp_prio = prio;
-                    intp_id = i;
-                }
-            }
-        }
+static void vaplic_update_topi(struct vcpu* vcpu)
+{
+    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
+    vaplic->topi_claimi[vcpu->id] = vaplic_selector_topi(&vcpu->arch.aplic_selector, vaplic->target,
+        vaplic_get_ithreshold(vcpu, vcpu->id));
+}
+
+static void vaplic_refresh_idc(struct vcpu* vcpu, irqid_t irq)
+{
+    if (vaplic_intp_valid(irq)) {
+        vaplic_refresh_group(vcpu, irq / VAPLIC_SELECTOR_GROUP_SIZE);
     }
-
-    /** Can interrupt be delivered? */
-    idc_threshold = vaplic_get_ithreshold(vcpu, vcpu->id);
-    domain_enbl = !!(vaplic_get_domaincfg(vcpu) & APLIC_DOMAINCFG_IE);
-    idc_enbl = !!(vaplic_get_idelivery(vcpu, vcpu->id));
-    idc_force = !!(vaplic_get_iforce(vcpu, vcpu->id));
-
-    if ((intp_id != APLIC_MAX_INTERRUPTS) && (intp_prio < idc_threshold || idc_threshold == 0) &&
-        idc_enbl && domain_enbl) {
-        update_topi = (intp_id << 16) | intp_prio;
-        ret = true;
-    } else if (idc_force && idc_enbl && domain_enbl) {
-        ret = true;
-    }
-    vaplic->topi_claimi[vcpu->id] = update_topi;
-    return ret;
+    vaplic_update_topi(vcpu);
 }
 
 enum { UPDATE_HART_LINE };
+
+union vaplic_msg_data {
+    struct {
+        uint32_t vhart_index;
+        uint32_t irq_id;
+    };
+    uint64_t raw;
+};
+
 static void vaplic_ipi_handler(uint32_t event, uint64_t data);
 CPU_MSG_HANDLER(vaplic_ipi_handler, VPLIC_IPI_ID)
 
@@ -229,8 +213,9 @@ CPU_MSG_HANDLER(vaplic_ipi_handler, VPLIC_IPI_ID)
  * @param vcpu virtual cpu
  * @param vhart_index hart id to update
  */
-static void vaplic_update_hart_line(struct vcpu* vcpu, vcpuid_t vhart_index)
+static void vaplic_update_hart_line(struct vcpu* vcpu, vcpuid_t vhart_index, irqid_t irq_id)
 {
+    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
     cpuid_t pcpu_id = vaplic_vcpuid_to_pcpuid(vcpu, vhart_index);
 
     /**
@@ -238,13 +223,23 @@ static void vaplic_update_hart_line(struct vcpu* vcpu, vcpuid_t vhart_index)
      *  to the targeting cpu
      */
     if (pcpu_id == cpu()->id) {
-        if (vaplic_update_topi(vcpu)) {
+        struct vcpu* target = vm_get_vcpu(vcpu->vm, vhart_index);
+        vaplic_refresh_idc(target, irq_id);
+
+        bool asserted = (vaplic_get_domaincfg(vcpu) & APLIC_DOMAINCFG_IE) != 0U &&
+            vaplic_get_idelivery(vcpu, vhart_index) != 0U &&
+            (vaplic->topi_claimi[vhart_index] != 0U || vaplic_get_iforce(vcpu, vhart_index) != 0U);
+        if (asserted) {
             csrs_hvip_set(HIP_VSEIP);
         } else {
             csrs_hvip_clear(HIP_VSEIP);
         }
     } else {
-        struct cpu_msg msg = { (uint32_t)VPLIC_IPI_ID, UPDATE_HART_LINE, vhart_index };
+        union vaplic_msg_data data = {
+            .vhart_index = (uint32_t)vhart_index,
+            .irq_id = (uint32_t)irq_id,
+        };
+        struct cpu_msg msg = { (uint32_t)VPLIC_IPI_ID, UPDATE_HART_LINE, data.raw };
         cpu_send_msg(pcpu_id, &msg);
     }
 }
@@ -258,9 +253,14 @@ static void vaplic_update_hart_line(struct vcpu* vcpu, vcpuid_t vhart_index)
 static void vaplic_ipi_handler(uint32_t event, uint64_t data)
 {
     switch (event) {
-        case UPDATE_HART_LINE:
-            vaplic_update_hart(cpu()->vcpu, (size_t)data, INVALID_IRQID);
+        case UPDATE_HART_LINE: {
+            union vaplic_msg_data msg_data = { .raw = data };
+            struct vcpu* vcpu = cpu()->vcpu;
+            spin_lock(&vcpu->vm->arch.vaplic.lock);
+            vaplic_update_hart_line(vcpu, (vcpuid_t)msg_data.vhart_index, (irqid_t)msg_data.irq_id);
+            spin_unlock(&vcpu->vm->arch.vaplic.lock);
             break;
+        }
         default:
             WARNING("Unknown VAPLIC IPI event\n");
             break;
@@ -414,12 +414,13 @@ static uint32_t vaplic_get_claimi(struct vcpu* vcpu, idcid_t idc_id)
     spin_lock(&vaplic->lock);
     if (idc_id < vaplic->idc_num) {
         ret = vaplic->topi_claimi[idc_id];
-        CLR_INTP_REG(vaplic->ip, (ret >> IDC_CLAIMI_INTP_ID_SHIFT));
+        irqid_t claimed_id = (ret >> IDC_CLAIMI_INTP_ID_SHIFT);
+        CLR_INTP_REG(vaplic->ip, claimed_id);
         /** Spurious intp*/
         if (ret == 0) {
             bitmap_clear(vaplic->iforce, idc_id);
         }
-        vaplic_update_hart(vcpu, idc_id, INVALID_IRQID);
+        vaplic_update_hart(vcpu, idc_id, claimed_id);
     }
     spin_unlock(&vaplic->lock);
     return ret;
@@ -556,14 +557,12 @@ static void vaplic_update_hart(struct vcpu* vcpu, size_t vhart_index, irqid_t ir
 {
     struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
 
-    UNUSED_ARG(irq_id);
-
-    if (vhart_index == UPDATE_ALL_HARTS) {
+    if (vhart_index == UPDATE_ALL_HARTS && irq_id == INVALID_IRQID) {
         for (size_t i = 0; i < vaplic->idc_num; i++) {
-            vaplic_update_hart_line(vcpu, (vcpuid_t)i);
+            vaplic_update_hart_line(vcpu, (vcpuid_t)i, INVALID_IRQID);
         }
-    } else if ((uint16_t)vhart_index < vaplic->idc_num) {
-        vaplic_update_hart_line(vcpu, (vcpuid_t)vhart_index);
+    } else if (vhart_index < vaplic->idc_num) {
+        vaplic_update_hart_line(vcpu, (vcpuid_t)vhart_index, irq_id);
     }
 }
 
@@ -626,6 +625,31 @@ static void vaplic_update_hart(struct vcpu* vcpu, size_t vhart_index, irqid_t ir
     }
 }
 #endif /* (IRQC == AIA) */
+
+/*
+ * A bitmap-register write can change 32 sources in one selector group. All
+ * source/hardware writes are finished before entering here. Refresh each
+ * affected IDC once; MSI forwarding still needs one operation per source.
+ */
+static void vaplic_update_word(struct vcpu* vcpu, size_t word, uint32_t changed)
+{
+#if (IRQC == APLIC)
+    BITMAP_ALLOC(updated, APLIC_DOMAIN_NUM_HARTS) = { 0 };
+#endif
+    for (size_t bit = 0; bit < APLIC_NUM_INTP_PER_REG; bit++) {
+        if ((changed & (1U << bit)) != 0U) {
+            irqid_t irq = (irqid_t)(word * APLIC_NUM_INTP_PER_REG + bit);
+            vcpuid_t hart = vaplic_get_hart_index(vcpu, irq);
+#if (IRQC == APLIC)
+            if (hart >= vcpu->vm->arch.vaplic.idc_num || bitmap_get(updated, hart)) {
+                continue;
+            }
+            bitmap_set(updated, hart);
+#endif
+            vaplic_update_hart(vcpu, hart, irq);
+        }
+    }
+}
 
 /**
  * @brief Write to domaincfg register a new value.
@@ -694,6 +718,7 @@ static void vaplic_set_sourcecfg(struct vcpu* vcpu, irqid_t intp_id, uint32_t ne
     spin_lock(&vaplic->lock);
     if (intp_id > 0 && intp_id < APLIC_MAX_INTERRUPTS &&
         vaplic_get_sourcecfg(vcpu, intp_id) != new_val) {
+        vcpuid_t previous_hart = vaplic_get_hart_index(vcpu, intp_id);
         /** If intp is being delegated make whole reg 0. This happens because a S domain is always
          *  a leaf. */
         new_val &= (new_val & APLIC_SRCCFG_D) ? 0 : APLIC_SRCCFG_SM;
@@ -718,7 +743,7 @@ static void vaplic_set_sourcecfg(struct vcpu* vcpu, irqid_t intp_id, uint32_t ne
         } else {
             SET_INTP_REG(vaplic->active, intp_id);
         }
-        vaplic_update_hart(vcpu, vaplic_get_hart_index(vcpu, intp_id), intp_id);
+        vaplic_update_hart(vcpu, previous_hart, intp_id);
     }
     spin_unlock(&vaplic->lock);
 }
@@ -759,13 +784,7 @@ static void vaplic_set_setip(struct vcpu* vcpu, size_t reg, uint32_t new_val)
         new_val &= vaplic->active[reg];
         update_intps = (~vaplic->ip[reg]) & new_val;
         vaplic->ip[reg] |= new_val;
-        for (size_t i = (reg * APLIC_NUM_INTP_PER_REG);
-             i < (reg * APLIC_NUM_INTP_PER_REG) + APLIC_NUM_INTP_PER_REG; i++) {
-            if (!!bit32_get(update_intps, i % 32)) {
-                irqid_t irq_id = (irqid_t)i;
-                vaplic_update_hart(vcpu, vaplic_get_hart_index(vcpu, irq_id), irq_id);
-            }
-        }
+        vaplic_update_word(vcpu, reg, update_intps);
     }
     spin_unlock(&vaplic->lock);
 }
@@ -806,15 +825,10 @@ static void vaplic_set_in_clrip(struct vcpu* vcpu, size_t reg, uint32_t new_val)
         vaplic->ip[reg] &= ~(new_val);
         new_val &= vaplic->hw[reg];
         aplic_clr_pend_reg(reg, new_val);
-        vaplic->ip[reg] |= aplic_get_pend_reg(reg);
-        update_intps &= ~(vaplic->ip[reg]);
-        for (size_t i = (reg * APLIC_NUM_INTP_PER_REG);
-             i < (reg * APLIC_NUM_INTP_PER_REG) + APLIC_NUM_INTP_PER_REG; i++) {
-            if (!!bit32_get(update_intps, i % 32)) {
-                irqid_t irq_id = (irqid_t)i;
-                vaplic_update_hart(vcpu, vaplic_get_hart_index(vcpu, irq_id), irq_id);
-            }
-        }
+        vaplic->ip[reg] |= aplic_get_pend_reg(reg) & vaplic->hw[reg] & vaplic->active[reg];
+        /* Hardware resampling can add pending bits as well as remove them. */
+        update_intps ^= vaplic->ip[reg];
+        vaplic_update_word(vcpu, reg, update_intps);
     }
     spin_unlock(&vaplic->lock);
 }
@@ -897,13 +911,7 @@ static void vaplic_set_setie(struct vcpu* vcpu, size_t reg, uint32_t new_val)
         vaplic->ie[reg] |= new_val;
         new_val &= vaplic->hw[reg];
         aplic_set_enbl_reg(reg, new_val);
-        for (size_t i = (reg * APLIC_NUM_INTP_PER_REG);
-             i < (reg * APLIC_NUM_INTP_PER_REG) + APLIC_NUM_INTP_PER_REG; i++) {
-            if (!!bit32_get(update_intps, i % 32)) {
-                irqid_t irq_id = (irqid_t)i;
-                vaplic_update_hart(vcpu, vaplic_get_hart_index(vcpu, irq_id), irq_id);
-            }
-        }
+        vaplic_update_word(vcpu, reg, update_intps);
     }
     spin_unlock(&vaplic->lock);
 }
@@ -944,17 +952,11 @@ static void vaplic_set_clrie(struct vcpu* vcpu, size_t reg, uint32_t new_val)
     spin_lock(&vaplic->lock);
     if (reg < APLIC_NUM_SETIx_REGS) {
         new_val &= vaplic->active[reg];
-        update_intps = vaplic->ip[reg] & ~new_val;
+        update_intps = vaplic->ie[reg] & new_val;
         vaplic->ie[reg] &= ~(new_val);
         new_val &= vaplic->hw[reg];
         aplic_clr_enbl_reg(reg, new_val);
-        for (size_t i = (reg * APLIC_NUM_INTP_PER_REG);
-             i < (reg * APLIC_NUM_INTP_PER_REG) + APLIC_NUM_INTP_PER_REG; i++) {
-            if (!!bit32_get(update_intps, i % 32)) {
-                irqid_t irq_id = (irqid_t)i;
-                vaplic_update_hart(vcpu, vaplic_get_hart_index(vcpu, irq_id), irq_id);
-            }
-        }
+        vaplic_update_word(vcpu, reg, update_intps);
     }
     spin_unlock(&vaplic->lock);
 }
