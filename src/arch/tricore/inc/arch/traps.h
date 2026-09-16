@@ -11,6 +11,6 @@
 void sys_bus_errors_handler(void);
 void l2_dmem_prot_trap_handler(unsigned long* addr, unsigned long access);
 void hyp_csfr_access_handler(unsigned long* addr, unsigned long hvtin);
-void hvcall_handler(unsigned long function_id);
+void hvcall_handler(void);
 
 #endif /* __TRAPS_H__ */

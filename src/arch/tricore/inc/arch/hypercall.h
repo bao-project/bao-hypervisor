@@ -9,9 +9,11 @@
 /* We have to add 16 to the register to make it a D_Reg for the current
 bao vcpu implementation. This happens because all regs are mixed in the
 upper and lower CSAs, and we use LUT to correctly interpret the regs.
-Since there is no define ABI for HVCALL, we use a similar calling convention
-to the normal call. D4 is the first data argument and d2 is the return value.*/
-#define HYPCALL_IN_ARG_REG(ARG)  ((ARG) + 16 + 4)
+Since there is no defined ABI for HVCALL, we use a calling convention similar
+to a normal call: D4 is the hypercall id, D5+ are the arguments, and D2 is
+the return value.  */
+#define HYPCALL_ID_REG           (16 + 4)
+#define HYPCALL_IN_ARG_REG(ARG)  ((ARG) + 16 + 5)
 #define HYPCALL_OUT_ARG_REG(ARG) ((ARG) + 16 + 2)
 
 #endif /* ARCH_HYPERCALL_H */
