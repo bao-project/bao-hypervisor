@@ -94,8 +94,9 @@ void l2_dmem_prot_trap_handler(unsigned long* instr_addr, unsigned long is_write
     }
 }
 
-void hvcall_handler(unsigned long function_id)
+void hvcall_handler(void)
 {
+    unsigned long function_id = vcpu_readreg(cpu()->vcpu, HYPCALL_ID_REG);
     hypercall(function_id);
 }
 
