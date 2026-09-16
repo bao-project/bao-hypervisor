@@ -9,6 +9,7 @@
 #include <emul.h>
 #include <mem.h>
 #include <interrupts.h>
+#include <fences.h>
 #include <arch/csrs.h>
 #if (IRQC == AIA)
 #include <imsic.h>
@@ -35,6 +36,20 @@ static inline bool vaplic_intp_valid(irqid_t intp_id)
 
 static uint32_t vaplic_get_domaincfg(struct vcpu* vcpu);
 static uint32_t vaplic_get_target(struct vcpu* vcpu, irqid_t intp_id);
+
+#if (IRQC == APLIC)
+static inline bool vaplic_mode_is_level(uint32_t mode)
+{
+    mode &= APLIC_SRCCFG_SM;
+    return mode == APLIC_SOURCECFG_SM_LEVEL_HIGH || mode == APLIC_SOURCECFG_SM_LEVEL_LOW;
+}
+
+static inline bool vaplic_source_is_level(struct vcpu* vcpu, irqid_t intp_id)
+{
+    return vaplic_intp_valid(intp_id) &&
+        vaplic_mode_is_level(vcpu->vm->arch.vaplic.srccfg[intp_id]);
+}
+#endif
 
 void vaplic_set_hw(struct vm* vm, irqid_t intp_id)
 {
@@ -157,6 +172,66 @@ static uint32_t vaplic_get_idelivery(struct vcpu* vcpu, idcid_t idc_id);
 static uint32_t vaplic_get_iforce(struct vcpu* vcpu, idcid_t idc_id);
 static uint32_t vaplic_get_ithreshold(struct vcpu* vcpu, idcid_t idc_id);
 static void vaplic_update_hart(struct vcpu* vcpu, size_t vhart_index, irqid_t irq_id);
+
+#if (IRQC == APLIC)
+static uint32_t vaplic_level_edge_mode(uint32_t level_mode, bool asserted)
+{
+    bool level_high = (level_mode & APLIC_SRCCFG_SM) == APLIC_SOURCECFG_SM_LEVEL_HIGH;
+    if (asserted) {
+        return level_high ? APLIC_SOURCECFG_SM_EDGE_FALL : APLIC_SOURCECFG_SM_EDGE_RISE;
+    }
+    return level_high ? APLIC_SOURCECFG_SM_EDGE_RISE : APLIC_SOURCECFG_SM_EDGE_FALL;
+}
+
+static bool vaplic_level_read_asserted(
+    irqid_t intp_id, uint32_t level_mode, uint32_t physical_mode)
+{
+    size_t reg = intp_id / APLIC_NUM_INTP_PER_REG;
+    uint32_t mask = 1U << (intp_id % APLIC_NUM_INTP_PER_REG);
+    bool rectified = (aplic_get_inclrip_reg(reg) & mask) != 0U;
+    bool raw_high = rectified ^ ((physical_mode & 1U) != 0U);
+
+    return raw_high ^ ((level_mode & 1U) != 0U);
+}
+
+/* Caller holds vaplic->lock. */
+static bool vaplic_level_resample(struct vcpu* vcpu, irqid_t intp_id, uint32_t level_mode)
+{
+    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
+    uint32_t physical_mode = aplic_get_sourcecfg(intp_id) & APLIC_SRCCFG_SM;
+
+    if (physical_mode != APLIC_SOURCECFG_SM_EDGE_RISE &&
+        physical_mode != APLIC_SOURCECFG_SM_EDGE_FALL) {
+        physical_mode = vaplic_level_edge_mode(level_mode, false);
+        aplic_set_sourcecfg(intp_id, physical_mode);
+        fence_sync_write();
+    }
+
+    bool asserted = vaplic_level_read_asserted(intp_id, level_mode, physical_mode);
+    uint32_t required_mode = vaplic_level_edge_mode(level_mode, asserted);
+
+    if (physical_mode != required_mode) {
+        aplic_set_sourcecfg(intp_id, required_mode);
+        fence_sync_write();
+
+        bool observed = vaplic_level_read_asserted(intp_id, level_mode, required_mode);
+        if (observed != asserted) {
+            asserted = observed;
+            aplic_set_sourcecfg(intp_id, vaplic_level_edge_mode(level_mode, asserted));
+            fence_sync_write();
+        }
+    }
+
+    if (asserted) {
+        SET_INTP_REG(vaplic->level_asserted, intp_id);
+        SET_INTP_REG(vaplic->ip, intp_id);
+    } else {
+        CLR_INTP_REG(vaplic->level_asserted, intp_id);
+        CLR_INTP_REG(vaplic->ip, intp_id);
+    }
+    return asserted;
+}
+#endif
 
 /**
  * @brief Converts a virtual cpu id into the physical one
@@ -415,7 +490,15 @@ static uint32_t vaplic_get_claimi(struct vcpu* vcpu, idcid_t idc_id)
     if (idc_id < vaplic->idc_num) {
         ret = vaplic->topi_claimi[idc_id];
         irqid_t claimed_id = (ret >> IDC_CLAIMI_INTP_ID_SHIFT);
+#if (IRQC == APLIC)
+        if (vaplic_intp_valid(claimed_id) &&
+            (!vaplic_source_is_level(vcpu, claimed_id) ||
+                !GET_INTP_REG(vaplic->level_asserted, claimed_id))) {
+            CLR_INTP_REG(vaplic->ip, claimed_id);
+        }
+#else
         CLR_INTP_REG(vaplic->ip, claimed_id);
+#endif
         /** Spurious intp*/
         if (ret == 0) {
             bitmap_clear(vaplic->iforce, idc_id);
@@ -715,22 +798,41 @@ static void vaplic_set_sourcecfg(struct vcpu* vcpu, irqid_t intp_id, uint32_t ne
 {
     struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
 
-    spin_lock(&vaplic->lock);
-    if (intp_id > 0 && intp_id < APLIC_MAX_INTERRUPTS &&
-        vaplic_get_sourcecfg(vcpu, intp_id) != new_val) {
-        vcpuid_t previous_hart = vaplic_get_hart_index(vcpu, intp_id);
-        /** If intp is being delegated make whole reg 0. This happens because a S domain is always
-         *  a leaf. */
-        new_val &= (new_val & APLIC_SRCCFG_D) ? 0 : APLIC_SRCCFG_SM;
+    /** A virtual S-mode APLIC domain is a leaf, so delegation is not supported. */
+    new_val &= (new_val & APLIC_SRCCFG_D) ? 0U : APLIC_SRCCFG_SM;
 
-        /** If SM is reserved make intp inactive */
-        if (new_val == 2 || new_val == 3) {
-            new_val = APLIC_SOURCECFG_SM_INACTIVE;
-        }
+    /** Reserved source modes are WARL-mapped to inactive. */
+    if (new_val == 2U || new_val == 3U) {
+        new_val = APLIC_SOURCECFG_SM_INACTIVE;
+    }
+
+    spin_lock(&vaplic->lock);
+    if (vaplic_intp_valid(intp_id) && vaplic_get_sourcecfg(vcpu, intp_id) != new_val) {
+        vcpuid_t previous_hart = vaplic_get_hart_index(vcpu, intp_id);
 
         if (vaplic_get_hw(vcpu, intp_id)) {
+            /* The virtual and physical enable state are kept in sync for hardware sources. */
+            bool enabled = vaplic_get_enbl(vcpu, intp_id);
+
+            if (enabled) {
+                aplic_clr_enbl(intp_id);
+            }
+#if (IRQC == APLIC)
+            if (vaplic_mode_is_level(new_val)) {
+                aplic_clr_pend(intp_id);
+                vaplic_level_resample(vcpu, intp_id, new_val);
+            } else {
+                CLR_INTP_REG(vaplic->level_asserted, intp_id);
+                aplic_set_sourcecfg(intp_id, new_val);
+                new_val = aplic_get_sourcecfg(intp_id);
+            }
+#else
             aplic_set_sourcecfg(intp_id, new_val);
             new_val = aplic_get_sourcecfg(intp_id);
+#endif
+            if (enabled && new_val != APLIC_SOURCECFG_SM_INACTIVE) {
+                aplic_set_enbl(intp_id);
+            }
         }
         vaplic->srccfg[intp_id] = new_val;
 
@@ -821,6 +923,9 @@ static void vaplic_set_in_clrip(struct vcpu* vcpu, size_t reg, uint32_t new_val)
     spin_lock(&vaplic->lock);
     if (reg < APLIC_NUM_CLRIx_REGS) {
         new_val &= vaplic->active[reg];
+#if (IRQC == APLIC)
+        new_val &= ~vaplic->level_asserted[reg];
+#endif
         update_intps = vaplic->ip[reg];
         vaplic->ip[reg] &= ~(new_val);
         new_val &= vaplic->hw[reg];
@@ -846,6 +951,15 @@ static uint32_t vaplic_get_in_clrip(struct vcpu* vcpu, size_t reg)
     uint32_t ret = 0;
     if (reg < APLIC_NUM_CLRIx_REGS) {
         ret = (aplic_get_inclrip_reg(reg) & vaplic->hw[reg]);
+#if (IRQC == APLIC)
+        for (size_t bit = 0; bit < APLIC_NUM_INTP_PER_REG; bit++) {
+            irqid_t intp_id = (irqid_t)(reg * APLIC_NUM_INTP_PER_REG + bit);
+            if (vaplic_source_is_level(vcpu, intp_id)) {
+                ret &= ~(1U << bit);
+                ret |= vaplic->level_asserted[reg] & (1U << bit);
+            }
+        }
+#endif
     }
     return ret;
 }
@@ -861,15 +975,22 @@ static void vaplic_set_clripnum(struct vcpu* vcpu, uint32_t new_val)
     struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
     spin_lock(&vaplic->lock);
     if (vaplic_get_active(vcpu, new_val) && vaplic_get_pend(vcpu, new_val)) {
-        if (vaplic_get_hw(vcpu, new_val)) {
-            aplic_clr_pend(new_val);
-            if (!aplic_get_pend(new_val)) {
+        bool clear = true;
+#if (IRQC == APLIC)
+        clear = !vaplic_source_is_level(vcpu, new_val) ||
+            !GET_INTP_REG(vaplic->level_asserted, new_val);
+#endif
+        if (clear) {
+            if (vaplic_get_hw(vcpu, new_val)) {
+                aplic_clr_pend(new_val);
+                if (!aplic_get_pend(new_val)) {
+                    CLR_INTP_REG(vaplic->ip, new_val);
+                }
+            } else {
                 CLR_INTP_REG(vaplic->ip, new_val);
             }
-        } else {
-            CLR_INTP_REG(vaplic->ip, new_val);
+            vaplic_update_hart(vcpu, vaplic_get_hart_index(vcpu, new_val), new_val);
         }
-        vaplic_update_hart(vcpu, vaplic_get_hart_index(vcpu, new_val), new_val);
     }
     spin_unlock(&vaplic->lock);
 }
@@ -903,14 +1024,25 @@ static void vaplic_set_setie(struct vcpu* vcpu, size_t reg, uint32_t new_val)
 {
     struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
     uint32_t update_intps = 0;
+    uint32_t new_hw_intps = 0;
 
     spin_lock(&vaplic->lock);
     if (reg < APLIC_NUM_SETIx_REGS && vaplic_get_setie(vcpu, reg) != new_val) {
         new_val &= vaplic->active[reg];
         update_intps = ~(vaplic->ie[reg]) & new_val;
         vaplic->ie[reg] |= new_val;
-        new_val &= vaplic->hw[reg];
-        aplic_set_enbl_reg(reg, new_val);
+        new_hw_intps = update_intps & vaplic->hw[reg];
+#if (IRQC == APLIC)
+        for (size_t bit = 0; bit < APLIC_NUM_INTP_PER_REG; bit++) {
+            irqid_t intp_id = (irqid_t)(reg * APLIC_NUM_INTP_PER_REG + bit);
+            if ((new_hw_intps & (1U << bit)) != 0U &&
+                vaplic_source_is_level(vcpu, intp_id)) {
+                aplic_clr_pend(intp_id);
+                vaplic_level_resample(vcpu, intp_id, vaplic->srccfg[intp_id]);
+            }
+        }
+#endif
+        aplic_set_enbl_reg(reg, new_hw_intps);
         vaplic_update_word(vcpu, reg, update_intps);
     }
     spin_unlock(&vaplic->lock);
@@ -929,6 +1061,12 @@ static void vaplic_set_setienum(struct vcpu* vcpu, uint32_t new_val)
     spin_lock(&vaplic->lock);
     if (vaplic_get_active(vcpu, new_val) && !vaplic_get_enbl(vcpu, new_val)) {
         if (vaplic_get_hw(vcpu, new_val)) {
+#if (IRQC == APLIC)
+            if (vaplic_source_is_level(vcpu, new_val)) {
+                aplic_clr_pend(new_val);
+                vaplic_level_resample(vcpu, new_val, vaplic->srccfg[new_val]);
+            }
+#endif
             aplic_set_enbl(new_val);
         }
         SET_INTP_REG(vaplic->ie, new_val);
@@ -1250,10 +1388,19 @@ void vaplic_inject(struct vcpu* vcpu, irqid_t intp_id)
     struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
 
     spin_lock(&vaplic->lock);
+#if (IRQC == APLIC)
+    if (vaplic_get_hw(vcpu, intp_id) && vaplic_source_is_level(vcpu, intp_id)) {
+        vaplic_level_resample(vcpu, intp_id, vaplic->srccfg[intp_id]);
+        vaplic_update_hart(vcpu, vaplic_get_hart_index(vcpu, intp_id), intp_id);
+    } else if (vaplic_set_pend(vcpu, intp_id)) {
+        vaplic_update_hart(vcpu, vaplic_get_hart_index(vcpu, intp_id), intp_id);
+    }
+#else
     /** If the intp was successfully injected, update the heart line. */
     if (vaplic_set_pend(vcpu, intp_id)) {
         vaplic_update_hart(vcpu, vaplic_get_hart_index(vcpu, intp_id), intp_id);
     }
+#endif
     spin_unlock(&vaplic->lock);
 }
 
