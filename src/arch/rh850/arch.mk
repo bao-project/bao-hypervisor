@@ -16,6 +16,4 @@ arch-asflags+=-mv850e3v5
 arch-asflags+=-mrh850-abi
 arch-asflags+=-m8byte-align
 
-arch_mem_prot:=mpu
-phys_irqs_only:=y
 PAGE_SIZE:=64

@@ -1,7 +1,6 @@
 ## SPDX-License-Identifier: Apache-2.0
 ## Copyright (c) Bao Project and Contributors. All rights reserved.
 
-ARCH_SUB?=riscv64
 
 ifeq ($(ARCH_SUB), riscv64)
 CROSS_COMPILE ?= riscv64-unknown-elf-
@@ -44,7 +43,6 @@ arch-cflags = -mcmodel=medany -march=$(riscv_march) -mstrict-align \
 arch-asflags =
 arch-ldflags = -m $(ld_emulation)
 
-arch_mem_prot:=mmu
 PAGE_SIZE:=0x1000
 
 clang_arch_target:=riscv64

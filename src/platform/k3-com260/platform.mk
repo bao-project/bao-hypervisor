@@ -7,14 +7,8 @@
 # (H) extension, so Bao runs on those. The A100 harts (cpu@8-15) lack H and are
 # intentionally left out of the platform description.
 
-# Architecture definition
-ARCH:=riscv
-# CPU definition
-CPU:=
 # Interrupt controller definition (Advanced Interrupt Architecture: APLIC + IMSIC)
-IRQC:=AIA
 # Core IPIs controller (SBI IPI, provided by the resident M-mode OpenSBI)
-IPIC:=IPIC_SBI
 
 # The hypervisor drives the K3 UART0 directly for its own debug output. The K3
 # UART (spacemit,k1-uart / intel,xscale-uart) is a 16550/8250-compatible block
