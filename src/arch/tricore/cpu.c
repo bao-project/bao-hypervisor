@@ -15,7 +15,6 @@ cpuid_t CPU_MASTER __attribute__((section(".data")));
 
 static inline void cpu_reset_csa(void)
 {
-    unsigned long core_id = csfr_coreid_read() & COREID_CORE_MASK;
     unsigned long old_fcx = csfr_fcx_read();
     unsigned long old_pcxi = csfr_pcxi_read();
 
@@ -24,7 +23,7 @@ static inline void cpu_reset_csa(void)
 
     /* We use the index 1, since it is the true first element of the array.
     The index 0 is initialized as NULL and kept that way to prevent errors. */
-    union csa* entry = &csa_array[core_id][1];
+    union csa* entry = &cpu()->arch.csa[1];
     entry->lower.pcxi = old_fcx;
 }
 
