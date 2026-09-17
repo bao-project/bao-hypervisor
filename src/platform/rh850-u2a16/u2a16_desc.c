@@ -61,24 +61,28 @@ struct platform platform = {
                 .base = 0xFDC00000,
                 .size = 0x10000,
                 .perms = MEM_RWX,
+                .cpu_affinity = CORE(0),
             },
             // Local RAM (CPU1)
             {
                 .base = 0xFDA00000,
                 .size = 0x10000,
                 .perms = MEM_RWX,
+                .cpu_affinity = CORE(1),
             },
             // Local RAM (CPU2)
             {
                 .base = 0xFD800000,
                 .size = 0x10000,
                 .perms = MEM_RWX,
+                .cpu_affinity = CORE(2),
             },
             // Local RAM (CPU3)
             {
                 .base = 0xFD600000,
                 .size = 0x10000,
                 .perms = MEM_RWX,
+                .cpu_affinity = CORE(3),
             }
         },
 
