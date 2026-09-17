@@ -3,3 +3,4 @@
 
 config PLAT_S32Z270
 	bool "s32z270"
+	select ARCH_ARMV8

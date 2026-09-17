@@ -3,3 +3,4 @@
 
 config PLAT_QEMU_RISCV32_VIRT
 	bool "qemu-riscv32-virt"
+	select ARCH_RISCV

@@ -3,3 +3,4 @@
 
 config PLAT_IMX8MP_VERDIN
 	bool "imx8mp-verdin"
+	select ARCH_ARMV8

@@ -33,6 +33,8 @@ config CONFIG_PINNED
 config PLATFORM_PINNED_VALUE
 	string
 
+source "src/arch/Kconfig"
 source "src/platform/Kconfig"
+source "src/core/Kconfig"
 
 osource "$(BAO_BUILD_PIN)"

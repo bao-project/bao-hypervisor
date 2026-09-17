@@ -3,3 +3,4 @@
 
 config PLAT_AGILEX5
 	bool "agilex5"
+	select ARCH_ARMV8
