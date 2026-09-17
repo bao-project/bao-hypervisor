@@ -293,12 +293,10 @@ _init_csa:
     mtcr    CSFR_PCXI,%d10               // previous context info is null
     isync
 
-    // %d10 = begin of CSA
-    load_32bit_val_d %d10, csa_array
-
-    mov     %d11, CSA_ENTRIES
-    mul     %d12, %d11, 64
-    madd    %d10, %d10, %d0, %d12
+    // %d10 = begin of this cpu's CSA pool, inside its cpu structure (a8)
+    mov.d   %d10, %a8
+    load_32bit_val_d %d12, CPU_CSA_OFF
+    add     %d10, %d10, %d12
 
     /* Initialize first CSA */
     mov.a   %a12,%d10                 // %a12 = address of first CSA

@@ -11,7 +11,6 @@ cpu-objs-y+=interrupts.o
 cpu-objs-y+=cpu.o
 cpu-objs-y+=cache.o
 cpu-objs-y+=mpu.o
-cpu-objs-y+=csa.o
 cpu-objs-y+=traps.o
 cpu-objs-y+=vir.o
 cpu-objs-y+=decode.o
