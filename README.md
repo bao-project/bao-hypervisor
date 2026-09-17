@@ -50,6 +50,7 @@ platforms is presented below:
 - [x] NXP S32G3
 - [x] NXP iMX8M Nano EVK
 - [x] Altera Agilex 5 SoC FPGA
+- [x] ATK-DLAM62xB (TI AM6254)
 
 **Armv7-A / Armv8-A AArch32**
 - [x] Arm Fixed Virtual Platforms
