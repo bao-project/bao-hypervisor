@@ -1,0 +1,20 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config ARCH_TRICORE
+	bool
+
+config ARCH
+	default "tricore" if ARCH_TRICORE
+
+config MEM_PROT_MPU
+	default y if ARCH_TRICORE
+
+config MEM_NON_UNIFIED
+	default y if ARCH_TRICORE
+
+config PHYS_IRQS_ONLY
+	default y if ARCH_TRICORE
+
+config MMIO_SLAVE_SIDE_PROT
+	default y if ARCH_TRICORE

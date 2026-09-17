@@ -3,3 +3,4 @@
 
 config PLAT_FVP_R_AARCH32
 	bool "fvp-r-aarch32"
+	select ARCH_ARMV8

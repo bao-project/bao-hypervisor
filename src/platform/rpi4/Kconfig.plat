@@ -3,3 +3,4 @@
 
 config PLAT_RPI4
 	bool "rpi4"
+	select ARCH_ARMV8

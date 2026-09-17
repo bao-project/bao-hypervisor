@@ -3,3 +3,4 @@
 
 config PLAT_K3_COM260
 	bool "k3-com260"
+	select ARCH_RISCV

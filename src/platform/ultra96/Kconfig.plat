@@ -3,3 +3,4 @@
 
 config PLAT_ULTRA96
 	bool "ultra96"
+	select ARCH_ARMV8

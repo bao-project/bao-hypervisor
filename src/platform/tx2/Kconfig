@@ -1,0 +1,17 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config PLATFORM
+	default "tx2" if PLAT_TX2
+
+config ARCH_SUB
+	default "aarch64" if PLAT_TX2
+
+config ARCH_PROFILE
+	default "armv8-a" if PLAT_TX2
+
+config CPU
+	default "cortex-a57" if PLAT_TX2
+
+config GIC_VERSION
+	default "GICV2" if PLAT_TX2
