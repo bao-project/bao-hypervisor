@@ -4,6 +4,7 @@
  */
 
 #include <stdio.h>
+#include <stdbool.h>
 #include <platform.h>
 
 extern uint32_t plat_ints[];
@@ -33,4 +34,10 @@ void arch_platform_defs() {
         else printf("0x%x }\n", bitmap[i]);
     }
 
+}
+
+/* The tricore boot code places each cpu's structure through the generated base table */
+bool arch_cpu_private_placement(void)
+{
+    return true;
 }
