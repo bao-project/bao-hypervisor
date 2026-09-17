@@ -35,5 +35,6 @@ jobs:
           submodules: recursive
       - uses: ./.github/actions/bao-container-run
         with:
-          run: make PLATFORM=${{ matrix.platform }} IRQC=${{ matrix.irqc }}
-            IPIC=${{ matrix.ipic }} CONFIG=null ${{ matrix.cross_compile }}
+          run: printf 'CONFIG_IRQC_${{ matrix.irqc }}=y\nCONFIG_${{ matrix.ipic }}=y\n'
+            > configs/null/defconfig &&
+            make PLATFORM=${{ matrix.platform }} CONFIG=null ${{ matrix.cross_compile }}

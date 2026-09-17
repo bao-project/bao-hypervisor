@@ -3,3 +3,4 @@
 
 config PLAT_ZCU104
 	bool "zcu104"
+	select ARCH_ARMV8

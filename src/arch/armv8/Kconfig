@@ -1,0 +1,37 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config ARCH_ARMV8
+	bool
+
+config ARCH
+	default "armv8" if ARCH_ARMV8
+
+config CPU
+	string
+
+config CPU_CORTEX_R52
+	bool
+
+config PLAT_HAS_GIC_CHOICE
+	bool
+
+choice
+	prompt "GIC version"
+	depends on PLAT_HAS_GIC_CHOICE
+
+config GICV3
+	bool "GICv3"
+
+config GICV2
+	bool "GICv2"
+
+endchoice
+
+config GIC_VERSION
+	string
+	default "GICV3" if GICV3
+	default "GICV2" if GICV2
+
+config MEM_PROT_MPU
+	default y if ARCH_ARMV8 && ARCH_PROFILE = "armv8-r"

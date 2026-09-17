@@ -261,6 +261,18 @@ $(error Configuration options cannot be set on the command line \
 	($(config_cli_overrides)); change them via menuconfig or the defconfig)
 endif
 
+# Likewise the platform facts bridged from Kconfig below; overriding one here
+# would build against a configuration different from the one in the .config
+kconfig_fact_vars:=ARCH ARCH_SUB ARCH_PROFILE CPU GIC_VERSION IRQC IPIC \
+	RISCV_PRIV_VERSION
+fact_cli_overrides:=$(strip $(foreach v, $(kconfig_fact_vars), \
+	$(if $(filter command% override, $(origin $(v))), $(v))))
+ifneq ($(fact_cli_overrides),)
+$(error Platform facts cannot be set on the command line \
+	($(fact_cli_overrides)); they follow the platform selection, and where a \
+	platform offers a choice it is made via menuconfig or the defconfig)
+endif
+
 ifneq ($(strip $(build_targets) $(filter listconfig,$(targets))),)
 # Both files come from the same sync, so a missing header forces it
 $(if $(wildcard $(kconfig_auto_hdr)),,$(shell rm -f $(kconfig_auto_conf)))
@@ -325,6 +337,18 @@ config_name:=$(strip $(if $(filter config.c,$(notdir $(config_src))), \
 	$(basename $(notdir $(config_src)))))
 endif
 
+# Platform facts are resolved by the platform choice in Kconfig; the
+# makefiles below only consume them
+ARCH:=$(CONFIG_ARCH)
+ARCH_SUB:=$(CONFIG_ARCH_SUB)
+ARCH_PROFILE:=$(CONFIG_ARCH_PROFILE)
+CPU:=$(CONFIG_CPU)
+GIC_VERSION:=$(CONFIG_GIC_VERSION)
+IRQC:=$(CONFIG_IRQC)
+IPIC:=$(CONFIG_IPIC)
+RISCV_PRIV_VERSION:=$(CONFIG_RISCV_PRIV_VERSION)
+arch_mem_prot:=$(if $(filter y,$(CONFIG_MEM_PROT_MPU)),mpu,mmu)
+
 # Warn when a seed defconfig changed after this build was configured;
 # the working copy is authoritative and is never silently reseeded
 ifneq ($(wildcard $(kconfig_file)),)
@@ -335,12 +359,10 @@ $(foreach d, $(seed_defconfigs), \
 endif
 endif
 
--include $(platform_dir)/platform.mk	# must define ARCH and CPU variables
+-include $(platform_dir)/platform.mk	# platform build mechanics
 cpu_arch_dir=$(src_dir)/arch/$(ARCH)
 -include $(cpu_arch_dir)/arch.mk
-ifneq ($(arch_mem_prot),)
- core_mem_prot_dir:=$(core_dir)/$(arch_mem_prot)
-endif
+core_mem_prot_dir:=$(core_dir)/$(arch_mem_prot)
 
 src_dirs+=$(cpu_arch_dir) $(lib_dir) $(core_dir) $(core_mem_prot_dir) \
 	$(platform_dir) $(addprefix $(drivers_dir)/, $(drivers)) $(config_dir)
@@ -428,29 +450,11 @@ objs-y:=$(abspath $(sort $(objs-y)))
 
 # Toolchain flags
 
-build_macros:=
-ifeq ($(arch_mem_prot),mmu)
-	build_macros+=-DMEM_PROT_MMU
-endif
-ifeq ($(arch_mem_prot),mpu)
-	build_macros+=-DMEM_PROT_MPU
-endif
-ifeq ($(plat_mem),non_unified)
-	ifeq ($(ARCH),aarch64)
-		$(error AArch64 with non_unified memory is not supported)
-	endif
-	build_macros+=-DMEM_NON_UNIFIED
-endif
-ifeq ($(phys_irqs_only),y)
-	build_macros+=-DPHYS_IRQS_ONLY
-endif
-ifeq ($(mmio_slave_side_prot),y)
-	build_macros+=-DMMIO_SLAVE_SIDE_PROT
-
-	ifneq ($(arch_mem_prot),mpu)
-		$(error mmio_slave_side_prot=y requires arch_mem_prot=mpu)
-	endif
-endif
+# Bridge kconfig-owned symbols to the unprefixed macro names the code uses
+kconfig_macros:=MEM_PROT_MMU MEM_PROT_MPU MEM_NON_UNIFIED PHYS_IRQS_ONLY \
+	MMIO_SLAVE_SIDE_PROT
+build_macros:=$(strip $(foreach m, $(kconfig_macros), \
+	$(if $(filter y, $(CONFIG_$(m))), -D$(m))))
 
 ifeq ($(CC_IS_GCC),y)
 	build_macros+=-DCC_IS_GCC

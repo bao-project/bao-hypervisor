@@ -22,24 +22,11 @@ struct cpu_msg {
     uint64_t data;
 };
 
-/*
- * Default keeps struct cpuif within a single 4K page:
- *   253 * sizeof(struct cpu_msg) + sizeof(struct circular_queue)
- *   = 253 * 16 + 48 = 4096 bytes
- *
- * Override on platforms with tighter memory constraints or that need a
- * deeper queue, e.g. -DIPI_MAX_EVENTS=64.
- */
-#define IPI_MAX_EVENTS_DEFAULT (253)
-#ifndef IPI_MAX_EVENTS
-#define IPI_MAX_EVENTS IPI_MAX_EVENTS_DEFAULT
-#endif
-
-_Static_assert((IPI_MAX_EVENTS) > 0 && (IPI_MAX_EVENTS) < INT_MAX,
+_Static_assert((CONFIG_IPI_MAX_EVENTS) > 0 && (CONFIG_IPI_MAX_EVENTS) < INT_MAX,
     "IPI_MAX_EVENTS must be positive and fit the int indexes of the message queue");
 
 struct cpuif {
-    CQ_DEFINE(struct cpu_msg, msgs, IPI_MAX_EVENTS);
+    CQ_DEFINE(struct cpu_msg, msgs, CONFIG_IPI_MAX_EVENTS);
 } __attribute__((aligned(PAGE_SIZE)));
 
 struct vcpu;

@@ -3,3 +3,5 @@
 
 config PLAT_MPS3_AN536
 	bool "mps3-an536"
+	select ARCH_ARMV8
+	select PLAT_HAS_GIC_CHOICE
