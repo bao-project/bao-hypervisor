@@ -7,6 +7,7 @@
 #include <arch/platform.h>
 #include <mem.h>
 #include <imsic.h>
+#include <vimsic.h>
 
 /** We only support 1 guest per hart at the moment */
 #define VS_FILE_IDX 1

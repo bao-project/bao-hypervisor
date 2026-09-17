@@ -302,6 +302,72 @@ static void vm_init_remio(struct vm* vm, const struct vm_config* vm_config)
     remio_assign_vm_cpus(vm);
 }
 
+#ifdef CONFIG_CPU_LOCAL_COPIES
+
+/**
+ * Translates a list node pointer of the shared vm description into the corresponding node of
+ * the copy when it points inside the description (the emulation descriptors live in vm->arch).
+ * Nodes outside the description are shared as they are.
+ */
+static node_t* vm_copy_node(const struct vm* vm, struct vm* copy, node_t* node)
+{
+    uintptr_t addr = (uintptr_t)node;
+    uintptr_t base = (uintptr_t)vm;
+    node_t* reloc = node;
+
+    if ((node != NULL) && (addr >= base) && (addr < (base + sizeof(struct vm)))) {
+        reloc = (node_t*)((uintptr_t)copy + (addr - base));
+    }
+
+    return reloc;
+}
+
+/**
+ * Rebuilds a list of the copy from the corresponding list of the shared description: the nodes
+ * that were copied along with the description are linked among themselves, in the original
+ * order, and a node kept outside continues the chain of the shared list. The shared list is not
+ * modified.
+ */
+static void vm_copy_list(const struct vm* vm, struct vm* copy, const struct list* src,
+    struct list* dst)
+{
+    dst->lock = SPINLOCK_INITVAL;
+    dst->head = vm_copy_node(vm, copy, src->head);
+    dst->tail = vm_copy_node(vm, copy, src->tail);
+
+    for (node_t* node = src->head; node != NULL; node = (node_t*)*node) {
+        node_t* reloc = vm_copy_node(vm, copy, node);
+        if (reloc != node) {
+            *reloc = (node_t)vm_copy_node(vm, copy, (node_t*)*node);
+        }
+    }
+}
+
+/**
+ * Takes this cpu's local copy of the (now final) vm description and runs its vcpu on it. The
+ * public part of the vcpu keeps pointing at the shared instance for the other cpus.
+ */
+static void vm_local_copy(const struct vm* vm)
+{
+    struct vm* copy = &cpu()->vm_copy;
+
+    *copy = *vm;
+    vm_copy_list(vm, copy, &vm->emul_mem_list, &copy->emul_mem_list);
+    vm_copy_list(vm, copy, &vm->emul_reg_list, &copy->emul_reg_list);
+
+    cpu()->vcpu.vm = copy;
+}
+
+#else  /* CONFIG_CPU_LOCAL_COPIES */
+
+/* Without local copies every cpu keeps running on the shared instance */
+static void vm_local_copy(const struct vm* vm)
+{
+    UNUSED_ARG(vm);
+}
+
+#endif /* CONFIG_CPU_LOCAL_COPIES */
+
 struct vm* vm_init(struct vm* vm, struct cpu_synctoken* vm_init_sync,
     const struct vm_config* vm_config, bool master, vmid_t vm_id)
 {
@@ -357,7 +423,12 @@ struct vm* vm_init(struct vm* vm, struct cpu_synctoken* vm_init_sync,
 
     cpu_sync_and_clear_msgs(&vm->mut->sync);
 
-    return vm;
+    /**
+     * The description is final: from here on this cpu may run on its local copy of it.
+     */
+    vm_local_copy(vm);
+
+    return cpu()->vcpu.vm;
 }
 
 void vm_emul_add_mem(struct vm* vm, struct emul_mem* emu)

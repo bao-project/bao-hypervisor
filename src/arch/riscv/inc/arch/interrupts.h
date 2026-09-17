@@ -7,7 +7,12 @@
 #define __ARCH_INTERRUPTS_H__
 
 #include <bao.h>
-#include <irqc.h>
+#include <arch/platform.h>
+#if (IRQC == PLIC)
+#include <plic.h>
+#else
+#include <aplic.h>
+#endif
 
 #define ACLINT_PRESENT()       DEFINED(ACLINT_SSWI)
 

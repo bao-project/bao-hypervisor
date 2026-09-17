@@ -3,6 +3,7 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
+#include <cpu.h>
 #include <platform.h>
 
 volatile struct clk_ctl_iso_hw* clk_ctl_iso;

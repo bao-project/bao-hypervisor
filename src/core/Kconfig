@@ -27,6 +27,16 @@ config CPU_TCM_MASK
 	  mask, and only architectures whose boot code places the cpu
 	  structure through the generated base table accept a nonzero one.
 
+config CPU_LOCAL_COPIES
+	bool "Local copies of shared read-only state in each cpu's structure"
+	depends on PLAT_HAS_TCM
+	help
+	  Once its vm is initialized, each cpu copies the description of the
+	  vm (struct vm, whose mutable state is kept apart) into its own cpu
+	  structure and runs on the copy. With the structure in core-coupled
+	  memory (CPU_TCM_MASK) the trap paths then never read the shared
+	  instance. Costs a vm description per cpu.
+
 choice
 	prompt "Hypervisor MPU map"
 	depends on MEM_PROT_MPU

@@ -3,6 +3,7 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
+#include <cpu.h>
 #include <emul.h>
 #include <interrupts.h>
 #include <platform.h>

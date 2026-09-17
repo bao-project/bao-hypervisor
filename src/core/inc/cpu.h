@@ -9,6 +9,8 @@
 #include <bao.h>
 #include <arch/cpu.h>
 #include <vcpu.h>
+#include <vm_types.h>
+#include <cpu_sync.h>
 
 #include <spinlock.h>
 #include <mem.h>
@@ -43,6 +45,11 @@ struct cpu {
 
     struct cpuif* interface;
 
+#ifdef CONFIG_CPU_LOCAL_COPIES
+    /* Local copy of the description of the vm this cpu runs */
+    struct vm vm_copy;
+#endif
+
     uint8_t stack[STACK_SIZE] __attribute__((aligned(PAGE_SIZE)));
 
 } __attribute__((aligned(PAGE_SIZE)));
@@ -60,13 +67,6 @@ typedef void (*cpu_msg_handler_t)(uint32_t event, uint64_t data);
 /* Address of each cpu's structure (coupled memory or global slot), read by the boot code */
 extern const paddr_t cpu_base_tbl[PLAT_CPU_NUM];
 #endif
-
-struct cpu_synctoken {
-    spinlock_t lock;
-    volatile size_t n;
-    volatile bool ready;
-    volatile size_t count;
-};
 
 extern struct cpu_synctoken cpu_glb_sync;
 

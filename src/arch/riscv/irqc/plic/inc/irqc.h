@@ -12,15 +12,6 @@
 #include <vplic.h>
 #include <arch/sbi.h>
 
-#define IRQC_TIMR_INT_ID            (PLIC_MAX_INTERRUPTS + 1)
-#define IRQC_SOFT_INT_ID            (PLIC_MAX_INTERRUPTS + 2)
-#define IRQC_MAX_INTERRUPT_LINES    (IRQC_SOFT_INT_ID + 1)
-#define IRQC_MAX_INTERRUPT_HANDLERS MAX_INTERRUPT_LINES
-#define IRQC_MAX_GUEST_INTERRUPTS   MAX_INTERRUPT_LINES
-
-#define HART_REG_OFF                PLIC_THRESHOLD_OFF
-#define IRQC_HART_INST              PLIC_PLAT_CNTXT_NUM
-
 static inline void irqc_init(void)
 {
     plic_init();
