@@ -46,6 +46,11 @@ config MEM_NON_UNIFIED
 	  Split instruction and data memory buses with separate hypervisor
 	  images per memory - fixed by the platform.
 
+# The platform declares memory coupled to its cpus (TCM, local RAM: cpu_affinity = CORE(n) in
+# the description); the cpu structures can then be placed there (CPU_TCM_MASK)
+config PLAT_HAS_TCM
+	bool
+
 config PLAT_HAS_MMIO_SLAVE_SIDE_PROT
 	bool
 

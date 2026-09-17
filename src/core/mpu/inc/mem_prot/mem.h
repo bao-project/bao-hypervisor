@@ -19,6 +19,10 @@
 #define MEM_NOT_LOCKED     (false)
 
 #define VMPU_NUM_ENTRIES   64
+
+/* Whether a range lies in the hypervisor's own RAM, which every cpu maps */
+bool mem_in_hyp_image_ram(vaddr_t base, size_t size);
+
 struct mp_region {
     vaddr_t base;
     size_t size;

@@ -10,6 +10,23 @@ config MMIO_SLAVE_SIDE_PROT
 	  Enforce MMIO access control at the bus slave side instead of
 	  through MPU entries on the master side.
 
+config CPU_TCM_MASK
+	hex "Cpus whose cpu structure lives in core-coupled memory"
+	depends on PLAT_HAS_TCM
+	default 0x0
+	help
+	  Bit n set places the structure of cpu n (its vcpu, its stack and
+	  its other private state) at the end of the platform memory region
+	  coupled to that cpu, declared with cpu_affinity = CORE(n) in the
+	  platform description (the one marked cpu_home when several are),
+	  instead of the global cpu slots; the rest of
+	  the region stays usable by the guests from its base. The cpus left out
+	  share a compact array in global memory, so no memory is wasted, and
+	  their coupled region stays entirely available to the guests. Only
+	  platforms declaring coupled memory (PLAT_HAS_TCM) offer the
+	  mask, and only architectures whose boot code places the cpu
+	  structure through the generated base table accept a nonzero one.
+
 config IPI_MAX_EVENTS
 	int "Depth of the per-cpu message queue"
 	default 253

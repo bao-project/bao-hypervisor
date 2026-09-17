@@ -25,7 +25,8 @@ void vm_mem_prot_cpu_init(struct vm* vm)
      */
     for (vcpuid_t id = 0; id < vm->cpu_num; id++) {
         struct vcpu* vcpu = vm_get_vcpu(vm, id);
-        if (vcpu == &cpu()->vcpu) {
+        /* Skip this cpu's own, and the ones in global slots, which the image mapping covers */
+        if ((vcpu == &cpu()->vcpu) || mem_in_hyp_image_ram((vaddr_t)vcpu, sizeof(struct vcpu))) {
             continue;
         }
         struct mp_region mpr = {
