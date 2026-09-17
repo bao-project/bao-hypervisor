@@ -174,6 +174,7 @@ int main() {
     }
 
     printf("#define PLAT_BITMAP_POOL_SIZE (0x%lx)\n", bitmap_array_size);
+    printf("#define PLAT_MMIO_REGION_NUM (%ld)\n", platform.mmio_region_num);
 
     if (platform.cpu_master_fixed) {
         printf("#define CPU_MASTER_FIXED (%ld)\n", platform.cpu_master);

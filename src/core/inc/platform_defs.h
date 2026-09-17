@@ -8,10 +8,11 @@
 
 #ifdef GENERATING_DEFS
 
-#define PLAT_CPU_NUM      1
-#define PLAT_BASE_ADDR    0
-#define PLAT_CPU_SLOT_NUM 1
-#define PLAT_CPU_BASES    { CPU_SLOT(0) }
+#define PLAT_CPU_NUM         1
+#define PLAT_BASE_ADDR       0
+#define PLAT_CPU_SLOT_NUM    1
+#define PLAT_MMIO_REGION_NUM 0
+#define PLAT_CPU_BASES       { CPU_SLOT(0) }
 
 #else /* GENERATING_DEFS */
 

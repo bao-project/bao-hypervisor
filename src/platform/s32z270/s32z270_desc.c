@@ -165,6 +165,14 @@ struct platform platform = {
         },
     },
 
+    .mmio_region_num = 1,
+    .mmio_regions = (struct mem_region[]) {
+        {   /* Peripheral space (AIPS, GIC, generic timer, LINFlexD) */
+            .base = 0x40000000,
+            .size = 0x10000000,
+        },
+    },
+
     .console = {
         /* LINFlexD 9 */
         .base = 0x42980000

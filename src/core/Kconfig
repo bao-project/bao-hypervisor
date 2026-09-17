@@ -27,6 +27,41 @@ config CPU_TCM_MASK
 	  mask, and only architectures whose boot code places the cpu
 	  structure through the generated base table accept a nonzero one.
 
+choice
+	prompt "Hypervisor MPU map"
+	depends on MEM_PROT_MPU
+	default HYP_MPU_MAP_FULL
+	help
+	  How the hypervisor's own address space is described in the MPU.
+
+config HYP_MPU_MAP_FULL
+	bool "Full: one entry per hypervisor mapping"
+	help
+	  The hypervisor image, each cpu's structure and every later
+	  hypervisor-side mapping (shared memory, devices, vm memory it
+	  touches) get their own MPU entries, with isolation between cpus.
+
+config HYP_MPU_MAP_SIMPLE
+	bool "Simple: flash, RAM, MMIO and the cpu's coupled region"
+	help
+	  The hypervisor address space is a fixed set of locked hull entries
+	  built once per cpu: the hull of the flash regions and the hull of
+	  the RAM regions (one memory hull on unified-memory platforms), the
+	  hull of the platform MMIO regions, and the cpu's structure when it
+	  lies in core-coupled memory. Every later hypervisor-side mapping
+	  request inside those hulls is a no-op, so the hypervisor never
+	  consumes further MPU entries; there is no isolation between cpus
+	  inside the hypervisor. The platform must declare its MMIO regions.
+
+endchoice
+
+# The map in force, for the code: the choice selectors are not emitted
+config HYP_MPU_MAP
+	int
+	depends on MEM_PROT_MPU
+	default 1 if HYP_MPU_MAP_SIMPLE
+	default 0
+
 config IPI_MAX_EVENTS
 	int "Depth of the per-cpu message queue"
 	default 253
