@@ -94,9 +94,22 @@ void vmm_init()
 
     bool master = false;
     vmid_t vm_id = INVALID_VMID;
+    struct vm* vm = NULL;
     if (vmm_assign_vcpu(&master, &vm_id)) {
         struct vm_config* vm_config = &config.vmlist[vm_id];
-        struct vm* vm = vm_init(&vms[vm_id], &vm_assign[vm_id].root_sync, vm_config, master, vm_id);
+        vm = vm_init(&vms[vm_id], &vm_assign[vm_id].root_sync, vm_config, master, vm_id);
+    }
+
+#ifdef CONFIG_CPU_LOCAL_COPIES
+    /**
+     * Every vm is initialized past this barrier, so the interrupt assignment is final and each
+     * cpu, assigned or not, takes its copy before any guest runs.
+     */
+    cpu_sync_barrier(&cpu_glb_sync);
+    interrupts_cpu_init();
+#endif
+
+    if (vm != NULL) {
         cpu_sync_barrier(&vm->mut->sync);
         vcpu_run(&cpu()->vcpu);
     } else {

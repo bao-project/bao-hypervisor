@@ -88,6 +88,27 @@ static inline bool interrupt_assigned(irqid_t int_id)
     return bitmap_get(global_interrupt_bitmap, int_id);
 }
 
+#ifdef CONFIG_CPU_LOCAL_COPIES
+
+void interrupts_cpu_init(void)
+{
+    (void)memcpy(cpu()->interrupt_bitmap, global_interrupt_bitmap, sizeof(global_interrupt_bitmap));
+}
+
+bool interrupts_cpu_assigned(irqid_t int_id)
+{
+    return (int_id < MAX_INTERRUPT_LINES) && bitmap_get(cpu()->interrupt_bitmap, int_id);
+}
+
+#else  /* CONFIG_CPU_LOCAL_COPIES */
+
+bool interrupts_cpu_assigned(irqid_t int_id)
+{
+    return (int_id < MAX_INTERRUPT_LINES) && interrupt_assigned(int_id);
+}
+
+#endif /* CONFIG_CPU_LOCAL_COPIES */
+
 enum irq_res interrupts_handle(irqid_t int_id)
 {
     if (interrupts_arch_irq_is_forwardable(int_id) && vm_has_interrupt(cpu()->vcpu.vm, int_id)) {

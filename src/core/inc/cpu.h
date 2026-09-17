@@ -46,8 +46,9 @@ struct cpu {
     struct cpuif* interface;
 
 #ifdef CONFIG_CPU_LOCAL_COPIES
-    /* Local copy of the description of the vm this cpu runs */
+    /* Local copies of the vm description this cpu runs and of the interrupt assignment */
     struct vm vm_copy;
+    BITMAP_ALLOC(interrupt_bitmap, MAX_INTERRUPT_LINES);
 #endif
 
     uint8_t stack[STACK_SIZE] __attribute__((aligned(PAGE_SIZE)));

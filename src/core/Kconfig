@@ -28,14 +28,17 @@ config CPU_TCM_MASK
 	  structure through the generated base table accept a nonzero one.
 
 config CPU_LOCAL_COPIES
-	bool "Local copies of shared read-only state in each cpu's structure"
+	bool "Local copies of the vm description and interrupt assignment"
 	depends on PLAT_HAS_TCM
 	help
 	  Once its vm is initialized, each cpu copies the description of the
 	  vm (struct vm, whose mutable state is kept apart) into its own cpu
-	  structure and runs on the copy. With the structure in core-coupled
-	  memory (CPU_TCM_MASK) the trap paths then never read the shared
-	  instance. Costs a vm description per cpu.
+	  structure and runs on the copy, and once every vm is initialized
+	  each cpu copies the interrupt assignment bitmap the same way. With
+	  the structure in core-coupled memory (CPU_TCM_MASK) the trap and
+	  interrupt paths then never read the shared instances. Costs a vm
+	  description and an interrupt bitmap per cpu; all vms start together
+	  once every one of them is initialized.
 
 choice
 	prompt "Hypervisor MPU map"
