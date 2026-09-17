@@ -11,6 +11,9 @@
 #include <arch/spinlock.h>
 #include <bitmap.h>
 #include <emul.h>
+#if (IRQC == APLIC)
+#include <vaplic_selector.h>
+#endif
 
 struct vaplic {
     spinlock_t lock;
@@ -21,6 +24,10 @@ struct vaplic {
     uint32_t active[APLIC_MAX_INTERRUPTS / 32];
     uint32_t ip[APLIC_MAX_INTERRUPTS / 32];
     uint32_t ie[APLIC_MAX_INTERRUPTS / 32];
+#if (IRQC == APLIC)
+    /* Rectified level state tracked through alternating physical edges. */
+    uint32_t level_asserted[APLIC_MAX_INTERRUPTS / 32];
+#endif
     uint32_t target[APLIC_MAX_INTERRUPTS];
     BITMAP_ALLOC(idelivery, APLIC_DOMAIN_NUM_HARTS);
     BITMAP_ALLOC(iforce, APLIC_DOMAIN_NUM_HARTS);
