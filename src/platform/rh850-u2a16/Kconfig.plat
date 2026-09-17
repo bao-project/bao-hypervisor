@@ -1,0 +1,5 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config PLAT_RH850_U2A16
+	bool "rh850-u2a16"

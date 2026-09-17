@@ -1,0 +1,5 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config PLAT_FVP_R_AARCH32
+	bool "fvp-r-aarch32"
