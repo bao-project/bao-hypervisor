@@ -30,7 +30,7 @@ static void aborts_data_lower(unsigned long iss, unsigned long far, unsigned lon
     }
 
     vaddr_t addr = far;
-    emul_handler_t handler = vm_emul_get_mem(cpu()->vcpu->vm, addr);
+    emul_handler_t handler = vm_emul_get_mem(cpu()->vcpu.vm, addr);
     if (handler != NULL) {
         struct emul_access emul;
         emul.addr = addr;
@@ -44,12 +44,12 @@ static void aborts_data_lower(unsigned long iss, unsigned long far, unsigned lon
 
         if (handler(&emul)) {
             unsigned long pc_step = 2 + (2 * il);
-            vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + pc_step);
+            vcpu_writepc(&cpu()->vcpu, vcpu_readpc(&cpu()->vcpu) + pc_step);
         } else {
             ERROR("data abort emulation failed (0x%x)\n", far);
         }
     } else {
-        ERROR("no emulation handler for abort(0x%x at 0x%x)\n", far, vcpu_readpc(cpu()->vcpu));
+        ERROR("no emulation handler for abort(0x%x at 0x%x)\n", far, vcpu_readpc(&cpu()->vcpu));
     }
 }
 
@@ -59,10 +59,10 @@ static long int standard_service_call(unsigned long _fn_num)
 
     long int ret = -1;
 
-    unsigned long smc_fid = vcpu_readreg(cpu()->vcpu, 0);
-    unsigned long x1 = vcpu_readreg(cpu()->vcpu, 1);
-    unsigned long x2 = vcpu_readreg(cpu()->vcpu, 2);
-    unsigned long x3 = vcpu_readreg(cpu()->vcpu, 3);
+    unsigned long smc_fid = vcpu_readreg(&cpu()->vcpu, 0);
+    unsigned long x1 = vcpu_readreg(&cpu()->vcpu, 1);
+    unsigned long x2 = vcpu_readreg(&cpu()->vcpu, 2);
+    unsigned long x3 = vcpu_readreg(&cpu()->vcpu, 3);
 
     if (is_psci_fid(smc_fid)) {
         ret = psci_smc_handler((uint32_t)smc_fid, x1, x2, x3);
@@ -81,7 +81,7 @@ static inline void syscall_handler(unsigned long iss, unsigned long far, unsigne
     UNUSED_ARG(il);
     UNUSED_ARG(ec);
 
-    unsigned long fid = vcpu_readreg(cpu()->vcpu, 0);
+    unsigned long fid = vcpu_readreg(&cpu()->vcpu, 0);
 
     long ret = SMCC_E_NOT_SUPPORTED;
     switch (fid & ~SMCC_FID_FN_NUM_MSK) {
@@ -97,7 +97,7 @@ static inline void syscall_handler(unsigned long iss, unsigned long far, unsigne
             WARNING("Unknown system call fid 0x%x\n", fid);
     }
 
-    vcpu_writereg(cpu()->vcpu, 0, (unsigned long)ret);
+    vcpu_writereg(&cpu()->vcpu, 0, (unsigned long)ret);
 }
 
 static void hvc_handler(unsigned long iss, unsigned long far, unsigned long il, unsigned long ec)
@@ -116,7 +116,7 @@ static void smc_handler(unsigned long iss, unsigned long far, unsigned long il, 
      * is the address of the actual smc instruction. Thus, we need to adjust it to the next
      * instruction.
      */
-    vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + 4);
+    vcpu_writepc(&cpu()->vcpu, vcpu_readpc(&cpu()->vcpu) + 4);
 }
 
 static regaddr_t reg_addr_translate(unsigned long iss)
@@ -140,7 +140,7 @@ static void sysreg_handler(unsigned long iss, unsigned long far, unsigned long i
         reg_addr = (iss & ESR_ISS_SYSREG_ADDR_32) | OP0_MRS_CP15;
     }
 
-    emul_handler_t handler = vm_emul_get_reg(cpu()->vcpu->vm, reg_addr);
+    emul_handler_t handler = vm_emul_get_reg(cpu()->vcpu.vm, reg_addr);
     if (handler != NULL) {
         struct emul_access emul;
         emul.addr = reg_addr;
@@ -154,13 +154,13 @@ static void sysreg_handler(unsigned long iss, unsigned long far, unsigned long i
 
         if (handler(&emul)) {
             unsigned long pc_step = 2 + (2 * il);
-            vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + pc_step);
+            vcpu_writepc(&cpu()->vcpu, vcpu_readpc(&cpu()->vcpu) + pc_step);
         } else {
             ERROR("register access emulation failed (0x%x)\n", reg_addr);
         }
     } else {
         ERROR("no emulation handler for register access (0x%x at 0x%x)\n", reg_addr,
-            vcpu_readpc(cpu()->vcpu));
+            vcpu_readpc(&cpu()->vcpu));
     }
 }
 
@@ -182,7 +182,7 @@ void aborts_sync_handler(void)
     unsigned long hpfar = sysreg_hpfar_el2_read();
     unsigned long ipa_fault_addr = 0;
 
-    if (DEFINED(MEM_PROT_MMU) || cpu()->vcpu->vm->config->platform.mmu) {
+    if (DEFINED(MEM_PROT_MMU) || cpu()->vcpu.vm->config->platform.mmu) {
         ipa_fault_addr = (far & 0xFFF) | (hpfar << 8);
     } else {
         ipa_fault_addr = far;
@@ -195,7 +195,7 @@ void aborts_sync_handler(void)
     abort_handler_t handler = abort_handlers[ec];
     if (handler) {
         handler(iss, ipa_fault_addr, il, ec);
-        if (vcpu_arch_is_on(cpu()->vcpu) && !cpu()->vcpu->active) {
+        if (vcpu_arch_is_on(&cpu()->vcpu) && !cpu()->vcpu.active) {
             cpu_standby();
         }
     } else {

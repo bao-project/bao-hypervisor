@@ -63,8 +63,8 @@
     mrc p15, 4, r0, c13, c0, 2  // Read HTPIDR (CPU base address)
 
 #ifdef MEM_PROT_MPU
-    ldr r1, [r0, #CPU_VCPU_OFF]
-    ldr r1, [r1, #VCPU_ARCH_MASK_OFF]
+    ldr r1, =(CPU_VCPU_OFF + VCPU_ARCH_MASK_OFF)
+    ldr r1, [r0, r1]
 
     mov r2, #CPU_ARCH_PROFILE_MPU_LOCKED_OFF
     add r2, r2, r0
@@ -74,8 +74,8 @@
     mcr p15, 4, r1, c6, c1, 1
 #endif /* MEM_PROT_MPU */
 
-    ldr r0, [r0, #CPU_VCPU_OFF]
-    add r0, r0, #VCPU_REGS_OFF
+    ldr r1, =(CPU_VCPU_OFF + VCPU_REGS_OFF)
+    add r0, r0, r1
     mov sp, r0
 
     LOAD_ELR_SPSR

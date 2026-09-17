@@ -13,7 +13,7 @@
 
 void vimsic_init(struct vm* vm, const union vm_irqc_dscrp* vm_irqc_dscrp)
 {
-    struct vcpu* vcpu = cpu()->vcpu;
+    struct vcpu* vcpu = &cpu()->vcpu;
     cpuid_t pcpu_id = vcpu->phys_id;
     vcpuid_t vcpu_id = vcpu->id;
     paddr_t imsic_paddr;

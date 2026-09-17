@@ -37,10 +37,10 @@ static struct ipc* ipc_find_by_shmemid(struct vm* vm, size_t shmem_id)
 
 static void ipc_notify(size_t shmem_id, size_t event_id)
 {
-    struct ipc* ipc_obj = ipc_find_by_shmemid(cpu()->vcpu->vm, shmem_id);
+    struct ipc* ipc_obj = ipc_find_by_shmemid(cpu()->vcpu.vm, shmem_id);
     if (ipc_obj != NULL && event_id < ipc_obj->interrupt_num) {
         irqid_t irq_id = ipc_obj->interrupts[event_id];
-        vcpu_inject_irq(cpu()->vcpu, irq_id);
+        vcpu_inject_irq(&cpu()->vcpu, irq_id);
     }
 }
 
@@ -60,23 +60,23 @@ CPU_MSG_HANDLER(ipc_handler, IPC_CPUMSG_ID)
 
 long int ipc_hypercall(void)
 {
-    unsigned long ipc_id = hypercall_get_arg(cpu()->vcpu, 0);
-    unsigned long ipc_event = hypercall_get_arg(cpu()->vcpu, 1);
+    unsigned long ipc_id = hypercall_get_arg(&cpu()->vcpu, 0);
+    unsigned long ipc_event = hypercall_get_arg(&cpu()->vcpu, 1);
 
     long int ret = -HC_E_SUCCESS;
 
     struct shmem* shmem = NULL;
-    bool valid_ipc_obj = ipc_id < cpu()->vcpu->vm->ipc_num;
+    bool valid_ipc_obj = ipc_id < cpu()->vcpu.vm->ipc_num;
     if (valid_ipc_obj) {
-        shmem = shmem_get(cpu()->vcpu->vm->ipcs[ipc_id].shmem_id);
+        shmem = shmem_get(cpu()->vcpu.vm->ipcs[ipc_id].shmem_id);
     }
     bool valid_shmem = shmem != NULL;
 
     if (valid_ipc_obj && valid_shmem) {
-        cpumap_t ipc_cpu_masters = shmem->cpu_masters & ~cpu()->vcpu->vm->cpus;
+        cpumap_t ipc_cpu_masters = shmem->cpu_masters & ~cpu()->vcpu.vm->cpus;
 
         union ipc_msg_data data = {
-            .shmem_id = (uint32_t)cpu()->vcpu->vm->ipcs[ipc_id].shmem_id,
+            .shmem_id = (uint32_t)cpu()->vcpu.vm->ipcs[ipc_id].shmem_id,
             .event_id = (uint32_t)ipc_event,
         };
         struct cpu_msg msg = { (uint32_t)IPC_CPUMSG_ID, IPC_NOTIFY, data.raw };

@@ -22,6 +22,7 @@ void cpu_init(cpuid_t cpu_id)
 {
     cpu()->id = cpu_id;
     cpu()->handling_msgs = false;
+    cpu()->vcpu.vm = NULL;
     cpu()->interface = cpu_if(cpu()->id);
 
     cpu_arch_init(cpu_id, img_addr);
@@ -98,8 +99,8 @@ void cpu_standby_wakeup(void)
         cpu_msg_handler();
     }
 
-    if (cpu()->vcpu != NULL) {
-        vcpu_run(cpu()->vcpu);
+    if (cpu()->vcpu.vm != NULL) {
+        vcpu_run(&cpu()->vcpu);
     } else {
         cpu_standby();
     }
@@ -112,8 +113,8 @@ void cpu_powerdown_wakeup(void)
         cpu_msg_handler();
     }
 
-    if (cpu()->vcpu != NULL) {
-        vcpu_run(cpu()->vcpu);
+    if (cpu()->vcpu.vm != NULL) {
+        vcpu_run(&cpu()->vcpu);
     } else {
         cpu_powerdown();
     }

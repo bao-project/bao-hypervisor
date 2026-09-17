@@ -17,14 +17,11 @@
 .endm
 
 .macro GET_VCPU_REGS_PTR
-    ld.w    %d8, [%a8]CPU_VCPU_OFF /* get cpu()->vcpu */
-    add     %d8, %d8, VCPU_REGS_OFF
-    mov.a   %a10, %d8
+    lea     %a10, [%a8](CPU_VCPU_OFF + VCPU_REGS_OFF) /* &cpu()->vcpu.regs */
 .endm
 
 .macro GET_HWVM_ID
-    ld.a    %a12, [%a8]CPU_VCPU_OFF /* a12: cpu()->vcpu */
-    ld.a    %a12, [%a12]VCPU_VM_OFF /* get vcpu->vm */
+    ld.a    %a12, [%a8](CPU_VCPU_OFF + VCPU_VM_OFF) /* a12: cpu()->vcpu.vm */
     ld.w    %d8,  [%a12]VM_ID_OFF /* get vm->vmid */
     addi    %d8,   %d8, 1
     /* The VMID used in HW is bao's internal vm.id + 1 because VM0 is
