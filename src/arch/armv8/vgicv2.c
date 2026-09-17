@@ -142,36 +142,36 @@ void vgic_inject_sgi(struct vcpu* vcpu, struct vgic_int* interrupt, vcpuid_t sou
 
 void vgic_init(struct vm* vm, const struct vgic_dscrp* vgic_dscrp)
 {
-    vm->arch.vgicd.CTLR = 0;
+    vm->mut->arch.vgicd.CTLR = 0;
     size_t vtyper_itln = vgic_get_itln(vgic_dscrp);
-    vm->arch.vgicd.int_num = 32 * (vtyper_itln + 1);
-    vm->arch.vgicd.TYPER = ((vtyper_itln << GICD_TYPER_ITLN_OFF) & GICD_TYPER_ITLN_MSK) |
+    vm->mut->arch.vgicd.int_num = 32 * (vtyper_itln + 1);
+    vm->mut->arch.vgicd.TYPER = ((vtyper_itln << GICD_TYPER_ITLN_OFF) & GICD_TYPER_ITLN_MSK) |
         (((vm->cpu_num - 1) << GICD_TYPER_CPUNUM_OFF) & GICD_TYPER_CPUNUM_MSK);
-    vm->arch.vgicd.IIDR = gicd->IIDR;
-    vm->arch.vgicd.lock = SPINLOCK_INITVAL;
+    vm->mut->arch.vgicd.IIDR = gicd->IIDR;
+    vm->mut->arch.vgicd.lock = SPINLOCK_INITVAL;
 
     size_t n = NUM_PAGES(sizeof(struct gicc_hw));
-    mem_alloc_map_dev(&vm->as, SEC_VM_ANY, (vaddr_t)vgic_dscrp->gicc_addr,
+    mem_alloc_map_dev(&vm->mut->as, SEC_VM_ANY, (vaddr_t)vgic_dscrp->gicc_addr,
         (vaddr_t)platform.arch.gic.gicv_addr, n);
 
-    size_t vgic_int_size = vm->arch.vgicd.int_num * sizeof(struct vgic_int);
-    vm->arch.vgicd.interrupts =
+    size_t vgic_int_size = vm->mut->arch.vgicd.int_num * sizeof(struct vgic_int);
+    vm->mut->arch.vgicd.interrupts =
         mem_alloc_page(NUM_PAGES(vgic_int_size), SEC_HYP_VM, MEM_ALIGN_NOT_REQ);
-    if (vm->arch.vgicd.interrupts == NULL) {
+    if (vm->mut->arch.vgicd.interrupts == NULL) {
         ERROR("failed to alloc vgic\n");
     }
 
-    for (irqid_t i = 0; i < vm->arch.vgicd.int_num; i++) {
-        vm->arch.vgicd.interrupts[i].owner = NULL;
-        vm->arch.vgicd.interrupts[i].lock = SPINLOCK_INITVAL;
-        vm->arch.vgicd.interrupts[i].id = i + GIC_CPU_PRIV;
-        vm->arch.vgicd.interrupts[i].state = INV;
-        vm->arch.vgicd.interrupts[i].prio = GIC_LOWEST_PRIO;
-        vm->arch.vgicd.interrupts[i].cfg = 0;
-        vm->arch.vgicd.interrupts[i].targets = 0;
-        vm->arch.vgicd.interrupts[i].hw = false;
-        vm->arch.vgicd.interrupts[i].in_lr = false;
-        vm->arch.vgicd.interrupts[i].enabled = false;
+    for (irqid_t i = 0; i < vm->mut->arch.vgicd.int_num; i++) {
+        vm->mut->arch.vgicd.interrupts[i].owner = NULL;
+        vm->mut->arch.vgicd.interrupts[i].lock = SPINLOCK_INITVAL;
+        vm->mut->arch.vgicd.interrupts[i].id = i + GIC_CPU_PRIV;
+        vm->mut->arch.vgicd.interrupts[i].state = INV;
+        vm->mut->arch.vgicd.interrupts[i].prio = GIC_LOWEST_PRIO;
+        vm->mut->arch.vgicd.interrupts[i].cfg = 0;
+        vm->mut->arch.vgicd.interrupts[i].targets = 0;
+        vm->mut->arch.vgicd.interrupts[i].hw = false;
+        vm->mut->arch.vgicd.interrupts[i].in_lr = false;
+        vm->mut->arch.vgicd.interrupts[i].enabled = false;
     }
 
     vm->arch.vgicd_emul = (struct emul_mem){ .va_base = vgic_dscrp->gicd_addr,
@@ -179,8 +179,8 @@ void vgic_init(struct vm* vm, const struct vgic_dscrp* vgic_dscrp)
         .handler = vgicd_emul_handler };
     vm_emul_add_mem(vm, &vm->arch.vgicd_emul);
 
-    list_init(&vm->arch.vgic_spilled);
-    vm->arch.vgic_spilled_lock = SPINLOCK_INITVAL;
+    list_init(&vm->mut->arch.vgic_spilled);
+    vm->mut->arch.vgic_spilled_lock = SPINLOCK_INITVAL;
 }
 
 void vgic_cpu_init(struct vcpu* vcpu)

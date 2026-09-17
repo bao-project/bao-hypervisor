@@ -25,6 +25,6 @@ void vimsic_init(struct vm* vm, const union vm_irqc_dscrp* vm_irqc_dscrp)
         (PAGE_SIZE * VS_FILE_IDX);
 
     if (imsic_vaddr != INVALID_VA) {
-        mem_alloc_map_dev(&vm->as, SEC_VM_ANY, imsic_vaddr, imsic_paddr, 1);
+        mem_alloc_map_dev(&vm->mut->as, SEC_VM_ANY, imsic_vaddr, imsic_paddr, 1);
     }
 }

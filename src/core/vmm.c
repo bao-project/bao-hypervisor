@@ -97,7 +97,7 @@ void vmm_init()
     if (vmm_assign_vcpu(&master, &vm_id)) {
         struct vm_config* vm_config = &config.vmlist[vm_id];
         struct vm* vm = vm_init(&vms[vm_id], &vm_assign[vm_id].root_sync, vm_config, master, vm_id);
-        cpu_sync_barrier(&vm->sync);
+        cpu_sync_barrier(&vm->mut->sync);
         vcpu_run(&cpu()->vcpu);
     } else {
         cpu_powerdown();

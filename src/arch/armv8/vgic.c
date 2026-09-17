@@ -52,8 +52,8 @@ struct vgic_int* vgic_get_int(struct vcpu_public* vcpu, irqid_t int_id, vcpuid_t
         struct vcpu_public* target_vcpu =
             vgicr_id == vcpu->id ? vcpu : vm_get_vcpu(vcpu->vm, vgicr_id);
         return &target_vcpu->arch.vgic_priv.interrupts[int_id];
-    } else if (int_id < vcpu->vm->arch.vgicd.int_num) {
-        return &vcpu->vm->arch.vgicd.interrupts[int_id - GIC_CPU_PRIV];
+    } else if (int_id < vcpu->vm->mut->arch.vgicd.int_num) {
+        return &vcpu->vm->mut->arch.vgicd.interrupts[int_id - GIC_CPU_PRIV];
     }
 
     return NULL;
@@ -290,15 +290,15 @@ bool vgic_remove_lr(struct vcpu* vcpu, struct vgic_int* interrupt)
 
 static void vgic_add_spilled(struct vcpu* vcpu, struct vgic_int* interrupt)
 {
-    spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
+    spin_lock(&vcpu->vm->mut->arch.vgic_spilled_lock);
     struct list* spilled_list = NULL;
     if (gic_is_priv(interrupt->id)) {
         spilled_list = &vcpu->arch.vgic_spilled;
     } else {
-        spilled_list = &vcpu->vm->arch.vgic_spilled;
+        spilled_list = &vcpu->vm->mut->arch.vgic_spilled;
     }
     list_push(spilled_list, (node_t*)interrupt);
-    spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
+    spin_unlock(&vcpu->vm->mut->arch.vgic_spilled_lock);
     gich_set_hcr(gich_get_hcr() | GICH_HCR_NPIE_BIT);
 }
 
@@ -391,7 +391,7 @@ static inline void vgic_update_enable(struct vcpu* vcpu)
 {
     UNUSED_ARG(vcpu);
 
-    if (cpu()->vcpu.vm->arch.vgicd.CTLR & VGIC_ENABLE_MASK) {
+    if (cpu()->vcpu.vm->mut->arch.vgicd.CTLR & VGIC_ENABLE_MASK) {
         gich_set_hcr(gich_get_hcr() | GICH_HCR_En_BIT);
     } else {
         gich_set_hcr(gich_get_hcr() & ~GICH_HCR_En_BIT);
@@ -405,7 +405,7 @@ static void vgicd_emul_misc_access(struct emul_access* acc, struct vgic_reg_hand
     UNUSED_ARG(gicr_access);
     UNUSED_ARG(vgicr_id);
 
-    struct vgicd* vgicd = &cpu()->vcpu.vm->arch.vgicd;
+    struct vgicd* vgicd = &cpu()->vcpu.vm->mut->arch.vgicd;
     unsigned reg = acc->addr & 0x7F;
 
     switch (reg) {
@@ -998,9 +998,9 @@ bool vgicd_emul_handler(struct emul_access* acc)
     }
 
     if (vgic_check_reg_alignment(acc, handler_info)) {
-        spin_lock(&cpu()->vcpu.vm->arch.vgicd.lock);
+        spin_lock(&cpu()->vcpu.vm->mut->arch.vgicd.lock);
         handler_info->reg_access(acc, handler_info, VGIC_NOT_GICR_ACCESS, cpu()->vcpu.id);
-        spin_unlock(&cpu()->vcpu.vm->arch.vgicd.lock);
+        spin_unlock(&cpu()->vcpu.vm->mut->arch.vgicd.lock);
         return true;
     } else {
         return false;
@@ -1094,7 +1094,7 @@ static inline struct vgic_int* vgic_highest_prio_spilled(struct vcpu* vcpu, unsi
     struct vgic_int* irq = NULL;
     struct list* spilled_lists[] = {
         &vcpu->arch.vgic_spilled,
-        &vcpu->vm->arch.vgic_spilled,
+        &vcpu->vm->mut->arch.vgic_spilled,
     };
     size_t spilled_list_size = sizeof(spilled_lists) / sizeof(struct list*);
     for (size_t i = 0; i < spilled_list_size; i++) {
@@ -1123,7 +1123,7 @@ static void vgic_refill_lrs(struct vcpu* vcpu, bool npie)
     uint64_t elrsr = gich_get_elrsr();
     ssize_t lr_ind = bit64_ffs(elrsr & BIT64_MASK(0, NUM_LRS));
     unsigned flags = npie ? PEND : ACT | PEND;
-    spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
+    spin_lock(&vcpu->vm->mut->arch.vgic_spilled_lock);
     while (lr_ind >= 0) {
         struct list* list = NULL;
         struct vgic_int* irq = vgic_highest_prio_spilled(vcpu, flags, &list);
@@ -1147,7 +1147,7 @@ static void vgic_refill_lrs(struct vcpu* vcpu, bool npie)
         elrsr = gich_get_elrsr();
         lr_ind = bit64_ffs(elrsr & BIT64_MASK(0, NUM_LRS));
     }
-    spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
+    spin_unlock(&vcpu->vm->mut->arch.vgic_spilled_lock);
 }
 
 static void vgic_eoir_highest_spilled_active(struct vcpu* vcpu)

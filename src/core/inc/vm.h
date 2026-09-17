@@ -67,21 +67,36 @@ struct vm_platform {
     struct arch_vm_platform arch;
 };
 
+/**
+ * Mutable state of a vm: what is written after initialization or is inherently unique (locks,
+ * synchronization, the guest address space), as opposed to the description, fixed once the vm is
+ * initialized. It is kept apart from the description, exactly one instance per vm in a static
+ * pool in globally accessible memory, bound to the vm by its master cpu in vm_init(), so that
+ * cpus can hold local copies of the description.
+ */
+struct vm_mutable {
+    spinlock_t lock;
+    struct cpu_synctoken sync;
+    struct addr_space as;
+    struct vm_arch_mutable arch;
+};
+
+/**
+ * Description of a vm. Every field of this structure is fixed once vm_init() completes: it is
+ * written only during initialization, by the master cpu or by each cpu under the init barriers,
+ * which is what lets a cpu run on a local copy of it.
+ */
 struct vm {
     vmid_t id;
 
     const struct vm_config* config;
 
-    spinlock_t lock;
-    struct cpu_synctoken sync;
     cpuid_t master;
 
     /* The vm's vcpus, indexed by vcpu id: the public part of each, valid on every cpu */
     struct vcpu_public* vcpus[PLAT_CPU_NUM];
     size_t cpu_num;
     cpumap_t cpus;
-
-    struct addr_space as;
 
     struct vm_arch arch;
 
@@ -97,9 +112,11 @@ struct vm {
 
     size_t remio_dev_num;
     struct remio_dev* remio_devs;
+
+    /* The vm's mutable state, in the pool of vm.c, bound by the master cpu in vm_init() */
+    struct vm_mutable* mut;
 };
 
-/* Initializes the vm, statically allocated by the caller */
 struct vm* vm_init(struct vm* vm, struct cpu_synctoken* vm_init_sync,
     const struct vm_config* config, bool master, vmid_t vm_id);
 void vm_start(struct vm* vm, vaddr_t entry);

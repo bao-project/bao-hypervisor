@@ -91,7 +91,7 @@ void vir_init(struct vm* vm)
         Guests should not be able to access the SRC since they could tamper
         with other guests interrupts
     */
-    mem_unmap(&vm->as, (vaddr_t)platform.arch.ir.src_addr, NUM_PAGES(sizeof(struct ir_src_hw)),
+    mem_unmap(&vm->mut->as, (vaddr_t)platform.arch.ir.src_addr, NUM_PAGES(sizeof(struct ir_src_hw)),
         MEM_DONT_FREE_PAGES);
 
     // Install emul handler for accesses to the SRC

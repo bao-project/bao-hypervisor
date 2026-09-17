@@ -34,6 +34,11 @@ struct vm_arch {
     struct emul_mem bootctrl_emul;
 };
 
+/* Mutable state of the vm (see struct vm_mutable) */
+struct vm_arch_mutable {
+    EMPTY_STRUCT_FIELDS
+};
+
 struct vcpu_arch {
     EMPTY_STRUCT_FIELDS
 };

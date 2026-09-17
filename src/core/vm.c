@@ -12,24 +12,28 @@
 #include <objpool.h>
 #include <list.h>
 
+/* The mutable state of the vms, one instance per vm in the configuration */
+static struct vm_mutable vms_mutable[CONFIG_VM_NUM];
+
 static void vm_master_init(struct vm* vm, const struct vm_config* vm_config, vmid_t vm_id)
 {
+    vm->mut = &vms_mutable[vm_id];
     vm->master = cpu()->id;
     vm->config = vm_config;
     vm->cpu_num = vm_config->platform.cpu_num;
     vm->id = vm_id;
-    vm->lock = SPINLOCK_INITVAL;
+    vm->mut->lock = SPINLOCK_INITVAL;
 
     list_init(&vm->emul_mem_list);
     list_init(&vm->emul_reg_list);
-    cpu_sync_init(&vm->sync, vm->cpu_num);
+    cpu_sync_init(&vm->mut->sync, vm->cpu_num);
 }
 
 static void vm_cpu_init(struct vm* vm)
 {
-    spin_lock(&vm->lock);
+    spin_lock(&vm->mut->lock);
     vm->cpus |= (1UL << cpu()->id);
-    spin_unlock(&vm->lock);
+    spin_unlock(&vm->mut->lock);
 }
 
 static vcpuid_t vm_calc_vcpu_id(struct vm* vm)
@@ -81,7 +85,8 @@ static void vm_map_mem_region(struct vm* vm, struct vm_mem_region* reg)
         pa_ptr = NULL;
     }
 
-    vaddr_t va = mem_alloc_map(&vm->as, SEC_VM_ANY, pa_ptr, (vaddr_t)reg->base, n, PTE_VM_FLAGS);
+    vaddr_t va =
+        mem_alloc_map(&vm->mut->as, SEC_VM_ANY, pa_ptr, (vaddr_t)reg->base, n, PTE_VM_FLAGS);
     if (va != (vaddr_t)reg->base) {
         ERROR("failed to allocate vm's region at 0x%lx\n", reg->base);
     }
@@ -102,17 +107,17 @@ static void vm_map_img_rgn_inplace(struct vm* vm, const struct vm_config* vm_con
     /* map img in place */
     struct ppages pa_img = mem_ppages_get(vm_config->image.load_addr, n_img);
 
-    mem_alloc_map(&vm->as, SEC_VM_ANY, NULL, (vaddr_t)reg->base, n_before, PTE_VM_FLAGS);
-    if (all_clrs(vm->as.colors)) {
+    mem_alloc_map(&vm->mut->as, SEC_VM_ANY, NULL, (vaddr_t)reg->base, n_before, PTE_VM_FLAGS);
+    if (all_clrs(vm->mut->as.colors)) {
         /* map img in place */
-        mem_alloc_map(&vm->as, SEC_VM_ANY, &pa_img, img_base, n_img, PTE_VM_FLAGS);
+        mem_alloc_map(&vm->mut->as, SEC_VM_ANY, &pa_img, img_base, n_img, PTE_VM_FLAGS);
         /* we are mapping in place, config is already reserved */
     } else {
         /* recolour img */
-        mem_map_reclr(&vm->as, img_base, &pa_img, n_img, PTE_VM_FLAGS);
+        mem_map_reclr(&vm->mut->as, img_base, &pa_img, n_img, PTE_VM_FLAGS);
     }
     /* map pages after img */
-    mem_alloc_map(&vm->as, SEC_VM_ANY, NULL, img_base + NUM_PAGES(img_size) * PAGE_SIZE, n_aft,
+    mem_alloc_map(&vm->mut->as, SEC_VM_ANY, NULL, img_base + NUM_PAGES(img_size) * PAGE_SIZE, n_aft,
         PTE_VM_FLAGS);
 }
 
@@ -141,8 +146,8 @@ static void vm_install_image(struct vm* vm, struct vm_mem_region* reg)
     struct ppages img_ppages = mem_ppages_get(vm->config->image.load_addr, img_num_pages);
     vaddr_t src_va = mem_alloc_map(&cpu()->as, SEC_HYP_PRIVATE, &img_ppages, INVALID_VA,
         img_num_pages, PTE_HYP_FLAGS);
-    vaddr_t dst_va = mem_map_cpy(&vm->as, &cpu()->as, SEC_HYP_PRIVATE, vm->config->image.base_addr,
-        INVALID_VA, img_num_pages);
+    vaddr_t dst_va = mem_map_cpy(&vm->mut->as, &cpu()->as, SEC_HYP_PRIVATE,
+        vm->config->image.base_addr, INVALID_VA, img_num_pages);
     memcpy((void*)dst_va, (void*)src_va, vm->config->image.size);
     cache_flush_range((vaddr_t)dst_va, vm->config->image.size);
     mem_unmap(&cpu()->as, src_va, img_num_pages, MEM_DONT_FREE_PAGES);
@@ -224,7 +229,7 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* vm_config)
             vm_arch_allow_mmio_access(vm, dev);
         } else if (dev->va != INVALID_VA) {
             size_t n = ALIGN(dev->size, PAGE_SIZE) / PAGE_SIZE;
-            mem_alloc_map_dev(&vm->as, SEC_VM_ANY, (vaddr_t)dev->va, dev->pa, n);
+            mem_alloc_map_dev(&vm->mut->as, SEC_VM_ANY, (vaddr_t)dev->va, dev->pa, n);
         }
 
         for (size_t j = 0; j < dev->interrupt_num; j++) {
@@ -314,20 +319,20 @@ struct vm* vm_init(struct vm* vm, struct cpu_synctoken* vm_init_sync,
      */
     vm_cpu_init(vm);
 
-    cpu_sync_barrier(&vm->sync);
+    cpu_sync_barrier(&vm->mut->sync);
 
     /*
      *  Initialize each virtual core.
      */
     vm_vcpu_init(vm, vm_config);
 
-    cpu_sync_barrier(&vm->sync);
+    cpu_sync_barrier(&vm->mut->sync);
 
     if (master) {
         vm_mem_prot_init(vm, vm_config);
     }
 
-    cpu_sync_barrier(&vm->sync);
+    cpu_sync_barrier(&vm->mut->sync);
 
     /**
      * Make the vm's memory management state reachable from this cpu.
@@ -350,7 +355,7 @@ struct vm* vm_init(struct vm* vm, struct cpu_synctoken* vm_init_sync,
         vm_init_remio(vm, vm_config);
     }
 
-    cpu_sync_and_clear_msgs(&vm->sync);
+    cpu_sync_and_clear_msgs(&vm->mut->sync);
 
     return vm;
 }

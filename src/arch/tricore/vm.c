@@ -49,7 +49,7 @@ void vm_arch_init(struct vm* vm, const struct vm_config* vm_config)
         vir_init(vm);
         vm_ipi_init(vm, vm_config);
     }
-    cpu_sync_and_clear_msgs(&vm->sync);
+    cpu_sync_and_clear_msgs(&vm->mut->sync);
 }
 
 void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm)
@@ -205,7 +205,7 @@ void vm_arch_allow_mmio_access(struct vm* vm, struct vm_dev_region* dev)
 
     for (unsigned long apu = 0; apu < pdev->apu_num; apu++) {
         apu_enable_access_vm((struct PROT_ACCESSEN*)(pdev->dev_base + pdev->apu_offset[apu]),
-            vm->as.id);
+            vm->mut->as.id);
         for (unsigned long cpu = 0; cpu < platform.cpu_num; cpu++) {
             if (vm->cpus & (1UL << cpu)) {
                 apu_enable_access_cpu((struct PROT_ACCESSEN*)(pdev->dev_base +

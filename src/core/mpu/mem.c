@@ -627,7 +627,7 @@ void mem_handle_broadcast_region(uint32_t event, uint64_t data)
         if (sh_reg->as_type == AS_HYP) {
             as = &cpu()->as;
         } else {
-            struct addr_space* vm_as = &cpu()->vcpu.vm->as;
+            struct addr_space* vm_as = &cpu()->vcpu.vm->mut->as;
             if (vm_as->id != sh_reg->asid) {
                 ERROR("Received shared region for unknown vm address space.\n");
             }

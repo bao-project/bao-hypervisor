@@ -63,7 +63,13 @@ struct arch_vm_platform {
     } irqc;
 };
 
+/* Fixed after initialization (see struct vm) */
 struct vm_arch {
+    EMPTY_STRUCT_FIELDS
+};
+
+/* Mutable state of the vm (see struct vm_mutable) */
+struct vm_arch_mutable {
 #if (IRQC == PLIC)
     struct vplic vplic;
 #elif ((IRQC == APLIC) || (IRQC == AIA))
