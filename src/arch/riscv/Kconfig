@@ -1,0 +1,60 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config ARCH_RISCV
+	bool
+
+config ARCH
+	default "riscv" if ARCH_RISCV
+
+config PLAT_HAS_IRQC_CHOICE
+	bool
+
+config PLAT_HAS_IPIC_CHOICE
+	bool
+
+choice
+	prompt "Interrupt controller"
+	depends on PLAT_HAS_IRQC_CHOICE
+
+config IRQC_AIA
+	bool "AIA"
+
+config IRQC_APLIC
+	bool "APLIC"
+
+config IRQC_PLIC
+	bool "PLIC"
+
+endchoice
+
+config IRQC
+	string
+	default "AIA" if IRQC_AIA
+	default "APLIC" if IRQC_APLIC
+	default "PLIC" if IRQC_PLIC
+
+choice
+	prompt "IPI controller"
+	depends on PLAT_HAS_IPIC_CHOICE
+
+config IPIC_SBI
+	bool "SBI"
+
+config IPIC_ACLINT
+	bool "ACLINT"
+
+endchoice
+
+config IPIC
+	string
+	default "IPIC_SBI" if IPIC_SBI
+	default "IPIC_ACLINT" if IPIC_ACLINT
+
+config RISCV_PRIV_1_11
+	bool
+
+config RISCV_PRIV_VERSION
+	string
+	default "RISCV_PRIV_VERSION_1_11" if RISCV_PRIV_1_11
+	default "RISCV_PRIV_VERSION_1_13" if ARCH_RISCV

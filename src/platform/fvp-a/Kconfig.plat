@@ -3,3 +3,5 @@
 
 config PLAT_FVP_A
 	bool "fvp-a"
+	select ARCH_ARMV8
+	select PLAT_HAS_GIC_CHOICE

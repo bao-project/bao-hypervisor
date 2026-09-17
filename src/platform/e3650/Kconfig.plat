@@ -3,3 +3,5 @@
 
 config PLAT_E3650
 	bool "e3650"
+	select ARCH_ARMV8
+	select CPU_CORTEX_R52

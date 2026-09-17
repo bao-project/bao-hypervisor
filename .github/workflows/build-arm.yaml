@@ -32,5 +32,5 @@ jobs:
           submodules: recursive
       - uses: ./.github/actions/bao-container-run
         with:
-          run: make PLATFORM=${{ matrix.platform }} GIC_VERSION=${{ matrix.gic }}
-            CONFIG=null ${{ matrix.cross_compile }}
+          run: printf 'CONFIG_${{ matrix.gic }}=y\n' > configs/null/defconfig &&
+            make PLATFORM=${{ matrix.platform }} CONFIG=null ${{ matrix.cross_compile }}

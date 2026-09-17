@@ -1,0 +1,14 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config PLATFORM
+	default "qemu-aarch64-virt" if PLAT_QEMU_AARCH64_VIRT
+
+config ARCH_SUB
+	default "aarch64" if PLAT_QEMU_AARCH64_VIRT
+
+config ARCH_PROFILE
+	default "armv8-a" if PLAT_QEMU_AARCH64_VIRT
+
+config CPU
+	default "cortex-a53" if PLAT_QEMU_AARCH64_VIRT

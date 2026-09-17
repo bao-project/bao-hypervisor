@@ -3,3 +3,4 @@
 
 config PLAT_ATK_DLAM62XB
 	bool "atk-dlam62xb"
+	select ARCH_ARMV8

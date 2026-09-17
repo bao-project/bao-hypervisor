@@ -1,5 +1,8 @@
 ## SPDX-License-Identifier: Apache-2.0
 ## Copyright (c) Bao Project and Contributors. All rights reserved.
 
+# The SiFive P550 is pre-1.12 (OpenSBI reports priv v1.11): no envcfg CSRs
 config PLAT_MILKV_MEGREZ
 	bool "milkv-megrez"
+	select ARCH_RISCV
+	select RISCV_PRIV_1_11
