@@ -8,7 +8,7 @@
 
 #include <bao.h>
 #ifdef MEM_PROT_MMU
-#include <arch/smmuv2.h>
+#include <arch/smmu.h>
 #endif
 
 struct arch_platform {

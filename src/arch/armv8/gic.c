@@ -17,6 +17,9 @@
 #include <cpu.h>
 #include <spinlock.h>
 #include <platform.h>
+#if (SMMU_VERSION == 3)
+#include <arch/smmuv3.h>
+#endif
 #include <fences.h>
 
 volatile struct gicd_hw* gicd;
@@ -107,6 +110,16 @@ void gic_handle()
             gicc_dir(ack);
         }
     }
+
+#if (SMMU_VERSION == 3)
+    /* Surface any SMMU translation faults (a refused DMA usually coincides with
+     * a device error IRQ). Scoped to the master CPU: the wired eventq IRQ is the
+     * primary path, so this only needs to be a backstop, not a per-IRQ,
+     * per-core MMIO poll. */
+    if (cpu_is_master()) {
+        smmuv3_poll_events();
+    }
+#endif
 }
 
 uint8_t gicd_get_prio(irqid_t int_id)
