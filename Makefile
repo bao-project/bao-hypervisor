@@ -435,7 +435,7 @@ objs-y:=$(abspath $(sort $(objs-y)))
 
 # Bridge kconfig-owned symbols to the unprefixed macro names the code uses
 kconfig_macros:=MEM_PROT_MMU MEM_PROT_MPU MEM_NON_UNIFIED PHYS_IRQS_ONLY \
-	MMIO_SLAVE_SIDE_PROT
+	MMIO_SLAVE_SIDE_PROT PLAT_HAS_TCM
 build_macros:=$(strip $(foreach m, $(kconfig_macros), \
 	$(if $(filter y, $(CONFIG_$(m))), -D$(m))))
 

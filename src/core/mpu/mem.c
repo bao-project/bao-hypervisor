@@ -145,6 +145,23 @@ static mpid_t mem_vmpu_get_entry_by_addr(struct addr_space* as, vaddr_t addr)
     return mpid;
 }
 
+/**
+ * Whether a range lies in the hypervisor's own RAM: the whole image on unified-memory platforms,
+ * only its data part where the code runs from flash (the two are not contiguous).
+ */
+static bool mem_in_hyp_image_ram(vaddr_t base, size_t size)
+{
+    extern uint8_t _image_end;
+#ifdef MEM_NON_UNIFIED
+    extern uint8_t _data_vma_start;
+    vaddr_t start = (vaddr_t)&_data_vma_start;
+#else
+    extern uint8_t _image_start;
+    vaddr_t start = (vaddr_t)&_image_start;
+#endif
+    return range_in_range(base, size, start, (size_t)((vaddr_t)&_image_end - start));
+}
+
 static void mem_init_boot_regions(void)
 {
     /**
@@ -196,13 +213,17 @@ static void mem_init_boot_regions(void)
         mem_map(&cpu()->as, &mpr, MEM_DONT_BROADCAST, MEM_LOCKED);
     }
 
-    mpr = (struct mp_region){
-        .base = (vaddr_t)cpu(),
-        .size = ALIGN(sizeof(struct cpu), PAGE_SIZE),
-        .mem_flags = PTE_HYP_FLAGS,
-        .as_sec = SEC_HYP_PRIVATE,
-    };
-    mem_map(&cpu()->as, &mpr, MEM_DONT_BROADCAST, MEM_LOCKED);
+    /* A cpu structure placed in core-coupled memory needs its own entry; a global slot is in the
+     * image */
+    if (!mem_in_hyp_image_ram((vaddr_t)cpu(), sizeof(struct cpu))) {
+        mpr = (struct mp_region){
+            .base = (vaddr_t)cpu(),
+            .size = ALIGN(sizeof(struct cpu), PAGE_SIZE),
+            .mem_flags = PTE_HYP_FLAGS,
+            .as_sec = SEC_HYP_PRIVATE,
+        };
+        mem_map(&cpu()->as, &mpr, MEM_DONT_BROADCAST, MEM_LOCKED);
+    }
 }
 
 void mem_prot_init()

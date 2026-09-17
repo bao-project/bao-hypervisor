@@ -13,6 +13,7 @@
 #include <spinlock.h>
 #include <mem.h>
 #include <circular_queue.h>
+#include <platform_defs.h>
 
 #ifndef __ASSEMBLER__
 
@@ -54,6 +55,11 @@ typedef void (*cpu_msg_handler_t)(uint32_t event, uint64_t data);
     __attribute__((section(".ipi_cpumsg_handlers"),                    \
         used)) cpu_msg_handler_t __cpumsg_handler_##handler = handler; \
     __attribute__((section(".ipi_cpumsg_handlers_id"), used)) volatile const size_t handler_id;
+
+#ifdef PLAT_HAS_TCM
+/* Address of each cpu's structure (coupled memory or global slot), read by the boot code */
+extern const paddr_t cpu_base_tbl[PLAT_CPU_NUM];
+#endif
 
 struct cpu_synctoken {
     spinlock_t lock;
