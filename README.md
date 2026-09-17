@@ -38,6 +38,7 @@ The full list of supported (and work in progress)
 platforms is presented below:
 
 **Armv8-A AArch64**
+- [x] ATK-DLAM62xB (TI AM6254)
 - [x] Xilinx Zynq UltraScale+ MPSoC ZCU102/4
 - [x] Ultra96 Zynq UltraScale+ ZU3EG
 - [x] NXP MCIMX8QM-CPU
