@@ -8,6 +8,7 @@
 
 #include <bao.h>
 #include <arch/cpu.h>
+#include <vcpu.h>
 
 #include <spinlock.h>
 #include <mem.h>
@@ -34,7 +35,8 @@ struct cpu {
 
     struct addr_space as;
 
-    struct vcpu* vcpu;
+    /* The vcpu this cpu runs (vcpu.vm is NULL while it has none) */
+    struct vcpu vcpu;
 
     struct cpu_arch arch;
 

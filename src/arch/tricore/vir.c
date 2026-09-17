@@ -56,7 +56,7 @@ static bool vir_src_emul_handler(struct emul_access* acc)
 {
     if (!IS_ALIGNED(acc->addr, acc->width) || acc->width < 2) {
         if (!acc->write) {
-            vcpu_writereg(cpu()->vcpu, acc->reg, 0);
+            vcpu_writereg(&cpu()->vcpu, acc->reg, 0);
         }
         return true;
     }
@@ -65,12 +65,12 @@ static bool vir_src_emul_handler(struct emul_access* acc)
 
     uint32_t irqid = (addr - platform.arch.ir.src_addr) / sizeof(ir_src->SRC[0]);
 
-    if (!vm_has_interrupt(cpu()->vcpu->vm, irqid)) {
+    if (!vm_has_interrupt(cpu()->vcpu.vm, irqid)) {
         ERROR("Access to unsigned interrupt %u\n", irqid);
         return false;
     }
 
-    vir_emul_src_access(acc, cpu()->vcpu, irqid);
+    vir_emul_src_access(acc, &cpu()->vcpu, irqid);
     return true;
 }
 

@@ -38,7 +38,7 @@ void vintc_inject(struct vcpu* vcpu, irqid_t int_id)
 
 static void emulate_intc_eic_access(struct emul_access* acc)
 {
-    struct vcpu* vcpu = cpu()->vcpu;
+    struct vcpu* vcpu = &cpu()->vcpu;
     struct vm* vm = vcpu->vm;
 
     if (acc->width > 2) {
@@ -80,7 +80,7 @@ static void emulate_intc_eic_access(struct emul_access* acc)
 
 static void emulate_intc_imr_access(struct emul_access* acc)
 {
-    struct vcpu* vcpu = cpu()->vcpu;
+    struct vcpu* vcpu = &cpu()->vcpu;
     struct vm* vm = vcpu->vm;
 
     size_t acc_intc2_offset = acc->addr - (unsigned long)intc2_hw;
@@ -136,7 +136,7 @@ static void emulate_intc_imr_access(struct emul_access* acc)
 
 static void emulate_intc_eibd_access(struct emul_access* acc)
 {
-    struct vcpu* vcpu = cpu()->vcpu;
+    struct vcpu* vcpu = &cpu()->vcpu;
     struct vm* vm = vcpu->vm;
 
     size_t acc_intc2_offset = acc->addr - (unsigned long)intc2_hw;
@@ -187,7 +187,7 @@ static void emulate_intc_eibd_access(struct emul_access* acc)
 
 static void emulate_intc_eeic_access(struct emul_access* acc)
 {
-    struct vcpu* vcpu = cpu()->vcpu;
+    struct vcpu* vcpu = &cpu()->vcpu;
     struct vm* vm = vcpu->vm;
 
     size_t acc_intc2_offset = acc->addr - (unsigned long)intc2_hw;
@@ -244,7 +244,7 @@ static bool vintc2_emul_handler(struct emul_access* acc)
         }
     } else {
         if (!acc->write) {
-            vcpu_writereg(cpu()->vcpu, acc->reg, 0);
+            vcpu_writereg(&cpu()->vcpu, acc->reg, 0);
         }
     }
 

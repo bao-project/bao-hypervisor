@@ -197,13 +197,13 @@ void sbi_msg_handler(uint32_t event, uint64_t data)
             csrs_hvip_set(HIP_VSSIP);
             break;
         case HART_START: {
-            spin_lock(&cpu()->vcpu->arch.sbi_ctx.lock);
-            if (cpu()->vcpu->arch.sbi_ctx.state == START_PENDING) {
-                vcpu_arch_reset(cpu()->vcpu, cpu()->vcpu->arch.sbi_ctx.start_addr);
-                vcpu_writereg(cpu()->vcpu, REG_A1, cpu()->vcpu->arch.sbi_ctx.priv);
-                cpu()->vcpu->arch.sbi_ctx.state = STARTED;
+            spin_lock(&cpu()->vcpu.pub->arch.sbi_ctx.lock);
+            if (cpu()->vcpu.pub->arch.sbi_ctx.state == START_PENDING) {
+                vcpu_arch_reset(&cpu()->vcpu, cpu()->vcpu.pub->arch.sbi_ctx.start_addr);
+                vcpu_writereg(&cpu()->vcpu, REG_A1, cpu()->vcpu.pub->arch.sbi_ctx.priv);
+                cpu()->vcpu.pub->arch.sbi_ctx.state = STARTED;
             }
-            spin_unlock(&cpu()->vcpu->arch.sbi_ctx.lock);
+            spin_unlock(&cpu()->vcpu.pub->arch.sbi_ctx.lock);
         } break;
         default:
             WARNING("unknown sbi msg\n");
@@ -217,9 +217,9 @@ static struct sbiret sbi_time_handler(unsigned long fid)
         return (struct sbiret){ SBI_ERR_NOT_SUPPORTED, 0 };
     }
 
-    uint64_t stime_value = vcpu_readreg(cpu()->vcpu, REG_A0);
+    uint64_t stime_value = vcpu_readreg(&cpu()->vcpu, REG_A0);
     if (DEFINED(RV32)) {
-        stime_value |= ((uint64_t)vcpu_readreg(cpu()->vcpu, REG_A1)) << 32;
+        stime_value |= ((uint64_t)vcpu_readreg(&cpu()->vcpu, REG_A1)) << 32;
     }
 
     if (CPU_HAS_EXTENSION(CPU_EXT_SSTC)) {
@@ -245,8 +245,8 @@ static struct sbiret sbi_ipi_handler(unsigned long fid)
         return (struct sbiret){ SBI_ERR_NOT_SUPPORTED, 0 };
     }
 
-    unsigned long hart_mask = vcpu_readreg(cpu()->vcpu, REG_A0);
-    unsigned long hart_mask_base = vcpu_readreg(cpu()->vcpu, REG_A1);
+    unsigned long hart_mask = vcpu_readreg(&cpu()->vcpu, REG_A0);
+    unsigned long hart_mask_base = vcpu_readreg(&cpu()->vcpu, REG_A1);
 
     struct cpu_msg msg = {
         .handler = (uint32_t)SBI_MSG_ID,
@@ -256,7 +256,7 @@ static struct sbiret sbi_ipi_handler(unsigned long fid)
     for (size_t i = 0; i < sizeof(hart_mask) * 8; i++) {
         if (bit_get(hart_mask, i)) {
             vcpuid_t vhart_id = hart_mask_base + i;
-            cpuid_t phart_id = vm_translate_to_pcpuid(cpu()->vcpu->vm, vhart_id);
+            cpuid_t phart_id = vm_translate_to_pcpuid(cpu()->vcpu.vm, vhart_id);
             if (phart_id != INVALID_CPUID) {
                 cpu_send_msg(phart_id, &msg);
             }
@@ -269,7 +269,7 @@ static struct sbiret sbi_ipi_handler(unsigned long fid)
 static struct sbiret sbi_base_handler(unsigned long fid)
 {
     struct sbiret ret = { .error = SBI_SUCCESS };
-    unsigned long extid = vcpu_readreg(cpu()->vcpu, REG_A0);
+    unsigned long extid = vcpu_readreg(&cpu()->vcpu, REG_A0);
 
     switch (fid) {
         case SBI_GET_SBI_SPEC_VERSION_FID:
@@ -297,11 +297,11 @@ static struct sbiret sbi_rfence_handler(unsigned long fid)
 {
     struct sbiret ret;
 
-    unsigned long hart_mask = vcpu_readreg(cpu()->vcpu, REG_A0);
-    unsigned long hart_mask_base = vcpu_readreg(cpu()->vcpu, REG_A1);
-    unsigned long start_addr = vcpu_readreg(cpu()->vcpu, REG_A2);
-    unsigned long size = vcpu_readreg(cpu()->vcpu, REG_A3);
-    unsigned long asid = vcpu_readreg(cpu()->vcpu, REG_A4);
+    unsigned long hart_mask = vcpu_readreg(&cpu()->vcpu, REG_A0);
+    unsigned long hart_mask_base = vcpu_readreg(&cpu()->vcpu, REG_A1);
+    unsigned long start_addr = vcpu_readreg(&cpu()->vcpu, REG_A2);
+    unsigned long size = vcpu_readreg(&cpu()->vcpu, REG_A3);
+    unsigned long asid = vcpu_readreg(&cpu()->vcpu, REG_A4);
 
     const size_t hart_mask_width = sizeof(hart_mask) * 8;
     if ((hart_mask_base != 0) &&
@@ -313,7 +313,7 @@ static struct sbiret sbi_rfence_handler(unsigned long fid)
     hart_mask = hart_mask << hart_mask_base;
 
     unsigned long phart_mask =
-        vm_translate_to_pcpu_mask(cpu()->vcpu->vm, hart_mask, sizeof(hart_mask) * 8);
+        vm_translate_to_pcpu_mask(cpu()->vcpu.vm, hart_mask, sizeof(hart_mask) * 8);
 
     switch (fid) {
         case SBI_REMOTE_FENCE_I_FID:
@@ -335,12 +335,12 @@ static struct sbiret sbi_rfence_handler(unsigned long fid)
 static struct sbiret sbi_hsm_start_handler(void)
 {
     struct sbiret ret;
-    vcpuid_t vhart_id = vcpu_readreg(cpu()->vcpu, REG_A0);
+    vcpuid_t vhart_id = vcpu_readreg(&cpu()->vcpu, REG_A0);
 
-    if (vhart_id == cpu()->vcpu->id) {
+    if (vhart_id == cpu()->vcpu.id) {
         ret.error = SBI_ERR_ALREADY_AVAILABLE;
     } else {
-        struct vcpu* vcpu = vm_get_vcpu(cpu()->vcpu->vm, vhart_id);
+        struct vcpu_public* vcpu = vm_get_vcpu(cpu()->vcpu.vm, vhart_id);
         if (vcpu == NULL) {
             ret.error = SBI_ERR_INVALID_PARAM;
         } else {
@@ -350,8 +350,8 @@ static struct sbiret sbi_hsm_start_handler(void)
             } else if (vcpu->arch.sbi_ctx.state != STOPPED) {
                 ret.error = SBI_ERR_FAILURE;
             } else {
-                vaddr_t start_addr = vcpu_readreg(cpu()->vcpu, REG_A1);
-                unsigned long priv = vcpu_readreg(cpu()->vcpu, REG_A2);
+                vaddr_t start_addr = vcpu_readreg(&cpu()->vcpu, REG_A1);
+                unsigned long priv = vcpu_readreg(&cpu()->vcpu, REG_A2);
                 vcpu->arch.sbi_ctx.state = START_PENDING;
                 vcpu->arch.sbi_ctx.start_addr = start_addr;
                 vcpu->arch.sbi_ctx.priv = priv;
@@ -377,8 +377,8 @@ static struct sbiret sbi_hsm_start_handler(void)
 static struct sbiret sbi_hsm_status_handler(void)
 {
     struct sbiret ret;
-    vcpuid_t vhart_id = vcpu_readreg(cpu()->vcpu, REG_A0);
-    struct vcpu* vhart = vm_get_vcpu(cpu()->vcpu->vm, vhart_id);
+    vcpuid_t vhart_id = vcpu_readreg(&cpu()->vcpu, REG_A0);
+    struct vcpu_public* vhart = vm_get_vcpu(cpu()->vcpu.vm, vhart_id);
 
     if (vhart != NULL) {
         ret.error = SBI_SUCCESS;
@@ -393,11 +393,11 @@ static struct sbiret sbi_hsm_status_handler(void)
 static struct sbiret sbi_hsm_suspend_handler(void)
 {
     struct sbiret ret;
-    uint32_t suspend_type = (uint32_t)vcpu_readreg(cpu()->vcpu, REG_A0);
+    uint32_t suspend_type = (uint32_t)vcpu_readreg(&cpu()->vcpu, REG_A0);
     bool try_suspend = false;
 
-    spin_lock(&cpu()->vcpu->arch.sbi_ctx.lock);
-    if (cpu()->vcpu->arch.sbi_ctx.state != STARTED) {
+    spin_lock(&cpu()->vcpu.pub->arch.sbi_ctx.lock);
+    if (cpu()->vcpu.pub->arch.sbi_ctx.state != STARTED) {
         ret.error = SBI_ERR_FAILURE;
     } else {
         if (suspend_type & SBI_HSM_SUSP_NON_RET_BIT) {
@@ -411,7 +411,7 @@ static struct sbiret sbi_hsm_suspend_handler(void)
             try_suspend = true;
         }
     }
-    spin_unlock(&cpu()->vcpu->arch.sbi_ctx.lock);
+    spin_unlock(&cpu()->vcpu.pub->arch.sbi_ctx.lock);
 
     if (try_suspend) {
         ret = sbi_hart_suspend(suspend_type, 0, 0);
@@ -455,8 +455,8 @@ static struct sbiret sbi_bao_handler(unsigned long fid)
 
 size_t sbi_vs_handler()
 {
-    unsigned long extid = vcpu_readreg(cpu()->vcpu, REG_A7);
-    unsigned long fid = vcpu_readreg(cpu()->vcpu, REG_A6);
+    unsigned long extid = vcpu_readreg(&cpu()->vcpu, REG_A7);
+    unsigned long fid = vcpu_readreg(&cpu()->vcpu, REG_A6);
     struct sbiret ret;
 
     switch (extid) {
@@ -483,8 +483,8 @@ size_t sbi_vs_handler()
             ret.error = SBI_ERR_NOT_SUPPORTED;
     }
 
-    vcpu_writereg(cpu()->vcpu, REG_A0, (unsigned long)ret.error);
-    vcpu_writereg(cpu()->vcpu, REG_A1, (unsigned long)ret.value);
+    vcpu_writereg(&cpu()->vcpu, REG_A0, (unsigned long)ret.error);
+    vcpu_writereg(&cpu()->vcpu, REG_A1, (unsigned long)ret.value);
 
     return 4;
 }

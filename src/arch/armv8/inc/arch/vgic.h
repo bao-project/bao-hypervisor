@@ -12,6 +12,7 @@
 
 struct vm;
 struct vcpu;
+struct vcpu_public;
 struct vgic_dscrp;
 
 #define VGIC_GICR_ACCESS     (true)
@@ -22,7 +23,7 @@ struct vgic_dscrp;
  */
 struct vgic_int {
     node_t node;
-    struct vcpu* owner;
+    struct vcpu_public* owner;
 #if (GIC_VERSION != GICV2)
     unsigned long route;
     union {
@@ -118,7 +119,7 @@ void vgic_yield_ownership(struct vcpu* vcpu, struct vgic_int* interrupt);
 void vgic_emul_generic_access(struct emul_access*, struct vgic_reg_handler_info*, bool, vcpuid_t);
 void vgic_send_sgi_msg(struct vcpu* vcpu, cpumap_t pcpu_mask, irqid_t int_id);
 size_t vgic_get_itln(const struct vgic_dscrp* vgic_dscrp);
-struct vgic_int* vgic_get_int(struct vcpu* vcpu, irqid_t int_id, vcpuid_t vgicr_id);
+struct vgic_int* vgic_get_int(struct vcpu_public* vcpu, irqid_t int_id, vcpuid_t vgicr_id);
 void vgic_int_set_field(struct vgic_reg_handler_info* handlers, struct vcpu* vcpu,
     struct vgic_int* interrupt, unsigned long data, vcpuid_t vgicr_id);
 void vgic_int_reroute(struct vcpu* vcpu, struct vgic_int* interrupt);

@@ -43,16 +43,25 @@ static vcpuid_t vm_calc_vcpu_id(struct vm* vm)
     return vcpu_id;
 }
 
+/* The public part of every cpu's vcpu, in global memory (see struct vcpu_public) */
+static struct vcpu_public vcpus_public[PLAT_CPU_NUM];
+
 static void vm_vcpu_init(struct vm* vm, const struct vm_config* vm_config)
 {
     vcpuid_t vcpu_id = vm_calc_vcpu_id(vm);
-    struct vcpu* vcpu = vm_get_vcpu(vm, vcpu_id);
+    struct vcpu* vcpu = &cpu()->vcpu;
+    struct vcpu_public* pub = &vcpus_public[cpu()->id];
+
+    pub->id = vcpu_id;
+    pub->phys_id = cpu()->id;
+    pub->vm = vm;
+    vm->vcpus[vcpu_id] = pub;
 
     vcpu->id = vcpu_id;
     vcpu->phys_id = cpu()->id;
     vcpu->vm = vm;
     vcpu->active = true;
-    cpu()->vcpu = vcpu;
+    vcpu->pub = pub;
 
     vcpu_arch_init(vcpu, vm);
     vcpu_arch_reset(vcpu, vm_config->entry);
@@ -288,18 +297,9 @@ static void vm_init_remio(struct vm* vm, const struct vm_config* vm_config)
     remio_assign_vm_cpus(vm);
 }
 
-static struct vm* vm_allocation_init(struct vm_allocation* vm_alloc)
-{
-    struct vm* vm = vm_alloc->vm;
-    vm->vcpus = vm_alloc->vcpus;
-    return vm;
-}
-
-struct vm* vm_init(struct vm_allocation* vm_alloc, struct cpu_synctoken* vm_init_sync,
+struct vm* vm_init(struct vm* vm, struct cpu_synctoken* vm_init_sync,
     const struct vm_config* vm_config, bool master, vmid_t vm_id)
 {
-    struct vm* vm = vm_allocation_init(vm_alloc);
-
     /**
      * Before anything else, initialize vm structure.
      */
@@ -328,6 +328,11 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, struct cpu_synctoken* vm_init
     }
 
     cpu_sync_barrier(&vm->sync);
+
+    /**
+     * Make the vm's memory management state reachable from this cpu.
+     */
+    vm_mem_prot_cpu_init(vm);
 
     /**
      * Perform architecture dependent initializations. This includes, for example, setting the page

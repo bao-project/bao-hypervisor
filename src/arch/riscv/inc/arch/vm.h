@@ -7,7 +7,12 @@
 #define __ARCH_VM_H__
 
 #include <bao.h>
-#include <irqc.h>
+#include <arch/platform.h>
+#if (IRQC == PLIC)
+#include <vplic.h>
+#elif ((IRQC == APLIC) || (IRQC == AIA))
+#include <vaplic.h>
+#endif
 #include <arch/sbi.h>
 
 #define REG_RA  (1)
@@ -68,8 +73,13 @@ struct vm_arch {
 #endif
 };
 
+/* Private vcpu state, only touched by the cpu running the vcpu */
 struct vcpu_arch {
     vcpuid_t hart_id;
+};
+
+/* Vcpu state other cpus reach: the hart state machine driven by SBI HSM calls */
+struct vcpu_arch_public {
     struct sbi_hsm sbi_ctx;
 };
 

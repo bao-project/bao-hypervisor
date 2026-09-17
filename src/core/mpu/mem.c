@@ -292,14 +292,14 @@ static cpumap_t mem_section_shared_cpus(struct addr_space* as, as_sec_t section)
             /**
              * If we don't have a valid vcpu at this point, it means we are creating this region
              * before even having a vm. Therefore, the sharing of the region must be guaranteed by
-             * other means (e.g. vmm_vm_install)
+             * other means.
              */
-            if (cpu()->vcpu != NULL) {
-                cpus = cpu()->vcpu->vm->cpus;
+            if (cpu()->vcpu.vm != NULL) {
+                cpus = cpu()->vcpu.vm->cpus;
             }
         }
     } else {
-        cpus = cpu()->vcpu->vm->cpus;
+        cpus = cpu()->vcpu.vm->cpus;
     }
 
     return cpus;
@@ -463,7 +463,7 @@ void mem_handle_broadcast_region(uint32_t event, uint64_t data)
         if (sh_reg->as_type == AS_HYP) {
             as = &cpu()->as;
         } else {
-            struct addr_space* vm_as = &cpu()->vcpu->vm->as;
+            struct addr_space* vm_as = &cpu()->vcpu.vm->as;
             if (vm_as->id != sh_reg->asid) {
                 ERROR("Received shared region for unknown vm address space.\n");
             }

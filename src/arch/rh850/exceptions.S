@@ -15,8 +15,7 @@
 
     /* save program registers in vcpu struct */
     stsr 29, r31, 0                /* get cpu* from FEWR */
-    ld.w CPU_VCPU_OFF[r31], r31    /* get vcpu* */
-    add VCPU_REGS_OFF, r31
+    addi (CPU_VCPU_OFF + VCPU_REGS_OFF), r31, r31    /* &cpu()->vcpu.regs */
     st.w  r1,  4[r31]
     st.dw r2,  8[r31]
     st.dw r4,  16[r31]
@@ -66,8 +65,7 @@
 .macro VM_ENTRY
     /* load vcpu registers from memory */
     stsr 29, r30, 0
-    ld.w CPU_VCPU_OFF[r30], r30
-    add VCPU_REGS_OFF, r30
+    addi (CPU_VCPU_OFF + VCPU_REGS_OFF), r30, r30
 
     /**
      * Restore PC to EIPC or FEPC depending on the exception type

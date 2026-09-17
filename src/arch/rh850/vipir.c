@@ -23,7 +23,7 @@ static spinlock_t ipir_lock[PLAT_CPU_NUM][IPIR_NUM_CHANNELS] = { SPINLOCK_INITVA
 
 static bool vipir_emul_handler(struct emul_access* acc)
 {
-    struct vcpu* vcpu = cpu()->vcpu;
+    struct vcpu* vcpu = &cpu()->vcpu;
     struct vm* vm = vcpu->vm;
 
     if (acc->width != 1) {

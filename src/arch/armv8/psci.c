@@ -21,18 +21,18 @@ enum { PSCI_MSG_ON };
 
 void psci_wake_from_off(void)
 {
-    if (cpu()->vcpu == NULL) {
+    if (cpu()->vcpu.vm == NULL) {
         return;
     }
 
     /* update vcpu()->psci_ctx */
-    spin_lock(&cpu()->vcpu->arch.psci_ctx.lock);
-    if (cpu()->vcpu->arch.psci_ctx.state == ON_PENDING) {
-        vcpu_arch_reset(cpu()->vcpu, cpu()->vcpu->arch.psci_ctx.entrypoint);
-        cpu()->vcpu->arch.psci_ctx.state = ON;
-        vcpu_writereg(cpu()->vcpu, 0, cpu()->vcpu->arch.psci_ctx.context_id);
+    spin_lock(&cpu()->vcpu.pub->arch.psci_ctx.lock);
+    if (cpu()->vcpu.pub->arch.psci_ctx.state == ON_PENDING) {
+        vcpu_arch_reset(&cpu()->vcpu, cpu()->vcpu.pub->arch.psci_ctx.entrypoint);
+        cpu()->vcpu.pub->arch.psci_ctx.state = ON;
+        vcpu_writereg(&cpu()->vcpu, 0, cpu()->vcpu.pub->arch.psci_ctx.context_id);
     }
-    spin_unlock(&cpu()->vcpu->arch.psci_ctx.lock);
+    spin_unlock(&cpu()->vcpu.pub->arch.psci_ctx.lock);
 }
 
 static void psci_cpumsg_handler(uint32_t event, uint64_t data)
@@ -63,10 +63,10 @@ static int32_t psci_cpu_suspend_handler(uint32_t power_state, unsigned long entr
 
     if (state_type) {
         // PSCI_STATE_TYPE_POWERDOWN:
-        spin_lock(&cpu()->vcpu->arch.psci_ctx.lock);
-        cpu()->vcpu->arch.psci_ctx.entrypoint = entrypoint;
-        cpu()->vcpu->arch.psci_ctx.context_id = context_id;
-        spin_unlock(&cpu()->vcpu->arch.psci_ctx.lock);
+        spin_lock(&cpu()->vcpu.pub->arch.psci_ctx.lock);
+        cpu()->vcpu.pub->arch.psci_ctx.entrypoint = entrypoint;
+        cpu()->vcpu.pub->arch.psci_ctx.context_id = context_id;
+        spin_unlock(&cpu()->vcpu.pub->arch.psci_ctx.lock);
         ret = psci_power_down();
     } else {
         // PSCI_STATE_TYPE_STANDBY:
@@ -83,15 +83,15 @@ static int32_t psci_cpu_off_handler(void)
      *  monitor psci implementation. Later another vcpu, will call cpu_on on this vcpu()->
      */
 
-    spin_lock(&cpu()->vcpu->arch.psci_ctx.lock);
-    cpu()->vcpu->arch.psci_ctx.state = OFF;
-    spin_unlock(&cpu()->vcpu->arch.psci_ctx.lock);
+    spin_lock(&cpu()->vcpu.pub->arch.psci_ctx.lock);
+    cpu()->vcpu.pub->arch.psci_ctx.state = OFF;
+    spin_unlock(&cpu()->vcpu.pub->arch.psci_ctx.lock);
 
     cpu_powerdown();
 
-    spin_lock(&cpu()->vcpu->arch.psci_ctx.lock);
-    cpu()->vcpu->arch.psci_ctx.state = ON;
-    spin_unlock(&cpu()->vcpu->arch.psci_ctx.lock);
+    spin_lock(&cpu()->vcpu.pub->arch.psci_ctx.lock);
+    cpu()->vcpu.pub->arch.psci_ctx.state = ON;
+    spin_unlock(&cpu()->vcpu.pub->arch.psci_ctx.lock);
 
     return PSCI_E_DENIED;
 }
@@ -100,8 +100,8 @@ static int32_t psci_cpu_on_handler(unsigned long target_cpu, unsigned long entry
     unsigned long context_id)
 {
     int32_t ret;
-    struct vm* vm = cpu()->vcpu->vm;
-    struct vcpu* target_vcpu = vm_get_vcpu_by_mpidr(vm, target_cpu);
+    struct vm* vm = cpu()->vcpu.vm;
+    struct vcpu_public* target_vcpu = vm_get_vcpu_by_mpidr(vm, target_cpu);
 
     if (target_vcpu != NULL) {
         bool already_on = true;

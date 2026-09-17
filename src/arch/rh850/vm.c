@@ -38,7 +38,7 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
     vcpu_writepc(vcpu, entry);
     srs_eipc_write(entry);
 
-    vcpu->arch.started = vcpu->id == 0 ? true : false;
+    vcpu->pub->arch.started = vcpu->id == 0 ? true : false;
 
     /* Bao fixes the VMID as SPID to isolate VM memory regions */
     srs_gmspid_write(vm->id);
@@ -67,7 +67,7 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
 
 bool vcpu_arch_is_on(struct vcpu* vcpu)
 {
-    return vcpu->arch.started;
+    return vcpu->pub->arch.started;
 }
 
 unsigned long vcpu_readreg(struct vcpu* vcpu, unsigned long reg)

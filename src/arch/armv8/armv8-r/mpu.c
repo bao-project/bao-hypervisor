@@ -100,8 +100,8 @@ static unsigned long* find_mpu_mask_by_asid(asid_t id)
     unsigned long* mpu_mask = NULL;
     if (cpu()->as.id == id) {
         mpu_mask = &cpu()->arch.profile.mpu.mpu_entry_mask;
-    } else if (cpu()->vcpu->vm->as.id == id) {
-        mpu_mask = &cpu()->vcpu->arch.mpu_entry_mask;
+    } else if (cpu()->vcpu.vm->as.id == id) {
+        mpu_mask = &cpu()->vcpu.arch.mpu_entry_mask;
     }
     return mpu_mask;
 }

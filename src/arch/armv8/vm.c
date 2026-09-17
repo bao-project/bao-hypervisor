@@ -19,10 +19,10 @@ void vm_arch_init(struct vm* vm, const struct vm_config* vm_config)
     cpu_sync_and_clear_msgs(&vm->sync);
 }
 
-struct vcpu* vm_get_vcpu_by_mpidr(struct vm* vm, unsigned long mpidr)
+struct vcpu_public* vm_get_vcpu_by_mpidr(struct vm* vm, unsigned long mpidr)
 {
     for (cpuid_t vcpuid = 0; vcpuid < vm->cpu_num; vcpuid++) {
-        struct vcpu* vcpu = vm_get_vcpu(vm, vcpuid);
+        struct vcpu_public* vcpu = vm_get_vcpu(vm, vcpuid);
         if ((vcpu->arch.vmpidr & MPIDR_AFF_MSK) == (mpidr & MPIDR_AFF_MSK)) {
             return vcpu;
         }
@@ -49,11 +49,11 @@ static unsigned long vm_cpuid_to_mpidr(struct vm* vm, vcpuid_t cpuid)
 
 void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm)
 {
-    vcpu->arch.vmpidr = vm_cpuid_to_mpidr(vm, vcpu->id);
-    sysreg_vmpidr_el2_write(vcpu->arch.vmpidr);
+    vcpu->pub->arch.vmpidr = vm_cpuid_to_mpidr(vm, vcpu->id);
+    sysreg_vmpidr_el2_write(vcpu->pub->arch.vmpidr);
 
-    vcpu->arch.psci_ctx.state = vcpu->id == 0 ? ON : OFF;
-    vcpu->arch.psci_ctx.lock = SPINLOCK_INITVAL;
+    vcpu->pub->arch.psci_ctx.state = vcpu->id == 0 ? ON : OFF;
+    vcpu->pub->arch.psci_ctx.lock = SPINLOCK_INITVAL;
 
     vgic_cpu_init(vcpu);
 }
@@ -83,5 +83,5 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
 
 bool vcpu_arch_is_on(struct vcpu* vcpu)
 {
-    return vcpu->arch.psci_ctx.state == ON;
+    return vcpu->pub->arch.psci_ctx.state == ON;
 }

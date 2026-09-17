@@ -7,11 +7,9 @@
 #define __ARCH_VM_H__
 
 #include <bao.h>
-#include <cpu.h>
 #include <arch/interrupts.h>
 #include <arch/vir.h>
 #include <emul.h>
-#include <vm.h>
 #include <arch/csa.h>
 
 /* The VMID used in HW is bao's internal vm.id + 1 because VM0 is
@@ -30,6 +28,10 @@ struct vm_arch {
 };
 
 struct vcpu_arch {
+    EMPTY_STRUCT_FIELDS
+};
+
+struct vcpu_arch_public {
     EMPTY_STRUCT_FIELDS
 };
 
