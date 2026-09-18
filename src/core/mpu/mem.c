@@ -275,6 +275,7 @@ static void mem_free_ppages(struct ppages* ppages)
         if (in_range(ppages->base, pool->base, pool->num_pages * PAGE_SIZE)) {
             size_t index = (ppages->base - pool->base) / PAGE_SIZE;
             bitmap_clear_consecutive(pool->bitmap, index, ppages->num_pages);
+            pool->free += ppages->num_pages;
         }
         spin_unlock(&pool->lock);
     }
@@ -575,8 +576,9 @@ bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool 
         mpid = mem_vmpu_allocate_entry(as);
         if (mpid != INVALID_MPID) {
             mapped = mem_vmpu_insert_region(as, mpid, mpr, broadcast, locked);
-        } else {
-            mem_vmpu_deallocate_entry(as, mpid);
+            if (!mapped) {
+                mem_vmpu_deallocate_entry(as, mpid);
+            }
         }
     }
 
@@ -629,7 +631,8 @@ bool mem_unmap_range(struct addr_space* as, vaddr_t vaddr, size_t size, bool bro
             top.size = top_size;
             mpid_t top_mpid = mem_vmpu_allocate_entry(as);
             if (!mem_vmpu_insert_region(as, top_mpid, &top, broadcast, locked)) {
-                return false;
+                mem_vmpu_deallocate_entry(as, top_mpid);
+                break;
             }
         }
 
@@ -638,7 +641,8 @@ bool mem_unmap_range(struct addr_space* as, vaddr_t vaddr, size_t size, bool bro
             bottom.size = bottom_size;
             mpid_t bottom_mpid = mem_vmpu_allocate_entry(as);
             if (!mem_vmpu_insert_region(as, bottom_mpid, &bottom, broadcast, locked)) {
-                return false;
+                mem_vmpu_deallocate_entry(as, bottom_mpid);
+                break;
             }
         }
 
@@ -676,12 +680,15 @@ vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, as_sec_t asd
 
         spin_lock(&ass->lock);
         mpid_t reg_num_src = mem_vmpu_get_entry_by_addr(ass, vas);
-        mpe = mem_vmpu_get_entry(ass, reg_num_src);
-        mpr = mpe->region;
-        mpr.as_sec = asd_section;
+        bool src_mapped = reg_num_src != INVALID_MPID;
+        if (src_mapped) {
+            mpe = mem_vmpu_get_entry(ass, reg_num_src);
+            mpr = mpe->region;
+            mpr.as_sec = asd_section;
+        }
         spin_unlock(&ass->lock);
 
-        if (num_pages * PAGE_SIZE > mpr.size) {
+        if (!src_mapped || (num_pages * PAGE_SIZE > mpr.size)) {
             va_res = INVALID_VA;
         } else {
             mpr.size = num_pages * PAGE_SIZE;
