@@ -41,7 +41,7 @@ void as_init(struct addr_space* as, enum AS_TYPE type, colormap_t colors);
 
 static inline bool mem_regions_overlap(struct mp_region* reg1, struct mp_region* reg2)
 {
-    return range_in_range(reg1->base, reg1->size, reg2->base, reg2->size);
+    return range_overlap_range(reg1->base, reg1->size, reg2->base, reg2->size);
 }
 
 bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool locked);
