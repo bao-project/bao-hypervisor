@@ -76,15 +76,9 @@ bool pp_alloc(struct page_pool* pool, size_t num_pages, bool aligned, struct ppa
     /**
      * If we need a contigous segment aligned to its size, lets start at an already aligned index.
      */
-    size_t start;
-    size_t curr;
-    if (aligned) {
-        start = pool->base / PAGE_SIZE % num_pages;
-        curr = pool->last + ((pool->last + start) % num_pages);
-    } else {
-        start = 0;
-        curr = pool->last;
-    }
+    size_t align = aligned ? num_pages : 1;
+    size_t base_pn = pool->base / PAGE_SIZE;
+    size_t curr = ALIGN(base_pn + pool->last, align) - base_pn;
 
     /**
      * Lets make two searches:
@@ -99,19 +93,16 @@ bool pp_alloc(struct page_pool* pool, size_t num_pages, bool aligned, struct ppa
             if (bit < 0) {
                 /**
                  * No num_page page sement was found. If this is the first iteration set position
-                 * to 0 to start next search from index
-                 * 0.
+                 * to the first aligned index to start next search from there.
                  */
-                size_t next_aligned =
-                    (num_pages - ((pool->base / PAGE_SIZE) % num_pages)) % num_pages;
-                curr = aligned ? next_aligned : 0;
+                curr = ALIGN(base_pn, align) - base_pn;
                 break;
-            } else if (aligned && (((((size_t)bit) + start) % num_pages) != 0)) {
+            } else if (!IS_ALIGNED(base_pn + (size_t)bit, align)) {
                 /**
                  * If we're looking for an aligned segment and the found contigous segment is not
-                 * aligned, start the search again from the last aligned index
+                 * aligned, start the search again from the next aligned index
                  */
-                curr = ((size_t)bit) + ((((size_t)bit) + start) % num_pages);
+                curr = ALIGN(base_pn + (size_t)bit, align) - base_pn;
             } else {
                 /**
                  * We've found our pages. Fill output argument info, mark them as allocated, and
