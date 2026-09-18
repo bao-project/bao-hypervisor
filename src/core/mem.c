@@ -80,7 +80,7 @@ bool pp_alloc(struct page_pool* pool, size_t num_pages, bool aligned, struct ppa
     size_t curr;
     if (aligned) {
         start = pool->base / PAGE_SIZE % num_pages;
-        curr = pool->last + ((pool->last + start) % num_pages);
+        curr = pool->last + ((num_pages - ((pool->last + start) % num_pages)) % num_pages);
     } else {
         start = 0;
         curr = pool->last;
@@ -109,9 +109,9 @@ bool pp_alloc(struct page_pool* pool, size_t num_pages, bool aligned, struct ppa
             } else if (aligned && (((((size_t)bit) + start) % num_pages) != 0)) {
                 /**
                  * If we're looking for an aligned segment and the found contigous segment is not
-                 * aligned, start the search again from the last aligned index
+                 * aligned, start the search again from the next aligned index
                  */
-                curr = ((size_t)bit) + ((((size_t)bit) + start) % num_pages);
+                curr = ((size_t)bit) + (num_pages - ((((size_t)bit) + start) % num_pages));
             } else {
                 /**
                  * We've found our pages. Fill output argument info, mark them as allocated, and
