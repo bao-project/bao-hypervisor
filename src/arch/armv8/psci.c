@@ -138,23 +138,39 @@ static int32_t psci_cpu_on_handler(unsigned long target_cpu, unsigned long entry
 static int32_t psci_affinity_info_handler(unsigned long target_affinity,
     uint32_t lowest_affinity_level)
 {
-    /* return ON, if at least one core in the affinity instance: has been enabled with a call to
-    CPU_ON, and that core has not called CPU_OFF */
-
-    /* return off if all of the cores in the affinity instance have called CPU_OFF and each of
-    these calls has been processed by the PSCI implementation. */
-
-    /*  return ON_PENDING if at least one core in the affinity instance is in the ON_PENDING state
-     */
+    int32_t ret;
 
     /**
-     * TODO
+     * From PSCI 1.0 on the only lowest affinity level a caller may ask for is 0: the affinity
+     * instance is a single core, whose state is the PSCI state of the vcpu with that mpidr.
      */
+    if (lowest_affinity_level != 0) {
+        return PSCI_E_INVALID_PARAMS;
+    }
 
-    UNUSED_ARG(target_affinity);
-    UNUSED_ARG(lowest_affinity_level);
+    struct vcpu* target_vcpu = vm_get_vcpu_by_mpidr(cpu()->vcpu->vm, target_affinity);
+    if (target_vcpu == NULL) {
+        return PSCI_E_INVALID_PARAMS;
+    }
 
-    return 0;
+    spin_lock(&target_vcpu->arch.psci_ctx.lock);
+    switch (target_vcpu->arch.psci_ctx.state) {
+        case ON:
+            ret = PSCI_CPU_IS_ON;
+            break;
+        case OFF:
+            ret = PSCI_CPU_IS_OFF;
+            break;
+        case ON_PENDING:
+            ret = PSCI_CPU_IS_ON_PENDING;
+            break;
+        default:
+            ret = PSCI_E_INTERN_FAIL;
+            break;
+    }
+    spin_unlock(&target_vcpu->arch.psci_ctx.lock);
+
+    return ret;
 }
 
 static int32_t psci_features_handler(uint32_t feature_id)
