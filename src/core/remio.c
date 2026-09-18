@@ -240,8 +240,8 @@ static struct remio_device* remio_find_vm_dev_by_bind_key(struct vm* vm, unsigne
 
     /** Find the Remote I/O device VM configuration based on the Remote I/O bind key */
     for (size_t i = 0; i < vm->remio_dev_num; i++) {
-        dev = &vm->remio_devs[i];
-        if (dev->bind_key == bind_key) {
+        if (vm->remio_devs[i].bind_key == bind_key) {
+            dev = &vm->remio_devs[i];
             break;
         }
     }
@@ -352,6 +352,10 @@ void remio_init(void)
                 list_init(&device->pending_requests_list);
                 list_push(&remio_device_list, (node_t*)device);
             }
+            if (dev->bind_key > UINT8_MAX) {
+                ERROR("Remote I/O device bind key %zu does not fit the cpu message\n",
+                    dev->bind_key);
+            }
             if (dev->type == REMIO_DEV_BACKEND) {
                 device->config.backend.bind_key = dev->bind_key;
                 device->config.backend.shmem = dev->shmem;
@@ -437,14 +441,14 @@ static long int remio_handle_ask(unsigned long addr, unsigned long value,
 
     /** By convention, the addr and value fields must be zero */
     if (addr != 0 || value != 0) {
-        return HC_E_FAILURE;
+        return -HC_E_FAILURE;
     }
 
     /** Get the next pending I/O request */
     request = remio_get_request(device, REMIO_NEXT_PENDING_REQUEST);
 
     if (request == NULL || request->state != REMIO_STATE_PENDING) {
-        return HC_E_FAILURE;
+        return -HC_E_FAILURE;
     }
 
     /** Check if the Remote I/O device has other pending I/O requests */
@@ -474,6 +478,10 @@ static long int remio_handle_ask(unsigned long addr, unsigned long value,
 static bool remio_handle_rw(unsigned long value, unsigned long request_id,
     struct remio_device* device)
 {
+    /** Only ids of the request pool are acceptable here: never the next-pending sentinel */
+    if (request_id >= REMIO_VCPU_NUM) {
+        return false;
+    }
     struct remio_request* request = remio_get_request(device, (long int)request_id);
     if (request == NULL) {
         return false;
@@ -544,6 +552,11 @@ long int remio_hypercall(void)
     /** Find the Remote I/O device associated with the current backend VM */
     device = remio_find_vm_dev_by_bind_key(vm, remio_dev_bind_key);
     if (device == NULL) {
+        return -HC_E_FAILURE;
+    }
+
+    /** Only the backend VM drives a device through hypercalls */
+    if (device->config.backend.vm_id != vm->id) {
         return -HC_E_FAILURE;
     }
 
