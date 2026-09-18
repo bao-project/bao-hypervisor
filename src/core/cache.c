@@ -38,6 +38,15 @@ static void cache_calc_colors(struct cache* dscrp, size_t page_size)
     size_t llc_num_colors = llc_way_size / page_size;
     size_t flc_num_colors = flc_way_size / page_size;
 
+    /* A unified first level, or a first-level way smaller than a page, does not constrain the
+     * colouring; a last-level way smaller than the first-level one leaves a single colour. */
+    if (flc_num_colors == 0) {
+        flc_num_colors = 1;
+    }
+    if (llc_num_colors < flc_num_colors) {
+        return;
+    }
+
     COLOR_SIZE = flc_num_colors;
     COLOR_NUM = llc_num_colors / COLOR_SIZE;
 }
