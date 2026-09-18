@@ -3,6 +3,7 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
+#include <cpu.h>
 #include <emul.h>
 #include <hypercall.h>
 #include <fences.h>
@@ -89,7 +90,7 @@ static unsigned long read_instruction(unsigned long pc)
     inst = (unsigned long)(*pc_ptr | (*(pc_ptr + 1) << 16));
 
     /* Disable Hyp access to VM space */
-    srs_mpid6_write(cpu()->vcpu->vm->id);
+    srs_mpid6_write(cpu()->vcpu.vm->id);
     fence_sync();
 
     return inst;
@@ -117,7 +118,7 @@ static void decode_access(struct emul_access* acc, unsigned long addr)
     unsigned int rw = MEI_GET_RW(mei);
 
     /* Decode possible bitwise instruction */
-    unsigned long inst = read_instruction(vcpu_readpc(cpu()->vcpu));
+    unsigned long inst = read_instruction(vcpu_readpc(&cpu()->vcpu));
     unsigned long opcode = ((inst & OPCODE_MASK) >> OPCODE_SHIFT);
     unsigned long subopcode = ((inst & SUBOPCODE_MASK) >> SUBOPCODE_SHIFT);
     unsigned long bwop = EMUL_ARCH_BWOP_NO;
@@ -129,7 +130,7 @@ static void decode_access(struct emul_access* acc, unsigned long addr)
     } else if (opcode == F9_OPCODE && subopcode == F9_SUBOPCODE) {
         unsigned long reg_idx = (inst & REGIDX_MASK) >> REGIDX_SHIFT;
         /* only the three LSB of register val are used as bit index */
-        bit = vcpu_readreg(cpu()->vcpu, reg_idx) & 0x7;
+        bit = vcpu_readreg(&cpu()->vcpu, reg_idx) & 0x7;
         bwop = ((inst & SUB9_MASK) >> SUB9_SHIFT) + 1;
     }
 
@@ -148,27 +149,27 @@ static void data_abort(void)
     unsigned long mei = srs_mei_read();
     vaddr_t addr = mea;
 
-    emul_handler_t handler = vm_emul_get_mem(cpu()->vcpu->vm, addr);
+    emul_handler_t handler = vm_emul_get_mem(cpu()->vcpu.vm, addr);
     if (handler != NULL) {
         struct emul_access emul;
         decode_access(&emul, addr);
 
         if (handler(&emul)) {
             unsigned long pc_step = MEI_GET_LEN(mei);
-            vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + pc_step);
+            vcpu_writepc(&cpu()->vcpu, vcpu_readpc(&cpu()->vcpu) + pc_step);
         } else {
             ERROR("Data abort emulation failed (0x%x)\n", addr);
         }
     } else {
-        ERROR("No emulation handler for access to 0x%x, at 0x%x\n", addr, vcpu_readpc(cpu()->vcpu));
+        ERROR("No emulation handler for access to 0x%x, at 0x%x\n", addr, vcpu_readpc(&cpu()->vcpu));
     }
 }
 
 static void hvtrap(void)
 {
-    unsigned long r6 = vcpu_readreg(cpu()->vcpu, 6);
+    unsigned long r6 = vcpu_readreg(&cpu()->vcpu, 6);
     unsigned long res = (unsigned long)hypercall(r6);
-    vcpu_writereg(cpu()->vcpu, 6, res);
+    vcpu_writereg(&cpu()->vcpu, 6, res);
 }
 
 static inline unsigned long get_exception_cause(void)

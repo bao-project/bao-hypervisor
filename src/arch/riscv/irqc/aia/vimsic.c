@@ -7,13 +7,14 @@
 #include <arch/platform.h>
 #include <mem.h>
 #include <imsic.h>
+#include <vimsic.h>
 
 /** We only support 1 guest per hart at the moment */
 #define VS_FILE_IDX 1
 
 void vimsic_init(struct vm* vm, const union vm_irqc_dscrp* vm_irqc_dscrp)
 {
-    struct vcpu* vcpu = cpu()->vcpu;
+    struct vcpu* vcpu = &cpu()->vcpu;
     cpuid_t pcpu_id = vcpu->phys_id;
     vcpuid_t vcpu_id = vcpu->id;
     paddr_t imsic_paddr;
@@ -25,6 +26,6 @@ void vimsic_init(struct vm* vm, const union vm_irqc_dscrp* vm_irqc_dscrp)
         (PAGE_SIZE * VS_FILE_IDX);
 
     if (imsic_vaddr != INVALID_VA) {
-        mem_alloc_map_dev(&vm->as, SEC_VM_ANY, imsic_vaddr, imsic_paddr, 1);
+        mem_alloc_map_dev(&vm->mut->as, SEC_VM_ANY, imsic_vaddr, imsic_paddr, 1);
     }
 }

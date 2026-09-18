@@ -207,8 +207,32 @@ static bool pp_root_reserve_hyp_image_noload(struct page_pool* root_pool)
     return mem_reserve_ppool_ppages(root_pool, &images_noload_ppages);
 }
 
+static bool mem_range_in_affine_region(paddr_t base, size_t size);
+
 static bool pp_root_reserve_cpus(struct page_pool* root_pool)
 {
+#ifdef PLAT_HAS_TCM
+    /**
+     * Every cpu structure in global memory (the slots, one per cpu not placed in its coupled
+     * region) must be reserved; one that lies inside the hypervisor image already is.
+     */
+    bool reserved = true;
+
+    for (cpuid_t cpuid = 0; cpuid < platform.cpu_num; cpuid++) {
+        size_t cpu_size = mem_cpu_boot_alloc_size();
+        struct ppages cpu_ppages = mem_ppages_get(cpu_base_tbl[cpuid], NUM_PAGES(cpu_size));
+
+        if (mem_range_in_affine_region(cpu_base_tbl[cpuid], cpu_size)) {
+            continue;
+        }
+        if (!mem_are_ppages_reserved_in_pool(root_pool, &cpu_ppages) &&
+            !mem_reserve_ppool_ppages(root_pool, &cpu_ppages)) {
+            reserved = false;
+        }
+    }
+
+    return reserved;
+#else
     size_t cpu_size = platform.cpu_num * mem_cpu_boot_alloc_size();
     paddr_t cpu_base_addr;
 
@@ -227,6 +251,7 @@ static bool pp_root_reserve_cpus(struct page_pool* root_pool)
     struct ppages cpu_ppages = mem_ppages_get(cpu_base_addr, NUM_PAGES(cpu_size));
 
     return mem_reserve_ppool_ppages(root_pool, &cpu_ppages);
+#endif
 }
 
 static bool pp_root_reserve_hyp_data(struct page_pool* root_pool)
@@ -316,6 +341,40 @@ static bool mem_vm_img_in_phys_rgn(struct vm_config* vm_config)
 
 static bool mem_hyp_image_no_load_reserved;
 
+static bool mem_range_in_affine_region(paddr_t base, size_t size)
+{
+    for (size_t i = 0; i < platform.region_num; i++) {
+        struct mem_region* reg = &platform.regions[i];
+        if ((reg->cpu_affinity != 0U) && range_in_range(base, size, reg->base, reg->size)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * A placement inside a cpu-affine platform region lies outside every page pool, so there is no
+ * bitmap to reserve it in. It is accepted as reserved once checked against the cpu structures
+ * the boot code placed in those regions.
+ */
+static bool mem_reserve_affine(paddr_t base, size_t size)
+{
+    if (!mem_range_in_affine_region(base, size)) {
+        return false;
+    }
+
+#ifdef PLAT_HAS_TCM
+    for (cpuid_t cpuid = 0; cpuid < platform.cpu_num; cpuid++) {
+        if (range_overlap_range(base, size, cpu_base_tbl[cpuid], sizeof(struct cpu))) {
+            ERROR("static memory range [0x%lx, 0x%lx) overlaps cpu %d structure\n", base,
+                base + size, cpuid);
+        }
+    }
+#endif
+
+    return true;
+}
+
 static void mem_init_reserved(void)
 {
     if (DEFINED(MEM_NON_UNIFIED)) {
@@ -331,7 +390,8 @@ static void mem_init_reserved(void)
         // the image must be entirely inside a statically allocated region, or
         // completely outside of it. This avoid overcamplicating the
         // reservation logic while still covering all the useful use cases.
-        if (mem_vm_img_in_phys_rgn(vm_cfg)) {
+        if (mem_vm_img_in_phys_rgn(vm_cfg) ||
+            mem_reserve_affine(vm_cfg->image.load_addr, vm_cfg->image.size)) {
             vm_cfg->image.reserved = true;
         } else {
             vm_cfg->image.reserved = false;
@@ -343,7 +403,7 @@ static void mem_init_reserved(void)
         for (size_t j = 0; j < vm_cfg->platform.region_num; j++) {
             struct vm_mem_region* reg = &vm_cfg->platform.regions[j];
             if (reg->place_phys) {
-                reg->reserved = false;
+                reg->reserved = mem_reserve_affine(reg->phys, reg->size);
             }
         }
     }
@@ -351,7 +411,7 @@ static void mem_init_reserved(void)
     for (size_t i = 0; i < config.shmemlist_size; i++) {
         struct shmem* shmem = &config.shmemlist[i];
         if (shmem->place_phys) {
-            shmem->reserved = false;
+            shmem->reserved = mem_reserve_affine(shmem->phys, shmem->size);
         }
     }
 }
@@ -445,7 +505,8 @@ static void mem_reserve_physical_memory(struct page_pool* pool)
 static bool mem_create_ppools(struct mem_region* root_mem_region)
 {
     for (size_t i = 0; i < platform.region_num; i++) {
-        if (&platform.regions[i] != root_mem_region) {
+        /* Cpu-affine regions (TCM, local RAM) are never page pools */
+        if ((&platform.regions[i] != root_mem_region) && (platform.regions[i].cpu_affinity == 0)) {
             struct mem_region* reg = &platform.regions[i];
             struct page_pool* pool = &reg->page_pool;
             if (pool != NULL) {

@@ -1,0 +1,17 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config PLATFORM
+	default "imx8qm" if PLAT_IMX8QM
+
+config ARCH_SUB
+	default "aarch64" if PLAT_IMX8QM
+
+config ARCH_PROFILE
+	default "armv8-a" if PLAT_IMX8QM
+
+config CPU
+	default "cortex-a53" if PLAT_IMX8QM
+
+config GIC_VERSION
+	default "GICV3" if PLAT_IMX8QM

@@ -3,6 +3,7 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
+#include <cpu.h>
 #include <interrupts.h>
 #include <vm.h>
 #include <ipir.h>

@@ -3,14 +3,15 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
+#include <cpu.h>
 #include <vbootctrl.h>
 #include <arch/emul.h>
 
 static bool vbootctrl_emul_handler(struct emul_access* acc)
 {
-    struct vcpu* vcpu = cpu()->vcpu;
+    struct vcpu* vcpu = &cpu()->vcpu;
     unsigned long notify = 0;
-    struct vcpu* waking_vcpu = NULL;
+    struct vcpu_public* waking_vcpu = NULL;
 
     if (acc->addr != platform.arch.bootctrl_addr && acc->width != 4) {
         /* ignore access */
@@ -37,7 +38,7 @@ static bool vbootctrl_emul_handler(struct emul_access* acc)
     } else {
         unsigned long val = 0;
         for (size_t i = 0; i < vcpu->vm->cpu_num; i++) {
-            struct vcpu* awake_vcpu = vm_get_vcpu(vcpu->vm, i);
+            struct vcpu_public* awake_vcpu = vm_get_vcpu(vcpu->vm, i);
             if (awake_vcpu == NULL) {
                 continue;
             }

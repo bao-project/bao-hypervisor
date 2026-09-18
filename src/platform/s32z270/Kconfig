@@ -1,0 +1,150 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config PLATFORM
+	default "s32z270" if PLAT_S32Z270
+
+config ARCH_SUB
+	default "aarch32" if PLAT_S32Z270
+
+config ARCH_PROFILE
+	default "armv8-r" if PLAT_S32Z270
+
+config GIC_VERSION
+	default "GICV3" if PLAT_S32Z270
+
+
+config MEM_NON_UNIFIED
+	default y if PLAT_S32Z270
+
+# Whether bit n of CPU_TCM_MASK is set: Kconfig has no bit operations, so the values of the 4-bit
+# mask are enumerated by ranges (the platform defines generator rejects higher bits)
+config S32Z270_CPU0_IN_TCM
+	bool
+	default y if CPU_TCM_MASK = 0x1 || CPU_TCM_MASK = 0x3 || CPU_TCM_MASK = 0x5 || CPU_TCM_MASK = 0x7 || \
+		CPU_TCM_MASK = 0x9 || CPU_TCM_MASK = 0xB || CPU_TCM_MASK = 0xD || CPU_TCM_MASK = 0xF
+
+config S32Z270_CPU1_IN_TCM
+	bool
+	default y if (CPU_TCM_MASK >= 0x2 && CPU_TCM_MASK <= 0x3) || (CPU_TCM_MASK >= 0x6 && CPU_TCM_MASK <= 0x7) || \
+		(CPU_TCM_MASK >= 0xA && CPU_TCM_MASK <= 0xB) || (CPU_TCM_MASK >= 0xE && CPU_TCM_MASK <= 0xF)
+
+config S32Z270_CPU2_IN_TCM
+	bool
+	default y if (CPU_TCM_MASK >= 0x4 && CPU_TCM_MASK <= 0x7) || (CPU_TCM_MASK >= 0xC && CPU_TCM_MASK <= 0xF)
+
+config S32Z270_CPU3_IN_TCM
+	bool
+	default y if CPU_TCM_MASK >= 0x8 && CPU_TCM_MASK <= 0xF
+
+choice
+	prompt "TCM hosting the structure of cpu 0"
+	depends on PLAT_S32Z270 && S32Z270_CPU0_IN_TCM
+	default S32Z270_CPU0_HOME_ATCM
+	help
+	  Each core has an ATCM (64 KiB), a BTCM (16 KiB) and a CTCM
+	  (16 KiB). The one chosen here hosts the structure of cpu 0 when
+	  the cpu is in CPU_TCM_MASK; the other two are left entirely to the
+	  guests.
+
+config S32Z270_CPU0_HOME_ATCM
+	bool "ATCM"
+
+config S32Z270_CPU0_HOME_BTCM
+	bool "BTCM"
+
+config S32Z270_CPU0_HOME_CTCM
+	bool "CTCM"
+
+endchoice
+
+config S32Z270_CPU0_HOME
+	int
+	depends on PLAT_S32Z270
+	default 1 if S32Z270_CPU0_HOME_BTCM
+	default 2 if S32Z270_CPU0_HOME_CTCM
+	default 0
+
+choice
+	prompt "TCM hosting the structure of cpu 1"
+	depends on PLAT_S32Z270 && S32Z270_CPU1_IN_TCM
+	default S32Z270_CPU1_HOME_ATCM
+	help
+	  Each core has an ATCM (64 KiB), a BTCM (16 KiB) and a CTCM
+	  (16 KiB). The one chosen here hosts the structure of cpu 1 when
+	  the cpu is in CPU_TCM_MASK; the other two are left entirely to the
+	  guests.
+
+config S32Z270_CPU1_HOME_ATCM
+	bool "ATCM"
+
+config S32Z270_CPU1_HOME_BTCM
+	bool "BTCM"
+
+config S32Z270_CPU1_HOME_CTCM
+	bool "CTCM"
+
+endchoice
+
+config S32Z270_CPU1_HOME
+	int
+	depends on PLAT_S32Z270
+	default 1 if S32Z270_CPU1_HOME_BTCM
+	default 2 if S32Z270_CPU1_HOME_CTCM
+	default 0
+
+choice
+	prompt "TCM hosting the structure of cpu 2"
+	depends on PLAT_S32Z270 && S32Z270_CPU2_IN_TCM
+	default S32Z270_CPU2_HOME_ATCM
+	help
+	  Each core has an ATCM (64 KiB), a BTCM (16 KiB) and a CTCM
+	  (16 KiB). The one chosen here hosts the structure of cpu 2 when
+	  the cpu is in CPU_TCM_MASK; the other two are left entirely to the
+	  guests.
+
+config S32Z270_CPU2_HOME_ATCM
+	bool "ATCM"
+
+config S32Z270_CPU2_HOME_BTCM
+	bool "BTCM"
+
+config S32Z270_CPU2_HOME_CTCM
+	bool "CTCM"
+
+endchoice
+
+config S32Z270_CPU2_HOME
+	int
+	depends on PLAT_S32Z270
+	default 1 if S32Z270_CPU2_HOME_BTCM
+	default 2 if S32Z270_CPU2_HOME_CTCM
+	default 0
+
+choice
+	prompt "TCM hosting the structure of cpu 3"
+	depends on PLAT_S32Z270 && S32Z270_CPU3_IN_TCM
+	default S32Z270_CPU3_HOME_ATCM
+	help
+	  Each core has an ATCM (64 KiB), a BTCM (16 KiB) and a CTCM
+	  (16 KiB). The one chosen here hosts the structure of cpu 3 when
+	  the cpu is in CPU_TCM_MASK; the other two are left entirely to the
+	  guests.
+
+config S32Z270_CPU3_HOME_ATCM
+	bool "ATCM"
+
+config S32Z270_CPU3_HOME_BTCM
+	bool "BTCM"
+
+config S32Z270_CPU3_HOME_CTCM
+	bool "CTCM"
+
+endchoice
+
+config S32Z270_CPU3_HOME
+	int
+	depends on PLAT_S32Z270
+	default 1 if S32Z270_CPU3_HOME_BTCM
+	default 2 if S32Z270_CPU3_HOME_CTCM
+	default 0

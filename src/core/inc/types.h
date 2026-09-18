@@ -42,6 +42,8 @@ typedef unsigned long colormap_t;
 typedef unsigned long cpuid_t;
 typedef unsigned long vcpuid_t;
 typedef unsigned long cpumap_t;
+/* cpumap_t bit of the given cpu */
+#define CORE(N)       ((cpumap_t)1U << (N))
 #define INVALID_CPUID ((cpuid_t)~0UL)
 
 typedef unsigned irqid_t;

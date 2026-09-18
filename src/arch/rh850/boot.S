@@ -107,12 +107,22 @@ _reset_handler:
     st.w r20, 0 [r21]
 
 _clear_cpu:
+#ifdef PLAT_HAS_TCM
+    /* locate and clear CPUn struct: cpu_base_tbl[cpu] (global slot or coupled memory) */
+    LOAD_ADDR cpu_base_tbl, r20
+    mov r10, r21
+    shl 2, r21          /* table index * sizeof(paddr_t) */
+    add r21, r20
+    ld.w 0[r20], r20    /* r20 points to cpu */
+    mov CPU_SIZE, r12
+#else
     /* clear CPUn struct */
     LOAD_ADDR _image_end, r20
     mov CPU_SIZE, r12
     mov r10, r21
     mulh r12, r21   /* cpu struct offset */
     add r21, r20    /* end of .bss + cpu struct offset = r20 points to cpu */
+#endif
     mov r20, r13    /* r13 holds the CPU pointer */
     mov r13, r15
     mov r13, r16

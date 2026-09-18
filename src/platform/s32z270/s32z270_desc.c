@@ -5,6 +5,23 @@
 
 #include <platform.h>
 
+/* The TCM hosting each core's cpu structure is that core's S32Z270_CPUn_HOME Kconfig choice */
+#define CPU0_ATCM_HOME (CONFIG_S32Z270_CPU0_HOME == 0)
+#define CPU0_BTCM_HOME (CONFIG_S32Z270_CPU0_HOME == 1)
+#define CPU0_CTCM_HOME (CONFIG_S32Z270_CPU0_HOME == 2)
+
+#define CPU1_ATCM_HOME (CONFIG_S32Z270_CPU1_HOME == 0)
+#define CPU1_BTCM_HOME (CONFIG_S32Z270_CPU1_HOME == 1)
+#define CPU1_CTCM_HOME (CONFIG_S32Z270_CPU1_HOME == 2)
+
+#define CPU2_ATCM_HOME (CONFIG_S32Z270_CPU2_HOME == 0)
+#define CPU2_BTCM_HOME (CONFIG_S32Z270_CPU2_HOME == 1)
+#define CPU2_CTCM_HOME (CONFIG_S32Z270_CPU2_HOME == 2)
+
+#define CPU3_ATCM_HOME (CONFIG_S32Z270_CPU3_HOME == 0)
+#define CPU3_BTCM_HOME (CONFIG_S32Z270_CPU3_HOME == 1)
+#define CPU3_CTCM_HOME (CONFIG_S32Z270_CPU3_HOME == 2)
+
 struct platform platform = {
 
     .cpu_num = 4,
@@ -26,61 +43,85 @@ struct platform platform = {
             .base = 0x30000000,
             .size = 0x10000,    // 64 KiB
             .perms = MEM_RWX,
+            .cpu_affinity = CORE(0),
+            .cpu_home = CPU0_ATCM_HOME,
         },
         {   /* BTCM-RTU0-CPU0 */
             .base = 0x30100000,
             .size = 0x4000,    // 16 KiB
             .perms = MEM_RWX,
+            .cpu_affinity = CORE(0),
+            .cpu_home = CPU0_BTCM_HOME,
         },
         {   /* CTCM-RTU0-CPU0 */
             .base = 0x30200000,
             .size = 0x4000,    // 16 KiB
             .perms = MEM_RWX,
+            .cpu_affinity = CORE(0),
+            .cpu_home = CPU0_CTCM_HOME,
         },
         {   /* ATCM-RTU0-CPU1 */
             .base = 0x30400000,
             .size = 0x10000,    // 64 KiB
             .perms = MEM_RWX,
+            .cpu_affinity = CORE(1),
+            .cpu_home = CPU1_ATCM_HOME,
         },
         {   /* BTCM-RTU0-CPU1 */
             .base = 0x30500000,
             .size = 0x4000,    // 16 KiB
             .perms = MEM_RWX,
+            .cpu_affinity = CORE(1),
+            .cpu_home = CPU1_BTCM_HOME,
         },
         {   /* CTCM-RTU0-CPU1 */
             .base = 0x30600000,
             .size = 0x4000,    // 16 KiB
             .perms = MEM_RWX,
+            .cpu_affinity = CORE(1),
+            .cpu_home = CPU1_CTCM_HOME,
         },
         {   /* ATCM-RTU0-CPU2 */
             .base = 0x30800000,
             .size = 0x10000,    // 64 KiB
             .perms = MEM_RWX,
+            .cpu_affinity = CORE(2),
+            .cpu_home = CPU2_ATCM_HOME,
         },
         {   /* BTCM-RTU0-CPU2 */
             .base = 0x30900000,
             .size = 0x4000,    // 16 KiB
             .perms = MEM_RWX,
+            .cpu_affinity = CORE(2),
+            .cpu_home = CPU2_BTCM_HOME,
         },
         {   /* CTCM-RTU0-CPU2 */
             .base = 0x30a00000,
             .size = 0x4000,    // 16 KiB
             .perms = MEM_RWX,
+            .cpu_affinity = CORE(2),
+            .cpu_home = CPU2_CTCM_HOME,
         },
         {   /* ATCM-RTU0-CPU3 */
             .base = 0x30c00000,
             .size = 0x10000,    // 64 KiB
             .perms = MEM_RWX,
+            .cpu_affinity = CORE(3),
+            .cpu_home = CPU3_ATCM_HOME,
         },
         {   /* BTCM-RTU0-CPU3 */
             .base = 0x30d00000,
             .size = 0x4000,    // 16 KiB
             .perms = MEM_RWX,
+            .cpu_affinity = CORE(3),
+            .cpu_home = CPU3_BTCM_HOME,
         },
         {   /* CTCM-RTU0-CPU3 */
             .base = 0x30e00000,
             .size = 0x4000,    // 16 KiB
             .perms = MEM_RWX,
+            .cpu_affinity = CORE(3),
+            .cpu_home = CPU3_CTCM_HOME,
         },
         {   /* DRAM1 */
             .base = 0x317C0000,
@@ -121,6 +162,14 @@ struct platform platform = {
             .base = 0x32700000,
             .size = 0x100000,   // 1 MiB
             .perms = MEM_RX,
+        },
+    },
+
+    .mmio_region_num = 1,
+    .mmio_regions = (struct mem_region[]) {
+        {   /* Peripheral space (AIPS, GIC, generic timer, LINFlexD) */
+            .base = 0x40000000,
+            .size = 0x10000000,
         },
     },
 

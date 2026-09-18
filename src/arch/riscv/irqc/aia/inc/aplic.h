@@ -15,18 +15,39 @@
 typedef cpuid_t idcid_t;
 
 /** APLIC Addresses defines */
-#define APLIC_IDC_OFF                 (0x4000)
-#define APLIC_IDC_SIZE                (32)
+#define APLIC_IDC_OFF            (0x4000)
+#define APLIC_IDC_SIZE           (32)
 
-#define APLIC_MAX_INTERRUPTS          (1024)
-#define APLIC_NUM_SRCCFG_REGS         (APLIC_MAX_INTERRUPTS - 1)
-#define APLIC_NUM_TARGET_REGS         (APLIC_MAX_INTERRUPTS - 1)
+#define APLIC_MAX_INTERRUPTS     (1024)
+#define APLIC_NUM_SRCCFG_REGS    (APLIC_MAX_INTERRUPTS - 1)
+#define APLIC_NUM_TARGET_REGS    (APLIC_MAX_INTERRUPTS - 1)
 /** where x = E or P*/
-#define APLIC_NUM_CLRIx_REGS          (APLIC_MAX_INTERRUPTS / 32)
-#define APLIC_NUM_SETIx_REGS          (APLIC_MAX_INTERRUPTS / 32)
-#define APLIC_NUM_INTP_PER_REG        (APLIC_MAX_INTERRUPTS / APLIC_NUM_SETIx_REGS)
+#define APLIC_NUM_CLRIx_REGS     (APLIC_MAX_INTERRUPTS / 32)
+#define APLIC_NUM_SETIx_REGS     (APLIC_MAX_INTERRUPTS / 32)
+#define APLIC_NUM_INTP_PER_REG   (APLIC_MAX_INTERRUPTS / APLIC_NUM_SETIx_REGS)
 
-#define APLIC_MIN_PRIO                (0xFF)
+#define APLIC_MIN_PRIO           (0xFF)
+
+/* Interrupt line numbering the arch interrupt layer builds on */
+#define IRQC_TIMR_INT_ID         (APLIC_MAX_INTERRUPTS + 1)
+#define IRQC_SOFT_INT_ID         (APLIC_MAX_INTERRUPTS + 2)
+#define IRQC_MAX_INTERRUPT_LINES (IRQC_SOFT_INT_ID + 1)
+
+#if (IRQC == APLIC)
+#define IRQC_MAX_INTERRUPT_HANDLERS IRQC_MAX_INTERRUPT_LINES
+#elif (IRQC == AIA)
+#define IRQC_MAX_INTERRUPT_HANDLERS (PLAT_IMSIC_MAX_INTERRUPTS)
+#define IMSIC_FIRST_NONRESERVED_ID  (2)
+#endif
+
+#define IRQC_MAX_GUEST_INTERRUPTS     APLIC_MAX_INTERRUPTS
+
+#define HART_REG_OFF                  APLIC_IDC_OFF
+#define IRQC_HART_INST                APLIC_DOMAIN_NUM_HARTS
+#define HYP_IRQ_SM_EDGE_RISE          APLIC_SOURCECFG_SM_EDGE_RISE
+#define HYP_IRQ_SM_INACTIVE           APLIC_SOURCECFG_SM_INACTIVE
+#define HYP_IRQ_PRIO                  APLIC_TARGET_MAX_PRIO
+#define HYP_IRQ                       0
 
 /** Source Mode defines */
 #define APLIC_SOURCECFG_SM_MASK       (0x00000007U)

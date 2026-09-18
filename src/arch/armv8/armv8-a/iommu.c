@@ -27,7 +27,7 @@ static ssize_t iommu_vm_arch_init_ctx(struct vm* vm)
         ctx_id = smmu_alloc_ctxbnk();
         if (ctx_id >= 0) {
             paddr_t rootpt;
-            mem_translate(&cpu()->as, (vaddr_t)vm->as.pt.root, &rootpt);
+            mem_translate(&cpu()->as, (vaddr_t)vm->mut->as.pt.root, &rootpt);
             smmu_write_ctxbnk((size_t)ctx_id, rootpt, vm->id);
             vm->io.prot.mmu.ctx_id = ctx_id;
         } else {

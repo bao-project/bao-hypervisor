@@ -124,12 +124,20 @@ _reset_handler:
     mov     %d3, 0
     mov.a   %sp, %d3
 
+#ifdef PLAT_HAS_TCM
+    /* CPU_X structure: cpu_base_tbl[cpu] (global slot or coupled memory) */
+    load_32bit_val_a    %a4, cpu_base_tbl
+    addsc.a %a4, %a4, %d0, 2
+    ld.w    %d3, [%a4]
+    mov     %d4, CPU_SIZE
+#else
     /* CPU physical based address */
     load_32bit_val_d    %d3, _dmem_beg
 
     /* CPU_X physical base address */
     mov     %d4, CPU_SIZE
     madd    %d3, %d3, %d0, %d4
+#endif
 
     mov.a %a8, %d3
 
@@ -285,12 +293,10 @@ _init_csa:
     mtcr    CSFR_PCXI,%d10               // previous context info is null
     isync
 
-    // %d10 = begin of CSA
-    load_32bit_val_d %d10, csa_array
-
-    mov     %d11, CSA_ENTRIES
-    mul     %d12, %d11, 64
-    madd    %d10, %d10, %d0, %d12
+    // %d10 = begin of this cpu's CSA pool, inside its cpu structure (a8)
+    mov.d   %d10, %a8
+    load_32bit_val_d %d12, CPU_CSA_OFF
+    add     %d10, %d10, %d12
 
     /* Initialize first CSA */
     mov.a   %a12,%d10                 // %a12 = address of first CSA

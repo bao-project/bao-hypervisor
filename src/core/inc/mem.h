@@ -46,6 +46,19 @@ struct mem_region {
     paddr_t base;
     size_t size;
     enum MEM_PERMISSIONS perms;
+    /**
+     * Cpus the region is coupled to (e.g. a core's TCM or local RAM), as a bitmap built with
+     * CORE(n); 0 (the default) means the region is shared by all cpus. An affine region is never
+     * used as a page pool. A region affine to exactly one cpu can host that cpu's structure, at
+     * its end, when the cpu opts in through CONFIG_CPU_TCM_MASK, on architectures whose boot code
+     * reads the generated cpu base table; otherwise the region is left entirely to the guests.
+     */
+    cpumap_t cpu_affinity;
+    /**
+     * Among several regions affine to the same cpu, the one hosting the cpu's structure. A cpu with
+     * a single affine region needs no mark; with several, exactly one must carry it.
+     */
+    bool cpu_home;
     struct page_pool page_pool;
 };
 

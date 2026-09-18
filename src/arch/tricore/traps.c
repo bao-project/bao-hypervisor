@@ -22,7 +22,7 @@ void sys_bus_errors_handler(void)
     will always trap and we suppress the error.
     This is trade-off that covers a majority of devices in TC4 and allows for
     most BSPs to execute correctly. */
-    unsigned long vmid = cpu()->vcpu->vm->id;
+    unsigned long vmid = cpu()->vcpu.vm->id;
 
     unsigned long addr = csfr_deadd_read();
 
@@ -50,13 +50,13 @@ void l2_dmem_prot_trap_handler(unsigned long* instr_addr, unsigned long is_write
 {
     struct emul_access emul;
     unsigned long addr = csfr_deadd_read();
-    emul_handler_t handler = vm_emul_get_mem(cpu()->vcpu->vm, addr);
+    emul_handler_t handler = vm_emul_get_mem(cpu()->vcpu.vm, addr);
 
     if (handler != NULL) {
         /* Give bao the same read permissions on the mpu */
         /* We save the bao prs bitmap, and we OR it with the guest prs */
         volatile unsigned long hyp_d_r_entries = csfr_dpre_0_read();
-        unsigned long vmid = cpu()->vcpu->vm->id;
+        unsigned long vmid = cpu()->vcpu.vm->id;
         volatile unsigned long vm_d_r_entries = get_dpre(VMID_TO_HWVM(vmid));
         volatile unsigned long perms = hyp_d_r_entries | vm_d_r_entries;
 
@@ -71,10 +71,10 @@ void l2_dmem_prot_trap_handler(unsigned long* instr_addr, unsigned long is_write
 
         if (opcode % 2 == 0) {
             reg = decode_16b_access(ins, &emul);
-            vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + 2);
+            vcpu_writepc(&cpu()->vcpu, vcpu_readpc(&cpu()->vcpu) + 2);
         } else {
             reg = decode_32b_access(ins, &emul);
-            vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + 4);
+            vcpu_writepc(&cpu()->vcpu, vcpu_readpc(&cpu()->vcpu) + 4);
         }
 
         set_dpre(HYP_VMID, hyp_d_r_entries);
@@ -90,24 +90,24 @@ void l2_dmem_prot_trap_handler(unsigned long* instr_addr, unsigned long is_write
             }
         }
     } else {
-        ERROR("No emulation handler for access to 0x%x, at 0x%x\n", addr, vcpu_readpc(cpu()->vcpu));
+        ERROR("No emulation handler for access to 0x%x, at 0x%x\n", addr, vcpu_readpc(&cpu()->vcpu));
     }
 }
 
 void hvcall_handler(void)
 {
-    unsigned long function_id = vcpu_readreg(cpu()->vcpu, HYPCALL_ID_REG);
+    unsigned long function_id = vcpu_readreg(&cpu()->vcpu, HYPCALL_ID_REG);
     hypercall(function_id);
 }
 
 static bool csfr_pcon0_emul_handler(struct emul_access* acc)
 {
     if (acc->write) {
-        uint32_t val = vcpu_readreg(cpu()->vcpu, acc->reg);
+        uint32_t val = vcpu_readreg(&cpu()->vcpu, acc->reg);
         csfr_pcon0_write(val);
         fence_sync();
     } else {
-        vcpu_writereg(cpu()->vcpu, acc->reg, csfr_pcon0_read());
+        vcpu_writereg(&cpu()->vcpu, acc->reg, csfr_pcon0_read());
     }
     return true;
 }
@@ -115,7 +115,7 @@ static bool csfr_pcon0_emul_handler(struct emul_access* acc)
 static bool csfr_dcon0_emul_handler(struct emul_access* acc)
 {
     if (!acc->write) {
-        vcpu_writereg(cpu()->vcpu, acc->reg, csfr_dcon0_read());
+        vcpu_writereg(&cpu()->vcpu, acc->reg, csfr_dcon0_read());
     } else {
         /* We don't allow guests to enable data cache as it would prevent
         coherency for the hypervisor. */
@@ -144,7 +144,7 @@ void hyp_csfr_access_handler(unsigned long* instr_addr, unsigned long hvtin)
 {
     UNUSED_ARG(hvtin);
     struct emul_access emul;
-    unsigned long vmid = cpu()->vcpu->vm->id;
+    unsigned long vmid = cpu()->vcpu.vm->id;
 
     /* Give bao the same read permissions on the mpu */
     /* We save the bao prs bitmap, and we OR it with the guest prs */
@@ -163,5 +163,5 @@ void hyp_csfr_access_handler(unsigned long* instr_addr, unsigned long hvtin)
     if (!csfr_emul_handler(&emul, csfr)) {
         ERROR("CSFR emulation failed at 0x%x\n", instr_addr);
     }
-    vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + 4);
+    vcpu_writepc(&cpu()->vcpu, vcpu_readpc(&cpu()->vcpu) + 4);
 }

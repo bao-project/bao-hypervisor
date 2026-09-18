@@ -3,6 +3,7 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
+#include <cpu.h>
 #include <platform.h>
 
 extern uint16_t port_reg_val[PLAT_NUM_PORT_CFG_REGS][PLAT_NUM_PORT_GROUPS];

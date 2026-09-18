@@ -9,6 +9,7 @@
 #include <bao.h>
 #include <mem.h>
 #include <arch/mpu.h>
+#include <arch/csa.h>
 
 #define CPU_HAS_EXTENSION(EXT) (DEFINED(EXT))
 #define HYP_VMID               0
@@ -17,6 +18,8 @@ extern cpuid_t CPU_MASTER;
 
 struct cpu_arch {
     struct mpu_arch mpu;
+    /* The cpu's context save areas, in its structure (DSPR when the platform couples it) */
+    union csa csa[CSA_ENTRIES] __attribute__((aligned(64)));
 };
 
 static inline struct cpu* cpu(void)

@@ -6,6 +6,10 @@
 #ifndef __MEM_PROT_H__
 #define __MEM_PROT_H__
 
+/* Values of CONFIG_HYP_MPU_MAP: how the hypervisor's own address space is described in the MPU */
+#define HYP_MPU_MAP_FULL   (0)
+#define HYP_MPU_MAP_SIMPLE (1)
+
 #include <bao.h>
 #include <bitmap.h>
 #include <list.h>
@@ -43,6 +47,12 @@ static inline bool mem_regions_overlap(struct mp_region* reg1, struct mp_region*
 {
     return range_in_range(reg1->base, reg1->size, reg2->base, reg2->size);
 }
+
+/* Arguments of mem_map() / mem_unmap_range() */
+#define MEM_BROADCAST      (true)
+#define MEM_DONT_BROADCAST (false)
+#define MEM_LOCKED         (true)
+#define MEM_NOT_LOCKED     (false)
 
 bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool locked);
 void mem_mmio_init_regions(struct addr_space* as);

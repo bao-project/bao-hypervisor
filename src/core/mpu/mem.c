@@ -12,12 +12,6 @@
 #include <objpool.h>
 #include <config.h>
 
-#define MEM_BROADCAST      (true)
-#define MEM_DONT_BROADCAST (false)
-
-#define MEM_LOCKED         (true)
-#define MEM_NOT_LOCKED     (false)
-
 struct shared_region {
     enum AS_TYPE as_type;
     asid_t asid;
@@ -145,6 +139,173 @@ static mpid_t mem_vmpu_get_entry_by_addr(struct addr_space* as, vaddr_t addr)
     return mpid;
 }
 
+#if (CONFIG_HYP_MPU_MAP == HYP_MPU_MAP_SIMPLE) && (PLAT_MMIO_REGION_NUM == 0)
+#error "The simple hypervisor MPU map requires the platform to declare its MMIO regions"
+#endif
+
+/* A cpu structure placed in core-coupled memory needs its own entry; a global slot is in the image
+ */
+/**
+ * Whether a range lies in the hypervisor's own RAM: the whole image on unified-memory platforms,
+ * only its data part where the code runs from flash (the two are not contiguous).
+ */
+static bool mem_in_hyp_image_ram(vaddr_t base, size_t size)
+{
+    extern uint8_t _image_end;
+#ifdef MEM_NON_UNIFIED
+    extern uint8_t _data_vma_start;
+    vaddr_t start = (vaddr_t)&_data_vma_start;
+#else
+    extern uint8_t _image_start;
+    vaddr_t start = (vaddr_t)&_image_start;
+#endif
+    return range_in_range(base, size, start, (size_t)((vaddr_t)&_image_end - start));
+}
+
+static void mem_init_cpu_region(void)
+{
+    if (!mem_in_hyp_image_ram((vaddr_t)cpu(), sizeof(struct cpu))) {
+        struct mp_region mpr = {
+            .base = (vaddr_t)cpu(),
+            .size = ALIGN(sizeof(struct cpu), PAGE_SIZE),
+            .mem_flags = PTE_HYP_FLAGS,
+            .as_sec = SEC_HYP_PRIVATE,
+        };
+        mem_map(&cpu()->as, &mpr, MEM_DONT_BROADCAST, MEM_LOCKED);
+    }
+}
+
+#if CONFIG_HYP_MPU_MAP == HYP_MPU_MAP_SIMPLE
+
+/**
+ * Simple hypervisor map: a fixed set of locked hull regions built once per cpu, the hull of the
+ * flash regions and the hull of the RAM regions (one memory hull on unified-memory platforms),
+ * the hull of the platform MMIO regions and, when it lies in core-coupled memory, the cpu's own
+ * structure. Any later hypervisor mapping request inside a hull is a no-op.
+ */
+
+struct mem_hull {
+    vaddr_t base;
+    size_t size;
+};
+
+/**
+ * The hulls derive from the platform description alone, so every cpu computes the same ones and
+ * records them by index; whether a cpu has mapped them yet is its own state.
+ */
+enum { HYP_HULL_FLASH, HYP_HULL_MEM, HYP_HULL_MMIO, HYP_HULL_NUM };
+static struct mem_hull hyp_hulls[HYP_HULL_NUM];
+static bool hyp_hulls_ready[PLAT_CPU_NUM];
+
+static void mem_hull_extend(struct mem_hull* hull, vaddr_t base, size_t size)
+{
+    vaddr_t end = base + size;
+
+    if (hull->size == 0U) {
+        hull->base = base;
+        hull->size = size;
+        return;
+    }
+
+    vaddr_t hull_end = hull->base + hull->size;
+    if (base < hull->base) {
+        hull->base = base;
+    }
+    if (end > hull_end) {
+        hull_end = end;
+    }
+    hull->size = hull_end - hull->base;
+}
+
+static void mem_hull_map(size_t index, struct mem_hull* hull, mem_flags_t flags)
+{
+    if (hull->size == 0U) {
+        hyp_hulls[index] = (struct mem_hull){ 0 };
+        return;
+    }
+
+    vaddr_t base = hull->base - (hull->base % PAGE_SIZE);
+    vaddr_t end = ALIGN(hull->base + hull->size, PAGE_SIZE);
+
+    struct mp_region mpr = {
+        .base = base,
+        .size = end - base,
+        .mem_flags = flags,
+        .as_sec = SEC_HYP_GLOBAL,
+    };
+    if (!mem_map(&cpu()->as, &mpr, MEM_DONT_BROADCAST, MEM_LOCKED)) {
+        ERROR("failed to map hypervisor hull [0x%lx, 0x%lx)\n", base, end);
+    }
+
+    hyp_hulls[index] = (struct mem_hull){ .base = base, .size = end - base };
+}
+
+static void mem_init_hyp_hulls(void)
+{
+    struct mem_hull mmio = { 0 };
+    struct mem_hull mem = { 0 };
+    struct mem_hull flash = { 0 };
+
+    for (size_t i = 0; i < platform.mmio_region_num; i++) {
+        mem_hull_extend(&mmio, platform.mmio_regions[i].base, platform.mmio_regions[i].size);
+    }
+
+    for (size_t i = 0; i < platform.region_num; i++) {
+        struct mem_region* reg = &platform.regions[i];
+        /* A cpu-coupled region is mapped by the cpu it belongs to, if it places its structure there
+         */
+        if (reg->cpu_affinity != 0U) {
+            continue;
+        }
+        if (DEFINED(MEM_NON_UNIFIED) && (reg->perms == MEM_RX)) {
+            mem_hull_extend(&flash, reg->base, reg->size);
+        } else {
+            mem_hull_extend(&mem, reg->base, reg->size);
+        }
+    }
+
+    if ((flash.size != 0U) && (mem.size != 0U) &&
+        range_overlap_range(flash.base, flash.size, mem.base, mem.size)) {
+        ERROR("flash and RAM platform regions interleave, the simple hypervisor map needs disjoint "
+              "hulls\n");
+    }
+
+    mem_hull_map(HYP_HULL_FLASH, &flash, PTE_HYP_FLAGS_CODE);
+    mem_hull_map(HYP_HULL_MEM, &mem, PTE_HYP_FLAGS);
+    mem_hull_map(HYP_HULL_MMIO, &mmio, PTE_HYP_DEV_FLAGS);
+}
+
+static bool mem_in_hyp_hull(vaddr_t base, size_t size)
+{
+    for (size_t i = 0; i < HYP_HULL_NUM; i++) {
+        if ((hyp_hulls[i].size != 0U) &&
+            range_in_range(base, size, hyp_hulls[i].base, hyp_hulls[i].size)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* True when a hypervisor address space mapping request is already covered by the hulls */
+static bool mem_hyp_map_covered(struct addr_space* as, struct mp_region* mpr)
+{
+    if ((as->type != AS_HYP) || !hyp_hulls_ready[cpu()->id]) {
+        return false;
+    }
+
+    if (!mem_in_hyp_hull(mpr->base, mpr->size) &&
+        !range_in_range(mpr->base, mpr->size, (vaddr_t)cpu(),
+            ALIGN(sizeof(struct cpu), PAGE_SIZE))) {
+        ERROR("hypervisor mapping [0x%lx, 0x%lx) outside platform memory and MMIO\n", mpr->base,
+            mpr->base + mpr->size);
+    }
+
+    return true;
+}
+
+#endif /* HYP_MPU_MAP_SIMPLE */
+
+#if CONFIG_HYP_MPU_MAP == HYP_MPU_MAP_FULL
 static void mem_init_boot_regions(void)
 {
     /**
@@ -196,20 +357,23 @@ static void mem_init_boot_regions(void)
         mem_map(&cpu()->as, &mpr, MEM_DONT_BROADCAST, MEM_LOCKED);
     }
 
-    mpr = (struct mp_region){
-        .base = (vaddr_t)cpu(),
-        .size = ALIGN(sizeof(struct cpu), PAGE_SIZE),
-        .mem_flags = PTE_HYP_FLAGS,
-        .as_sec = SEC_HYP_PRIVATE,
-    };
-    mem_map(&cpu()->as, &mpr, MEM_DONT_BROADCAST, MEM_LOCKED);
+    mem_init_cpu_region();
 }
+#endif /* HYP_MPU_MAP_FULL */
 
 void mem_prot_init()
 {
     mpu_init();
     as_init(&cpu()->as, AS_HYP, 0);
+#if CONFIG_HYP_MPU_MAP == HYP_MPU_MAP_SIMPLE
+    mem_init_hyp_hulls();
+    mem_init_cpu_region();
+    /* From here on every hypervisor mapping request inside the hulls or the cpu structure is a
+     * no-op */
+    hyp_hulls_ready[cpu()->id] = true;
+#else
     mem_init_boot_regions();
+#endif
     if (DEFINED(MMIO_SLAVE_SIDE_PROT) && cpu_is_master()) {
         mem_mmio_init_regions(&cpu()->as);
     }
@@ -292,14 +456,14 @@ static cpumap_t mem_section_shared_cpus(struct addr_space* as, as_sec_t section)
             /**
              * If we don't have a valid vcpu at this point, it means we are creating this region
              * before even having a vm. Therefore, the sharing of the region must be guaranteed by
-             * other means (e.g. vmm_vm_install)
+             * other means.
              */
-            if (cpu()->vcpu != NULL) {
-                cpus = cpu()->vcpu->vm->cpus;
+            if (cpu()->vcpu.vm != NULL) {
+                cpus = cpu()->vcpu.vm->cpus;
             }
         }
     } else {
-        cpus = cpu()->vcpu->vm->cpus;
+        cpus = cpu()->vcpu.vm->cpus;
     }
 
     return cpus;
@@ -463,7 +627,7 @@ void mem_handle_broadcast_region(uint32_t event, uint64_t data)
         if (sh_reg->as_type == AS_HYP) {
             as = &cpu()->as;
         } else {
-            struct addr_space* vm_as = &cpu()->vcpu->vm->as;
+            struct addr_space* vm_as = &cpu()->vcpu.vm->mut->as;
             if (vm_as->id != sh_reg->asid) {
                 ERROR("Received shared region for unknown vm address space.\n");
             }
@@ -555,6 +719,12 @@ bool mem_map(struct addr_space* as, struct mp_region* mpr, bool broadcast, bool 
 {
     bool mapped = false;
     mpid_t mpid = INVALID_MPID;
+
+#if CONFIG_HYP_MPU_MAP == HYP_MPU_MAP_SIMPLE
+    if (mem_hyp_map_covered(as, mpr)) {
+        return true;
+    }
+#endif
 
     if (mpr->size == 0) {
         return true;
@@ -649,6 +819,12 @@ bool mem_unmap_range(struct addr_space* as, vaddr_t vaddr, size_t size, bool bro
 
 void mem_unmap(struct addr_space* as, vaddr_t at, size_t num_pages, bool free_ppages)
 {
+#if CONFIG_HYP_MPU_MAP != HYP_MPU_MAP_FULL
+    /* The hypervisor map is permanent */
+    if (as->type == AS_HYP) {
+        return;
+    }
+#endif
     if (mem_unmap_range(as, at, num_pages * PAGE_SIZE, MEM_BROADCAST) && free_ppages) {
         struct ppages ppages = mem_ppages_get(at, num_pages);
         mem_free_ppages(&ppages);

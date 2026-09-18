@@ -7,7 +7,6 @@
 #define __ARCH_VM_H__
 
 #include <bao.h>
-#include <interrupts.h>
 #include <emul.h>
 #include <vintc.h>
 
@@ -35,7 +34,17 @@ struct vm_arch {
     struct emul_mem bootctrl_emul;
 };
 
+/* Mutable state of the vm (see struct vm_mutable) */
+struct vm_arch_mutable {
+    EMPTY_STRUCT_FIELDS
+};
+
 struct vcpu_arch {
+    EMPTY_STRUCT_FIELDS
+};
+
+/* Vcpu state other cpus reach: the boot control register releases other cores */
+struct vcpu_arch_public {
     bool started;
 };
 

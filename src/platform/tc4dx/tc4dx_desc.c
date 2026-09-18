@@ -122,36 +122,42 @@ struct platform platform = {
             .base = 0x70000000,
             .size =   0x3C000,
             .perms = MEM_RWX,
+            .cpu_affinity = CORE(0),
         },
         {
             // CPU1.DSPR, 240Kb
             .base = 0x60000000,
             .size =   0x3C000,
             .perms = MEM_RWX,
+            .cpu_affinity = CORE(1),
         },
         {
             // CPU2.DSPR, 240Kb
             .base = 0x50000000,
             .size =   0x3C000,
             .perms = MEM_RWX,
+            .cpu_affinity = CORE(2),
         },
         {
             // CPU3.DSPR, 240Kb
             .base = 0x40000000,
             .size =   0x3C000,
             .perms = MEM_RWX,
+            .cpu_affinity = CORE(3),
         },
         {
             // CPU4.DSPR, 240Kb
             .base = 0x30000000,
             .size =   0x3C000,
             .perms = MEM_RWX,
+            .cpu_affinity = CORE(4),
         },
         {
             // CPU5.DSPR, 240Kb
             .base = 0x20000000,
             .size =   0x3C000,
             .perms = MEM_RWX,
+            .cpu_affinity = CORE(5),
         },
     },
     .mmio_region_num = 1,

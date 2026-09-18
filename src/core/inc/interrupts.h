@@ -35,6 +35,16 @@ irqid_t interrupts_reserve(irqid_t pint_id, irq_handler_t handler);
 void interrupts_cpu_sendipi(cpuid_t target_cpu);
 void interrupts_cpu_enable(irqid_t int_id, bool en);
 
+/**
+ * Whether the interrupt is reserved by the hypervisor or assigned to a vm. With
+ * CONFIG_CPU_LOCAL_COPIES it is answered from this cpu's copy of the assignment bitmap, taken by
+ * interrupts_cpu_init() once every vm is initialized and the assignment is final.
+ */
+bool interrupts_cpu_assigned(irqid_t int_id);
+#ifdef CONFIG_CPU_LOCAL_COPIES
+void interrupts_cpu_init(void);
+#endif
+
 bool interrupts_ipi_check(void);
 void interrupts_ipi_clear(void);
 

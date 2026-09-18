@@ -19,12 +19,19 @@ boot_arch_profile_init:
     // Save LR in x20
     mov x20, lr
 
+#ifdef PLAT_HAS_TCM
+    /* CPU_X structure: cpu_base_tbl[cpu] (global slot or coupled memory) */
+    ldr x3, =cpu_base_tbl
+    ldr x3, [x3, x0, lsl #3]
+    mov x7, CPU_SIZE
+#else
     /* CPU physical based address */
     ldr x3, =_dmem_phys_beg 
     
     /* CPU_X physical base address */
     mov x7, CPU_SIZE
     madd x3, x0, x7, x3
+#endif
 
     /* Clear the CPU struct */
 	mov	x16, x3	

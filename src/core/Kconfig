@@ -1,0 +1,85 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+menu "Core features"
+
+config MMIO_SLAVE_SIDE_PROT
+	bool "MMIO slave-side protection"
+	depends on PLAT_HAS_MMIO_SLAVE_SIDE_PROT && MEM_PROT_MPU
+	help
+	  Enforce MMIO access control at the bus slave side instead of
+	  through MPU entries on the master side.
+
+config CPU_TCM_MASK
+	hex "Cpus whose cpu structure lives in core-coupled memory"
+	depends on PLAT_HAS_TCM
+	default 0x0
+	help
+	  Bit n set places the structure of cpu n (its vcpu, its stack and
+	  its other private state) at the end of the platform memory region
+	  coupled to that cpu, declared with cpu_affinity = CORE(n) in the
+	  platform description (the one marked cpu_home when several are),
+	  instead of the global cpu slots; the rest of
+	  the region stays usable by the guests from its base. The cpus left out
+	  share a compact array in global memory, so no memory is wasted, and
+	  their coupled region stays entirely available to the guests. Only
+	  platforms declaring coupled memory (PLAT_HAS_TCM) offer the
+	  mask, and only architectures whose boot code places the cpu
+	  structure through the generated base table accept a nonzero one.
+
+config CPU_LOCAL_COPIES
+	bool "Local copies of the vm description and interrupt assignment"
+	depends on PLAT_HAS_TCM
+	help
+	  Once its vm is initialized, each cpu copies the description of the
+	  vm (struct vm, whose mutable state is kept apart) into its own cpu
+	  structure and runs on the copy, and once every vm is initialized
+	  each cpu copies the interrupt assignment bitmap the same way. With
+	  the structure in core-coupled memory (CPU_TCM_MASK) the trap and
+	  interrupt paths then never read the shared instances. Costs a vm
+	  description and an interrupt bitmap per cpu; all vms start together
+	  once every one of them is initialized.
+
+choice
+	prompt "Hypervisor MPU map"
+	depends on MEM_PROT_MPU
+	default HYP_MPU_MAP_FULL
+	help
+	  How the hypervisor's own address space is described in the MPU.
+
+config HYP_MPU_MAP_FULL
+	bool "Full: one entry per hypervisor mapping"
+	help
+	  The hypervisor image, each cpu's structure and every later
+	  hypervisor-side mapping (shared memory, devices, vm memory it
+	  touches) get their own MPU entries, with isolation between cpus.
+
+config HYP_MPU_MAP_SIMPLE
+	bool "Simple: flash, RAM, MMIO and the cpu's coupled region"
+	help
+	  The hypervisor address space is a fixed set of locked hull entries
+	  built once per cpu: the hull of the flash regions and the hull of
+	  the RAM regions (one memory hull on unified-memory platforms), the
+	  hull of the platform MMIO regions, and the cpu's structure when it
+	  lies in core-coupled memory. Every later hypervisor-side mapping
+	  request inside those hulls is a no-op, so the hypervisor never
+	  consumes further MPU entries; there is no isolation between cpus
+	  inside the hypervisor. The platform must declare its MMIO regions.
+
+endchoice
+
+# The map in force, for the code: the choice selectors are not emitted
+config HYP_MPU_MAP
+	int
+	depends on MEM_PROT_MPU
+	default 1 if HYP_MPU_MAP_SIMPLE
+	default 0
+
+config IPI_MAX_EVENTS
+	int "Depth of the per-cpu message queue"
+	default 253
+	help
+	  Depth of the per-cpu message queue
+	  The default keeps the cpu interface within a single 4K page.
+
+endmenu

@@ -7,7 +7,7 @@
 #define __PLAT_PLATFORM_H__
 
 #ifndef __ASSEMBLER__
-#include <cpu.h>
+#include <bao.h>
 #include <drivers/renesas_rlin3.h>
 #include <plat/port.h>
 #include <plat/clock.h>

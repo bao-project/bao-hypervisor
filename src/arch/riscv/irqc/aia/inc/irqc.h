@@ -16,26 +16,6 @@
 #include <vimsic.h>
 #endif
 
-#define IRQC_TIMR_INT_ID         (APLIC_MAX_INTERRUPTS + 1)
-#define IRQC_SOFT_INT_ID         (APLIC_MAX_INTERRUPTS + 2)
-#define IRQC_MAX_INTERRUPT_LINES (IRQC_SOFT_INT_ID + 1)
-
-#if (IRQC == APLIC)
-#define IRQC_MAX_INTERRUPT_HANDLERS IRQC_MAX_INTERRUPT_LINES
-#elif (IRQC == AIA)
-#define IRQC_MAX_INTERRUPT_HANDLERS (PLAT_IMSIC_MAX_INTERRUPTS)
-#define IMSIC_FIRST_NONRESERVED_ID  (2)
-#endif
-
-#define IRQC_MAX_GUEST_INTERRUPTS APLIC_MAX_INTERRUPTS
-
-#define HART_REG_OFF              APLIC_IDC_OFF
-#define IRQC_HART_INST            APLIC_DOMAIN_NUM_HARTS
-#define HYP_IRQ_SM_EDGE_RISE      APLIC_SOURCECFG_SM_EDGE_RISE
-#define HYP_IRQ_SM_INACTIVE       APLIC_SOURCECFG_SM_INACTIVE
-#define HYP_IRQ_PRIO              APLIC_TARGET_MAX_PRIO
-#define HYP_IRQ                   0
-
 static inline void irqc_init(void)
 {
     aplic_init();

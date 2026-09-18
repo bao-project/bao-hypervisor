@@ -35,29 +35,38 @@ struct arch_vm_platform {
 #endif
 };
 
+/* Fixed after initialization (see struct vm) */
 struct vm_arch {
-    struct vgicd vgicd;
     vaddr_t vgicr_addr;
-    struct list vgic_spilled;
-    spinlock_t vgic_spilled_lock;
     struct emul_mem vgicd_emul;
     struct emul_mem vgicr_emul;
     struct emul_reg icc_sgir_emul;
     struct emul_reg icc_sre_emul;
 };
 
-struct vcpu_arch {
-    unsigned long vmpidr;
-    struct vgic_priv vgic_priv;
+/* Mutable state of the vm (see struct vm_mutable) */
+struct vm_arch_mutable {
+    struct vgicd vgicd;
     struct list vgic_spilled;
-    struct psci_ctx psci_ctx;
+    spinlock_t vgic_spilled_lock;
+};
 
+/* Private vcpu state, only touched by the cpu running the vcpu */
+struct vcpu_arch {
+    struct list vgic_spilled;
 #ifdef MEM_PROT_MPU
     unsigned long mpu_entry_mask;
 #endif
 };
 
-struct vcpu* vm_get_vcpu_by_mpidr(struct vm* vm, unsigned long mpidr);
+/* Vcpu state other cpus reach: PSCI requests, the private interrupts and the redistributor */
+struct vcpu_arch_public {
+    unsigned long vmpidr;
+    struct vgic_priv vgic_priv;
+    struct psci_ctx psci_ctx;
+};
+
+struct vcpu_public* vm_get_vcpu_by_mpidr(struct vm* vm, unsigned long mpidr);
 void vcpu_arch_entry(void);
 
 bool vcpu_arch_profile_on(struct vcpu* vcpu);

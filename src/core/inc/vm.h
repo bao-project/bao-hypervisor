@@ -7,7 +7,7 @@
 #define __VM_H__
 
 #include <bao.h>
-#include <arch/vm.h>
+#include <vm_types.h>
 
 #include <mem.h>
 #include <cpu.h>
@@ -18,105 +18,9 @@
 #include <io.h>
 #include <ipc.h>
 #include <remio.h>
+#include <platform_defs.h>
 
-struct vm_mem_region {
-    paddr_t base;
-    size_t size;
-    colormap_t colors;
-    struct {
-        bool place_phys;
-        paddr_t phys;
-        bool reserved;
-    };
-};
-
-struct vm_dev_region {
-    paddr_t pa;
-    vaddr_t va;
-    size_t size;
-    size_t interrupt_num;
-    irqid_t* interrupts;
-    deviceid_t id; /* bus master id for iommu effects */
-};
-
-struct vm_platform {
-    size_t cpu_num;
-
-    size_t region_num;
-    struct vm_mem_region* regions;
-
-    size_t ipc_num;
-    struct ipc* ipcs;
-
-    size_t dev_num;
-    struct vm_dev_region* devs;
-
-    size_t remio_dev_num;
-    struct remio_dev* remio_devs;
-
-    // /**
-    //  * In MPU-based platforms which might also support virtual memory
-    //  * (i.e. aarch64 cortex-r) the hypervisor sets up the VM using an MPU by
-    //  * default. If the user wants this VM to use the MMU they must set the
-    //  * config mmu parameter to true;
-    //  */
-    bool mmu;
-
-    struct arch_vm_platform arch;
-};
-
-struct vm {
-    vmid_t id;
-
-    const struct vm_config* config;
-
-    spinlock_t lock;
-    struct cpu_synctoken sync;
-    cpuid_t master;
-
-    struct vcpu* vcpus;
-    size_t cpu_num;
-    cpumap_t cpus;
-
-    struct addr_space as;
-
-    struct vm_arch arch;
-
-    struct list emul_mem_list;
-    struct list emul_reg_list;
-
-    struct vm_io io;
-
-    BITMAP_ALLOC(interrupt_bitmap, MAX_GUEST_INTERRUPTS);
-
-    size_t ipc_num;
-    struct ipc* ipcs;
-
-    size_t remio_dev_num;
-    struct remio_dev* remio_devs;
-};
-
-struct vcpu {
-    node_t node;
-
-    struct arch_regs regs;
-    struct vcpu_arch arch;
-
-    vcpuid_t id;
-    cpuid_t phys_id;
-    bool active;
-
-    struct vm* vm;
-};
-
-struct vm_allocation {
-    vaddr_t base;
-    size_t size;
-    struct vm* vm;
-    struct vcpu* vcpus;
-};
-
-struct vm* vm_init(struct vm_allocation* vm_alloc, struct cpu_synctoken* vm_init_sync,
+struct vm* vm_init(struct vm* vm, struct cpu_synctoken* vm_init_sync,
     const struct vm_config* config, bool master, vmid_t vm_id);
 void vm_start(struct vm* vm, vaddr_t entry);
 void vm_emul_add_mem(struct vm* vm, struct emul_mem* emu);
@@ -128,17 +32,18 @@ void vm_msg_broadcast(struct vm* vm, struct cpu_msg* msg);
 cpumap_t vm_translate_to_pcpu_mask(struct vm* vm, cpumap_t mask, size_t len);
 cpumap_t vm_translate_to_vcpu_mask(struct vm* vm, cpumap_t mask, size_t len);
 
-static inline struct vcpu* vm_get_vcpu(struct vm* vm, vcpuid_t vcpuid)
+/* The public part of one of the vm's vcpus; the private part belongs to the cpu running it */
+static inline struct vcpu_public* vm_get_vcpu(struct vm* vm, vcpuid_t vcpuid)
 {
     if (vcpuid < vm->cpu_num) {
-        return &vm->vcpus[vcpuid];
+        return vm->vcpus[vcpuid];
     }
     return NULL;
 }
 
 static inline cpuid_t vm_translate_to_pcpuid(struct vm* vm, vcpuid_t vcpuid)
 {
-    struct vcpu* vcpu = vm_get_vcpu(vm, vcpuid);
+    struct vcpu_public* vcpu = vm_get_vcpu(vm, vcpuid);
 
     if (vcpu == NULL) {
         return INVALID_CPUID;
@@ -174,6 +79,8 @@ static inline void vcpu_inject_irq(struct vcpu* vcpu, irqid_t id)
 /* ------------------------------------------------------------*/
 
 void vm_mem_prot_init(struct vm* vm, const struct vm_config* config);
+/* Called by every cpu of the vm after vm_mem_prot_init, before the vm's address space is used */
+void vm_mem_prot_cpu_init(struct vm* vm);
 
 /* ------------------------------------------------------------*/
 

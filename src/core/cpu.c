@@ -18,10 +18,32 @@ static size_t ipi_cpumsg_handler_num;
 
 struct cpuif cpu_interfaces[PLAT_CPU_NUM];
 
+#ifdef PLAT_HAS_TCM
+/**
+ * The cpu structures in global memory: one slot per cpu not placed in its core-coupled memory
+ * (CONFIG_CPU_TCM_MASK), so nothing is wasted. A cpu placed in its coupled memory takes the last
+ * bytes of the region, leaving it usable by the guests from its base. Where the boot code finds
+ * each cpu's structure is the generated, link-time constant table below.
+ */
+#if PLAT_CPU_SLOT_NUM > 0
+static struct cpu cpu_slots[PLAT_CPU_SLOT_NUM];
+#define CPU_SLOT(i) ((paddr_t) & cpu_slots[i])
+#endif
+#ifdef PLAT_CPU_PRIVATE_MIN_SIZE
+#define CPU_TCM_END(base, size) ((paddr_t)(base) + (size) - sizeof(struct cpu))
+#endif
+const paddr_t cpu_base_tbl[PLAT_CPU_NUM] = PLAT_CPU_BASES;
+#ifdef PLAT_CPU_PRIVATE_MIN_SIZE
+_Static_assert(sizeof(struct cpu) <= PLAT_CPU_PRIVATE_MIN_SIZE,
+    "cpu structure does not fit in the smallest cpu-coupled memory region");
+#endif
+#endif /* PLAT_HAS_TCM */
+
 void cpu_init(cpuid_t cpu_id)
 {
     cpu()->id = cpu_id;
     cpu()->handling_msgs = false;
+    cpu()->vcpu.vm = NULL;
     cpu()->interface = cpu_if(cpu()->id);
 
     cpu_arch_init(cpu_id, img_addr);
@@ -98,8 +120,8 @@ void cpu_standby_wakeup(void)
         cpu_msg_handler();
     }
 
-    if (cpu()->vcpu != NULL) {
-        vcpu_run(cpu()->vcpu);
+    if (cpu()->vcpu.vm != NULL) {
+        vcpu_run(&cpu()->vcpu);
     } else {
         cpu_standby();
     }
@@ -112,8 +134,8 @@ void cpu_powerdown_wakeup(void)
         cpu_msg_handler();
     }
 
-    if (cpu()->vcpu != NULL) {
-        vcpu_run(cpu()->vcpu);
+    if (cpu()->vcpu.vm != NULL) {
+        vcpu_run(&cpu()->vcpu);
     } else {
         cpu_powerdown();
     }

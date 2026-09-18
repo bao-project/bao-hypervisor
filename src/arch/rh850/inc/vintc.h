@@ -6,7 +6,10 @@
 #ifndef __VINTC_H__
 #define __VINTC_H__
 
-#include <vm.h>
+#include <bao.h>
+
+struct vm;
+struct vcpu;
 
 void vintc_init(struct vm* vm);
 void vintc_inject(struct vcpu* vcpu, irqid_t int_id);

@@ -16,6 +16,7 @@ __attribute__((used)) static void cpu_defines(void)
     DEFINE_SIZE(CPU_STACK_SIZE, ((struct cpu*)NULL)->stack);
 
     DEFINE_OFFSET(CPU_VCPU_OFF, struct cpu, vcpu);
+    DEFINE_OFFSET(CPU_CSA_OFF, struct cpu, arch.csa);
 }
 
 __attribute__((used)) static void vcpu_defines(void)

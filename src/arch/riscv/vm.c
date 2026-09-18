@@ -14,7 +14,7 @@
 void vm_arch_init(struct vm* vm, const struct vm_config* vm_config)
 {
     paddr_t root_pt_pa;
-    mem_translate(&cpu()->as, (vaddr_t)vm->as.pt.root, &root_pt_pa);
+    mem_translate(&cpu()->as, (vaddr_t)vm->mut->as.pt.root, &root_pt_pa);
 
     unsigned long hgatp = (root_pt_pa >> PAGE_SHIFT) | (HGATP_MODE_DFLT) |
         ((vm->id << HGATP_VMID_OFF) & HGATP_VMID_MSK);
@@ -28,8 +28,8 @@ void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm)
 {
     UNUSED_ARG(vm);
 
-    vcpu->arch.sbi_ctx.lock = SPINLOCK_INITVAL;
-    vcpu->arch.sbi_ctx.state = vcpu->id == 0 ? STARTED : STOPPED;
+    vcpu->pub->arch.sbi_ctx.lock = SPINLOCK_INITVAL;
+    vcpu->pub->arch.sbi_ctx.state = vcpu->id == 0 ? STARTED : STOPPED;
 }
 
 void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry)
@@ -113,5 +113,5 @@ void vcpu_writepc(struct vcpu* vcpu, unsigned long pc)
 
 bool vcpu_arch_is_on(struct vcpu* vcpu)
 {
-    return vcpu->arch.sbi_ctx.state == STARTED;
+    return vcpu->pub->arch.sbi_ctx.state == STARTED;
 }

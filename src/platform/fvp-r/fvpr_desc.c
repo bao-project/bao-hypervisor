@@ -24,6 +24,15 @@ struct platform platform = {
         .base = 0x9C090000,  // UART0 (PL011)
     },
 
+
+    // Peripheral area (hull of the simple hypervisor MPU map)
+    .mmio_region_num = 1,
+    .mmio_regions = (struct mem_region[]){
+        {
+            .base = 0x80000000,
+            .size = 0x80000000,
+        },
+    },
     .arch = {
         .gic = {
             .gicd_addr = 0xAF000000,

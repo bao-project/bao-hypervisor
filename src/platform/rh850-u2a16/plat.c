@@ -3,6 +3,7 @@
  * Copyright (c) Bao Project and Contributors. All rights reserved.
  */
 
+#include <cpu.h>
 #include <platform.h>
 
 void platform_default_init(void)
