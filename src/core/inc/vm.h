@@ -158,7 +158,7 @@ static inline vcpuid_t vm_translate_to_vcpuid(struct vm* vm, cpuid_t pcpuid)
 
 static inline bool vm_has_interrupt(struct vm* vm, irqid_t int_id)
 {
-    return !!bitmap_get(vm->interrupt_bitmap, int_id);
+    return (int_id < MAX_GUEST_INTERRUPTS) && !!bitmap_get(vm->interrupt_bitmap, int_id);
 }
 
 static inline void vcpu_inject_hw_irq(struct vcpu* vcpu, irqid_t id)
