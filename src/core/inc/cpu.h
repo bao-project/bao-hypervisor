@@ -124,7 +124,7 @@ static inline void cpu_sync_barrier(struct cpu_synctoken* token)
 
     spin_lock(&token->lock);
     token->count++;
-    next_count = ALIGN(token->count, token->n);
+    next_count = (token->n != 0) ? ALIGN(token->count, token->n) : token->count;
     spin_unlock(&token->lock);
 
     while (token->count < next_count) { }
@@ -138,7 +138,7 @@ static inline void cpu_sync_and_clear_msgs(struct cpu_synctoken* token)
 
     spin_lock(&token->lock);
     token->count++;
-    next_count = ALIGN(token->count, token->n);
+    next_count = (token->n != 0) ? ALIGN(token->count, token->n) : token->count;
     spin_unlock(&token->lock);
 
     while (token->count < next_count) {

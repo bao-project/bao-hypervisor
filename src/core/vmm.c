@@ -132,6 +132,19 @@ void vmm_init()
     remio_init();
 
     if (cpu_is_master()) {
+        size_t cpus_needed = 0;
+        for (size_t i = 0; i < config.vmlist_size; i++) {
+            size_t vm_cpus = config.vmlist[i].platform.cpu_num;
+            if ((vm_cpus == 0) || (vm_cpus > platform.cpu_num)) {
+                ERROR("vm %zu asks for %zu cpus; the platform has %zu\n", i, vm_cpus,
+                    platform.cpu_num);
+            }
+            cpus_needed += vm_cpus;
+        }
+        if (cpus_needed > platform.cpu_num) {
+            ERROR("the vms need %zu cpus in total; the platform has %zu\n", cpus_needed,
+                platform.cpu_num);
+        }
         for (size_t i = 0; i < CONFIG_VM_NUM; i++) {
             vm_assign[i].lock = SPINLOCK_INITVAL;
             cpu_sync_init(&vm_assign[i].root_sync, config.vmlist[i].platform.cpu_num);
