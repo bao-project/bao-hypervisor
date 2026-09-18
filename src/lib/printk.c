@@ -41,6 +41,22 @@ static size_t prints(char** buf, const char* str)
     return char_count;
 }
 
+/* Prints at most `max` characters of str. */
+static size_t printsn(char** buf, const char* str, size_t max)
+{
+    size_t char_count = 0;
+    while ((char_count < max) && (str[char_count] != '\0')) {
+        printc(buf, str[char_count]);
+        char_count++;
+    }
+    return char_count;
+}
+
+static inline bool is_digit(char c)
+{
+    return (c >= '0') && (c <= '9');
+}
+
 static size_t vprintd(char** buf, unsigned int flags, va_list* args)
 {
     unsigned long u;
@@ -58,9 +74,11 @@ static size_t vprintd(char** buf, unsigned int flags, va_list* args)
         if (s < 0) {
             printc(buf, '-');
             char_count++;
-            s = -s;
+            /* Negate in the unsigned domain: -LONG_MIN does not exist as a long. */
+            u = 0UL - (unsigned long)s;
+        } else {
+            u = (unsigned long)s;
         }
-        u = (unsigned long)s;
     }
 
     divisor = 1;
@@ -84,8 +102,9 @@ static size_t vprintd(char** buf, unsigned int flags, va_list* args)
 /**
  * This is a limited printf implementation. The format string only supports integer, string and
  * char arguments. That is, 'd', 'u' or 'x', 's' and 'c' specifiers, respectively. For integers, it
- * only supports the none and 'l' lengths. It does not support any flags, width or precision
- * fields. If present, this fields are ignored.
+ * only supports the none, 'l' and 'z' lengths. It does not support any flags, width or precision
+ * fields. If present, this fields are ignored. Any other conversion is printed as text and
+ * consumes no argument. A string argument longer than the whole buffer is truncated to it.
  *
  * Note this does not follow the C lib vsnprintf specification. It returns the numbers of
  * characters written to the buffer, and changes fmt to point to the first character that was not
@@ -102,74 +121,88 @@ size_t vsnprintk(char* buf, size_t buf_size, const char** fmt, va_list* args)
         if ((*fmt_it) != '%') {
             printc(&buf_it, *fmt_it);
             buf_left--;
-        } else {
-            unsigned int flags;
-            bool ignore_char;
-            size_t arg_char_count = 0;
-
             fmt_it++;
-            flags = 0;
+            continue;
+        }
+
+        const char* spec = fmt_it; /* the '%' this conversion starts at */
+        unsigned int flags = 0;
+        size_t arg_char_count = 0;
+        bool consume = true;
+
+        fmt_it++;
+        /* Flags, width and precision are not supported: they are skipped. */
+        while (is_digit(*fmt_it) || (*fmt_it == '-') || (*fmt_it == '+') || (*fmt_it == ' ') ||
+            (*fmt_it == '#') || (*fmt_it == '.')) {
+            fmt_it++;
+        }
+        if (*fmt_it == 'l') {
+            fmt_it++;
+            flags = flags | F_LONG;
             if (*fmt_it == 'l') {
                 fmt_it++;
-                flags = flags | F_LONG;
-                if (*fmt_it == 'l') {
-                    fmt_it++;
-                } // ignore long long
-            }
+            } // ignore long long
+        } else if (*fmt_it == 'z') {
+            fmt_it++;
+            flags = flags | F_LONG;
+        }
 
-            do {
-                ignore_char = false;
-                switch (*fmt_it) {
-                    case 'x':
-                    case 'X':
-                        flags = flags | F_BASE16;
-                        __attribute__((fallthrough));
-                    case 'u':
-                        flags = flags | F_UNSIGNED;
-                        __attribute__((fallthrough));
-                    case 'd':
-                    case 'i':
-                        va_copy(args_tmp, *args);
-                        arg_char_count = vprintd(NULL, flags, &args_tmp);
-                        if (arg_char_count <= buf_left) {
-                            (void)vprintd(&buf_it, flags, args);
-                        }
-                        break;
-                    case 's':
-                        va_copy(args_tmp, *args);
-                        arg_char_count = prints(NULL, va_arg(args_tmp, char*));
-                        if (arg_char_count <= buf_left) {
-                            (void)prints(&buf_it, va_arg(*args, char*));
-                        }
-                        break;
-                    case 'c':
-                        arg_char_count = 1;
-                        if (arg_char_count <= buf_left) {
-                            printc(&buf_it, (char)va_arg(args_tmp, int));
-                        }
-                        break;
-                    case '%':
-                        arg_char_count = 1;
-                        if (arg_char_count <= buf_left) {
-                            printc(&buf_it, *fmt_it);
-                        }
-                        break;
-                    default:
-                        ignore_char = true;
-                        break;
-                }
-            } while (ignore_char);
-
-            if (arg_char_count <= buf_left) {
-                buf_left -= arg_char_count;
-            } else {
-                while (*fmt_it != '%') {
-                    fmt_it--;
+        switch (*fmt_it) {
+            case 'x':
+            case 'X':
+                flags = flags | F_BASE16;
+                __attribute__((fallthrough));
+            case 'u':
+                flags = flags | F_UNSIGNED;
+                __attribute__((fallthrough));
+            case 'd':
+            case 'i':
+                va_copy(args_tmp, *args);
+                arg_char_count = vprintd(NULL, flags, &args_tmp);
+                va_end(args_tmp);
+                if (arg_char_count <= buf_left) {
+                    (void)vprintd(&buf_it, flags, args);
                 }
                 break;
-            }
+            case 's':
+                va_copy(args_tmp, *args);
+                arg_char_count = prints(NULL, va_arg(args_tmp, char*));
+                va_end(args_tmp);
+                if (arg_char_count <= buf_left) {
+                    (void)prints(&buf_it, va_arg(*args, char*));
+                } else if (buf_left == buf_size) {
+                    /* Longer than the whole buffer: print what fits and drop the rest. */
+                    arg_char_count = printsn(&buf_it, va_arg(*args, char*), buf_left);
+                }
+                break;
+            case 'c':
+                arg_char_count = 1;
+                if (arg_char_count <= buf_left) {
+                    printc(&buf_it, (char)va_arg(*args, int));
+                }
+                break;
+            case '%':
+                arg_char_count = 1;
+                if (arg_char_count <= buf_left) {
+                    printc(&buf_it, '%');
+                }
+                break;
+            default:
+                /* A trailing '%' prints nothing; an unknown conversion character is left to be
+                 * printed as text. */
+                consume = false;
+                break;
         }
-        fmt_it++;
+
+        if (arg_char_count > buf_left) {
+            /* It does not fit: leave the format at this conversion for the next buffer. */
+            fmt_it = spec;
+            break;
+        }
+        buf_left -= arg_char_count;
+        if (consume && (*fmt_it != '\0')) {
+            fmt_it++;
+        }
     }
 
     *fmt = fmt_it;
