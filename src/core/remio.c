@@ -470,12 +470,13 @@ static long int remio_handle_ask(unsigned long addr, unsigned long value,
 
 /**
  * @brief Handles the Remote I/O read and write operations
+ * @param op Operation the backend completes (REMIO_HYP_WRITE or REMIO_HYP_READ)
  * @param value Value to be written or read
  * @param request_id Remote I/O request ID
  * @param device Pointer to the Remote I/O device
  * @return Returns true if the operation was successful, false otherwise
  */
-static bool remio_handle_rw(unsigned long value, unsigned long request_id,
+static bool remio_handle_rw(unsigned long op, unsigned long value, unsigned long request_id,
     struct remio_device* device)
 {
     /** Only ids of the request pool are acceptable here: never the next-pending sentinel */
@@ -487,6 +488,10 @@ static bool remio_handle_rw(unsigned long value, unsigned long request_id,
         return false;
     }
     if (request->state != REMIO_STATE_PROCESSING) {
+        return false;
+    }
+    /** A read completed as a write would leave the frontend's register unwritten */
+    if (request->op != op) {
         return false;
     }
     request->value = value;
@@ -563,7 +568,7 @@ long int remio_hypercall(void)
     switch (op) {
         case REMIO_HYP_WRITE:
         case REMIO_HYP_READ:
-            if (remio_handle_rw(value, request_id, device)) {
+            if (remio_handle_rw(op, value, request_id, device)) {
                 struct remio_request* request = remio_get_request(device, (long int)request_id);
                 if (request == NULL) {
                     return -HC_E_FAILURE;
