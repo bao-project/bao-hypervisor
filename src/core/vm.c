@@ -48,6 +48,11 @@ static void vm_vcpu_init(struct vm* vm, const struct vm_config* vm_config)
     vcpuid_t vcpu_id = vm_calc_vcpu_id(vm);
     struct vcpu* vcpu = vm_get_vcpu(vm, vcpu_id);
 
+    if (vcpu == NULL) {
+        ERROR("cpu %lu has no vcpu in vm %lu: more cpus assigned than the vm was given\n",
+            cpu()->id, vm->id);
+    }
+
     vcpu->id = vcpu_id;
     vcpu->phys_id = cpu()->id;
     vcpu->vm = vm;
@@ -109,6 +114,10 @@ static void vm_map_img_rgn_inplace(struct vm* vm, const struct vm_config* vm_con
 
 static void vm_install_image(struct vm* vm, struct vm_mem_region* reg)
 {
+    if (vm->config->image.size == 0) {
+        return;
+    }
+
     if (reg->place_phys) {
         paddr_t img_base = (paddr_t)vm->config->image.base_addr;
         paddr_t img_load_pa = vm->config->image.load_addr;
@@ -153,15 +162,23 @@ static void vm_map_img_rgn(struct vm* vm, const struct vm_config* vm_config,
 
 static void vm_init_mem_regions(struct vm* vm, const struct vm_config* vm_config)
 {
+    bool img_mapped = false;
+
     for (size_t i = 0; i < vm_config->platform.region_num; i++) {
         struct vm_mem_region* reg = &vm_config->platform.regions[i];
         bool img_is_in_rgn =
             range_in_range(vm_config->image.base_addr, vm_config->image.size, reg->base, reg->size);
         if (img_is_in_rgn) {
             vm_map_img_rgn(vm, vm_config, reg);
+            img_mapped = true;
         } else {
             vm_map_mem_region(vm, reg);
         }
+    }
+
+    if (!img_mapped && (vm_config->image.size > 0)) {
+        ERROR("vm %lu image at 0x%lx lies outside every memory region of the vm\n", vm->id,
+            (unsigned long)vm_config->image.base_addr);
     }
 }
 
@@ -185,7 +202,7 @@ static void vm_init_ipc(struct vm* vm, const struct vm_config* vm_config)
         if (DEFINED(PHYS_IRQS_ONLY)) {
             for (size_t j = 0; j < ipc->interrupt_num; j++) {
                 if (!interrupts_vm_assign(vm, ipc->interrupts[j])) {
-                    ERROR("Failed to assign interrupt id %d\n", ipc->interrupts[j]);
+                    ERROR("Failed to assign interrupt id %u\n", ipc->interrupts[j]);
                 }
             }
         }
@@ -220,7 +237,7 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* vm_config)
 
         for (size_t j = 0; j < dev->interrupt_num; j++) {
             if (!interrupts_vm_assign(vm, dev->interrupts[j])) {
-                ERROR("Failed to assign interrupt id %d\n", dev->interrupts[j]);
+                ERROR("Failed to assign interrupt id %u\n", dev->interrupts[j]);
             }
         }
     }
@@ -388,9 +405,8 @@ emul_handler_t vm_emul_get_reg(struct vm* vm, vaddr_t addr)
 
 void vm_msg_broadcast(struct vm* vm, struct cpu_msg* msg)
 {
-    for (size_t i = 0, n = 0; n < vm->cpu_num - 1; i++) {
-        if (((1U << i) & vm->cpus) && (i != cpu()->id)) {
-            n++;
+    for (size_t i = 0; i < PLAT_CPU_NUM; i++) {
+        if (((1UL << i) & vm->cpus) && (i != cpu()->id)) {
             cpu_send_msg(i, msg);
         }
     }
