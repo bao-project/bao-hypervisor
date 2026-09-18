@@ -90,6 +90,8 @@ static inline bool list_empty(struct list* list)
 
 static inline bool list_rm(struct list* list, node_t* node)
 {
+    bool removed = false;
+
     if (list != NULL && node != NULL) {
         spin_lock(&list->lock);
 
@@ -110,12 +112,13 @@ static inline bool list_rm(struct list* list, node_t* node)
             if (list->tail == node) {
                 list->tail = temp_prev;
             }
+            removed = true;
         }
 
         spin_unlock(&list->lock);
     }
 
-    return true;
+    return removed;
 }
 
 typedef int (*node_cmp_t)(node_t*, node_t*);
