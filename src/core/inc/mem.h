@@ -54,6 +54,13 @@ static inline struct ppages mem_ppages_get(paddr_t base, size_t num_pages)
     return (struct ppages){ .colors = 0, .base = base, .num_pages = num_pages };
 }
 
+/* The pages spanned by [addr, addr + size), whatever the alignment of addr. */
+static inline struct ppages mem_ppages_get_span(paddr_t addr, size_t size)
+{
+    paddr_t base = ALIGN_FLOOR(addr, (paddr_t)PAGE_SIZE);
+    return mem_ppages_get(base, NUM_PAGES((addr - base) + size));
+}
+
 static inline bool all_clrs(colormap_t clrs)
 {
     colormap_t mask = (((colormap_t)1) << COLOR_NUM) - 1;
