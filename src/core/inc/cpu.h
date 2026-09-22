@@ -95,6 +95,13 @@ void cpu_arch_init(cpuid_t cpu_id, paddr_t load_addr);
 void cpu_arch_standby(void);
 void cpu_arch_powerdown(void);
 
+/**
+ * Walks the frame-pointer chain that starts at fp and stores up to max_depth return addresses in
+ * pcs. Debug builds only: the walkers are debug-only objects and release builds never call it.
+ */
+#define BACKTRACE_MAX_DEPTH (32)
+size_t cpu_arch_backtrace(uintptr_t fp, uintptr_t* pcs, size_t max_depth);
+
 extern struct cpuif cpu_interfaces[];
 static inline struct cpuif* cpu_if(cpuid_t cpu_id)
 {
