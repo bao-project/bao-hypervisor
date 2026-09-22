@@ -132,6 +132,7 @@ void vmm_init()
     remio_init();
 
     if (cpu_is_master()) {
+        ASSERT(config.vmlist_size == CONFIG_VM_NUM);
         for (size_t i = 0; i < CONFIG_VM_NUM; i++) {
             vm_assign[i].lock = SPINLOCK_INITVAL;
             cpu_sync_init(&vm_assign[i].root_sync, config.vmlist[i].platform.cpu_num);

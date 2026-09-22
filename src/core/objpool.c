@@ -43,6 +43,7 @@ void objpool_free(struct objpool* objpool, void* obj)
     if (in_pool && aligned) {
         size_t n = (obj_addr - pool_addr) / objpool->objsize;
         spin_lock(&objpool->lock);
+        ASSERT(bitmap_get(objpool->bitmap, n) != 0U);
         bitmap_clear(objpool->bitmap, n);
         spin_unlock(&objpool->lock);
     } else {

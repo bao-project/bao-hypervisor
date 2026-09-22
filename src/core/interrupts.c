@@ -93,6 +93,8 @@ static inline bool interrupt_assigned(irqid_t int_id)
 
 enum irq_res interrupts_handle(irqid_t int_id)
 {
+    ASSERT(cpu()->vcpu != NULL);
+
     if (interrupts_arch_irq_is_forwardable(int_id) && vm_has_interrupt(cpu()->vcpu->vm, int_id)) {
         vcpu_inject_hw_irq(cpu()->vcpu, int_id);
 

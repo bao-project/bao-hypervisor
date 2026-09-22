@@ -22,6 +22,8 @@ _Static_assert(PLAT_CPU_NUM <= sizeof(cpumap_t) * 8, "PLAT_CPU_NUM exceeds the b
 
 void cpu_init(cpuid_t cpu_id)
 {
+    ASSERT(cpu_id < PLAT_CPU_NUM);
+
     cpu()->id = cpu_id;
     cpu()->handling_msgs = false;
     cpu()->interface = cpu_if(cpu()->id);
