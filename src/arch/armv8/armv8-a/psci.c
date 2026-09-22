@@ -22,8 +22,9 @@ static void psci_save_state(enum wakeup_reason wakeup_reason)
     cpu()->arch.profile.psci_off_state.vmpidr_el2 = sysreg_vmpidr_el2_read();
     cpu()->arch.profile.psci_off_state.vtcr_el2 = sysreg_vtcr_el2_read();
     cpu()->arch.profile.psci_off_state.vttbr_el2 = sysreg_vttbr_el2_read();
-    mem_translate(&cpu()->as, (vaddr_t)&root_l1_flat_pt,
+    bool translated = mem_translate(&cpu()->as, (vaddr_t)&root_l1_flat_pt,
         &cpu()->arch.profile.psci_off_state.flat_map);
+    ASSERT(translated);
     cpu()->arch.profile.psci_off_state.wakeup_reason = wakeup_reason;
 
     /**
@@ -109,8 +110,11 @@ int32_t psci_power_down()
     psci_save_state(PSCI_WAKEUP_POWERDOWN);
     paddr_t cntxt_paddr;
     paddr_t psci_wakeup_addr;
-    mem_translate(&cpu()->as, (vaddr_t)&cpu()->arch.profile.psci_off_state, &cntxt_paddr);
-    mem_translate(&cpu()->as, (vaddr_t)&psci_boot_entry, &psci_wakeup_addr);
+    bool translated =
+        mem_translate(&cpu()->as, (vaddr_t)&cpu()->arch.profile.psci_off_state, &cntxt_paddr);
+    ASSERT(translated);
+    translated = mem_translate(&cpu()->as, (vaddr_t)&psci_boot_entry, &psci_wakeup_addr);
+    ASSERT(translated);
 
     return psci_cpu_suspend(pwr_state_aux, psci_wakeup_addr, cntxt_paddr);
 }
