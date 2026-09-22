@@ -405,7 +405,8 @@ static bool iommu_vm_arch_add(struct vm* vm, deviceid_t dev_id)
         if (rv_iommu_alloc_did(dev_id)) {
             paddr_t rootpt;
             // Translate root PT base address
-            mem_translate(&cpu()->as, (vaddr_t)vm->as.pt.root, &rootpt);
+            bool translated = mem_translate(&cpu()->as, (vaddr_t)vm->as.pt.root, &rootpt);
+            ASSERT(translated);
             // Set DDT entry with root PT base address, VMID and configuration
             rv_iommu_write_ddt(dev_id, vm, rootpt);
         } else {

@@ -148,6 +148,8 @@ void sync_exception_handler(void)
         internal_exception_handler(&cpu()->vcpu->regs.x[0]);
     }
 
+    ASSERT(cpu()->vcpu != NULL);
+
     // TODO: Do we need to check call comes from VS-mode and not VU-mode or U-mode ?
 
     if (_scause < sync_handler_table_size && sync_handler_table[_scause]) {
