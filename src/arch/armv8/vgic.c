@@ -50,6 +50,7 @@ struct vgic_int* vgic_get_int(struct vcpu* vcpu, irqid_t int_id, vcpuid_t vgicr_
 {
     if (int_id < GIC_CPU_PRIV) {
         struct vcpu* target_vcpu = vgicr_id == vcpu->id ? vcpu : vm_get_vcpu(vcpu->vm, vgicr_id);
+        ASSERT(target_vcpu != NULL);
         return &target_vcpu->arch.vgic_priv.interrupts[int_id];
     } else if (int_id < vcpu->vm->arch.vgicd.int_num) {
         return &vcpu->vm->arch.vgicd.interrupts[int_id - GIC_CPU_PRIV];
@@ -65,6 +66,8 @@ static inline bool vgic_int_is_hw(struct vgic_int* interrupt)
 
 static inline ssize_t gich_get_lr(struct vgic_int* interrupt, gic_lr_t* lr)
 {
+    ASSERT(!interrupt->in_lr || (interrupt->owner != NULL && interrupt->lr < NUM_LRS));
+
     if (!interrupt->in_lr || interrupt->owner->phys_id != cpu()->id) {
         return -1;
     }
@@ -754,6 +757,7 @@ void vgic_int_set_field(struct vgic_reg_handler_info* handlers, struct vcpu* vcp
             .val = (uint8_t)data,
         };
         struct cpu_msg msg = { (uint32_t)VGIC_IPI_ID, VGIC_SET_REG, msg_data.raw };
+        ASSERT(interrupt->owner != NULL);
         cpu_send_msg(interrupt->owner->phys_id, &msg);
     }
     spin_unlock(&interrupt->lock);
@@ -778,6 +782,7 @@ void vgic_int_reroute(struct vcpu* vcpu, struct vgic_int* interrupt)
             .reg = (uint8_t)VGIC_IROUTER_ID,
         };
         struct cpu_msg msg = { (uint32_t)VGIC_IPI_ID, VGIC_SET_REG, msg_data.raw };
+        ASSERT(interrupt->owner != NULL);
         cpu_send_msg(interrupt->owner->phys_id, &msg);
     }
     spin_unlock(&interrupt->lock);
