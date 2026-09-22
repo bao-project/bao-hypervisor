@@ -10,6 +10,6 @@
 
 void console_init(void);
 void console_write(const char* buf, size_t n);
-void console_printk(const char* fmt, ...);
+__attribute__((format(printf, 1, 2))) void console_printk(const char* fmt, ...);
 
 #endif /* __CONSOLE_H__ */
