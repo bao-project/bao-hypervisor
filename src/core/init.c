@@ -12,6 +12,7 @@
 #include <printk.h>
 #include <platform.h>
 #include <vmm.h>
+#include <config.h>
 
 void init(cpuid_t cpu_id)
 {
@@ -30,6 +31,9 @@ void init(cpuid_t cpu_id)
 
     if (cpu_is_master()) {
         console_printk("Bao Hypervisor %s (%s - %s)\n\r", BAO_VERSION, __DATE__, __TIME__);
+        if (DEFINED(BAO_DEBUG)) {
+            config_validate();
+        }
     }
 
     interrupts_init();
