@@ -974,9 +974,6 @@ bool vgicd_emul_handler(struct emul_access* acc)
         case GICD_REG_GROUP(ICACTIVER):
             handler_info = &icactiver_info;
             break;
-        case GICD_REG_GROUP(ICFGR):
-            handler_info = &icfgr_info;
-            break;
         case GICD_REG_GROUP(SGIR):
             handler_info = &sgir_info;
             break;
@@ -988,6 +985,8 @@ bool vgicd_emul_handler(struct emul_access* acc)
                 handler_info = &itargetr_info;
             } else if (GICD_IS_REG(IROUTER, acc_off)) {
                 handler_info = &irouter_info;
+            } else if (GICD_IS_REG(ICFGR, acc_off)) {
+                handler_info = &icfgr_info;
             } else if (GICD_IS_REG(ID, acc_off)) {
                 handler_info = &vgicd_pidr_info;
             } else {
