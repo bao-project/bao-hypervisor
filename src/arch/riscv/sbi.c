@@ -479,7 +479,7 @@ size_t sbi_vs_handler()
             ret = sbi_bao_handler(fid);
             break;
         default:
-            WARNING("guest issued unsupport sbi extension call (%d)\n", extid);
+            WARNING("guest issued unsupport sbi extension call (%lu)\n", extid);
             ret.error = SBI_ERR_NOT_SUPPORTED;
     }
 
@@ -496,13 +496,13 @@ void sbi_init()
     ret = sbi_get_spec_version();
 
     if (ret.error != SBI_SUCCESS || ret.value < 2) {
-        ERROR("not supported SBI spec version: 0x%x\n", ret.value);
+        ERROR("not supported SBI spec version: 0x%lx\n", (unsigned long)ret.value);
     }
 
     for (size_t i = 0; i < NUM_EXT; i++) {
         ret = sbi_probe_extension(ext_table[i]);
         if (ret.error != SBI_SUCCESS || ret.value == 0) {
-            ERROR("sbi does not support ext 0x%x\n", ext_table[i]);
+            ERROR("sbi does not support ext 0x%lx\n", ext_table[i]);
         }
     }
 

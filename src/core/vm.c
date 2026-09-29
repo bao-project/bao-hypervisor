@@ -74,7 +74,7 @@ static void vm_map_mem_region(struct vm* vm, struct vm_mem_region* reg)
 
     vaddr_t va = mem_alloc_map(&vm->as, SEC_VM_ANY, pa_ptr, (vaddr_t)reg->base, n, PTE_VM_FLAGS);
     if (va != (vaddr_t)reg->base) {
-        ERROR("failed to allocate vm's region at 0x%lx\n", reg->base);
+        ERROR("failed to allocate vm's region at 0x%lx\n", (unsigned long)reg->base);
     }
 }
 
@@ -241,7 +241,7 @@ static void vm_init_remio_dev(struct vm* vm, struct remio_dev* remio_dev)
 {
     struct shmem* shmem = shmem_get(remio_dev->shmem.shmem_id);
     if (shmem == NULL) {
-        ERROR("Invalid shmem id (%d) in the Remote I/O device (%d) configuration\n",
+        ERROR("Invalid shmem id (%zu) in the Remote I/O device (%zu) configuration\n",
             remio_dev->shmem.shmem_id, remio_dev->bind_key);
     }
     size_t shmem_size = remio_dev->shmem.size;

@@ -76,7 +76,7 @@ void interrupts_arch_vm_assign(struct vm* vm, irqid_t id)
 {
     uint32_t vmid = VMID_TO_HWVM(vm->id);
     if (vmid > VM_ARCH_MAX_NUM) {
-        ERROR("Unsuported vm id %u > %u\n", vmid, VM_ARCH_MAX_NUM);
+        ERROR("Unsuported vm id %lu > %lu\n", (unsigned long)vmid, (unsigned long)VM_ARCH_MAX_NUM);
         return;
     }
 

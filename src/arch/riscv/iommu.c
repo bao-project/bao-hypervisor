@@ -173,7 +173,7 @@ static void rv_iommu_check_features(void)
     uint64_t version = bit64_extract(caps, RV_IOMMU_CAPS_VERSION_OFF, RV_IOMMU_CAPS_VERSION_LEN);
 
     if (version != RV_IOMMU_SUPPORTED_VERSION) {
-        ERROR("RISC-V IOMMU unsupported version: %d\n", version);
+        ERROR("RISC-V IOMMU unsupported version: %lu\n", (unsigned long)version);
     }
 
     if (!(caps & RV_IOMMU_CAPS_SV39X4_BIT)) {
@@ -232,10 +232,10 @@ static void rv_iommu_fq_irq_handler(irqid_t irq_id)
 
     while (fqh != fqt) {
         struct fq_entry record = rv_iommu.hw.fq[fqh];
-        WARNING("RV IOMMU FQ: CAUSE: %d | DID: %d | iotval: %x | iotval2: %x\n",
-            bit64_extract(record.tags, RV_IOMMU_FQ_CAUSE_OFF, RV_IOMMU_FQ_CAUSE_LEN),
-            bit64_extract(record.tags, RV_IOMMU_FQ_DID_OFF, RV_IOMMU_FQ_DID_LEN), record.iotval,
-            record.iotval2);
+        WARNING("RV IOMMU FQ: CAUSE: %lu | DID: %lu | iotval: %lx | iotval2: %lx\n",
+            (unsigned long)bit64_extract(record.tags, RV_IOMMU_FQ_CAUSE_OFF, RV_IOMMU_FQ_CAUSE_LEN),
+            (unsigned long)bit64_extract(record.tags, RV_IOMMU_FQ_DID_OFF, RV_IOMMU_FQ_DID_LEN),
+            (unsigned long)record.iotval, (unsigned long)record.iotval2);
         fqh = (fqh + 1) & FQ_INDEX_MASK;
         // TODO: Translation faults management
     }
