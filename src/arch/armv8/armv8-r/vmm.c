@@ -45,6 +45,6 @@ void vmm_arch_profile_init()
     /* Program CNTFRQ_EL0 and verify. */
     sysreg_cntfrq_el0_write(timer_freq);
     if (sysreg_cntfrq_el0_read() != (unsigned long)timer_freq) {
-        ERROR("failed to program CNTFRQ_EL0 to %u Hz\n", timer_freq);
+        ERROR("failed to program CNTFRQ_EL0 to %lu Hz\n", (unsigned long)timer_freq);
     }
 }

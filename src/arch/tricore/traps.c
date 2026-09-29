@@ -86,11 +86,12 @@ void l2_dmem_prot_trap_handler(unsigned long* instr_addr, unsigned long is_write
             emul.write = !!is_write;
             emul.sign_ext = false;
             if (!handler(&emul)) {
-                ERROR("register access emulation failed (0x%x)\n", addr);
+                ERROR("register access emulation failed (0x%lx)\n", addr);
             }
         }
     } else {
-        ERROR("No emulation handler for access to 0x%x, at 0x%x\n", addr, vcpu_readpc(cpu()->vcpu));
+        ERROR("No emulation handler for access to 0x%lx, at 0x%lx\n", addr,
+            vcpu_readpc(cpu()->vcpu));
     }
 }
 
@@ -134,7 +135,7 @@ static bool csfr_emul_handler(struct emul_access* emul, unsigned long csfr)
             ret = csfr_dcon0_emul_handler(emul);
             break;
         default:
-            WARNING("Emulation of csfr 0x%x is not yet implemented\n", csfr);
+            WARNING("Emulation of csfr 0x%lx is not yet implemented\n", csfr);
             break;
     }
     return ret;
@@ -161,7 +162,7 @@ void hyp_csfr_access_handler(unsigned long* instr_addr, unsigned long hvtin)
     fence_sync();
 
     if (!csfr_emul_handler(&emul, csfr)) {
-        ERROR("CSFR emulation failed at 0x%x\n", instr_addr);
+        ERROR("CSFR emulation failed at 0x%lx\n", (unsigned long)instr_addr);
     }
     vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + 4);
 }

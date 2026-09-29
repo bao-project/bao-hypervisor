@@ -214,7 +214,7 @@ void smmu_write_ctxbnk(size_t ctx_id, paddr_t root_pt, asid_t vm_id)
 {
     spin_lock(&smmu.ctx_lock);
     if (!bitmap_get(smmu.ctxbank_bitmap, ctx_id)) {
-        ERROR("smmu ctx %d is already allocated\n", ctx_id);
+        ERROR("smmu ctx %zu is already allocated\n", ctx_id);
     } else {
         /* Set type as stage 2 only. */
         smmu.hw.glbl_rs1->CBAR[ctx_id] = SMMUV2_CBAR_VMID(vm_id);
@@ -312,7 +312,7 @@ void smmu_write_sme(size_t sme, streamid_t mask, streamid_t id, bool group)
 {
     spin_lock(&smmu.sme_lock);
     if (!bitmap_get(smmu.sme_bitmap, sme)) {
-        ERROR("smmu: trying to write unallocated sme %d\n", sme);
+        ERROR("smmu: trying to write unallocated sme %zu\n", sme);
     } else {
         smmu.hw.glbl_rs0->SMR[sme] = mask << SMMU_SMR_MASK_OFF;
         smmu.hw.glbl_rs0->SMR[sme] |= id & SMMU_ID_MSK;
@@ -329,9 +329,9 @@ void smmu_write_s2c(size_t sme, size_t ctx_id)
 {
     spin_lock(&smmu.sme_lock);
     if (!bitmap_get(smmu.ctxbank_bitmap, ctx_id)) {
-        ERROR("smmu: trying to write unallocated s2c %d\n", ctx_id);
+        ERROR("smmu: trying to write unallocated s2c %zu\n", ctx_id);
     } else if (!bitmap_get(smmu.sme_bitmap, sme)) {
-        ERROR("smmu: trying to bind unallocated sme %d\n", sme);
+        ERROR("smmu: trying to bind unallocated sme %zu\n", sme);
     } else {
         /* Initial contex is a translation context. */
         uint32_t s2cr = smmu.hw.glbl_rs0->S2CR[sme];

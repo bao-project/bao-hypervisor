@@ -157,10 +157,11 @@ static void data_abort(void)
             unsigned long pc_step = MEI_GET_LEN(mei);
             vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + pc_step);
         } else {
-            ERROR("Data abort emulation failed (0x%x)\n", addr);
+            ERROR("Data abort emulation failed (0x%lx)\n", (unsigned long)addr);
         }
     } else {
-        ERROR("No emulation handler for access to 0x%x, at 0x%x\n", addr, vcpu_readpc(cpu()->vcpu));
+        ERROR("No emulation handler for access to 0x%lx, at 0x%lx\n", (unsigned long)addr,
+            vcpu_readpc(cpu()->vcpu));
     }
 }
 
@@ -188,7 +189,7 @@ void internal_abort(void)
 {
     bool is_fe = !!(srs_psw_read() & 0x80);
     unsigned long fault_pc = is_fe ? srs_feic_read() : srs_eipc_read();
-    ERROR("Internal abort at 0x%x\n", fault_pc);
+    ERROR("Internal abort at 0x%lx\n", fault_pc);
 }
 
 void abort(void)

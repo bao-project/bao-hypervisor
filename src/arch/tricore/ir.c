@@ -138,7 +138,7 @@ void ir_send_ipi(cpuid_t target_cpu)
 {
     if (ipi_initialized) {
         if (target_cpu >= PLAT_CPU_NUM) {
-            ERROR("%s invalid cpu number %u\n", target_cpu, __func__);
+            ERROR("%s invalid cpu number %lu\n", __func__, target_cpu);
         }
         /* We previously configure interrupts for each CPU */
         ir_int->SRB[HYP_GPSR_GROUP] = 0x1UL << target_cpu;

@@ -20,7 +20,7 @@ static void aborts_data_lower(unsigned long iss, unsigned long far, unsigned lon
     UNUSED_ARG(ec);
 
     if (!(iss & ESR_ISS_DA_ISV_BIT) || (iss & ESR_ISS_DA_FnV_BIT)) {
-        ERROR("no information to handle data abort (0x%x)\n", far);
+        ERROR("no information to handle data abort (0x%lx)\n", far);
     }
 
     unsigned long DSFC = bit_extract(iss, ESR_ISS_DA_DSFC_OFF, ESR_ISS_DA_DSFC_LEN) & (0xf << 2);
@@ -46,10 +46,10 @@ static void aborts_data_lower(unsigned long iss, unsigned long far, unsigned lon
             unsigned long pc_step = 2 + (2 * il);
             vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + pc_step);
         } else {
-            ERROR("data abort emulation failed (0x%x)\n", far);
+            ERROR("data abort emulation failed (0x%lx)\n", far);
         }
     } else {
-        ERROR("no emulation handler for abort(0x%x at 0x%x)\n", far, vcpu_readpc(cpu()->vcpu));
+        ERROR("no emulation handler for abort(0x%lx at 0x%lx)\n", far, vcpu_readpc(cpu()->vcpu));
     }
 }
 
@@ -94,7 +94,7 @@ static inline void syscall_handler(unsigned long iss, unsigned long far, unsigne
             ret = hypercall(fid & SMCC_FID_FN_NUM_MSK);
             break;
         default:
-            WARNING("Unknown system call fid 0x%x\n", fid);
+            WARNING("Unknown system call fid 0x%lx\n", fid);
     }
 
     vcpu_writereg(cpu()->vcpu, 0, (unsigned long)ret);
@@ -156,11 +156,11 @@ static void sysreg_handler(unsigned long iss, unsigned long far, unsigned long i
             unsigned long pc_step = 2 + (2 * il);
             vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + pc_step);
         } else {
-            ERROR("register access emulation failed (0x%x)\n", reg_addr);
+            ERROR("register access emulation failed (0x%lx)\n", (unsigned long)reg_addr);
         }
     } else {
-        ERROR("no emulation handler for register access (0x%x at 0x%x)\n", reg_addr,
-            vcpu_readpc(cpu()->vcpu));
+        ERROR("no emulation handler for register access (0x%lx at 0x%lx)\n",
+            (unsigned long)reg_addr, vcpu_readpc(cpu()->vcpu));
     }
 }
 
@@ -199,6 +199,6 @@ void aborts_sync_handler(void)
             cpu_standby();
         }
     } else {
-        ERROR("no handler for abort ec = 0x%x\n", ec); // unknown guest exception
+        ERROR("no handler for abort ec = 0x%lx\n", ec); // unknown guest exception
     }
 }
