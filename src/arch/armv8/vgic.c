@@ -690,11 +690,19 @@ void vgic_int_set_field(struct vgic_reg_handler_info* handlers, struct vcpu* vcp
 {
     spin_lock(&interrupt->lock);
     if (vgic_get_ownership(vcpu, interrupt)) {
-        vgic_remove_lr(vcpu, interrupt);
+        bool was_listed = vgic_remove_lr(vcpu, interrupt);
         if (handlers->update_field(vcpu, interrupt, data) && vgic_int_is_hw(interrupt)) {
             handlers->update_hw(vcpu, interrupt);
         }
         vgic_route(vcpu, interrupt);
+        /*
+         * vgic_route() does not list a disabled interrupt, but an active one must stay tracked
+         * until the guest's end-of-interrupt, which the EOIcount maintenance applies to the spilled
+         * list.
+         */
+        if (was_listed && !interrupt->enabled && (interrupt->state & ACT)) {
+            vgic_add_spilled(vcpu, interrupt);
+        }
         vgic_yield_ownership(vcpu, interrupt);
     } else {
         union vgic_msg_data msg_data = {
@@ -1152,19 +1160,29 @@ static void vgic_refill_lrs(struct vcpu* vcpu, bool npie)
 static void vgic_eoir_highest_spilled_active(struct vcpu* vcpu)
 {
     struct list* list = NULL;
-    struct vgic_int* interrupt = vgic_highest_prio_spilled(vcpu, ACT, &list);
+    bool deactivated = false;
 
+    spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
+    struct vgic_int* interrupt = vgic_highest_prio_spilled(vcpu, ACT, &list);
     if (interrupt != NULL) {
         spin_lock(&interrupt->lock);
         if (vgic_get_ownership(vcpu, interrupt)) {
+            list_rm(list, &interrupt->node);
             interrupt->state &= (uint8_t)~ACT;
             if (vgic_int_is_hw(interrupt)) {
                 gic_set_act(interrupt->id, false);
-            } else {
-                if (interrupt->state & PEND) {
-                    vgic_add_lr(vcpu, interrupt);
-                }
             }
+            deactivated = true;
+        }
+        spin_unlock(&interrupt->lock);
+    }
+    spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
+
+    /* Outside the spilled list lock, as vgic_add_lr() may spill */
+    if (deactivated && !vgic_int_is_hw(interrupt)) {
+        spin_lock(&interrupt->lock);
+        if (vgic_owns(vcpu, interrupt) && (interrupt->state & PEND)) {
+            vgic_add_lr(vcpu, interrupt);
         }
         spin_unlock(&interrupt->lock);
     }
