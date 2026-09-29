@@ -14,12 +14,12 @@
 void internal_abort_handler(unsigned long gprs[])
 {
     for (size_t i = 0; i < 13; i++) {
-        console_printk("r%zu:\t\t0x%0lx\n", i, gprs[2 + i]);
+        console_printk_unlocked("r%zu:\t\t0x%0lx\n", i, gprs[2 + i]);
     }
-    console_printk("SP:\t\t0x%0lx\n", gprs[0]);
-    console_printk("LR:\t\t0x%0lx\n", gprs[1]);
-    console_printk("ESR:\t0x%0lx\n", sysreg_esr_el2_read());
-    console_printk("ELR:\t0x%0lx\n", sysreg_elr_el2_read());
-    console_printk("FAR:\t0x%0lx\n", sysreg_far_el2_read());
-    ERROR("cpu%lu internal hypervisor abort - PANIC\n", cpu()->id);
+    console_printk_unlocked("SP:\t\t0x%0lx\n", gprs[0]);
+    console_printk_unlocked("LR:\t\t0x%0lx\n", gprs[1]);
+    console_printk_unlocked("ESR:\t0x%0lx\n", sysreg_esr_el2_read());
+    console_printk_unlocked("ELR:\t0x%0lx\n", sysreg_elr_el2_read());
+    console_printk_unlocked("FAR:\t0x%0lx\n", sysreg_far_el2_read());
+    ERROR("internal hypervisor abort\n");
 }
