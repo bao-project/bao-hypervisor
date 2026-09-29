@@ -64,7 +64,7 @@ static void vgicd_emul_sgiregs_access(struct emul_access* acc,
     UNUSED_ARG(gicr_access);
     UNUSED_ARG(vgicr_id);
 
-    uint32_t val = acc->write ? (uint32_t)vcpu_readreg(cpu()->vcpu, acc->reg) : 0;
+    uint32_t val = acc->write ? (uint32_t)vcpu_readreg(&cpu()->vcpu, acc->reg) : 0;
 
     if ((acc->addr & 0xfff) == (((uintptr_t)&gicd->SGIR) & 0xfff)) {
         if (acc->write) {
@@ -72,11 +72,11 @@ static void vgicd_emul_sgiregs_access(struct emul_access* acc,
             irqid_t int_id = GICD_SGIR_SGIINTID(val);
             switch (GICD_SGIR_TRGLSTFLT(val)) {
                 case 0:
-                    trgtlist = vm_translate_to_pcpu_mask(cpu()->vcpu->vm, GICD_SGIR_CPUTRGLST(val),
+                    trgtlist = vm_translate_to_pcpu_mask(cpu()->vcpu.vm, GICD_SGIR_CPUTRGLST(val),
                         GIC_TARGET_BITS);
                     break;
                 case 1:
-                    trgtlist = cpu()->vcpu->vm->cpus & ~(1U << cpu()->vcpu->phys_id);
+                    trgtlist = cpu()->vcpu.vm->cpus & ~(1U << cpu()->vcpu.phys_id);
                     break;
                 case 2:
                     trgtlist = (1U << cpu()->id);
@@ -85,7 +85,7 @@ static void vgicd_emul_sgiregs_access(struct emul_access* acc,
                     return;
             }
 
-            vgic_send_sgi_msg(cpu()->vcpu, trgtlist, int_id);
+            vgic_send_sgi_msg(&cpu()->vcpu, trgtlist, int_id);
         }
 
     } else {
@@ -185,8 +185,9 @@ void vgic_init(struct vm* vm, const struct vgic_dscrp* vgic_dscrp)
 
 void vgic_cpu_init(struct vcpu* vcpu)
 {
+    struct vcpu* owner = vm_get_vcpu(vcpu->vm, vcpu->id);
     for (irqid_t i = 0; i < GIC_CPU_PRIV; i++) {
-        vcpu->arch.vgic_priv.interrupts[i].owner = vcpu;
+        vcpu->arch.vgic_priv.interrupts[i].owner = owner;
         vcpu->arch.vgic_priv.interrupts[i].lock = SPINLOCK_INITVAL;
         vcpu->arch.vgic_priv.interrupts[i].id = i;
         vcpu->arch.vgic_priv.interrupts[i].state = INV;

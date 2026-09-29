@@ -12,12 +12,6 @@
 #include <objpool.h>
 #include <config.h>
 
-#define MEM_BROADCAST      (true)
-#define MEM_DONT_BROADCAST (false)
-
-#define MEM_LOCKED         (true)
-#define MEM_NOT_LOCKED     (false)
-
 struct shared_region {
     enum AS_TYPE as_type;
     asid_t asid;
@@ -145,6 +139,23 @@ static mpid_t mem_vmpu_get_entry_by_addr(struct addr_space* as, vaddr_t addr)
     return mpid;
 }
 
+/**
+ * Whether a range lies in the hypervisor's own RAM: the whole image on unified-memory platforms,
+ * only its data part where the code runs from flash (the two are not contiguous).
+ */
+bool mem_in_hyp_image_ram(vaddr_t base, size_t size)
+{
+    extern uint8_t _image_end;
+#ifdef MEM_NON_UNIFIED
+    extern uint8_t _data_vma_start;
+    vaddr_t start = (vaddr_t)&_data_vma_start;
+#else
+    extern uint8_t _image_start;
+    vaddr_t start = (vaddr_t)&_image_start;
+#endif
+    return range_in_range(base, size, start, (size_t)((vaddr_t)&_image_end - start));
+}
+
 static void mem_init_boot_regions(void)
 {
     /**
@@ -196,13 +207,17 @@ static void mem_init_boot_regions(void)
         mem_map(&cpu()->as, &mpr, MEM_DONT_BROADCAST, MEM_LOCKED);
     }
 
-    mpr = (struct mp_region){
-        .base = (vaddr_t)cpu(),
-        .size = ALIGN(sizeof(struct cpu), PAGE_SIZE),
-        .mem_flags = PTE_HYP_FLAGS,
-        .as_sec = SEC_HYP_PRIVATE,
-    };
-    mem_map(&cpu()->as, &mpr, MEM_DONT_BROADCAST, MEM_LOCKED);
+    /* A cpu structure placed in core-coupled memory needs its own entry; a global slot is in the
+     * image */
+    if (!mem_in_hyp_image_ram((vaddr_t)cpu(), sizeof(struct cpu))) {
+        mpr = (struct mp_region){
+            .base = (vaddr_t)cpu(),
+            .size = ALIGN(sizeof(struct cpu), PAGE_SIZE),
+            .mem_flags = PTE_HYP_FLAGS,
+            .as_sec = SEC_HYP_PRIVATE,
+        };
+        mem_map(&cpu()->as, &mpr, MEM_DONT_BROADCAST, MEM_LOCKED);
+    }
 }
 
 void mem_prot_init()
@@ -292,14 +307,14 @@ static cpumap_t mem_section_shared_cpus(struct addr_space* as, as_sec_t section)
             /**
              * If we don't have a valid vcpu at this point, it means we are creating this region
              * before even having a vm. Therefore, the sharing of the region must be guaranteed by
-             * other means (e.g. vmm_vm_install)
+             * other means.
              */
-            if (cpu()->vcpu != NULL) {
-                cpus = cpu()->vcpu->vm->cpus;
+            if (cpu()->vcpu.vm != NULL) {
+                cpus = cpu()->vcpu.vm->cpus;
             }
         }
     } else {
-        cpus = cpu()->vcpu->vm->cpus;
+        cpus = cpu()->vcpu.vm->cpus;
     }
 
     return cpus;
@@ -463,7 +478,7 @@ void mem_handle_broadcast_region(uint32_t event, uint64_t data)
         if (sh_reg->as_type == AS_HYP) {
             as = &cpu()->as;
         } else {
-            struct addr_space* vm_as = &cpu()->vcpu->vm->as;
+            struct addr_space* vm_as = &cpu()->vcpu.vm->as;
             if (vm_as->id != sh_reg->asid) {
                 ERROR("Received shared region for unknown vm address space.\n");
             }

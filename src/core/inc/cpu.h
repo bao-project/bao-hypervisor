@@ -8,10 +8,12 @@
 
 #include <bao.h>
 #include <arch/cpu.h>
+#include <vcpu.h>
 
 #include <spinlock.h>
 #include <mem.h>
 #include <circular_queue.h>
+#include <platform_defs.h>
 
 #ifndef __ASSEMBLER__
 
@@ -21,24 +23,21 @@ struct cpu_msg {
     uint64_t data;
 };
 
-/*
- * Default keeps struct cpuif within a single 4K page:
- *   253 * sizeof(struct cpu_msg) + sizeof(struct circular_queue)
- *   = 253 * 16 + 48 = 4096 bytes
- *
- * Override on platforms with tighter memory constraints or that need a
- * deeper queue, e.g. -DIPI_MAX_EVENTS=64.
- */
-#define IPI_MAX_EVENTS_DEFAULT (253)
-#ifndef IPI_MAX_EVENTS
-#define IPI_MAX_EVENTS IPI_MAX_EVENTS_DEFAULT
-#endif
-
 struct cpuif {
-    CQ_DEFINE(struct cpu_msg, msgs, IPI_MAX_EVENTS);
+    CQ_DEFINE(struct cpu_msg, msgs, CONFIG_IPI_MAX_EVENTS);
 } __attribute__((aligned(PAGE_SIZE)));
 
 struct vcpu;
+
+/**
+ * On MPU platforms the vcpu is mapped on its own by the other cpus of its vm, so it and what
+ * follows it are aligned to the MPU granule
+ */
+#ifdef MEM_PROT_MPU
+#define CPU_VCPU_ALIGN PAGE_SIZE
+#else
+#define CPU_VCPU_ALIGN _Alignof(struct vcpu)
+#endif
 
 struct cpu {
     cpuid_t id;
@@ -47,9 +46,10 @@ struct cpu {
 
     struct addr_space as;
 
-    struct vcpu* vcpu;
+    /* The vcpu this cpu runs (vcpu.vm is NULL while it has none) */
+    struct vcpu vcpu __attribute__((aligned(CPU_VCPU_ALIGN)));
 
-    struct cpu_arch arch;
+    struct cpu_arch arch __attribute__((aligned(CPU_VCPU_ALIGN)));
 
     struct cpuif* interface;
 
@@ -65,6 +65,11 @@ typedef void (*cpu_msg_handler_t)(uint32_t event, uint64_t data);
     __attribute__((section(".ipi_cpumsg_handlers"),                    \
         used)) cpu_msg_handler_t __cpumsg_handler_##handler = handler; \
     __attribute__((section(".ipi_cpumsg_handlers_id"), used)) volatile const size_t handler_id;
+
+#ifdef PLAT_HAS_TCM
+/* Address of each cpu's structure (coupled memory or global slot), read by the boot code */
+extern const paddr_t cpu_base_tbl[PLAT_CPU_NUM];
+#endif
 
 struct cpu_synctoken {
     spinlock_t lock;

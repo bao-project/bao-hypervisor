@@ -11,7 +11,6 @@
 #define CSA_ENTRIES       32
 #define CSA_SIZE          16
 #define CSA_SIZE_BYTES    (16 * 4)
-#define CSA_ARRAY_SIZE    (CSA_ENTRIES * CSA_SIZE * 4)
 
 #define PCXI_PCXO_OFF     0
 #define PCXI_PCXS_OFF     16
@@ -68,8 +67,6 @@ union csa {
     struct lower_context lower;
     struct upper_context upper;
 };
-
-extern union csa csa_array[PLAT_CPU_NUM][CSA_ENTRIES];
 
 #endif
 

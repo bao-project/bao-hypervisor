@@ -7,7 +7,6 @@
 #define __ARCH_VM_H__
 
 #include <bao.h>
-#include <interrupts.h>
 #include <emul.h>
 #include <vintc.h>
 

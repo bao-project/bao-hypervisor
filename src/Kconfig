@@ -1,0 +1,40 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+mainmenu "Bao Hypervisor Configuration"
+
+config CONFIG_SRC
+	string "VM configuration" if !CONFIG_PINNED
+	help
+	  The VM configuration this build compiles: a configuration name
+	  looked up in the configuration repository, a path to a
+	  configuration folder, or a path to a config.c file. Output
+	  directory builds set it here; classic PLATFORM=/CONFIG= builds
+	  fill it in from CONFIG= and pin it.
+
+config CONFIG_REPO
+	string "Configuration repository" if !CONFIG_PINNED
+	help
+	  Directory where VM configuration names are looked up. Empty
+	  means the in-tree configs/ folder.
+
+comment "VM configuration: @CONFIG_SRC@ (pinned)"
+	depends on CONFIG_PINNED
+
+# Build directory pins. A classic PLATFORM=/CONFIG= build fixes both for its
+# build directory through a generated pin fragment; output directories seeded
+# by defconfig targets are never pinned
+config PLATFORM_PINNED
+	bool
+
+config CONFIG_PINNED
+	bool
+
+config PLATFORM_PINNED_VALUE
+	string
+
+source "src/arch/Kconfig"
+source "src/platform/Kconfig"
+source "src/core/Kconfig"
+
+osource "$(BAO_BUILD_PIN)"

@@ -163,7 +163,7 @@ static bool remio_create_request(struct remio_device* device, struct emul_access
     request->bind_key = device->bind_key;
 
     if (acc->write) {
-        long unsigned int value = vcpu_readreg(cpu()->vcpu, acc->reg);
+        long unsigned int value = vcpu_readreg(&cpu()->vcpu, acc->reg);
         request->op = REMIO_HYP_WRITE;
         request->value = value;
     } else {
@@ -453,12 +453,12 @@ static long int remio_handle_ask(unsigned long addr, unsigned long value,
     request->state = REMIO_STATE_PROCESSING;
 
     /** Write the I/O request information to the backend VM's vCPU registers */
-    hypercall_set_ret(cpu()->vcpu, 0, request->addr);
-    hypercall_set_ret(cpu()->vcpu, 1, request->op);
-    hypercall_set_ret(cpu()->vcpu, 2, request->value);
-    hypercall_set_ret(cpu()->vcpu, 3, request->access_width);
-    hypercall_set_ret(cpu()->vcpu, 4, request->id);
-    hypercall_set_ret(cpu()->vcpu, 5, (unsigned long)has_pending_requests);
+    hypercall_set_ret(&cpu()->vcpu, 0, request->addr);
+    hypercall_set_ret(&cpu()->vcpu, 1, request->op);
+    hypercall_set_ret(&cpu()->vcpu, 2, request->value);
+    hypercall_set_ret(&cpu()->vcpu, 3, request->access_width);
+    hypercall_set_ret(&cpu()->vcpu, 4, request->id);
+    hypercall_set_ret(&cpu()->vcpu, 5, (unsigned long)has_pending_requests);
 
     return ret;
 }
@@ -508,7 +508,7 @@ static bool remio_cpu_post_work(uint32_t event, uint8_t remio_bind_key, uint8_t 
 
     switch (event) {
         case REMIO_CPU_MSG_READ:
-            vcpu_writereg(cpu()->vcpu, request->reg, request->value);
+            vcpu_writereg(&cpu()->vcpu, request->reg, request->value);
             break;
         default:
             break;
@@ -516,7 +516,7 @@ static bool remio_cpu_post_work(uint32_t event, uint8_t remio_bind_key, uint8_t 
 
     request->state = REMIO_STATE_FREE;
     objpool_free(&remio_request_pool, request);
-    cpu()->vcpu->active = true;
+    cpu()->vcpu.active = true;
 
     return true;
 }
@@ -524,13 +524,13 @@ static bool remio_cpu_post_work(uint32_t event, uint8_t remio_bind_key, uint8_t 
 long int remio_hypercall(void)
 {
     long int ret = -HC_E_SUCCESS;
-    unsigned long dm_id = hypercall_get_arg(cpu()->vcpu, 0);
-    unsigned long addr = hypercall_get_arg(cpu()->vcpu, 1);
-    unsigned long op = hypercall_get_arg(cpu()->vcpu, 2);
-    unsigned long value = hypercall_get_arg(cpu()->vcpu, 3);
-    unsigned long request_id = hypercall_get_arg(cpu()->vcpu, 4);
+    unsigned long dm_id = hypercall_get_arg(&cpu()->vcpu, 0);
+    unsigned long addr = hypercall_get_arg(&cpu()->vcpu, 1);
+    unsigned long op = hypercall_get_arg(&cpu()->vcpu, 2);
+    unsigned long value = hypercall_get_arg(&cpu()->vcpu, 3);
+    unsigned long request_id = hypercall_get_arg(&cpu()->vcpu, 4);
     struct remio_device* device = NULL;
-    struct vm* vm = cpu()->vcpu->vm;
+    struct vm* vm = cpu()->vcpu.vm;
 
     /** Check if the device model ID is within the valid range */
     if (dm_id >= vm->remio_dev_num) {
@@ -582,7 +582,7 @@ bool remio_mmio_emul_handler(struct emul_access* acc)
     struct remio_device* device = NULL;
 
     /** Find the Remote I/O device based on the MMIO access address */
-    device = remio_find_vm_dev_by_addr(cpu()->vcpu->vm, acc->addr);
+    device = remio_find_vm_dev_by_addr(cpu()->vcpu.vm, acc->addr);
     if (device == NULL) {
         return false;
     }
@@ -601,7 +601,7 @@ bool remio_mmio_emul_handler(struct emul_access* acc)
         device->config.backend.interrupt);
 
     /** Pause the current vCPU to wait for the MMIO emulation to be completed */
-    cpu()->vcpu->active = false;
+    cpu()->vcpu.active = false;
 
     return true;
 }
@@ -617,7 +617,7 @@ static void remio_cpu_msg_handler(uint32_t event, uint64_t data)
             }
             break;
         case REMIO_CPU_MSG_NOTIFY:
-            vcpu_inject_irq(cpu()->vcpu, msg.interrupt);
+            vcpu_inject_irq(&cpu()->vcpu, msg.interrupt);
             break;
         default:
             WARNING("Unknown Remote I/O CPU message event\n");

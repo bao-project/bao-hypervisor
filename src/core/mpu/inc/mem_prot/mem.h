@@ -12,7 +12,17 @@
 #include <arch/mem.h>
 #include <arch/spinlock.h>
 
-#define VMPU_NUM_ENTRIES 64
+#define MEM_BROADCAST      (true)
+#define MEM_DONT_BROADCAST (false)
+
+#define MEM_LOCKED         (true)
+#define MEM_NOT_LOCKED     (false)
+
+#define VMPU_NUM_ENTRIES   64
+
+/* Whether a range lies in the hypervisor's own RAM, which every cpu maps */
+bool mem_in_hyp_image_ram(vaddr_t base, size_t size);
+
 struct mp_region {
     vaddr_t base;
     size_t size;

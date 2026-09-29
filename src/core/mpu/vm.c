@@ -15,3 +15,34 @@ void vm_mem_prot_init(struct vm* vm, const struct vm_config* config)
         mem_mmio_init_regions(&vm->as);
     }
 }
+
+void vm_mem_prot_cpu_init(struct vm* vm)
+{
+    /**
+     * The vcpus of the vm's other cpus live in those cpus' structures, which are private to them.
+     * Map each vcpu, and nothing else of its cpu, so this cpu reaches it: this cpu only, the
+     * others do the same for themselves.
+     */
+    for (vcpuid_t id = 0; id < vm->cpu_num; id++) {
+        struct vcpu* vcpu = vm_get_vcpu(vm, id);
+        /* Skip this cpu's own, and the ones in global slots, which the image mapping covers */
+        if ((vcpu == &cpu()->vcpu) || mem_in_hyp_image_ram((vaddr_t)vcpu, sizeof(struct vcpu))) {
+            continue;
+        }
+        struct mp_region mpr = {
+            .base = (vaddr_t)vcpu,
+            .size = ALIGN(sizeof(struct vcpu), PAGE_SIZE),
+            .mem_flags = PTE_HYP_FLAGS,
+            .as_sec = SEC_HYP_VM,
+        };
+        if (!mem_map(&cpu()->as, &mpr, MEM_DONT_BROADCAST, MEM_LOCKED)) {
+            ERROR("Can't map vcpu %d of vm %d\n", id, vm->id);
+        }
+    }
+}
+
+struct vcpu* vm_mem_prot_share_vcpu(struct vcpu* vcpu)
+{
+    /* Reached where it is, once the vm's cpus map it in vm_mem_prot_cpu_init */
+    return vcpu;
+}

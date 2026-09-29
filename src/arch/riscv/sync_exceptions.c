@@ -82,7 +82,7 @@ static size_t guest_page_fault_handler(void)
 {
     vaddr_t addr = (csrs_htval_read() << 2) | (csrs_stval_read() & 0x3);
 
-    emul_handler_t handler = vm_emul_get_mem(cpu()->vcpu->vm, addr);
+    emul_handler_t handler = vm_emul_get_mem(cpu()->vcpu.vm, addr);
     if (handler != NULL) {
         unsigned long ins = csrs_htinst_read();
         size_t ins_size;
@@ -141,7 +141,7 @@ void sync_exception_handler(void)
     unsigned long _scause = csrs_scause_read();
 
     if (!(csrs_hstatus_read() & HSTATUS_SPV)) {
-        internal_exception_handler(&cpu()->vcpu->regs.x[0]);
+        internal_exception_handler(&cpu()->vcpu.regs.x[0]);
     }
 
     // TODO: Do we need to check call comes from VS-mode and not VU-mode or U-mode ?
@@ -152,8 +152,8 @@ void sync_exception_handler(void)
         ERROR("unknown synchronous exception (%d)\n", _scause);
     }
 
-    vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + pc_step);
-    if (vcpu_arch_is_on(cpu()->vcpu) && !cpu()->vcpu->active) {
+    vcpu_writepc(&cpu()->vcpu, vcpu_readpc(&cpu()->vcpu) + pc_step);
+    if (vcpu_arch_is_on(&cpu()->vcpu) && !cpu()->vcpu.active) {
         cpu_standby();
     }
 }

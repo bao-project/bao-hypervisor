@@ -7,7 +7,12 @@
 #define __ARCH_VM_H__
 
 #include <bao.h>
-#include <irqc.h>
+#include <arch/platform.h>
+#if (IRQC == PLIC)
+#include <vplic.h>
+#elif ((IRQC == APLIC) || (IRQC == AIA))
+#include <vaplic.h>
+#endif
 #include <arch/sbi.h>
 
 #define REG_RA  (1)

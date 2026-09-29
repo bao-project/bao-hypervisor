@@ -26,11 +26,21 @@ jobs:
             "",
             "CROSS_COMPILE=clang",
         ]
+        include:
+          - platform: "fvp-a"
+            kconfig: "FVP_A"
+          - platform: "fvp-a-aarch32"
+            kconfig: "FVP_A_AARCH32"
+          - platform: "fvp-r"
+            kconfig: "FVP_R"
+          - platform: "fvp-r-aarch32"
+            kconfig: "FVP_R_AARCH32"
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
       - uses: ./.github/actions/bao-container-run
         with:
-          run: make PLATFORM=${{ matrix.platform }} GIC_VERSION=${{ matrix.gic }}
-            CONFIG=null ${{ matrix.cross_compile }}
+          run: printf 'CONFIG_${{ matrix.kconfig }}_${{ matrix.gic }}=y\n'
+            > configs/null/defconfig &&
+            make PLATFORM=${{ matrix.platform }} CONFIG=null ${{ matrix.cross_compile }}

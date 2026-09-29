@@ -15,12 +15,19 @@
 .section ".boot", "ax"
 .global boot_arch_profile_init
 boot_arch_profile_init:
+#ifdef PLAT_HAS_TCM
+    /* CPU_X structure: cpu_base_tbl[cpu] (global slot or coupled memory) */
+    ldr r3, =cpu_base_tbl
+    ldr r3, [r3, r0, lsl #2]
+    mov r7, #CPU_SIZE
+#else
     /* CPU physical based address */
     ldr r3, =_dmem_phys_beg 
     
     /* CPU_X physical base address */
     mov r7, #CPU_SIZE
     mla r3, r0, r7, r3
+#endif
 
     /* Clear the CPU struct */
     mov r11, r3
