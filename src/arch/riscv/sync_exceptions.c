@@ -18,7 +18,7 @@ static void internal_exception_handler(unsigned long gprs[])
     console_printk("sstatus:\t0x%0lx\n", csrs_sstatus_read());
     console_printk("stval:\t\t0x%0lx\n", csrs_stval_read());
     console_printk("sepc:\t\t0x%0lx\n", csrs_sepc_read());
-    ERROR("cpu%d internal hypervisor abort - PANIC\n", cpu()->id);
+    ERROR("cpu%lu internal hypervisor abort - PANIC\n", cpu()->id);
 }
 
 static uint32_t read_ins(uintptr_t ins_addr)
@@ -119,10 +119,12 @@ static size_t guest_page_fault_handler(void)
         if (handler(&emul)) {
             return ins_size;
         } else {
-            ERROR("emulation handler failed (0x%x at 0x%x)\n", addr, csrs_sepc_read());
+            ERROR("emulation handler failed (0x%lx at 0x%lx)\n", (unsigned long)addr,
+                csrs_sepc_read());
         }
     } else {
-        ERROR("no emulation handler for abort(0x%x at 0x%x)\n", addr, csrs_sepc_read());
+        ERROR("no emulation handler for abort(0x%lx at 0x%lx)\n", (unsigned long)addr,
+            csrs_sepc_read());
     }
 }
 
@@ -149,7 +151,7 @@ void sync_exception_handler(void)
     if (_scause < sync_handler_table_size && sync_handler_table[_scause]) {
         pc_step = sync_handler_table[_scause]();
     } else {
-        ERROR("unknown synchronous exception (%d)\n", _scause);
+        ERROR("unknown synchronous exception (%lu)\n", _scause);
     }
 
     vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + pc_step);

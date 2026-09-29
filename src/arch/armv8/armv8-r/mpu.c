@@ -130,7 +130,7 @@ bool mpu_map(struct addr_space* as, struct mp_region* mpr, bool locked)
             unsigned long* mpu_mask = find_mpu_mask_by_asid(as->id);
 
             if (mpu_mask == NULL) {
-                WARNING("Couldn't find an mpu_mask for as_id %d\n");
+                WARNING("Couldn't find an mpu_mask for as_id %lu\n", as->id);
                 return false;
             }
 
@@ -161,7 +161,7 @@ bool mpu_unmap(struct addr_space* as, struct mp_region* mpr)
         unsigned long* mpu_mask = find_mpu_mask_by_asid(as->id);
 
         if (mpu_mask == NULL) {
-            WARNING("Couldn't find an mpu_mask for as_id %d\n");
+            WARNING("Couldn't find an mpu_mask for as_id %lu\n", as->id);
             return false;
         }
 

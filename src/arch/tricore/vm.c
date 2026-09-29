@@ -200,7 +200,7 @@ void vm_arch_allow_mmio_access(struct vm* vm, struct vm_dev_region* dev)
     const struct plat_device* pdev = vm_find_platform_device(dev);
 
     if (pdev == NULL) {
-        ERROR("Device 0x%x not found\n", dev->pa);
+        ERROR("Device 0x%lx not found\n", (unsigned long)dev->pa);
     }
 
     for (unsigned long apu = 0; apu < pdev->apu_num; apu++) {
