@@ -94,6 +94,11 @@ void cpu_powerdown_wakeup(void);
 void cpu_arch_init(cpuid_t cpu_id, paddr_t load_addr);
 void cpu_arch_standby(void);
 void cpu_arch_powerdown(void);
+/**
+ * Each architecture also defines cpu_arch_halt() as a static inline _Noreturn function in
+ * arch/cpu.h. It stops the calling CPU for good on the architecture's wait instruction; panic()
+ * ends with it.
+ */
 
 extern struct cpuif cpu_interfaces[];
 static inline struct cpuif* cpu_if(cpuid_t cpu_id)
