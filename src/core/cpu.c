@@ -48,7 +48,7 @@ void cpu_send_msg(cpuid_t trgtcpu, struct cpu_msg* msg)
         fence_sync_write();
         interrupts_cpu_sendipi(trgtcpu);
     } else {
-        WARNING("Can't add message to target cpu (%d) interface\n", trgtcpu);
+        WARNING("Can't add message to target cpu (%lu) interface\n", trgtcpu);
     }
 }
 

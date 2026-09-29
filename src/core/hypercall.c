@@ -17,7 +17,7 @@ long int hypercall(unsigned long id)
             ret = remio_hypercall();
             break;
         default:
-            WARNING("Unknown hypercall id %d\n", id);
+            WARNING("Unknown hypercall id %lu\n", id);
     }
 
     return ret;

@@ -329,7 +329,7 @@ void remio_init(void)
                     (dev->bind_key == remio_device->config.frontend.bind_key &&
                         dev->type == REMIO_DEV_FRONTEND)) {
                     ERROR("Failed to link backend to the frontend, more than one %s was "
-                          "atributed to the Remote I/O device %d\n",
+                          "atributed to the Remote I/O device %zu\n",
                         dev->type == REMIO_DEV_BACKEND ? "backend" : "frontend", dev->bind_key);
                 } else if ((dev->type == REMIO_DEV_BACKEND &&
                                dev->bind_key == remio_device->config.frontend.bind_key) ||
@@ -342,7 +342,7 @@ void remio_init(void)
             if (device == NULL) {
                 device = objpool_alloc(&remio_device_pool);
                 if (device == NULL) {
-                    ERROR("Failed creating Remote I/O device %d\n", dev->bind_key);
+                    ERROR("Failed creating Remote I/O device %zu\n", dev->bind_key);
                 }
                 device->ready = false;
                 device->bind_key = dev->bind_key;
@@ -376,7 +376,7 @@ void remio_init(void)
         if (dev->config.backend.shmem.base != dev->config.frontend.shmem.base ||
             dev->config.backend.shmem.size != dev->config.frontend.shmem.size ||
             dev->config.backend.shmem.shmem_id != dev->config.frontend.shmem.shmem_id) {
-            ERROR("Invalid shared memory region configuration for Remote I/O device %d.\n"
+            ERROR("Invalid shared memory region configuration for Remote I/O device %zu.\n"
                   "The frontend and backend shared memory regions must be the aligned.",
                 dev->bind_key);
         }
@@ -389,7 +389,7 @@ void remio_init(void)
             struct remio_dev* dev = &vm_config->platform.remio_devs[i];
             struct remio_device* device = remio_find_dev_by_bind_key(dev->bind_key);
             if (device == NULL) {
-                ERROR("Failed to find Remote I/O device %d\n", dev->bind_key);
+                ERROR("Failed to find Remote I/O device %zu\n", dev->bind_key);
             }
             if (dev->type == REMIO_DEV_BACKEND) {
                 device->config.backend.vm_id = vm_id;
