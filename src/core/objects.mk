@@ -10,6 +10,7 @@ core-objs-y+=vmm.o
 core-objs-y+=vm.o
 core-objs-y+=config.o
 core-objs-y+=console.o
+core-objs-y+=panic.o
 core-objs-y+=ipc.o
 core-objs-y+=objpool.o
 core-objs-y+=hypercall.o
