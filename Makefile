@@ -250,6 +250,13 @@ else ifeq ($(CC_IS_CLANG),y)
 	build_macros+=-DCC_IS_CLANG
 endif
 
+# Debug builds carry the diagnostics that release builds compile out: ASSERT(), the panic
+# backtrace and the configuration validation. Use DEBUG=y OPTIMIZATIONS=2 for an optimised build
+# with the diagnostics.
+ifeq ($(DEBUG), y)
+	build_macros+=-DBAO_DEBUG
+endif
+
 override CPPFLAGS+=$(addprefix -I, $(inc_dirs)) $(arch-cppflags) \
 	$(platform-cppflags) $(build_macros) -DBAO_VERSION=\"$(version_str)\"
 vpath:.=CPPFLAGS
@@ -258,7 +265,7 @@ HOST_CPPFLAGS+=$(addprefix -I, $(inc_dirs)) $(arch-cppflags) \
 	$(platform-cppflags) $(build_macros)
 
 ifeq ($(DEBUG), y)
-	debug_flags:=-g
+	debug_flags:=-g -fno-omit-frame-pointer
 	OPTIMIZATIONS:=g
 endif
 
