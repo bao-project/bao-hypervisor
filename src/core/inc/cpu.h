@@ -60,6 +60,8 @@ struct cpu {
 
 } __attribute__((aligned(PAGE_SIZE)));
 
+_Static_assert((STACK_SIZE % SP_ALIGNMENT) == 0, "STACK_SIZE must be a multiple of SP_ALIGNMENT");
+
 void cpu_send_msg(cpuid_t cpu, struct cpu_msg* msg);
 
 typedef void (*cpu_msg_handler_t)(uint32_t event, uint64_t data);
