@@ -15,6 +15,9 @@
 volatile struct ir_int_hw* ir_int;
 volatile struct ir_src_hw* ir_src;
 
+_Static_assert(PLAT_IR_MAX_INTERRUPTS <= IR_MAX_INTERRUPTS,
+    "PLAT_IR_MAX_INTERRUPTS exceeds the SRC table of the interrupt router");
+
 /* We need a flag to represent whether or not the IPIs have been initialized.
 This happens because during the mem_init stage of the boot, several broadcasts
 are attempted. When a CPU tries to write to the SRB register to broadcast an IPI,
