@@ -9,6 +9,7 @@
 #define BAO_VAS_BASE CONFIG_HYP_BASE_ADDR
 #define PAGE_SIZE    (64)
 #define STACK_SIZE   (0x1000)
+#define SP_ALIGNMENT (4)
 
 #ifndef __ASSEMBLER__
 

@@ -10,6 +10,7 @@
 
 #define PAGE_SIZE    (64)
 #define STACK_SIZE   (0x200)
+#define SP_ALIGNMENT (8)
 
 #ifndef __ASSEMBLER__
 
