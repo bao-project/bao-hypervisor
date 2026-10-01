@@ -13,6 +13,9 @@
 BITMAP_ALLOC(global_interrupt_bitmap, MAX_INTERRUPT_LINES);
 spinlock_t irq_reserve_lock = SPINLOCK_INITVAL;
 
+_Static_assert(MAX_GUEST_INTERRUPTS <= MAX_INTERRUPT_LINES,
+    "Number of guest interrupts must be at most MAX_INTERRUPT_LINES");
+
 irq_handler_t interrupt_handlers[MAX_INTERRUPT_HANDLERS];
 
 irqid_t interrupts_ipi_id;

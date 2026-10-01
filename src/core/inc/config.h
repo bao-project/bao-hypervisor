@@ -12,6 +12,8 @@
 #include <config_defs.h>
 #include <shmem.h>
 
+_Static_assert(CONFIG_VM_NUM <= PLAT_CPU_NUM, "Number of VMs must be at most PLAT_CPU_NUM");
+
 #ifndef GENERATING_DEFS
 // clang-format wont correctly recognize the syntax of assembly strings interleaved with
 // stringified tokens via XSTR and will format it in an unreadable way
