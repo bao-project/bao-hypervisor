@@ -14,6 +14,9 @@
 #define MAX_INTERRUPT_LINES    PLAT_MAX_INTERRUPTS
 #define MAX_INTERRUPT_HANDLERS PLAT_MAX_INTERRUPTS
 
+_Static_assert(PLAT_MAX_INTERRUPTS <= ARCH_MAX_INTERRUPTS,
+    "PLAT_MAX_INTERRUPTS must be at most ARCH_MAX_INTERRUPTS");
+
 static inline bool interrupts_arch_irq_is_forwardable(irqid_t int_id)
 {
     UNUSED_ARG(int_id);

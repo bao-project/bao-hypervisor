@@ -10,6 +10,12 @@
 #define PAGE_SIZE    (64)
 #define STACK_SIZE   (0x1000)
 
+#ifdef AARCH64
+#define SP_ALIGNMENT (16)
+#else
+#define SP_ALIGNMENT (8)
+#endif
+
 #ifndef __ASSEMBLER__
 
 #endif /* !__ASSEMBLER__ */

@@ -7,6 +7,9 @@
 #define __ARCH_PLATFORM_H__
 
 #include <bao.h>
+#include <platform_defs.h>
+
+_Static_assert(PLAT_CPU_NUM <= 8, "RH850 implementation supports at most 8 PEs");
 
 // Arch-specific platform data
 struct arch_platform {
