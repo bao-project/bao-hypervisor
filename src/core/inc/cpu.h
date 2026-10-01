@@ -34,6 +34,9 @@ struct cpu_msg {
 #define IPI_MAX_EVENTS IPI_MAX_EVENTS_DEFAULT
 #endif
 
+_Static_assert((IPI_MAX_EVENTS) > 0 && (IPI_MAX_EVENTS) < INT_MAX,
+    "IPI_MAX_EVENTS must be positive and fit the int indexes of the message queue");
+
 struct cpuif {
     CQ_DEFINE(struct cpu_msg, msgs, IPI_MAX_EVENTS);
 } __attribute__((aligned(PAGE_SIZE)));

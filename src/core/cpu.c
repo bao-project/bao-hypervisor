@@ -18,6 +18,8 @@ static size_t ipi_cpumsg_handler_num;
 
 struct cpuif cpu_interfaces[PLAT_CPU_NUM];
 
+_Static_assert(PLAT_CPU_NUM <= sizeof(cpumap_t) * 8, "PLAT_CPU_NUM exceeds the bits of cpumap_t");
+
 void cpu_init(cpuid_t cpu_id)
 {
     cpu()->id = cpu_id;
