@@ -109,6 +109,10 @@ static mpid_t mem_vmpu_allocate_entry(struct addr_space* as)
         }
     }
 
+    if (mpid == INVALID_MPID) {
+        ERROR("no free vMPU entry: VMPU_NUM_ENTRIES is too small\n");
+    }
+
     return mpid;
 }
 
