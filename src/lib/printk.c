@@ -145,7 +145,7 @@ size_t vsnprintk(char* buf, size_t buf_size, const char** fmt, va_list* args)
                     case 'c':
                         arg_char_count = 1;
                         if (arg_char_count <= buf_left) {
-                            printc(&buf_it, (char)va_arg(args_tmp, int));
+                            printc(&buf_it, (char)va_arg(*args, int));
                         }
                         break;
                     case '%':
