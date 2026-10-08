@@ -60,10 +60,11 @@ enum REMIO_STATE {
  * @brief This union represents the Remote I/O CPU message data
  */
 union remio_cpu_msg_data {
+    /* The fields must fit the raw word of a CPU message */
     struct {
         uint8_t remio_bind_key; /**< Remote I/O bind key */
         uint8_t request_id;     /**< Remote I/O request ID */
-        uint8_t interrupt;      /**< Interrupt ID */
+        irqid_t interrupt;      /**< Interrupt ID */
     };
     uint64_t raw;               /**< Raw data */
 };
@@ -298,7 +299,7 @@ static void remio_cpu_send_msg(enum REMIO_CPU_MSG_EVENT event, unsigned long tar
     union remio_cpu_msg_data data = {
         .remio_bind_key = (uint8_t)remio_bind_key,
         .request_id = (uint8_t)request_id,
-        .interrupt = (uint8_t)interrupt,
+        .interrupt = (irqid_t)interrupt,
     };
     struct cpu_msg msg = { (uint32_t)REMIO_CPUMSG_ID, event, data.raw };
     cpu_send_msg(target_cpu, &msg);
