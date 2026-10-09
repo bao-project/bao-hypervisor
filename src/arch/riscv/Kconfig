@@ -1,0 +1,14 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config ARCH_RISCV
+	bool
+
+config ARCH
+	default "riscv" if ARCH_RISCV
+
+config IRQC
+	string
+
+config IPIC
+	string

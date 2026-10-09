@@ -1,0 +1,7 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config PLAT_TC4DX
+	bool "tc4dx"
+	select ARCH_TRICORE
+	select PLAT_HAS_MMIO_SLAVE_SIDE_PROT

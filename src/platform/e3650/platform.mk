@@ -1,14 +1,9 @@
 ## SPDX-License-Identifier: Apache-2.0
 ## Copyright (c) Bao Project and Contributors. All rights reserved.
 
-# Architecture definition
-ARCH:=armv8
-ARCH_PROFILE:=armv8-r
-ARCH_SUB:=aarch32
 
 PLAT_CPUS:=cortex_r52
 
-GIC_VERSION:=GICV3
 
 drivers=e3650_uart
 

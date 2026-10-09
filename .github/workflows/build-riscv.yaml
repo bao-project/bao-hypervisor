@@ -29,11 +29,17 @@ jobs:
             "",
             "CROSS_COMPILE=clang",
         ]
+        include:
+          - platform: "qemu-riscv64-virt"
+            kconfig: "QEMU_RISCV64_VIRT"
+          - platform: "qemu-riscv32-virt"
+            kconfig: "QEMU_RISCV32_VIRT"
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
       - uses: ./.github/actions/bao-container-run
         with:
-          run: make PLATFORM=${{ matrix.platform }} IRQC=${{ matrix.irqc }}
-            IPIC=${{ matrix.ipic }} CONFIG=null ${{ matrix.cross_compile }}
+          run: printf 'CONFIG_${{ matrix.kconfig }}_IRQC_${{ matrix.irqc }}=y\nCONFIG_${{ matrix.kconfig }}_${{ matrix.ipic }}=y\n'
+            > configs/null/defconfig &&
+            make PLATFORM=${{ matrix.platform }} CONFIG=null ${{ matrix.cross_compile }}
