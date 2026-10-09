@@ -5,9 +5,13 @@
 
 #include <printk.h>
 
-#define F_LONG     (1U << 0U)
-#define F_UNSIGNED (1U << 1U)
-#define F_BASE16   (1U << 2U)
+#define F_LONG        (1U << 0U)
+#define F_UNSIGNED    (1U << 1U)
+#define F_BASE16      (1U << 2U)
+#define F_LONG_LONG   (1U << 3U)
+
+/* Number of digits of the largest 64-bit value in base 10. */
+#define LL_MAX_DIGITS (20U)
 
 static inline char digit_to_char(unsigned long i, unsigned int base)
 {
@@ -82,9 +86,93 @@ static size_t vprintd(char** buf, unsigned int flags, va_list* args)
 }
 
 /**
+ * Divides the 64-bit value held in hi:lo by base, in place, and returns the remainder. It only
+ * uses 32-bit divisions, so that printing 64-bit values does not depend on the compiler's runtime
+ * library on 32-bit targets. The low word is divided in two 16-bit steps so that each partial
+ * dividend fits in 32 bits, which holds as long as base is not larger than 2^16.
+ */
+static uint32_t div64_by_base(uint32_t* hi, uint32_t* lo, uint32_t base)
+{
+    uint32_t rem;
+    uint32_t cur;
+    uint32_t quot_lo;
+
+    rem = *hi % base;
+    *hi = *hi / base;
+
+    cur = (rem << 16U) | (*lo >> 16U);
+    quot_lo = (cur / base) << 16U;
+    rem = cur % base;
+
+    cur = (rem << 16U) | (*lo & 0xffffU);
+    quot_lo |= cur / base;
+    rem = cur % base;
+
+    *lo = quot_lo;
+
+    return rem;
+}
+
+static size_t vprintll(char** buf, unsigned int flags, va_list* args)
+{
+    unsigned long long u;
+    unsigned int base = ((flags & F_BASE16) != 0U) ? 16U : 10U;
+    bool is_unsigned = ((flags & F_UNSIGNED) != 0U) || (base != 10U);
+    char digits[LL_MAX_DIGITS];
+    size_t num_digits = 0;
+    size_t char_count = 0;
+    uint32_t hi;
+    uint32_t lo;
+
+    if (is_unsigned) {
+        u = va_arg(*args, unsigned long long);
+    } else {
+        signed long long s = va_arg(*args, signed long long);
+        u = (unsigned long long)s;
+        if (s < 0) {
+            printc(buf, '-');
+            char_count++;
+            /* Negate as unsigned so that the most negative value does not overflow. */
+            u = 0ULL - u;
+        }
+    }
+
+    hi = (uint32_t)(u >> 32U);
+    lo = (uint32_t)(u & 0xffffffffULL);
+
+    /* Digits come out least significant first, so store them and print them in reverse. */
+    do {
+        uint32_t digit = div64_by_base(&hi, &lo, base);
+        digits[num_digits] = digit_to_char(digit, base);
+        num_digits++;
+    } while ((hi != 0U) || (lo != 0U));
+
+    while (num_digits > 0U) {
+        num_digits--;
+        printc(buf, digits[num_digits]);
+        char_count++;
+    }
+
+    return char_count;
+}
+
+static size_t vprintint(char** buf, unsigned int flags, va_list* args)
+{
+    size_t char_count;
+
+    if ((flags & F_LONG_LONG) != 0U) {
+        char_count = vprintll(buf, flags, args);
+    } else {
+        char_count = vprintd(buf, flags, args);
+    }
+
+    return char_count;
+}
+
+/**
  * This is a limited printf implementation. The format string only supports integer, string and
  * char arguments. That is, 'd', 'u' or 'x', 's' and 'c' specifiers, respectively. For integers, it
- * only supports the none and 'l' lengths. It does not support any flags, width or precision
+ * supports the none, 'l' and 'll' lengths. It does not support any flags, width or precision
  * fields. If present, this fields are ignored.
  *
  * Note this does not follow the C lib vsnprintf specification. It returns the numbers of
@@ -114,7 +202,8 @@ size_t vsnprintk(char* buf, size_t buf_size, const char** fmt, va_list* args)
                 flags = flags | F_LONG;
                 if (*fmt_it == 'l') {
                     fmt_it++;
-                } // ignore long long
+                    flags = flags | F_LONG_LONG;
+                }
             }
 
             do {
@@ -130,9 +219,9 @@ size_t vsnprintk(char* buf, size_t buf_size, const char** fmt, va_list* args)
                     case 'd':
                     case 'i':
                         va_copy(args_tmp, *args);
-                        arg_char_count = vprintd(NULL, flags, &args_tmp);
+                        arg_char_count = vprintint(NULL, flags, &args_tmp);
                         if (arg_char_count <= buf_left) {
-                            (void)vprintd(&buf_it, flags, args);
+                            (void)vprintint(&buf_it, flags, args);
                         }
                         break;
                     case 's':
