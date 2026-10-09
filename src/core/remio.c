@@ -566,7 +566,16 @@ long int remio_hypercall(void)
             ret = remio_handle_ask(addr, value, device);
             break;
         case REMIO_HYP_NOTIFY:
-            /** Send a CPU message to the frontend VM to inject an interrupt */
+            /**
+             * Send a CPU message to the frontend VM to inject an interrupt. Reject the
+             * call if the remote I/O device is not ready, as frontend.cpu_id is unset
+             * before that, and no well-behaved backend should be sending notifications
+             * yet.
+             */
+            if (!device->ready) {
+                ret = -HC_E_FAILURE;
+                break;
+            }
             remio_cpu_send_msg(REMIO_CPU_MSG_NOTIFY, device->config.frontend.cpu_id, 0, 0,
                 device->config.frontend.interrupt);
             break;
