@@ -7,6 +7,7 @@
 #define __CONFIG_H__
 
 #include <bao.h>
+#include <arch/config.h>
 #include <platform.h>
 #include <vm.h>
 #include <config_defs.h>
@@ -58,6 +59,8 @@
 #define CONFIG_HEADER
 
 struct vm_config {
+    struct arch_vm_config arch;
+
     /**
      * To setup the image field either the VM_IMAGE_BUILTIN or VM_IMAGE_LOADED macros should be
      * used.
