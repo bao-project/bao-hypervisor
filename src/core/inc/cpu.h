@@ -8,6 +8,7 @@
 
 #include <bao.h>
 #include <arch/cpu.h>
+#include <platform_defs.h>
 
 #include <spinlock.h>
 #include <mem.h>
@@ -92,7 +93,7 @@ void cpu_arch_powerdown(void);
 extern struct cpuif cpu_interfaces[];
 static inline struct cpuif* cpu_if(cpuid_t cpu_id)
 {
-    return &cpu_interfaces[cpu_id];
+    return cpu_id < PLAT_CPU_NUM ? &cpu_interfaces[cpu_id] : NULL;
 }
 
 static inline bool cpu_is_master(void)
