@@ -43,7 +43,8 @@ void cpu_init(cpuid_t cpu_id)
 
 void cpu_send_msg(cpuid_t trgtcpu, struct cpu_msg* msg)
 {
-    bool ok = circular_queue_push(&cpu_if(trgtcpu)->msgs, msg);
+    struct cpuif* trgt_if = cpu_if(trgtcpu);
+    bool ok = trgt_if != NULL && circular_queue_push(&trgt_if->msgs, msg);
     if (ok) {
         fence_sync_write();
         interrupts_cpu_sendipi(trgtcpu);
