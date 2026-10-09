@@ -69,8 +69,8 @@ static inline bool range_in_range(unsigned long base1, unsigned long size1, unsi
     return (base1 >= base2) && (limit1 <= limit2);
 }
 
-/* WARNING! does not check for overflow! */
-#define in_range(_addr, _base, _size)   range_in_range(_addr, 0, _base, _size)
+/* An address is in [base, base + size): a one-byte range, so the end is exclusive */
+#define in_range(_addr, _base, _size)   range_in_range(_addr, 1, _base, _size)
 
 /**
  * Check if a given macro was defined. Note it only works wither if the macro is undefined or
