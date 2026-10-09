@@ -1266,25 +1266,25 @@ static bool vaplic_domain_emul_reserved(uint16_t addr)
 {
     bool ret = false;
     if (in_range(addr, offsetof(struct aplic_control_hw, reserved1),
-            sizeof(aplic_control->reserved1) - 4) ||
+            sizeof(aplic_control->reserved1)) ||
         in_range(addr, offsetof(struct aplic_control_hw, reserved2),
-            sizeof(aplic_control->reserved2) - 4) ||
+            sizeof(aplic_control->reserved2)) ||
         in_range(addr, offsetof(struct aplic_control_hw, reserved3),
-            sizeof(aplic_control->reserved3) - 4) ||
+            sizeof(aplic_control->reserved3)) ||
         in_range(addr, offsetof(struct aplic_control_hw, reserved4),
-            sizeof(aplic_control->reserved4) - 4) ||
+            sizeof(aplic_control->reserved4)) ||
         in_range(addr, offsetof(struct aplic_control_hw, reserved5),
-            sizeof(aplic_control->reserved5) - 4) ||
+            sizeof(aplic_control->reserved5)) ||
         in_range(addr, offsetof(struct aplic_control_hw, reserved6),
-            sizeof(aplic_control->reserved6) - 4) ||
+            sizeof(aplic_control->reserved6)) ||
         in_range(addr, offsetof(struct aplic_control_hw, reserved7),
-            sizeof(aplic_control->reserved7) - 4) ||
+            sizeof(aplic_control->reserved7)) ||
         in_range(addr, offsetof(struct aplic_control_hw, reserved8),
-            sizeof(aplic_control->reserved8) - 4) ||
+            sizeof(aplic_control->reserved8)) ||
         in_range(addr, offsetof(struct aplic_control_hw, reserved9),
-            sizeof(aplic_control->reserved9) - 4) ||
+            sizeof(aplic_control->reserved9)) ||
         in_range(addr, offsetof(struct aplic_control_hw, reserved10),
-            sizeof(aplic_control->reserved10) - 4)) {
+            sizeof(aplic_control->reserved10))) {
         ret = true;
     }
     return ret;
