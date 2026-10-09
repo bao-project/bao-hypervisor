@@ -271,8 +271,8 @@ static struct remio_device* remio_find_vm_dev_by_addr(struct vm* vm, unsigned lo
     struct remio_dev* dev = NULL;
 
     for (size_t i = 0; i < vm->remio_dev_num; i++) {
-        dev = &vm->remio_devs[i];
-        if (in_range(addr, dev->va, dev->size)) {
+        if (in_range(addr, vm->remio_devs[i].va, vm->remio_devs[i].size)) {
+            dev = &vm->remio_devs[i];
             break;
         }
     }
