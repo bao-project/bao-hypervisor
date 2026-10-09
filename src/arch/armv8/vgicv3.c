@@ -13,6 +13,9 @@
 #include <vm.h>
 #include <platform.h>
 
+_Static_assert((sizeof(struct gicr_hw) % PAGE_SIZE) == 0,
+    "sizeof(struct gicr_hw) must be a multiple of PAGE_SIZE");
+
 #define GICR_IS_REG(REG, offset)                    \
     (((offset) >= offsetof(struct gicr_hw, REG)) && \
         (offset) < (offsetof(struct gicr_hw, REG) + sizeof(gicr[0].REG)))
