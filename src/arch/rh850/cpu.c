@@ -66,6 +66,13 @@ void cpu_arch_init(cpuid_t cpuid, paddr_t load_addr)
     srs_snzcfg_write(SNZCFG_PERIOD);
 }
 
+void cpu_arch_halt(void)
+{
+    while (true) {
+        __asm__ volatile("halt\n\t" ::: "memory");
+    }
+}
+
 static void reset_stack_and_jump(void* stack_base, void (*jmp_target)(void))
 {
     __asm__ volatile("mov   %[stack], sp\n\t"

@@ -4,10 +4,12 @@
  */
 
 #include <mem.h>
+#include <earlycon.h>
 #include <cpu.h>
 #include <vm.h>
 #include <bao.h>
 #include <fences.h>
+#include <platform.h>
 #include <platform_defs.h>
 #include <objpool.h>
 #include <config.h>
@@ -214,6 +216,9 @@ void mem_prot_init()
     mpu_init();
     as_init(&cpu()->as, AS_HYP, 0);
     mem_init_boot_regions();
+#ifdef EARLY_CONSOLE_UART
+    mem_map_early_devices(&cpu()->as);
+#endif
     if (DEFINED(MMIO_SLAVE_SIDE_PROT) && cpu_is_master()) {
         mem_mmio_init_regions(&cpu()->as);
     }
@@ -751,3 +756,76 @@ vaddr_t mem_alloc_map_dev(struct addr_space* as, as_sec_t section, vaddr_t at, p
     return mem_alloc_map(as, section, &temp_page, at, num_pages,
         as->type == AS_HYP ? PTE_HYP_DEV_FLAGS : PTE_VM_DEV_FLAGS);
 }
+
+#ifdef EARLY_CONSOLE_UART
+static struct mp_region early_uart_region;
+static bool early_uart_adopted;
+static bool early_uart_platform_region;
+
+bool mem_reuse_early_mapping(paddr_t base, size_t size)
+{
+    const mem_flags_t flags = PTE_HYP_DEV_FLAGS;
+    bool compatible = early_uart_region.as_sec == SEC_HYP_GLOBAL &&
+        early_uart_region.mem_flags.raw == flags.raw &&
+        base >= early_uart_region.base &&
+        base - early_uart_region.base < early_uart_region.size &&
+        size <= early_uart_region.size - (base - early_uart_region.base);
+    bool overlaps = size != 0 && early_uart_region.size != 0 &&
+        (base >= early_uart_region.base ?
+            base - early_uart_region.base < early_uart_region.size :
+            early_uart_region.base - base < size);
+    if (overlaps && !compatible) {
+        ERROR("normal console overlaps incompatible early UART protection\n");
+    }
+    early_uart_adopted = compatible;
+    return compatible;
+}
+
+void mem_map_early_devices(struct addr_space* as)
+{
+    struct mp_region early_uart = {
+        .base = EARLY_CONSOLE_VA,
+        .size = ALIGN(sizeof(bao_uart_t), PAGE_SIZE),
+        .mem_flags = PTE_HYP_DEV_FLAGS,
+        .as_sec = SEC_HYP_GLOBAL,
+    };
+    bool platform_region = false;
+    /* Device-side protection may require the platform's entire MMIO region. */
+    if (DEFINED(MMIO_SLAVE_SIDE_PROT)) {
+        for (size_t i = 0; i < platform.mmio_region_num; i++) {
+            const struct mem_region* region = &platform.mmio_regions[i];
+            if (early_uart.base >= region->base &&
+                early_uart.base - region->base < region->size &&
+                early_uart.size <= region->size - (early_uart.base - region->base)) {
+                early_uart.base = region->base;
+                early_uart.size = region->size;
+                platform_region = true;
+                break;
+            }
+        }
+    }
+    const bool broadcast = false;
+    const bool locked = true;
+    if (!mem_map(as, &early_uart, broadcast, locked)) {
+        ERROR("cannot reserve early UART MPU region\n");
+    }
+    if (cpu_is_master()) {
+        early_uart_region = early_uart;
+        early_uart_platform_region = platform_region;
+    }
+}
+
+void mem_unmap_early_devices(void)
+{
+    /* Preserve normal-console protection and platform-owned MMIO regions. */
+    if (!early_uart_adopted && !early_uart_platform_region) {
+        if (cpu_is_master()) {
+            mem_unmap(&cpu()->as, EARLY_CONSOLE_VA,
+                NUM_PAGES(sizeof(bao_uart_t)), MEM_DONT_FREE_PAGES);
+        }
+        /* Apply the broadcast removal on every CPU before proceeding. */
+        cpu_sync_and_clear_msgs(&cpu_glb_sync);
+    }
+}
+
+#endif /* EARLY_CONSOLE_UART */

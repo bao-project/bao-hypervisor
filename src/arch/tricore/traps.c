@@ -29,7 +29,7 @@ void sys_bus_errors_handler(void)
     unsigned long ret = 0;
 
     if (vmid >= config.vmlist_size) {
-        ERROR("Trying to access config.vmlist out-of-bounds\n")
+        ERROR("Trying to access config.vmlist out-of-bounds\n");
     }
 
     for (unsigned long i = 0; i < config.vmlist[vmid].platform.dev_num; i++) {

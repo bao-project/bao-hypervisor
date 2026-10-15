@@ -9,4 +9,9 @@
 void vmm_arch_profile_init(void);
 void vmm_arch_init_tcr(void);
 
+/* No trap-vector handoff is needed until early traps are installed. */
+static inline void vmm_arch_install_trap_vector(void)
+{
+}
+
 #endif /* ARCH_VMM_H */

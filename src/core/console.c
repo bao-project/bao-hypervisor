@@ -5,6 +5,7 @@
 
 #include <bao.h>
 #include <console.h>
+#include <earlycon.h>
 
 #include <platform.h>
 #include <cpu.h>
@@ -25,29 +26,55 @@ void console_init(void)
             WARNING("console base must be page aligned\n");
         }
 
-        uart = (void*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
-            platform.console.base, NUM_PAGES(sizeof(*uart)));
+#if defined(EARLY_CONSOLE_UART) && defined(MEM_PROT_MPU)
+        if (mem_reuse_early_mapping(platform.console.base, ALIGN(sizeof(*uart), PAGE_SIZE))) {
+            uart = (void*)platform.console.base;
+        } else
+#endif
+        {
+            uart = (void*)mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, INVALID_VA,
+                platform.console.base, NUM_PAGES(sizeof(*uart)));
+        }
 
         fence_sync_write();
 
         uart_init(uart);
         uart_enable(uart);
-
-        console_ready = true;
     }
 
+    /* Install shared console mappings on every CPU. */
     cpu_sync_and_clear_msgs(&cpu_glb_sync);
+
+    if (cpu_is_master()) {
+        __atomic_store_n(&console_ready, true, __ATOMIC_RELEASE);
+    }
+}
+
+static void console_putchar(char c, bool ready)
+{
+    UNUSED_ARG(ready);
+#ifdef CONFIG_EARLYCON
+    if (!ready) {
+        earlycon_putchar(c);
+        return;
+    }
+#endif
+    uart_putc(uart, (int8_t)c);
 }
 
 void console_write(const char* buf, size_t n)
 {
-    while (!console_ready)
-        ;
+    bool ready = __atomic_load_n(&console_ready, __ATOMIC_ACQUIRE);
+#ifndef CONFIG_EARLYCON
+    while (!ready) {
+        ready = __atomic_load_n(&console_ready, __ATOMIC_ACQUIRE);
+    }
+#endif
     for (size_t i = 0; i < n; i++) {
         if (buf[i] == '\n') {
-            uart_putc(uart, '\r');
+            console_putchar('\r', ready);
         }
-        uart_putc(uart, (int8_t)buf[i]);
+        console_putchar(buf[i], ready);
     }
 }
 
@@ -68,4 +95,38 @@ __attribute__((format(printf, 1, 2))) void console_printk(const char* fmt, ...)
     }
     spin_unlock(&console_lock);
     va_end(args);
+}
+
+static void console_vprintk_unlocked(const char* fmt, va_list* args)
+{
+#ifndef CONFIG_EARLYCON
+    /* Fatal traps must reach halt even before the normal console is ready. */
+    if (!__atomic_load_n(&console_ready, __ATOMIC_ACQUIRE)) {
+        return;
+    }
+#endif
+    /* Do not overwrite a normal print interrupted while holding the lock. */
+    char buf[PRINTF_BUFFER_LEN];
+    const char* fmt_it = fmt;
+    while (*fmt_it != '\0') {
+        size_t chars_written = vsnprintk(buf, PRINTF_BUFFER_LEN, &fmt_it, args);
+        console_write(buf, min(PRINTF_BUFFER_LEN, chars_written));
+    }
+}
+
+__attribute__((format(printf, 1, 2))) void console_printk_unlocked(const char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    console_vprintk_unlocked(fmt, &args);
+    va_end(args);
+}
+
+__attribute__((noreturn, format(printf, 1, 2))) void console_panic(const char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    console_vprintk_unlocked(fmt, &args);
+    va_end(args);
+    cpu_halt();
 }
