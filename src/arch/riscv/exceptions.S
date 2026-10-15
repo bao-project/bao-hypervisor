@@ -131,3 +131,19 @@ _hyp_trap_vector:
 .global vcpu_arch_entry
 vcpu_arch_entry:
     VM_ENTRY
+
+/* Boot failures and fatal diagnostics stop here without runtime dependencies. */
+.balign 4
+.global _hyp_trap_halt_vector
+_hyp_trap_halt_vector:
+    wfi
+    j _hyp_trap_halt_vector
+
+/* Stack/gp are ready, but sscratch need not point to a vCPU yet. */
+.balign 4
+.global _hyp_early_trap_vector
+_hyp_early_trap_vector:
+    /* A fault during reporting must halt rather than recurse. */
+    la      t0, _hyp_trap_halt_vector
+    csrw    stvec, t0
+    call    early_internal_exception_handler

@@ -13,12 +13,24 @@
 static void internal_exception_handler(unsigned long gprs[])
 {
     for (int i = 0; i < 31; i++) {
-        console_printk("x%d:\t\t0x%0lx\n", i, gprs[i]);
+        console_printk_unlocked("x%d:\t\t0x%0lx\n", i, gprs[i]);
     }
-    console_printk("sstatus:\t0x%0lx\n", csrs_sstatus_read());
-    console_printk("stval:\t\t0x%0lx\n", csrs_stval_read());
-    console_printk("sepc:\t\t0x%0lx\n", csrs_sepc_read());
+    console_printk_unlocked("sstatus:\t0x%0lx\n", csrs_sstatus_read());
+    console_printk_unlocked("stval:\t\t0x%0lx\n", csrs_stval_read());
+    console_printk_unlocked("sepc:\t\t0x%0lx\n", csrs_sepc_read());
     ERROR("cpu%lu internal hypervisor abort - PANIC\n", cpu()->id);
+}
+
+/* Called from the early vector without vCPU or CPU-ID initialization. */
+__attribute__((noreturn)) void early_internal_exception_handler(void);
+void early_internal_exception_handler(void)
+{
+    /* The early vector has already selected the halt vector. */
+    console_printk_unlocked("sstatus:\t0x%lx\n", csrs_sstatus_read());
+    console_printk_unlocked("stval:\t0x%lx\n", csrs_stval_read());
+    console_printk_unlocked("sepc:\t0x%lx\n", csrs_sepc_read());
+    console_printk_unlocked("scause:\t0x%lx\n", csrs_scause_read());
+    ERROR("early internal hypervisor abort - PANIC\n");
 }
 
 static uint32_t read_ins(uintptr_t ins_addr)

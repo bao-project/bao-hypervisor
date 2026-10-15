@@ -21,6 +21,8 @@
 #define SBI_ERR_INVALID_ADDRESS     (-5)
 #define SBI_ERR_ALREADY_AVAILABLE   (-6)
 
+#define SBI_EXTID_DBCN               (0x4442434E)
+
 #define SBI_HSM_SUSPEND_RET_DEFAULT (0x00000000)
 #define SBI_HSM_SUSP_NON_RET_BIT    (0x80000000)
 
@@ -43,6 +45,7 @@ void sbi_init(void);
 size_t sbi_vs_handler(void);
 
 void sbi_console_putchar(int ch);
+struct sbiret sbi_debug_console_write_byte(uint8_t byte);
 
 struct sbiret sbi_get_spec_version(void);
 struct sbiret sbi_get_impl_id(void);
