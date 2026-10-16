@@ -33,6 +33,10 @@ endif
 irqc_arch_dir=$(cpu_arch_dir)/irqc/$(IRQC_DIR)
 src_dirs+=$(irqc_arch_dir)
 
+# Privileged architecture version. Default to 1.13; older platforms override.
+RISCV_PRIV_VERSION ?= RISCV_PRIV_VERSION_1_13
+arch-cppflags += -DRISCV_PRIV_VERSION=$(RISCV_PRIV_VERSION)
+
 ifeq ($(ARCH_SUB), riscv64)
 arch-cppflags+=-DRV_XLEN=64
 else ifeq ($(ARCH_SUB), riscv32)
