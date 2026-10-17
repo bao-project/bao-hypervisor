@@ -16,3 +16,9 @@ core-objs-y+=hypercall.o
 core-objs-y+=shmem.o
 core-objs-y+=remio.o
 core-objs-y+=platform.o
+
+ifeq ($(ARCH),armv8)
+ifeq ($(ARCH_SUB),aarch64)
+core-objs-y+=mem_throt.o
+endif
+endif
