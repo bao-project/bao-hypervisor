@@ -7,6 +7,7 @@
 #include <arch/sysregs.h>
 #include <arch/page_table.h>
 #include <asm_defs.h>
+#include <earlycon.h>
 #include <platform_defs.h>
 
 #define PT_LVLS 4
@@ -89,6 +90,13 @@ boot_arch_profile_init:
 	add x6, x6, #(PTE_HYP_FLAGS | PTE_PAGE)
 	b 1b
 3:
+#ifdef EARLY_CONSOLE_UART
+    adr x4, root_l3_pt
+    add x4, x4, x18
+    ldr x5, =(PTE_INDEX(3, EARLY_CONSOLE_VA)*8)
+    ldr x6, =(EARLY_CONSOLE_BASE | PTE_HYP_DEV_FLAGS | PTE_PAGE)
+    str x6, [x4, x5]
+#endif
 	adr x5, _boot_barrier
 	mov x4, #1
 	str x4, [x5]
@@ -219,7 +227,7 @@ setup_cpu:
 _enter_vas:
 
 	/* Install vector table virtual address*/
-	ldr	x3, =_hyp_vector_table
+	ldr	x3, =_hyp_trap_halt_vector
 	msr	VBAR_EL2, x3
 
 	/* Remove temporary mapping - the L1 page holding it leaks */
@@ -227,10 +235,12 @@ _enter_vas:
 	add x4, x4, #CPU_SIZE
 	PTE_INDEX_ASM x5, x1, 0
 	str xzr, [x4, x5]
+    dsb ishst
 
     tlbi	alle2
 	dsb	nsh
 	isb
+
 
     sub x20, x20, x1
     ldr x3, =_image_start
@@ -241,7 +251,7 @@ _enter_vas:
 psci_boot_entry:
 warm_boot:
 
-	adr	x3, _hyp_vector_table
+	adr	x3, _hyp_trap_halt_vector
 	msr	VBAR_EL2, x3
 
 	/* save x0 which contains pointer to saved state psci context */
@@ -279,7 +289,7 @@ warm_boot:
 	str x5, [x3]
 
 	/* Install vector table virtual address*/
-	ldr	x3, =_hyp_vector_table
+	ldr	x3, =_hyp_trap_halt_vector
 	msr	VBAR_EL2, x3
 
     tlbi	alle2
@@ -310,6 +320,11 @@ _enter_vas_warm:
 
     /* Initialize stack pointer */
     mov sp, x3
+
+    /* Warm resume already has a vCPU; restore normal vectors once the stack is valid. */
+    ldr x3, =_hyp_vector_table
+    msr VBAR_EL2, x3
+    isb
 
 	bl	psci_wake
 	b 	.
