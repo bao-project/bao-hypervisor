@@ -23,7 +23,11 @@ static inline void uart_disable_clock(volatile struct asclin_hw* uart)
         ;
 }
 
+#ifdef EARLY_CONSOLE_DRIVER
+static inline bool uart_init_common(volatile struct asclin_hw* uart, bool early)
+#else
 bool uart_init(volatile struct asclin_hw* uart)
+#endif
 {
     // Enable module
     uart->CLC = 0x0;
@@ -57,7 +61,14 @@ bool uart_init(volatile struct asclin_hw* uart)
     uart->FLAGSENABLE = 0;
     uart->FLAGSCLEAR = ASCLIN_ALLFLAGS_MASK;
 
-    uart->FLAGSENABLE = PEE | FEE | RFOE | RFUE | RFLE | TFOE;
+#ifdef EARLY_CONSOLE_DRIVER
+    if (!early) {
+#endif
+        uart->FLAGSENABLE = PEE | FEE | RFOE | RFUE | RFLE | TFOE;
+#ifdef EARLY_CONSOLE_DRIVER
+    }
+#endif
+
 
     // Enable fifo outlet
     uart->TXFIFOCON |= ASCLIN_TXFIFOCON_ENO_ENABLE_MASK;
@@ -100,3 +111,27 @@ void uart_putc(volatile struct asclin_hw* uart, int8_t c)
         ;
     uart->FLAGSCLEAR = ASCLIN_ALLFLAGS_MASK;
 }
+
+#ifdef EARLY_CONSOLE_DRIVER
+bool uart_init(volatile struct asclin_hw* uart)
+{
+    return uart_init_common(uart, false);
+}
+
+#include <earlycon.h>
+
+void earlycon_uart_init(void* base)
+{
+    volatile bao_uart_t* uart = base;
+    (void)uart_init_common(uart, true);
+    uart_enable(uart);
+}
+#ifdef MEM_PROT_MMU
+_Static_assert(sizeof(bao_uart_t) <= PAGE_SIZE, "early UART must fit in its boot mapping");
+#endif
+
+void earlycon_uart_putc(void* base, char c)
+{
+    uart_putc(base, (int8_t)c);
+}
+#endif

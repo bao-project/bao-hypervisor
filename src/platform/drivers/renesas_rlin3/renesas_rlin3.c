@@ -46,3 +46,23 @@ void uart_putc(volatile struct renesas_rlin3* uart, int8_t c)
         ;
     uart->RLN3nLUTDR = (uint16_t)(c);
 }
+
+#ifdef EARLY_CONSOLE_DRIVER
+#include <earlycon.h>
+
+void earlycon_uart_init(void* base)
+{
+    volatile bao_uart_t* uart = base;
+    uart->RLN3nLIE = 0;
+    uart_init(uart);
+    uart->RLN3nLUOER = RLN3_LUOER_UTOE;
+}
+#ifdef MEM_PROT_MMU
+_Static_assert(sizeof(bao_uart_t) <= PAGE_SIZE, "early UART must fit in its boot mapping");
+#endif
+
+void earlycon_uart_putc(void* base, char c)
+{
+    uart_putc(base, (int8_t)c);
+}
+#endif
