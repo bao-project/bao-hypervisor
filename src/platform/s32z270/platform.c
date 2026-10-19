@@ -5,6 +5,7 @@
 #include <platform.h>
 #include <plat/plat_regs.h>
 #include <cpu.h>
+#include <earlycon.h>
 #include <drivers/linflexd_uart.h>
 
 volatile struct mc_me_hw* mc_me = (struct mc_me_hw*)MC_ME_BASE;
@@ -55,8 +56,10 @@ static void plat_iomux(void)
 {
     /* Configure IOMUX settings for console (UART TX Pin) */
     /* Map SIUL2_5 region */
+#ifndef EARLY_CONSOLE_UART
     mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, (uint32_t)INVALID_VA, (uint32_t)SIUL2_5_BASE,
         NUM_PAGES(sizeof(struct siul2_hw)));
+#endif
 
     /* Configure SIUL2 settings for console (UART TX Pin) */
     siul2_5->MSCR[UART_TX_PIN] = SIUL2_MSCR_TX;
@@ -65,15 +68,19 @@ static void plat_iomux(void)
     siul2_5->IMCR[SIUL2_IMCR_UART9_RX_OFF] = SIUL2_IMCR_RX;
 
     /* Unmap SIUL2_5 region */
+#ifndef EARLY_CONSOLE_UART
     mem_unmap(&cpu()->as, SIUL2_5_BASE, NUM_PAGES(sizeof(struct siul2_hw)), MEM_DONT_FREE_PAGES);
+#endif
 }
 
 static void plat_clock(void)
 {
     /* Configure clock settings for console */
     /* Map MC_CGM_5 region */
+#ifndef EARLY_CONSOLE_UART
     mem_alloc_map_dev(&cpu()->as, SEC_HYP_GLOBAL, (uint32_t)INVALID_VA, (uint32_t)MC_CGM_5_BASE,
         NUM_PAGES(sizeof(struct mc_cgm_hw)));
+#endif
 
     /* Configure clock source for console (FIRC_CLK)*/
     mc_cgm_5->MUX_2_CSC = MC_CGM_5_MUX_2_CSC_SAFE;
@@ -85,14 +92,25 @@ static void plat_clock(void)
     mc_cgm_5->MUX_2_DC_0 = MC_CGM_5_MUX_2_DC_0_DE;
 
     /* Unmap MC_CGM_5 region */
+#ifndef EARLY_CONSOLE_UART
     mem_unmap(&cpu()->as, MC_CGM_5_BASE, NUM_PAGES(sizeof(struct mc_cgm_hw)), MEM_DONT_FREE_PAGES);
+#endif
 }
 
 void platform_default_init(void)
 {
+#ifndef EARLY_CONSOLE_UART
     if (cpu_is_master()) {
         plat_iomux();
-
         plat_clock();
     }
+#endif
 }
+
+#ifdef EARLY_CONSOLE_UART
+void earlycon_platform_init(void)
+{
+    plat_iomux();
+    plat_clock();
+}
+#endif
