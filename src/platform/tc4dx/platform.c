@@ -4,6 +4,7 @@
  */
 
 #include <platform.h>
+#include <earlycon.h>
 
 #include <arch/csfrs.h>
 #include <arch/prot.h>
@@ -18,17 +19,18 @@
 #define PORT_DRVCFG_DIR_IN       0x1UL
 #define PORT_DRVCFG_DIR_OUT      0UL
 
-void platform_default_init(void)
+#ifdef EARLY_CONSOLE_UART
+static void plat_uart_pins(void)
 {
-    if (cpu_is_master()) {
-        unsigned long* P14_0_DRVCFG = PORT_PIN_ADDR(PORT14_BASE, 0);
-        unsigned long* P14_1_DRVCFG = PORT_PIN_ADDR(PORT14_BASE, 1);
+    unsigned long* P14_0_DRVCFG = PORT_PIN_ADDR(PORT14_BASE, 0);
+    unsigned long* P14_1_DRVCFG = PORT_PIN_ADDR(PORT14_BASE, 1);
 
-        // UART PINS P14.1 Rx and P14.0 Tx
-        *P14_0_DRVCFG = PORT_DRVCFG_MODE_ALT02PU << PORT_DRVCFG_MODE_OFFSET | PORT_DRVCFG_DIR_IN;
-        *P14_1_DRVCFG = PORT_DRVCFG_DIR_OUT;
-    }
+    // UART PINS P14.1 Rx and P14.0 Tx
+    *P14_0_DRVCFG = PORT_DRVCFG_MODE_ALT02PU << PORT_DRVCFG_MODE_OFFSET | PORT_DRVCFG_DIR_IN;
+    *P14_1_DRVCFG = PORT_DRVCFG_DIR_OUT;
 }
+
+#endif
 
 void platform_cpu_init(cpuid_t cpuid, paddr_t load_addr)
 {
@@ -53,3 +55,24 @@ void platform_cpu_init(cpuid_t cpuid, paddr_t load_addr)
         fence_sync();
     }
 }
+
+void platform_default_init(void)
+{
+#ifndef EARLY_CONSOLE_UART
+    if (cpu_is_master()) {
+        unsigned long* P14_0_DRVCFG = PORT_PIN_ADDR(PORT14_BASE, 0);
+        unsigned long* P14_1_DRVCFG = PORT_PIN_ADDR(PORT14_BASE, 1);
+
+        // UART PINS P14.1 Rx and P14.0 Tx
+        *P14_0_DRVCFG = PORT_DRVCFG_MODE_ALT02PU << PORT_DRVCFG_MODE_OFFSET | PORT_DRVCFG_DIR_IN;
+        *P14_1_DRVCFG = PORT_DRVCFG_DIR_OUT;
+    }
+#endif
+}
+
+#ifdef EARLY_CONSOLE_UART
+void earlycon_platform_init(void)
+{
+    plat_uart_pins();
+}
+#endif
