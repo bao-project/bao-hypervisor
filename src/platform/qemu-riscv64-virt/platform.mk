@@ -12,6 +12,14 @@ IPIC:=IPIC_SBI
 
 drivers := sbi_uart
 
+CONFIG_EARLYCON ?= n
+CONFIG_RISCV_EARLYCON_SBI ?= y
+ifeq ($(CONFIG_EARLYCON),y)
+ifeq ($(CONFIG_RISCV_EARLYCON_SBI),y)
+drivers += sbi_earlycon
+endif
+endif
+
 platform_description:=virt_desc.c
 
 platform-cppflags =-DIPIC=$(IPIC)
