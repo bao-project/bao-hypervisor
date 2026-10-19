@@ -244,3 +244,31 @@ _Interrupt_EI:
 .global vcpu_arch_entry
 vcpu_arch_entry:
     VM_ENTRY
+
+/* Full direct-vector tables, including the sixteen EI interrupt priorities. */
+.balign 0x200
+.global _hyp_trap_halt_vector
+_hyp_trap_halt_vector:
+    .rept 32
+    br _hyp_early_halt
+    .balign 0x10
+    .endr
+
+.balign 0x200
+.global _hyp_early_trap_vector
+_hyp_early_trap_vector:
+    .rept 32
+    br _hyp_early_report
+    .balign 0x10
+    .endr
+
+_hyp_early_report:
+    movhi hi(_hyp_trap_halt_vector), r0, r20
+    movea lo(_hyp_trap_halt_vector), r20, r20
+    ori 0x2, r20, r20
+    ldsr r20, 3, 1
+    syncp
+    jarl early_internal_exception_handler, lp
+_hyp_early_halt:
+    halt
+    br _hyp_early_halt

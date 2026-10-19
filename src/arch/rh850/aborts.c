@@ -210,3 +210,13 @@ void abort(void)
             }
     }
 }
+
+__attribute__((noreturn)) void early_internal_exception_handler(void);
+void early_internal_exception_handler(void)
+{
+    bool fe = PSW_GET_NP(srs_psw_read()) != 0;
+    ERROR("early hypervisor abort: %s cause=0x%lx pc=0x%lx status=0x%lx\n",
+        fe ? "FE" : "EI", fe ? srs_feic_read() : srs_eiic_read(),
+        fe ? srs_fepc_read() : srs_eipc_read(),
+        fe ? srs_fepsw_read() : srs_eipsw_read());
+}
