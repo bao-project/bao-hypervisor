@@ -9,6 +9,7 @@ core-objs-y+=cpu.o
 core-objs-y+=vmm.o
 core-objs-y+=vm.o
 core-objs-y+=config.o
+core-objs-$(DEBUG)+=config_validate.o
 core-objs-y+=console.o
 core-objs-y+=panic.o
 core-objs-y+=ipc.o
