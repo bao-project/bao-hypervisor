@@ -58,10 +58,9 @@ void remio_init(void);
 
 /**
  * @brief Remote I/O device VM CPU assignment routine
- * @note Executed by each VM that holds a Remote I/O device, it is responsible for
- *       assigning the frontend or backend CPU ID for the respective Remote I/O device
- *       If the VM was alloacted with more than one CPU the assigned CPU will be the
- *       one with the lowest ID, since only one CPU is required to inject VM interrupts
+ * @note Executed by the master CPU of each VM that holds a Remote I/O device, it assigns
+ *       that CPU as the frontend or backend CPU of the respective Remote I/O device, since
+ *       only one CPU is required to inject VM interrupts
  * @param vm Pointer to the VM structure
  */
 void remio_assign_vm_cpus(struct vm* vm);
