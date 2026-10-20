@@ -93,19 +93,17 @@ struct remio_request {
 struct remio_device_config {
     struct {
         remio_bind_key_t bind_key; /**< Backend bind key */
-        cpuid_t cpu_id;            /**< Backend VM CPU ID */
+        volatile cpuid_t cpu_id;   /**< Backend VM CPU ID (INVALID_CPUID until assigned) */
         vmid_t vm_id;              /**< Backend VM ID */
         irqid_t interrupt;         /**< Backend interrupt ID */
         struct remio_shmem shmem;  /**< Backend shared memory region */
-        bool ready;                /**< Backend ready flag */
     } backend;
     struct {
         remio_bind_key_t bind_key; /**< Frontend bind key */
-        cpuid_t cpu_id;            /**< Frontend VM CPU ID */
+        volatile cpuid_t cpu_id;   /**< Frontend VM CPU ID (INVALID_CPUID until assigned) */
         vmid_t vm_id;              /**< Frontend VM ID */
         irqid_t interrupt;         /**< Frontend interrupt ID */
         struct remio_shmem shmem;  /**< Frontend shared memory region */
-        bool ready;                /**< Frontend ready flag */
     } frontend;
 };
 
@@ -115,7 +113,6 @@ struct remio_device_config {
  */
 struct remio_device {
     node_t node;                       /**< Node */
-    volatile bool ready;               /**< Remote I/O device ready flag */
     remio_bind_key_t bind_key;         /**< Remote I/O bind key */
     struct remio_device_config config; /**< Remote I/O device configuration */
     struct list pending_requests_list; /**< List of pending I/O requests */
@@ -208,6 +205,30 @@ static inline struct remio_request* remio_get_request(struct remio_device* devic
 static inline bool remio_has_pending_request(struct remio_device* device)
 {
     return !list_empty(&device->pending_requests_list);
+}
+
+/**
+ * @brief Checks if the backend VM of the Remote I/O device was assigned a CPU
+ * @note The CPU ID is written once, at boot, by the master CPU of the backend VM, so no lock is
+ *       needed to check it
+ * @param device Pointer to the Remote I/O device
+ * @return Returns true if the backend VM was assigned a CPU, false otherwise
+ */
+static inline bool remio_dev_backend_ready(struct remio_device* device)
+{
+    return device->config.backend.cpu_id != INVALID_CPUID;
+}
+
+/**
+ * @brief Checks if the frontend VM of the Remote I/O device was assigned a CPU
+ * @note The CPU ID is written once, at boot, by the master CPU of the frontend VM, so no lock is
+ *       needed to check it
+ * @param device Pointer to the Remote I/O device
+ * @return Returns true if the frontend VM was assigned a CPU, false otherwise
+ */
+static inline bool remio_dev_frontend_ready(struct remio_device* device)
+{
+    return device->config.frontend.cpu_id != INVALID_CPUID;
 }
 
 /**
@@ -345,21 +366,20 @@ void remio_init(void)
                 if (device == NULL) {
                     ERROR("Failed creating Remote I/O device %zu\n", dev->bind_key);
                 }
-                device->ready = false;
                 device->bind_key = dev->bind_key;
                 device->config.backend.bind_key = (remio_bind_key_t)-1;
                 device->config.frontend.bind_key = (remio_bind_key_t)-1;
+                device->config.backend.cpu_id = INVALID_CPUID;
+                device->config.frontend.cpu_id = INVALID_CPUID;
                 list_init(&device->pending_requests_list);
                 list_push(&remio_device_list, (node_t*)device);
             }
             if (dev->type == REMIO_DEV_BACKEND) {
                 device->config.backend.bind_key = dev->bind_key;
                 device->config.backend.shmem = dev->shmem;
-                device->config.backend.ready = false;
             } else if (dev->type == REMIO_DEV_FRONTEND) {
                 device->config.frontend.bind_key = dev->bind_key;
                 device->config.frontend.shmem = dev->shmem;
-                device->config.frontend.ready = false;
             } else {
                 ERROR("Unknown Remote I/O device type\n");
             }
@@ -395,11 +415,9 @@ void remio_init(void)
             if (dev->type == REMIO_DEV_BACKEND) {
                 device->config.backend.vm_id = vm_id;
                 device->config.backend.interrupt = dev->interrupt;
-                device->config.backend.cpu_id = (cpuid_t)-1;
             } else if (dev->type == REMIO_DEV_FRONTEND) {
                 device->config.frontend.vm_id = vm_id;
                 device->config.frontend.interrupt = dev->interrupt;
-                device->config.frontend.cpu_id = (cpuid_t)-1;
             } else {
                 ERROR("Unknown Remote I/O device type\n");
             }
@@ -412,12 +430,9 @@ void remio_assign_vm_cpus(struct vm* vm)
     list_foreach (remio_device_list, struct remio_device, dev) {
         if (vm->id == dev->config.backend.vm_id) {
             dev->config.backend.cpu_id = min(dev->config.backend.cpu_id, cpu()->id);
-            dev->config.backend.ready = true;
         } else if (vm->id == dev->config.frontend.vm_id) {
             dev->config.frontend.cpu_id = min(dev->config.frontend.cpu_id, cpu()->id);
-            dev->config.frontend.ready = true;
         }
-        dev->ready = dev->config.backend.ready && dev->config.frontend.ready;
     }
 }
 
@@ -568,11 +583,10 @@ long int remio_hypercall(void)
         case REMIO_HYP_NOTIFY:
             /**
              * Send a CPU message to the frontend VM to inject an interrupt. Reject the
-             * call if the remote I/O device is not ready, as frontend.cpu_id is unset
-             * before that, and no well-behaved backend should be sending notifications
-             * yet.
+             * call if the frontend VM was not assigned a CPU yet, as no well-behaved
+             * backend should be sending notifications before that.
              */
-            if (!device->ready) {
+            if (!remio_dev_frontend_ready(device)) {
                 ret = -HC_E_FAILURE;
                 break;
             }
@@ -597,8 +611,8 @@ bool remio_mmio_emul_handler(struct emul_access* acc)
         return false;
     }
 
-    /** Wait until the Remote I/O device is ready */
-    while (!device->ready)
+    /** Wait until the backend VM is assigned the CPU that receives the notification */
+    while (!remio_dev_backend_ready(device))
         ;
 
     /** Create a new Remote I/O request based on the MMIO access information */
