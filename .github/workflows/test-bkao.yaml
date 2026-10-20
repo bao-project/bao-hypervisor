@@ -1,0 +1,43 @@
+name: Bao Kao Testing Framework
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+
+jobs:
+
+  run-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [
+          "qemu-aarch64-virt",
+          "qemu-riscv64-virt",
+          "fvp-a",
+          "fvp-r"
+        ]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Cache FVP model
+        if: startsWith(matrix.platform, 'fvp-')
+        uses: actions/cache@v4
+        with:
+          path: |
+            tests/wrkdir/.kao-wrkdir
+            tests/wrkdir/platforms/fvp_a/FVP_Model_A
+            tests/wrkdir/platforms/fvp_r/FVP_Model_R
+          key: ${{ runner.os }}-${{ matrix.platform }}-fvp-11.28_23
+
+      - name: Run Bao Kao tests
+        uses: ./.github/actions/bao-container-run
+        with:
+          run: >
+            git config --global url.https://github.com/.insteadOf git@github.com:
+            && make tests PLATFORM=${{ matrix.platform }}
+            KAO_ARGS=--no-toolchain-build
