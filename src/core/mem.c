@@ -27,17 +27,21 @@ vaddr_t data_addr __attribute__((section(".datanocopy")));
 
 static bool pp_bitmap_alloc(size_t pool_num_pages, bitmap_t** bitmap)
 {
-    static uint8_t bitmap_pool[PLAT_BITMAP_POOL_SIZE];
+    static uint8_t bitmap_pool[PLAT_BITMAP_POOL_SIZE]
+        __attribute__((aligned(sizeof(bitmap_granule_t))));
     static spinlock_t bitmap_lock = SPINLOCK_INITVAL;
     static size_t last_index = 0;
     bool allocated = false;
 
+    /* Bitmaps are accessed a granule at a time: hand them out in whole, aligned granules. */
+    size_t bitmap_bytes = BITMAP_SIZE_IN_GRANULE(pool_num_pages) * sizeof(bitmap_granule_t);
+
     spin_lock(&bitmap_lock);
 
-    if (((PLAT_BITMAP_POOL_SIZE - last_index) * 8) >= pool_num_pages) {
+    if ((PLAT_BITMAP_POOL_SIZE - last_index) >= bitmap_bytes) {
         size_t prev_last_index = last_index;
 
-        last_index += BITMAP_SIZE_IN_BYTES(pool_num_pages);
+        last_index += bitmap_bytes;
         allocated = true;
         *bitmap = (bitmap_t*)&bitmap_pool[prev_last_index];
     }
@@ -76,7 +80,7 @@ bool pp_alloc(struct page_pool* pool, size_t num_pages, bool aligned, struct ppa
     size_t curr;
     if (aligned) {
         start = pool->base / PAGE_SIZE % num_pages;
-        curr = pool->last + ((pool->last + start) % num_pages);
+        curr = pool->last + ((num_pages - ((pool->last + start) % num_pages)) % num_pages);
     } else {
         start = 0;
         curr = pool->last;
@@ -105,9 +109,9 @@ bool pp_alloc(struct page_pool* pool, size_t num_pages, bool aligned, struct ppa
             } else if (aligned && (((((size_t)bit) + start) % num_pages) != 0)) {
                 /**
                  * If we're looking for an aligned segment and the found contigous segment is not
-                 * aligned, start the search again from the last aligned index
+                 * aligned, start the search again from the next aligned index
                  */
-                curr = ((size_t)bit) + ((((size_t)bit) + start) % num_pages);
+                curr = ((size_t)bit) + (num_pages - ((((size_t)bit) + start) % num_pages));
             } else {
                 /**
                  * We've found our pages. Fill output argument info, mark them as allocated, and
@@ -139,7 +143,7 @@ static bool mem_are_ppages_reserved_in_pool(struct page_pool* ppool, struct ppag
     bool reserved = false;
     bool rgn_found = mem_ppages_in_pool(ppool, ppages);
     if (rgn_found) {
-        size_t pageoff = NUM_PAGES(ppages->base - ppool->base);
+        size_t pageoff = (ppages->base - ppool->base) / PAGE_SIZE;
 
         // verify these pages arent allocated yet
         bool is_alloced = bitmap_get(ppool->bitmap, pageoff);
@@ -159,7 +163,7 @@ static bool mem_reserve_ppool_ppages(struct page_pool* pool, struct ppages* ppag
     bool reserved = false;
     bool is_in_rgn = mem_ppages_in_pool(pool, ppages);
     if (is_in_rgn && !mem_are_ppages_reserved_in_pool(pool, ppages)) {
-        size_t pageoff = NUM_PAGES(ppages->base - pool->base);
+        size_t pageoff = (ppages->base - pool->base) / PAGE_SIZE;
         bitmap_set_consecutive(pool->bitmap, pageoff, ppages->num_pages);
         pool->free -= ppages->num_pages;
         reserved = true;
@@ -177,7 +181,14 @@ void* mem_alloc_page(size_t num_pages, as_sec_t sec, bool phys_aligned)
         vpage = mem_alloc_map(&cpu()->as, sec, &ppages, INVALID_VA, num_pages, PTE_HYP_FLAGS);
     }
 
-    return (void*)vpage;
+    return (vpage == INVALID_VA) ? NULL : (void*)vpage;
+}
+
+/* The pages spanned by [addr, addr + size), whatever the alignment of addr. */
+static struct ppages mem_ppages_get_span(paddr_t addr, size_t size)
+{
+    paddr_t base = ALIGN_FLOOR(addr, (paddr_t)PAGE_SIZE);
+    return mem_ppages_get(base, NUM_PAGES((addr - base) + size));
 }
 
 static bool root_pool_set_up_bitmap(struct page_pool* root_pool)
@@ -189,7 +200,7 @@ static bool pp_root_reserve_hyp_image_load(struct page_pool* root_pool)
 {
     size_t image_load_size = (size_t)(&_image_load_end - &_image_start);
 
-    struct ppages images_load_ppages = mem_ppages_get(img_addr, NUM_PAGES(image_load_size));
+    struct ppages images_load_ppages = mem_ppages_get_span(img_addr, image_load_size);
 
     return mem_reserve_ppool_ppages(root_pool, &images_load_ppages);
 }
@@ -201,8 +212,7 @@ static bool pp_root_reserve_hyp_image_noload(struct page_pool* root_pool)
     size_t vm_image_size = (size_t)(&_vm_image_end - &_vm_image_start);
     paddr_t image_noload_addr = img_addr + image_load_size + vm_image_size;
 
-    struct ppages images_noload_ppages =
-        mem_ppages_get(image_noload_addr, NUM_PAGES(image_noload_size));
+    struct ppages images_noload_ppages = mem_ppages_get_span(image_noload_addr, image_noload_size);
 
     return mem_reserve_ppool_ppages(root_pool, &images_noload_ppages);
 }
@@ -224,7 +234,7 @@ static bool pp_root_reserve_cpus(struct page_pool* root_pool)
         cpu_base_addr = image_noload_addr + image_noload_size;
     }
 
-    struct ppages cpu_ppages = mem_ppages_get(cpu_base_addr, NUM_PAGES(cpu_size));
+    struct ppages cpu_ppages = mem_ppages_get_span(cpu_base_addr, cpu_size);
 
     return mem_reserve_ppool_ppages(root_pool, &cpu_ppages);
 }
@@ -234,7 +244,7 @@ static bool pp_root_reserve_hyp_data(struct page_pool* root_pool)
     size_t data_size = (size_t)(&_image_end - &_data_vma_start);
     paddr_t data_base_addr = (paddr_t)&_data_vma_start;
 
-    struct ppages data_ppages = mem_ppages_get(data_base_addr, NUM_PAGES(data_size));
+    struct ppages data_ppages = mem_ppages_get_span(data_base_addr, data_size);
 
     return mem_reserve_ppool_ppages(root_pool, &data_ppages);
 }
@@ -258,8 +268,9 @@ static bool pp_root_init(struct mem_region* root_region)
 {
     struct page_pool* root_pool = &root_region->page_pool;
     root_pool->base = ALIGN(root_region->base, PAGE_SIZE);
-    root_pool->num_pages = root_region->size / PAGE_SIZE; /* TODO: what if not
-                                                            aligned? */
+    /* Only whole pages inside the region belong to the pool. */
+    size_t head = root_pool->base - root_region->base;
+    root_pool->num_pages = (root_region->size > head) ? (root_region->size - head) / PAGE_SIZE : 0;
     root_pool->free = root_pool->num_pages;
 
     if (!root_pool_set_up_bitmap(root_pool)) {
@@ -281,7 +292,9 @@ static bool pp_init(struct page_pool* pool, paddr_t base, size_t size)
 
     memset((void*)pool, 0, sizeof(struct page_pool));
     pool->base = ALIGN(base, PAGE_SIZE);
-    pool->num_pages = NUM_PAGES(size);
+    /* Only whole pages inside the region belong to the pool. */
+    size_t head = pool->base - base;
+    pool->num_pages = (size > head) ? (size - head) / PAGE_SIZE : 0;
 
     if (!pp_bitmap_alloc(pool->num_pages, &pool->bitmap)) {
         return false;
@@ -331,7 +344,8 @@ static void mem_init_reserved(void)
         // the image must be entirely inside a statically allocated region, or
         // completely outside of it. This avoid overcamplicating the
         // reservation logic while still covering all the useful use cases.
-        if (mem_vm_img_in_phys_rgn(vm_cfg)) {
+        if ((vm_cfg->image.size == 0) || mem_vm_img_in_phys_rgn(vm_cfg)) {
+            /* Nothing to reserve, or reserved together with the region holding it. */
             vm_cfg->image.reserved = true;
         } else {
             vm_cfg->image.reserved = false;
@@ -405,8 +419,7 @@ static void mem_reserve_physical_memory(struct page_pool* pool)
 
     for (size_t i = 0; i < config.vmlist_size; i++) {
         struct vm_config* vm_cfg = &config.vmlist[i];
-        size_t n_pg = NUM_PAGES(vm_cfg->image.size);
-        struct ppages ppages = mem_ppages_get(vm_cfg->image.load_addr, n_pg);
+        struct ppages ppages = mem_ppages_get_span(vm_cfg->image.load_addr, vm_cfg->image.size);
 
         if (!vm_cfg->image.reserved && mem_reserve_ppool_ppages(pool, &ppages)) {
             vm_cfg->image.reserved = true;
@@ -420,8 +433,7 @@ static void mem_reserve_physical_memory(struct page_pool* pool)
         for (size_t j = 0; j < vm_cfg->platform.region_num; j++) {
             struct vm_mem_region* reg = &vm_cfg->platform.regions[j];
             if (reg->place_phys && !reg->reserved) {
-                size_t n_pg = NUM_PAGES(reg->size);
-                struct ppages ppages = mem_ppages_get(reg->phys, n_pg);
+                struct ppages ppages = mem_ppages_get_span(reg->phys, reg->size);
                 if (mem_reserve_ppool_ppages(pool, &ppages)) {
                     reg->reserved = true;
                 }
@@ -432,8 +444,7 @@ static void mem_reserve_physical_memory(struct page_pool* pool)
     for (size_t i = 0; i < config.shmemlist_size; i++) {
         struct shmem* shmem = &config.shmemlist[i];
         if (shmem->place_phys && !shmem->reserved) {
-            size_t n_pg = NUM_PAGES(shmem->size);
-            struct ppages ppages = mem_ppages_get(shmem->phys, n_pg);
+            struct ppages ppages = mem_ppages_get_span(shmem->phys, shmem->size);
             if (mem_reserve_ppool_ppages(pool, &ppages)) {
                 shmem->reserved = true;
                 shmem->phys = ppages.base;

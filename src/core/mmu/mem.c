@@ -92,6 +92,7 @@ static void mem_free_ppages(struct ppages* ppages)
             } else {
                 bitmap_clear_consecutive(pool->bitmap, index, ppages->num_pages);
             }
+            pool->free += ppages->num_pages;
         }
         spin_unlock(&pool->lock);
     }
@@ -319,7 +320,9 @@ vaddr_t mem_alloc_vpage(struct addr_space* as, as_sec_t section, vaddr_t at, siz
     pte_t* pte = NULL;
     bool failed = false;
 
-    // TODO: maybe some bound checking here would be nice
+    if ((size_t)section >= sections[as->type].sec_size) {
+        return INVALID_VA;
+    }
     struct section* sec = &sections[as->type].sec[section];
     if (at != INVALID_VA) {
         if (sec != mem_find_sec(as, at)) {
@@ -425,9 +428,14 @@ void mem_unmap(struct addr_space* as, vaddr_t at, size_t num_pages, bool free_pp
     vaddr_t top = at + (num_pages * PAGE_SIZE);
     size_t lvl = 0;
 
+    struct section* sec = mem_find_sec(as, at);
+    if (sec == NULL) {
+        WARNING("trying to unmap 0x%lx, which belongs to no section\n", (unsigned long)at);
+        return;
+    }
+
     spin_lock(&as->lock);
 
-    struct section* sec = mem_find_sec(as, at);
     if (sec->shared) {
         spin_lock(&sec->lock);
     }
@@ -796,7 +804,7 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
     size_t root_pt_num_pages = NUM_PAGES(pt_size(&cpu_new->as.pt, 0));
     mem_translate(&cpu()->as, (vaddr_t)cpu_new->as.pt.root, &p_root_pt_addr);
     v_root_pt_addr = mem_alloc_vpage(&cpu_new->as, SEC_HYP_PRIVATE, INVALID_VA, root_pt_num_pages);
-    if (va == INVALID_VA) {
+    if (v_root_pt_addr == INVALID_VA) {
         ERROR("Can't allocate virtuall address space for root page table\n");
     }
     struct ppages p_root_pt_pages = mem_ppages_get(p_root_pt_addr, root_pt_num_pages);
