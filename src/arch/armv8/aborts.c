@@ -182,6 +182,8 @@ void aborts_sync_handler(void)
     unsigned long hpfar = sysreg_hpfar_el2_read();
     unsigned long ipa_fault_addr = 0;
 
+    ASSERT(cpu()->vcpu != NULL);
+
     if (DEFINED(MEM_PROT_MMU) || cpu()->vcpu->vm->config->platform.mmu) {
         ipa_fault_addr = (far & 0xFFF) | (hpfar << 8);
     } else {

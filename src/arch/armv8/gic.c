@@ -86,6 +86,7 @@ void gic_init(void)
         gic_map_mmio();
         gicd_init();
         NUM_LRS = gich_num_lrs();
+        ASSERT(NUM_LRS > 0 && NUM_LRS <= GIC_NUM_LIST_REGS);
     }
 
     cpu_sync_and_clear_msgs(&cpu_glb_sync);

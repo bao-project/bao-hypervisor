@@ -108,6 +108,7 @@ static void vgicr_emul_typer_access(struct emul_access* acc, struct vgic_reg_han
 
     if (!acc->write) {
         struct vcpu* vcpu = vm_get_vcpu(cpu()->vcpu->vm, vgicr_id);
+        ASSERT(vcpu != NULL);
         uint64_t typer = vcpu->arch.vgic_priv.vgicr.TYPER;
 
         if (top_access) {
@@ -292,6 +293,7 @@ static bool vgicr_emul_handler(struct emul_access* acc)
         vcpuid_t vgicr_id = vgicr_get_id(acc);
         struct vcpu* vcpu =
             vgicr_id == cpu()->vcpu->id ? cpu()->vcpu : vm_get_vcpu(cpu()->vcpu->vm, vgicr_id);
+        ASSERT(vcpu != NULL);
         spin_lock(&vcpu->arch.vgic_priv.vgicr.lock);
         handler_info->reg_access(acc, handler_info, VGIC_GICR_ACCESS, vgicr_id);
         spin_unlock(&vcpu->arch.vgic_priv.vgicr.lock);

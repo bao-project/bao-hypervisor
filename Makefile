@@ -48,6 +48,7 @@ HOST_CC:=gcc
 
 #Makefile arguments and default values
 DEBUG:=n
+ASSERTS:=$(DEBUG)
 OPTIMIZATIONS:=2
 CONFIG=
 PLATFORM=
@@ -250,11 +251,17 @@ else ifeq ($(CC_IS_CLANG),y)
 	build_macros+=-DCC_IS_CLANG
 endif
 
-# Debug builds carry the diagnostics that release builds compile out: ASSERT(), the panic
-# backtrace and the configuration validation. Use DEBUG=y OPTIMIZATIONS=2 for an optimised build
-# with the diagnostics.
+# Debug builds carry the diagnostics that release builds compile out: the panic backtrace and the
+# configuration validation. Use DEBUG=y OPTIMIZATIONS=2 for an optimised build with the
+# diagnostics.
 ifeq ($(DEBUG), y)
 	build_macros+=-DBAO_DEBUG
+endif
+
+# ASSERTS=y enables the ASSERT() checks. It follows DEBUG unless given on the command line, so a
+# release build can keep the checks and a debug build can drop them.
+ifeq ($(ASSERTS), y)
+	build_macros+=-DBAO_ASSERTS
 endif
 
 override CPPFLAGS+=$(addprefix -I, $(inc_dirs)) $(arch-cppflags) \

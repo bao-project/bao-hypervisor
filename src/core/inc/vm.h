@@ -149,6 +149,8 @@ static inline cpuid_t vm_translate_to_pcpuid(struct vm* vm, vcpuid_t vcpuid)
 
 static inline vcpuid_t vm_translate_to_vcpuid(struct vm* vm, cpuid_t pcpuid)
 {
+    ASSERT(pcpuid < sizeof(cpumap_t) * 8);
+
     if (vm->cpus & (1UL << pcpuid)) {
         return (cpuid_t)bit_count(vm->cpus & ((1UL << pcpuid) - 1UL));
     } else {

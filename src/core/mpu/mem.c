@@ -63,6 +63,7 @@ static void mem_vmpu_set_entry(struct addr_space* as, mpid_t mpid, struct mp_reg
     bool locked)
 {
     struct mpe* mpe = mem_vmpu_get_entry(as, mpid);
+    ASSERT(mpe != NULL);
 
     mpe->region.base = mpr->base;
     mpe->region.size = mpr->size;
@@ -78,6 +79,7 @@ static void mem_vmpu_set_entry(struct addr_space* as, mpid_t mpid, struct mp_reg
 static void mem_vmpu_clear_entry(struct addr_space* as, mpid_t mpid)
 {
     struct mpe* mpe = mem_vmpu_get_entry(as, mpid);
+    ASSERT(mpe != NULL);
 
     mpe->region.base = 0;
     mpe->region.size = 0;
@@ -119,6 +121,7 @@ static mpid_t mem_vmpu_allocate_entry(struct addr_space* as)
 static void mem_vmpu_deallocate_entry(struct addr_space* as, mpid_t mpid)
 {
     struct mpe* mpe = mem_vmpu_get_entry(as, mpid);
+    ASSERT(mpe != NULL);
 
     mpe->region.base = 0;
     mpe->region.size = 0;
@@ -303,6 +306,7 @@ static cpumap_t mem_section_shared_cpus(struct addr_space* as, as_sec_t section)
             }
         }
     } else {
+        ASSERT(cpu()->vcpu != NULL);
         cpus = cpu()->vcpu->vm->cpus;
     }
 
@@ -467,6 +471,7 @@ void mem_handle_broadcast_region(uint32_t event, uint64_t data)
         if (sh_reg->as_type == AS_HYP) {
             as = &cpu()->as;
         } else {
+            ASSERT(cpu()->vcpu != NULL);
             struct addr_space* vm_as = &cpu()->vcpu->vm->as;
             if (vm_as->id != sh_reg->asid) {
                 ERROR("Received shared region for unknown vm address space.\n");
@@ -610,6 +615,7 @@ bool mem_unmap_range(struct addr_space* as, vaddr_t vaddr, size_t size, bool bro
             break;
         }
         struct mpe* mpe = mem_vmpu_get_entry(as, mpid);
+        ASSERT(mpe != NULL && mpe->state == MPE_S_VALID);
         reg = mpe->region;
 
         bool locked = mpe->lock;
