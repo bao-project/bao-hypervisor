@@ -285,7 +285,7 @@ static void vm_init_remio(struct vm* vm, const struct vm_config* vm_config)
         struct remio_dev* remio_dev = &vm_config->platform.remio_devs[i];
         vm_init_remio_dev(vm, remio_dev);
     }
-    remio_assign_vm_cpus(vm);
+    remio_assign_vm_cpus(vm->id);
 }
 
 static struct vm* vm_allocation_init(struct vm_allocation* vm_alloc)
