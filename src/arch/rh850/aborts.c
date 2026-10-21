@@ -137,7 +137,7 @@ static void decode_access(struct emul_access* acc, unsigned long addr)
     acc->width = ds_to_width(ds);
     acc->write = rw ? true : false;
     acc->reg = reg;
-    acc->sign_ext = ~u;
+    acc->sign_ext = (u == 0U);
     acc->arch.bwop = bwop;
     acc->arch.bit = bit;
 }
