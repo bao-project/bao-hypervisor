@@ -88,7 +88,12 @@ _reset_handler:
     /* copy non-text sections from flash to ram */
     LOAD_ADDR _data_lma_start, r15
     LOAD_ADDR _image_load_end, r16
-    mov PLAT_DATA_ADDR, r17
+    /**
+     * Where the linker put .data, which is CONFIG_HYP_DATA_ADDR, not the platform's first rwx
+     * region. The two are the same until a configuration sets hyp.data_relocate, and taking the
+     * platform's answer here would copy the image somewhere the code was never linked for.
+     */
+    LOAD_ADDR _data_vma_start, r17
     jarl _copy_data, lp
 
     /* clear .bss in ram */
@@ -102,7 +107,7 @@ _reset_handler:
     st.w r20, 0[r21]
 
     /* store data section address in data_addr */
-    mov PLAT_DATA_ADDR, r20
+    LOAD_ADDR _data_vma_start, r20
     LOAD_ADDR data_addr, r21
     st.w r20, 0 [r21]
 

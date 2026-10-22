@@ -30,36 +30,40 @@ static inline bool emul_arch_is_bwop(struct emul_access_arch* acc)
     return acc->bwop != EMUL_ARCH_BWOP_NO;
 }
 
-static inline uint8_t emul_arch_bwop_emul_acc(struct emul_access_arch* acc, uint8_t cur_val)
+/**
+ * Emulate a bit manipulation instruction (set1, not1, clr1 or tst1) on the byte at reg. All four
+ * set PSW.Z from the bit's current value; only the first three store a result. tst1 must not
+ * store: on hardware it only reads, and writing the byte back would overwrite a bit the hardware
+ * changed between the read and the write, such as an interrupt request flag.
+ */
+static inline void emul_arch_bwop_emul_acc(struct emul_access_arch* acc, volatile uint8_t* reg)
 {
     unsigned long psw = srs_gmpsw_read();
     uint8_t bitmask = (uint8_t)(1UL << acc->bit);
+    uint8_t cur_val = *reg;
+
     if (cur_val & bitmask) {
         srs_gmpsw_write(psw & ~PSW_Z);
     } else {
         srs_gmpsw_write(psw | PSW_Z);
     }
-    uint8_t val = 0;
+
     switch (acc->bwop) {
         case EMUL_ARCH_BWOP_SET1:
-            val = (uint8_t)(cur_val | bitmask);
-            ;
+            *reg = (uint8_t)(cur_val | bitmask);
             break;
         case EMUL_ARCH_BWOP_NOT1:
-            val = (uint8_t)(cur_val ^ bitmask);
-            ;
+            *reg = (uint8_t)(cur_val ^ bitmask);
             break;
         case EMUL_ARCH_BWOP_CLR1:
-            val = (uint8_t)(cur_val & (uint8_t)~bitmask);
-            ;
+            *reg = (uint8_t)(cur_val & (uint8_t)~bitmask);
             break;
-            /* TST1 only modifies the PSW.Z flag */
+        case EMUL_ARCH_BWOP_TST1:
+            break;
         default:
             ERROR("Invalid bitwise operation\n");
             break;
     }
-
-    return val;
 }
 
 #endif /* __ASSEMBLER__ */
