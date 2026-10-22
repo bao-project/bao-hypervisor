@@ -82,7 +82,7 @@ long int ipc_hypercall(void)
         struct cpu_msg msg = { (uint32_t)IPC_CPUMSG_ID, IPC_NOTIFY, data.raw };
 
         for (size_t i = 0; i < platform.cpu_num; i++) {
-            if (ipc_cpu_masters & (1ULL << i)) {
+            if (ipc_cpu_masters & (1UL << i)) {
                 cpu_send_msg(i, &msg);
             }
         }
