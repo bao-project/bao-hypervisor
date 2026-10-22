@@ -19,10 +19,13 @@ extern volatile struct eint* eint_hw;
 extern volatile struct fenc* fenc_hw;
 extern volatile struct feinc* feinc_hw[PLAT_CPU_NUM];
 
+/* the 4 KB block of each register array; the EIBD and EEIC arrays span two blocks each */
 #define INTC2_EIC_OFFSET    0x0000
 #define INTC2_IMR_OFFSET    0x1000
 #define INTC2_EIBD_OFFSET   0x2000
+#define INTC2_EIBD_OFFSET_2 0x3000
 #define INTC2_EEIC_OFFSET   0x4000
+#define INTC2_EEIC_OFFSET_2 0x5000
 #define INTC2_OFFSET_MASK   0x7000
 
 #define INTC_EIBD_PEID_MASK (0x7UL)
@@ -34,6 +37,20 @@ void vintc_inject(struct vcpu* vcpu, irqid_t int_id)
         ERROR("Trying to inject unassigned interrupt in VM\n");
     }
     intc_set_pend(int_id, true);
+}
+
+/**
+ * An access to the reserved space of the intc2 range: a load reads 0, a bit operation finds the
+ * bit clear, a store is ignored. Same treatment the handlers give an interrupt the VM was not
+ * given.
+ */
+static void vintc2_ignore_access(struct emul_access* acc)
+{
+    if (emul_arch_is_bwop(&acc->arch)) {
+        (void)emul_arch_bwop_emul_acc(&acc->arch, 0);
+    } else if (!acc->write) {
+        vcpu_writereg(cpu()->vcpu, acc->reg, 0);
+    }
 }
 
 static void emulate_intc_eic_access(struct emul_access* acc)
@@ -49,6 +66,12 @@ static void emulate_intc_eic_access(struct emul_access* acc)
     size_t acc_intc2_offset = acc->addr - (unsigned long)intc2_hw;
     unsigned long bot = offsetof(struct intc2, EIC);
     size_t reg_idx = (acc_intc2_offset - bot) / 2;
+
+    if (acc_intc2_offset < bot) {
+        /* the reserved space before the array */
+        vintc2_ignore_access(acc);
+        return;
+    }
 
     unsigned long mask = BIT_MASK(0, acc->width * 8);
     size_t addr_off = acc->addr & 0x1UL;
@@ -86,6 +109,12 @@ static void emulate_intc_imr_access(struct emul_access* acc)
     size_t acc_intc2_offset = acc->addr - (unsigned long)intc2_hw;
     unsigned long bot = offsetof(struct intc2, IMR);
     size_t reg_idx = (acc_intc2_offset - bot) / 4;
+
+    if ((acc_intc2_offset < bot) || (reg_idx >= INTC2_IMR_NUM)) {
+        /* the reserved space before or after the array */
+        vintc2_ignore_access(acc);
+        return;
+    }
 
     unsigned long mask = BIT_MASK(0, acc->width * 8);
     size_t addr_off = acc->addr & 0x3UL;
@@ -143,6 +172,12 @@ static void emulate_intc_eibd_access(struct emul_access* acc)
     unsigned long bot = offsetof(struct intc2, EIBD);
     size_t reg_idx = (acc_intc2_offset - bot) / 4;
 
+    if (acc_intc2_offset < bot) {
+        /* the reserved space before the array */
+        vintc2_ignore_access(acc);
+        return;
+    }
+
     unsigned long mask = BIT_MASK(0, acc->width * 8);
     size_t addr_off = acc->addr & 0x3UL;
     irqid_t int_id = 0;
@@ -194,6 +229,12 @@ static void emulate_intc_eeic_access(struct emul_access* acc)
     unsigned long bot = offsetof(struct intc2, EEIC);
     size_t reg_idx = (acc_intc2_offset - bot) / 4;
 
+    if (acc_intc2_offset < bot) {
+        /* the reserved space before the array */
+        vintc2_ignore_access(acc);
+        return;
+    }
+
     unsigned long mask = BIT_MASK(0, acc->width * 8);
     size_t addr_off = acc->addr & 0x3UL;
     volatile uint32_t* tgt_reg = &(intc2_hw->EEIC[reg_idx]);
@@ -234,9 +275,11 @@ static bool vintc2_emul_handler(struct emul_access* acc)
                 emulate_intc_imr_access(acc);
                 break;
             case INTC2_EIBD_OFFSET:
+            case INTC2_EIBD_OFFSET_2:
                 emulate_intc_eibd_access(acc);
                 break;
             case INTC2_EEIC_OFFSET:
+            case INTC2_EEIC_OFFSET_2:
                 emulate_intc_eeic_access(acc);
                 break;
             default:
