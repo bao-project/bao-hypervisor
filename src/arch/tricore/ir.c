@@ -24,7 +24,7 @@ are attempted. When a CPU tries to write to the SRB register to broadcast an IPI
 if the IPIs are not initialized the system traps. This flag circumvents that.*/
 bool ipi_initialized = false;
 
-bitmap_t valid[IR_MAX_INTERRUPTS / sizeof(bitmap_t)] = INTERRUPTS_BITMAP;
+static BITMAP_ALLOC(valid, IR_MAX_INTERRUPTS) = INTERRUPTS_BITMAP;
 
 static inline bool ir_id_valid(irqid_t id)
 {
