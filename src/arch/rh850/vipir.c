@@ -72,7 +72,7 @@ static bool vipir_emul_handler(struct emul_access* acc)
     if ((chan_idx != IPI_HYP_IRQ_ID) && (tgt_reg != NULL)) {
         if (emul_arch_is_bwop(&acc->arch)) {
             acc->arch.bit = (uint8_t)vm_translate_to_pcpuid(vm, acc->arch.bit);
-            *tgt_reg = emul_arch_bwop_emul_acc(&acc->arch, *tgt_reg);
+            emul_arch_bwop_emul_acc(&acc->arch, tgt_reg);
         } else if (acc->write) {
             unsigned long val = (uint8_t)vcpu_readreg(vcpu, acc->reg);
             val = (uint8_t)vm_translate_to_pcpu_mask(vm, val, PLAT_CPU_NUM);

@@ -47,7 +47,8 @@ void vintc_inject(struct vcpu* vcpu, irqid_t int_id)
 static void vintc2_ignore_access(struct emul_access* acc)
 {
     if (emul_arch_is_bwop(&acc->arch)) {
-        (void)emul_arch_bwop_emul_acc(&acc->arch, 0);
+        uint8_t zero = 0;
+        emul_arch_bwop_emul_acc(&acc->arch, &zero);
     } else if (!acc->write) {
         vcpu_writereg(cpu()->vcpu, acc->reg, 0);
     }
@@ -81,7 +82,7 @@ static void emulate_intc_eic_access(struct emul_access* acc)
     if (vm_has_interrupt(vm, int_id)) {
         if (emul_arch_is_bwop(&acc->arch)) {
             volatile uint8_t* byte_addr = ((volatile uint8_t*)tgt_reg) + addr_off;
-            *byte_addr = emul_arch_bwop_emul_acc(&acc->arch, *byte_addr);
+            emul_arch_bwop_emul_acc(&acc->arch, byte_addr);
         } else if (acc->write) {
             unsigned long val = vcpu_readreg(vcpu, acc->reg);
             *tgt_reg = (uint16_t)(((val & mask) << (addr_off * 8)) |
@@ -126,7 +127,7 @@ static void emulate_intc_imr_access(struct emul_access* acc)
 
     if (emul_arch_is_bwop(&acc->arch)) {
         volatile uint8_t* byte_addr = ((volatile uint8_t*)tgt_reg) + addr_off;
-        *byte_addr = emul_arch_bwop_emul_acc(&acc->arch, *byte_addr);
+        emul_arch_bwop_emul_acc(&acc->arch, byte_addr);
     } else if (acc->write) {
         unsigned long val = vcpu_readreg(vcpu, acc->reg);
         unsigned long write_val = *tgt_reg;
@@ -187,7 +188,7 @@ static void emulate_intc_eibd_access(struct emul_access* acc)
     if (vm_has_interrupt(vm, int_id)) {
         if (emul_arch_is_bwop(&acc->arch)) {
             volatile uint8_t* byte_addr = ((volatile uint8_t*)tgt_reg) + addr_off;
-            *byte_addr = emul_arch_bwop_emul_acc(&acc->arch, *byte_addr);
+            emul_arch_bwop_emul_acc(&acc->arch, byte_addr);
         } else if (acc->write) {
             unsigned long val = vcpu_readreg(vcpu, acc->reg);
             unsigned long virt_peid = val & 0x7UL;
@@ -243,7 +244,7 @@ static void emulate_intc_eeic_access(struct emul_access* acc)
     if (vm_has_interrupt(vm, int_id)) {
         if (emul_arch_is_bwop(&acc->arch)) {
             volatile uint8_t* byte_addr = ((volatile uint8_t*)tgt_reg) + addr_off;
-            *byte_addr = emul_arch_bwop_emul_acc(&acc->arch, *byte_addr);
+            emul_arch_bwop_emul_acc(&acc->arch, byte_addr);
         } else if (acc->write) {
             unsigned long val = vcpu_readreg(vcpu, acc->reg);
             *tgt_reg = ((val & mask) << (addr_off * 8)) | (*tgt_reg & ~(mask << (addr_off * 8)));
