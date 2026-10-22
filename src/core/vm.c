@@ -401,7 +401,7 @@ __attribute__((weak)) cpumap_t vm_translate_to_pcpu_mask(struct vm* vm, cpumap_t
     cpumap_t pmask = 0;
     cpuid_t shift;
     for (size_t i = 0; i < len; i++) {
-        if ((mask & (1ULL << i)) && ((shift = vm_translate_to_pcpuid(vm, i)) != INVALID_CPUID)) {
+        if ((mask & (1UL << i)) && ((shift = vm_translate_to_pcpuid(vm, i)) != INVALID_CPUID)) {
             pmask |= (1UL << shift);
         }
     }
@@ -413,7 +413,7 @@ __attribute__((weak)) cpumap_t vm_translate_to_vcpu_mask(struct vm* vm, cpumap_t
     cpumap_t pmask = 0;
     vcpuid_t shift;
     for (size_t i = 0; i < len; i++) {
-        if ((mask & (1ULL << i)) && ((shift = vm_translate_to_vcpuid(vm, i)) != INVALID_CPUID)) {
+        if ((mask & (1UL << i)) && ((shift = vm_translate_to_vcpuid(vm, i)) != INVALID_CPUID)) {
             pmask |= (1UL << shift);
         }
     }
