@@ -187,8 +187,8 @@ static inline unsigned long get_exception_cause(void)
 
 void internal_abort(void)
 {
-    bool is_fe = !!(srs_psw_read() & 0x80);
-    unsigned long fault_pc = is_fe ? srs_feic_read() : srs_eipc_read();
+    bool is_fe = (PSW_GET_NP(srs_psw_read()) != 0UL);
+    unsigned long fault_pc = is_fe ? srs_fepc_read() : srs_eipc_read();
     ERROR("Internal abort at 0x%lx\n", fault_pc);
 }
 
