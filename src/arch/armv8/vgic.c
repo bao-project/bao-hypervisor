@@ -141,7 +141,7 @@ void vgic_send_sgi_msg(struct vcpu* vcpu, cpumap_t pcpu_mask, irqid_t int_id)
     struct cpu_msg msg = { (uint32_t)VGIC_IPI_ID, VGIC_INJECT, data.raw };
 
     for (size_t i = 0; i < platform.cpu_num; i++) {
-        if (pcpu_mask & (1ULL << i)) {
+        if (pcpu_mask & (1UL << i)) {
             cpu_send_msg(i, &msg);
         }
     }
@@ -204,7 +204,7 @@ static void vgic_route(struct vcpu* vcpu, struct vgic_int* interrupt)
         vgic_yield_ownership(vcpu, interrupt);
         cpumap_t trgtlist = vgic_int_ptarget_mask(vcpu, interrupt) & ~(1UL << vcpu->phys_id);
         for (size_t i = 0; i < platform.cpu_num; i++) {
-            if (trgtlist & (1ULL << i)) {
+            if (trgtlist & (1UL << i)) {
                 cpu_send_msg(i, &msg);
                 forwarded = true;
             }
