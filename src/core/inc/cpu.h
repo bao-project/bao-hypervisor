@@ -88,12 +88,15 @@ void cpu_msg_handler(void);
 void cpu_msg_set_handler(cpuid_t id, cpu_msg_handler_t handler);
 void cpu_standby(void);
 void cpu_powerdown(void);
+__attribute__((noreturn)) void cpu_halt(void);
 void cpu_standby_wakeup(void);
 void cpu_powerdown_wakeup(void);
 
 void cpu_arch_init(cpuid_t cpu_id, paddr_t load_addr);
 void cpu_arch_standby(void);
 void cpu_arch_powerdown(void);
+/* Permanently stop this CPU without processing wake-up events. */
+__attribute__((noreturn)) void cpu_arch_halt(void);
 
 extern struct cpuif cpu_interfaces[];
 static inline struct cpuif* cpu_if(cpuid_t cpu_id)

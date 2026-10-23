@@ -46,6 +46,7 @@ int main() {
     if (platform.cpu_master_fixed) {
         printf("#define CPU_MASTER_FIXED (%ld)\n", platform.cpu_master);
     }
+    printf("#define PLAT_CONSOLE_BASE (0x%lx)\n", platform.console.base);
     // Call arch specific platform defines generator
     arch_platform_defs();
     return 0;

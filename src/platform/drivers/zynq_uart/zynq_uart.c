@@ -4,6 +4,9 @@
  */
 
 #include <drivers/zynq_uart.h>
+#ifdef EARLY_CONSOLE_DRIVER
+#include <earlycon.h>
+#endif
 
 bool uart_init(volatile struct Uart_Zynq_hw* uart)
 {
@@ -107,3 +110,23 @@ void uart_putc(volatile struct Uart_Zynq_hw* uart, int8_t c)
 
     uart->tx_rx_fifo = (uint32_t)c;
 }
+
+#ifdef EARLY_CONSOLE_DRIVER
+void earlycon_uart_init(void* base)
+{
+    volatile bao_uart_t* uart = base;
+    uart->isr_dis = 0xffffffff;
+    (void)uart_set_baud_rate(uart, UART_BAUD_RATE);
+    uart->control = UART_CONTROL_STPBRK | UART_CONTROL_TXEN | UART_CONTROL_TXRES |
+        UART_CONTROL_RXDIS;
+}
+
+#ifdef MEM_PROT_MMU
+_Static_assert(sizeof(bao_uart_t) <= PAGE_SIZE, "early UART must fit in its boot mapping");
+#endif
+
+void earlycon_uart_putc(void* base, char c)
+{
+    uart_putc(base, (int8_t)c);
+}
+#endif

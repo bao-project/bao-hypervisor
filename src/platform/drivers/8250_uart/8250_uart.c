@@ -47,3 +47,22 @@ void uart_putc(volatile struct uart8250_hw* uart, int8_t c)
     while (!(uart->lsr & UART8250_LSR_THRE)) { }
     uart->thr = (uart8250_reg_t)c;
 }
+
+#ifdef EARLY_CONSOLE_DRIVER
+#include <earlycon.h>
+
+void earlycon_uart_init(void* base)
+{
+    volatile bao_uart_t* uart = base;
+    uart_init(uart);
+    uart_enable(uart);
+}
+#ifdef MEM_PROT_MMU
+_Static_assert(sizeof(bao_uart_t) <= PAGE_SIZE, "early UART must fit in its boot mapping");
+#endif
+
+void earlycon_uart_putc(void* base, char c)
+{
+    uart_putc(base, (int8_t)c);
+}
+#endif

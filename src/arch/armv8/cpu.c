@@ -11,6 +11,13 @@
 
 cpuid_t CPU_MASTER __attribute__((section(".datanocopy")));
 
+void cpu_arch_halt(void)
+{
+    while (true) {
+        __asm__ volatile("wfi\n\t" ::: "memory");
+    }
+}
+
 /* Perform architecture dependent cpu cores initializations */
 void cpu_arch_init(cpuid_t cpuid, paddr_t load_addr)
 {

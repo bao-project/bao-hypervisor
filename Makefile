@@ -126,6 +126,31 @@ endif
 endif
 
 
+# Optional early output. SBI driver selection occurs in platform.mk.
+# Set SBI selection options on the command line or before the platform is loaded.
+# UART early output uses the normal console's driver and physical device.
+# Run make clean when changing these options: compiler flag changes are not tracked.
+CONFIG_EARLYCON ?= n
+CONFIG_RISCV_EARLYCON_SBI ?= $(if $(filter riscv,$(ARCH)),y,n)
+earlycon_uart :=
+ifneq ($(build_targets),)
+ifneq ($(origin EARLY_CONSOLE),undefined)
+$(error EARLY_CONSOLE was replaced by CONFIG_EARLYCON and CONFIG_RISCV_EARLYCON_SBI)
+endif
+ifneq ($(origin EARLY_CONSOLE_BASE),undefined)
+$(error EARLY_CONSOLE_BASE is no longer supported; early UART uses the normal console device)
+endif
+ifeq ($(CONFIG_EARLYCON),y)
+ifeq ($(CONFIG_RISCV_EARLYCON_SBI),y)
+ifneq ($(ARCH),riscv)
+$(error CONFIG_RISCV_EARLYCON_SBI requires RISC-V)
+endif
+else
+earlycon_uart := y
+endif
+endif
+endif
+
 build_dir:=$(cur_dir)/build/$(PLATFORM)/$(CONFIG)
 bin_dir:=$(cur_dir)/bin/$(PLATFORM)/$(CONFIG)
 directories:=$(build_dir) $(bin_dir)
@@ -180,6 +205,10 @@ inc_dirs+=$(platform_build_dir)
 # Setup list of objects for compilation
 -include $(addsuffix /objects.mk, $(src_dirs))
 
+ifeq ($(earlycon_uart),y)
+drivers-objs-y+=earlycon_uart.o
+endif
+
 ## Force adding config source file to to config objects (later we remove duplicate if it is already there)
 config-objs-y+=$(patsubst $(config_dir)/%.c, %.o, $(config_src))
 
@@ -221,6 +250,27 @@ objs-y:=$(abspath $(sort $(objs-y)))
 # Toolchain flags
 
 build_macros:=
+ifeq ($(CONFIG_EARLYCON),y)
+build_macros+=-DCONFIG_EARLYCON
+endif
+ifeq ($(earlycon_uart),y)
+ifeq ($(strip $(earlycon_uart_driver)),)
+$(error Normal console driver ($(drivers)) has no early UART hooks; select CONFIG_RISCV_EARLYCON_SBI=y on RISC-V or CONFIG_EARLYCON=n)
+endif
+ifneq ($(words $(earlycon_uart_driver)),1)
+$(error Expected one normal console UART driver for early output)
+endif
+ifeq ($(arch_mem_prot),mmu)
+ifeq ($(filter $(ARCH),armv8 riscv),)
+$(error UART early console boot mappings are not implemented for $(ARCH))
+endif
+endif
+build_macros+=-DEARLY_CONSOLE_UART
+# Only the normal console driver exports its optional early hooks.
+early_uart_obj := $(build_dir)/src/platform/drivers/$(earlycon_uart_driver)/$(earlycon_uart_driver).o
+early_uart_dep := $(early_uart_obj:.o=.d)
+$(early_uart_obj) $(early_uart_dep): override CFLAGS += -DEARLY_CONSOLE_DRIVER
+endif
 ifeq ($(arch_mem_prot),mmu)
 	build_macros+=-DMEM_PROT_MMU
 endif

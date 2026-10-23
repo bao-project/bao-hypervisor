@@ -67,13 +67,13 @@ _reset_handler:
      * initialization.
      */
 
-    load_32bit_val_d %d3, _trap_vector_table
+    load_32bit_val_d %d3, _hyp_trap_halt_vector
     mtcr    $btv,%d3
 
-    load_32bit_val_d %d3, _hyp_vector_table
+    load_32bit_val_d %d3, _hyp_trap_halt_vector
     mtcr    CSFR_BHV,%d3
 
-    load_32bit_val_d %d3, _irq_vector
+    load_32bit_val_d %d3, _hyp_trap_halt_vector
     mtcr    $biv,%d3
     isync
 
@@ -239,6 +239,9 @@ _reset_handler:
     mov %d5, %d1
 
 
+    load_32bit_val_d %d3, _hyp_early_trap_vector
+    mtcr $btv,%d3
+    isync
     j       init
 
     /* This point should never be reached */

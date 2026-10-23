@@ -92,7 +92,7 @@ _reset_handler:
      * Install vector table physical address early, in case exception occurs during this
      * initialization.
      */
-    get_phys_addr r3, r4, _hyp_vector_table
+    get_phys_addr r3, r4, _hyp_trap_halt_vector
     mcr p15, 4, r3, c12, c0, 0 // write HVBAR
 
 /* Setting r9 should if set !is_cpu_master */
@@ -191,6 +191,9 @@ _set_master_cpu:
     add r3, r3, r4
     mov sp, r3
 
+        ldr r3, =_hyp_early_trap_vector
+    mcr p15, 4, r3, c12, c0, 0
+    isb
     b init
 
     /* This point should never be reached */

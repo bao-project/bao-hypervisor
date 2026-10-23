@@ -5,6 +5,7 @@
 
 #include <bao.h>
 #include <mem.h>
+#include <earlycon.h>
 
 #include <cpu.h>
 #include <page_table.h>
@@ -819,6 +820,9 @@ void mem_color_hypervisor(const paddr_t load_addr, struct mem_region* root_regio
         }
 
         mem_map(&cpu_new->as, va, &p_image, NUM_PAGES(image_size), PTE_HYP_FLAGS);
+#ifdef EARLY_CONSOLE_UART
+        mem_map_early_devices(&cpu_new->as);
+#endif
         shared_pte = pte_addr(pt_get_pte(&cpu_new->as.pt, 0, (vaddr_t)&_image_start));
     } else {
         pte_t* image_pte = pt_get_pte(&cpu_new->as.pt, 0, (vaddr_t)&_image_start);
@@ -977,3 +981,27 @@ vaddr_t mem_alloc_map_dev(struct addr_space* as, as_sec_t section, vaddr_t at, p
 
     return address;
 }
+
+#ifdef EARLY_CONSOLE_UART
+void mem_map_early_devices(struct addr_space* as)
+{
+    struct ppages early_uart = mem_ppages_get(EARLY_CONSOLE_BASE, 1);
+    if (mem_alloc_map(as, SEC_HYP_GLOBAL, &early_uart, EARLY_CONSOLE_VA, 1,
+            PTE_HYP_DEV_FLAGS) != EARLY_CONSOLE_VA) {
+        ERROR("cannot preserve early UART mapping during recoloring\n");
+    }
+}
+
+void mem_unmap_early_devices(void)
+{
+    /* The image tables are shared. Remove the leaf once, so another CPU cannot
+     * clear a new mapping if the allocator reuses this VA after retirement. */
+    if (cpu_is_master()) {
+        mem_unmap(&cpu()->as, EARLY_CONSOLE_VA, 1, MEM_DONT_FREE_PAGES);
+    }
+    /* mem_unmap completes the broadcast invalidation. Wait for the master
+     * before any CPU continues initialization or reuses the released VA. */
+    cpu_sync_and_clear_msgs(&cpu_glb_sync);
+}
+
+#endif /* EARLY_CONSOLE_UART */

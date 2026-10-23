@@ -26,4 +26,3 @@ root_l3_pt:
 .balign PAGE_SIZE, 0
 root_l1_flat_pt:
     .skip PAGE_SIZE
-

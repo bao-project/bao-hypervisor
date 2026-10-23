@@ -13,6 +13,13 @@
 
 cpuid_t CPU_MASTER __attribute__((section(".data")));
 
+void cpu_arch_halt(void)
+{
+    while (true) {
+        __asm__ volatile("wait\n\t" ::: "memory");
+    }
+}
+
 static inline void cpu_reset_csa(void)
 {
     unsigned long core_id = csfr_coreid_read() & COREID_CORE_MASK;

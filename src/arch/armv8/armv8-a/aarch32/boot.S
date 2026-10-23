@@ -7,6 +7,7 @@
 #include <arch/sysregs.h>
 #include <arch/page_table.h>
 #include <asm_defs.h>
+#include <earlycon.h>
 
 #define PT_LVLS 3
 
@@ -74,6 +75,16 @@ boot_arch_profile_init:
 _barrier: .4byte 0
 .popsection
 3:
+#ifdef EARLY_CONSOLE_UART
+    get_phys_addr r3, r4, root_l3_pt
+    add r3, r3, r10
+    ldr r4, =(PTE_INDEX(3, EARLY_CONSOLE_VA)*8)
+    add r3, r3, r4
+    ldr r6, =((EARLY_CONSOLE_BASE | PTE_HYP_DEV_FLAGS | PTE_PAGE) & 0xffffffff)
+    ldr r7, =((EARLY_CONSOLE_BASE | PTE_HYP_DEV_FLAGS | PTE_PAGE) >> 32)
+    str r6, [r3]
+    str r7, [r3, #4]
+#endif
 	get_phys_addr r5, r4, _barrier
     mov r4, #1
     str r4, [r5]
@@ -115,6 +126,7 @@ map_cpu:
     mov r7, #(PTE_HYP_FLAGS | PTE_TABLE)
     orr r6, r6, r7
     str r6, [r4, r5]
+
 
     add r4, r4, #PT_SIZE // advance to l2 page table
 
@@ -192,7 +204,7 @@ _enter_vas:
     nop
     nop
 
-    ldr r3, =_hyp_vector_table
+    ldr r3, =_hyp_trap_halt_vector
     mcr p15, 4, r3, c12, c0, 0 // hvbar
     
     sub r13, r13, r1
