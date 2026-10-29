@@ -209,4 +209,8 @@ void abort(void)
                 WARNING("Exception not handled. Cause: 0x%lx\n", cause);
             }
     }
+
+    if (vcpu_arch_is_on(cpu()->vcpu) && !cpu()->vcpu->active) {
+        cpu_standby();
+    }
 }
