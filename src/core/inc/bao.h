@@ -14,15 +14,19 @@
 #include <console.h>
 #include <util.h>
 
-#define INFO(...)    console_printk("BAO INFO: " __VA_ARGS__);
+#define INFO(...)    console_printk("BAO INFO: " __VA_ARGS__)
 
-#define WARNING(...) console_printk("BAO WARNING: " __VA_ARGS__);
+#define WARNING(...) console_printk("BAO WARNING: " __VA_ARGS__)
 
-#define ERROR(...)                             \
-    console_printk("BAO ERROR: " __VA_ARGS__); \
-    while (true) { };
+#define ERROR(...)   panic("BAO ERROR: " __VA_ARGS__)
 
 void init(cpuid_t cpu_id);
+
+/**
+ * Reports a fatal condition and halts the calling CPU. The message is written without taking the
+ * console lock, which the caller may already hold.
+ */
+__attribute__((format(printf, 1, 2))) _Noreturn void panic(const char* fmt, ...);
 
 #endif /* __ASSEMBLER__ */
 

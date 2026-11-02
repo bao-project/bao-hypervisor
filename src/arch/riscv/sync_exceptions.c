@@ -14,13 +14,13 @@
 static void internal_exception_handler(unsigned long gprs[])
 {
     for (int i = 0; i < 31; i++) {
-        console_printk("x%d:\t\t0x%0lx\n", i + 1, gprs[i]);
+        console_printk_unlocked("x%d:\t\t0x%0lx\n", i + 1, gprs[i]);
     }
-    console_printk("scause:\t\t0x%0lx\n", csrs_scause_read());
-    console_printk("sstatus:\t0x%0lx\n", csrs_sstatus_read());
-    console_printk("stval:\t\t0x%0lx\n", csrs_stval_read());
-    console_printk("sepc:\t\t0x%0lx\n", csrs_sepc_read());
-    ERROR("cpu%lu internal hypervisor abort - PANIC\n", cpu()->id);
+    console_printk_unlocked("scause:\t\t0x%0lx\n", csrs_scause_read());
+    console_printk_unlocked("sstatus:\t0x%0lx\n", csrs_sstatus_read());
+    console_printk_unlocked("stval:\t\t0x%0lx\n", csrs_stval_read());
+    console_printk_unlocked("sepc:\t\t0x%0lx\n", csrs_sepc_read());
+    ERROR("internal hypervisor abort\n");
 }
 
 static uint32_t read_ins(uintptr_t ins_addr)
