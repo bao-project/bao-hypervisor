@@ -144,4 +144,7 @@ extern struct config {
 void config_init(void);
 void config_mem_prot_init(void);
 
+/* Debug builds only: checks the configuration at boot and panics on the first violated rule. */
+void config_validate(void);
+
 #endif /* __CONFIG_H__ */
