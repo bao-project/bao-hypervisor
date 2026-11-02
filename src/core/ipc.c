@@ -71,8 +71,10 @@ long int ipc_hypercall(void)
         shmem = shmem_get(cpu()->vcpu->vm->ipcs[ipc_id].shmem_id);
     }
     bool valid_shmem = shmem != NULL;
+    /* the notification carries the event in 32 bits */
+    bool valid_event = ipc_event <= UINT32_MAX;
 
-    if (valid_ipc_obj && valid_shmem) {
+    if (valid_ipc_obj && valid_shmem && valid_event) {
         cpumap_t ipc_cpu_masters = shmem->cpu_masters & ~cpu()->vcpu->vm->cpus;
 
         union ipc_msg_data data = {
