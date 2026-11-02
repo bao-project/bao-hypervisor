@@ -148,10 +148,16 @@ curr_el_spx_sync:
     bl	internal_abort_handler        
     b	.
 .balign ENTRY_SIZE
-curr_el_spx_irq:         
+curr_el_spx_irq:
+    SAVE_HYP_GPRS
+    mov x0, sp
+    bl	internal_irq_abort_handler
     b	.
 .balign ENTRY_SIZE
-curr_el_spx_fiq:         
+curr_el_spx_fiq:
+    SAVE_HYP_GPRS
+    mov x0, sp
+    bl	internal_irq_abort_handler
     b	.
 .balign ENTRY_SIZE
 curr_el_spx_serror:
