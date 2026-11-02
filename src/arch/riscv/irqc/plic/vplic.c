@@ -124,6 +124,7 @@ CPU_MSG_HANDLER(vplic_ipi_handler, VPLIC_IPI_ID)
 static void vplic_update_hart_line(struct vcpu* vcpu, size_t vcntxt)
 {
     ssize_t pcntxt_id = vplic_vcntxt_to_pcntxt(vcpu, vcntxt);
+    ASSERT(pcntxt_id >= 0);
     struct plic_cntxt pcntxt = plic_plat_id_to_cntxt((size_t)pcntxt_id);
     if (pcntxt.hart_id == cpu()->id) {
         irqid_t id = vplic_next_pending(vcpu, vcntxt);
@@ -156,6 +157,7 @@ static void vplic_set_threshold(struct vcpu* vcpu, size_t vcntxt, uint32_t thres
     spin_lock(&vplic->lock);
     vplic->threshold[vcntxt] = threshold;
     ssize_t pcntxt = vplic_vcntxt_to_pcntxt(vcpu, vcntxt);
+    ASSERT(pcntxt >= 0);
     plic_set_threshold((size_t)pcntxt, threshold);
     spin_unlock(&vplic->lock);
 
@@ -175,6 +177,7 @@ static void vplic_set_enbl(struct vcpu* vcpu, size_t vcntxt, irqid_t id, bool se
 
         if (vplic_get_hw(vcpu, id)) {
             ssize_t pcntxt_id = vplic_vcntxt_to_pcntxt(vcpu, vcntxt);
+            ASSERT(pcntxt_id >= 0);
             plic_set_enbl((size_t)pcntxt_id, id, set);
         } else {
             vplic_update_hart_line(vcpu, vcntxt);

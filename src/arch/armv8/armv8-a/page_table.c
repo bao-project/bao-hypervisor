@@ -56,7 +56,8 @@ size_t parange __attribute__((section(".data")));
 void pt_set_recursive(struct page_table* pt, size_t index)
 {
     paddr_t pa;
-    mem_translate(&cpu()->as, (vaddr_t)pt->root, &pa);
+    bool translated = mem_translate(&cpu()->as, (vaddr_t)pt->root, &pa);
+    ASSERT(translated);
     pte_t* pte = cpu()->as.pt.root + index;
     pte_set(pte, pa, PTE_TABLE, PTE_HYP_FLAGS);
     pt->arch.rec_ind = index;

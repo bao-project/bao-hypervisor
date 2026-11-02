@@ -618,6 +618,8 @@ bool remio_mmio_emul_handler(struct emul_access* acc)
 
 static void remio_cpu_msg_handler(uint32_t event, uint64_t data)
 {
+    ASSERT(cpu()->vcpu != NULL);
+
     union remio_cpu_msg_data msg = { .raw = data };
     switch (event) {
         case REMIO_CPU_MSG_WRITE:

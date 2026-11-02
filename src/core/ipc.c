@@ -37,6 +37,8 @@ static struct ipc* ipc_find_by_shmemid(struct vm* vm, size_t shmem_id)
 
 static void ipc_notify(size_t shmem_id, size_t event_id)
 {
+    ASSERT(cpu()->vcpu != NULL);
+
     struct ipc* ipc_obj = ipc_find_by_shmemid(cpu()->vcpu->vm, shmem_id);
     if (ipc_obj != NULL && event_id < ipc_obj->interrupt_num) {
         irqid_t irq_id = ipc_obj->interrupts[event_id];
