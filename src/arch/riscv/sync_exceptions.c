@@ -10,11 +10,13 @@
 #include <arch/csrs.h>
 #include <arch/instructions.h>
 
+/* gprs points at the saved x1..x31: VM_EXIT stores x<n> at index n - 1. */
 static void internal_exception_handler(unsigned long gprs[])
 {
     for (int i = 0; i < 31; i++) {
-        console_printk("x%d:\t\t0x%0lx\n", i, gprs[i]);
+        console_printk("x%d:\t\t0x%0lx\n", i + 1, gprs[i]);
     }
+    console_printk("scause:\t\t0x%0lx\n", csrs_scause_read());
     console_printk("sstatus:\t0x%0lx\n", csrs_sstatus_read());
     console_printk("stval:\t\t0x%0lx\n", csrs_stval_read());
     console_printk("sepc:\t\t0x%0lx\n", csrs_sepc_read());
