@@ -30,9 +30,8 @@
     stp x24, x25, [sp, #(8*24)]
     stp x26, x27, [sp, #(8*26)]
     stp x28, x29, [sp, #(8*28)]
-    mov x29, sp 
-    add x29, x29, 32*8
-    stp x30, x29, [sp, #(8*30)]
+    add x0, sp, #(32*8)
+    stp x30, x0,  [sp, #(8*30)]
 
 .endm
 
