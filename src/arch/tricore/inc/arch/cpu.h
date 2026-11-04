@@ -17,7 +17,11 @@ extern cpuid_t CPU_MASTER;
 
 struct cpu_arch {
     struct mpu_arch mpu;
+    /* Set while the CPU waits in cpu_arch_standby() with interrupts enabled */
+    bool standby;
 };
+
+void cpu_arch_standby_irq(void);
 
 static inline struct cpu* cpu(void)
 {

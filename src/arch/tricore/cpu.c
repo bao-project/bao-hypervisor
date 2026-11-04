@@ -69,7 +69,28 @@ void cpu_arch_powerdown(void)
 
 void cpu_arch_standby(void)
 {
-    __asm__ volatile("wait \n\r" ::: "memory");
+    /*
+     * Bao runs with interrupts disabled, and wait only ends on an enabled interrupt (TC1.8
+     * architecture manual, vol. 2, WAIT). Enable them so the IPI that wakes this CPU is taken.
+     * ir_handle() then continues in cpu_arch_standby_irq() and never returns here, so an IPI
+     * taken before the wait is not lost.
+     */
+    cpu()->arch.standby = true;
+    __asm__ volatile("enable\n\r"
+                     "1: wait\n\r"
+                     "j 1b\n\r" ::: "memory");
+}
+
+void cpu_arch_standby_irq(void)
+{
+    cpu()->arch.standby = false;
+
+    /*
+     * Taking the interrupt disabled interrupts and raised ICR.CCPN to its priority. This path
+     * does not return with rfe, which would restore CCPN, so clear it here: with CCPN at the
+     * IPI priority, the next standby could not take the IPI.
+     */
+    csfr_vm0_icr_write(csfr_vm0_icr_read() & ~ICR_CCPN_MASK);
 
     cpu_reset_csa();
     cpu_reset_stack();
