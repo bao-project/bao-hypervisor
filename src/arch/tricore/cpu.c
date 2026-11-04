@@ -13,22 +13,29 @@
 
 cpuid_t CPU_MASTER __attribute__((section(".data")));
 
-static inline void cpu_reset_csa(void)
+/*
+ * Rebuild this CPU's free CSA list as _init_csa does at boot (entries 1 to CSA_ENTRIES - 1; entry
+ * 0 stays unused), for paths that discard the whole call chain. No context in csa_array is live
+ * then: a paused vCPU's contexts are in vcpu->regs, outside csa_array, and VM entry links them
+ * back. Must be inlined and must not call functions, since a call would save a context into the
+ * list being rebuilt.
+ */
+static inline __attribute__((always_inline)) void cpu_reset_csa(void)
 {
     unsigned long core_id = csfr_coreid_read() & COREID_CORE_MASK;
-    unsigned long old_fcx = csfr_fcx_read();
-    unsigned long old_pcxi = csfr_pcxi_read();
+    union csa* csas = csa_array[core_id];
 
-    csfr_fcx_write(old_pcxi);
+    for (size_t i = 1; i < (CSA_ENTRIES - 1); i++) {
+        csas[i].lower.pcxi = CSA_LINK(&csas[i + 1]);
+    }
+    csas[CSA_ENTRIES - 1].lower.pcxi = 0;
+
+    csfr_pcxi_write(0);
+    csfr_fcx_write(CSA_LINK(&csas[1]));
     fence_sync();
-
-    /* We use the index 1, since it is the true first element of the array.
-    The index 0 is initialized as NULL and kept that way to prevent errors. */
-    union csa* entry = &csa_array[core_id][1];
-    entry->lower.pcxi = old_fcx;
 }
 
-static inline void cpu_reset_stack(void)
+static inline __attribute__((always_inline)) void cpu_reset_stack(void)
 {
     unsigned long stack_top = (unsigned long)&(cpu()->stack[STACK_SIZE]);
 
