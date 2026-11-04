@@ -135,6 +135,11 @@ void ir_handle(void)
 
     enum irq_res res = interrupts_handle(id);
     (void)res;
+
+    /* Taken inside cpu_arch_standby(), not from a guest: do not return through VM_ENTRY */
+    if (cpu()->arch.standby) {
+        cpu_arch_standby_irq();
+    }
 }
 
 void ir_send_ipi(cpuid_t target_cpu)

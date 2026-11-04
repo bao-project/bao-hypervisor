@@ -64,7 +64,22 @@ void cpu_arch_powerdown(void)
 
 void cpu_arch_standby(void)
 {
-    __asm__ volatile("wait \n\r" ::: "memory");
+    cpu()->arch.standby = true;
+    __asm__ volatile("enable\n\r"
+                     "1: wait\n\r"
+                     "j 1b\n\r" ::: "memory");
+}
+
+void cpu_arch_standby_irq(void)
+{
+    cpu()->arch.standby = false;
+
+    /*
+     * Taking the interrupt disabled interrupts and raised ICR.CCPN to its priority. This path
+     * does not return with rfe, which would restore CCPN, so clear it here: with CCPN at the
+     * IPI priority, the next standby could not take the IPI.
+     */
+    csfr_vm0_icr_write(csfr_vm0_icr_read() & ~ICR_CCPN_MASK);
 
     cpu_reset_csa();
     cpu_reset_stack();
