@@ -249,6 +249,13 @@ static void vm_init_remio_dev(struct vm* vm, struct remio_dev* remio_dev)
         shmem_size = shmem->size;
         WARNING("Trying to map region to smaller shared memory. Truncated\n");
     }
+
+    if (DEFINED(PHYS_IRQS_ONLY)) {
+        if (!interrupts_vm_assign(vm, remio_dev->interrupt)) {
+            ERROR("Failed to assign interrupt id %d\n", remio_dev->interrupt);
+        }
+    }
+
     spin_lock(&shmem->lock);
     shmem->cpu_masters |= (1UL << cpu()->id);
     spin_unlock(&shmem->lock);
