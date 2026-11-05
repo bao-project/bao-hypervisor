@@ -57,6 +57,20 @@ void interrupts_arch_handle(void)
     ir_handle();
 }
 
+/*
+ * Each CPU has its own IPI (IPI_CPU_MSG + CPU ID, reserved in interrupts_arch_ipi_init()), so the
+ * core's interrupts_ipi_id, a single ID for all CPUs, is never set on TriCore.
+ */
+bool interrupts_ipi_check(void)
+{
+    return interrupts_arch_check((irqid_t)(IPI_CPU_MSG + cpu()->id));
+}
+
+void interrupts_ipi_clear(void)
+{
+    interrupts_arch_clear((irqid_t)(IPI_CPU_MSG + cpu()->id));
+}
+
 bool interrupts_arch_check(irqid_t int_id)
 {
     return ir_get_pend(int_id);
