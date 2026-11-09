@@ -198,3 +198,105 @@ lower_el_aarch32_serror:
     b	.
 
 .balign ENTRY_SIZE          
+
+/* Before a C runtime is available, traps must not touch the stack. */
+.balign 0x800
+.global _hyp_trap_halt_vector
+_hyp_trap_halt_vector:
+    .rept 16
+    b _hyp_early_halt
+    .balign 0x80
+    .endr
+
+.balign 0x800
+.global _hyp_early_trap_vector
+_hyp_early_trap_vector:
+    b _hyp_early_trap_0
+    .balign 0x80
+    b _hyp_early_trap_1
+    .balign 0x80
+    b _hyp_early_trap_2
+    .balign 0x80
+    b _hyp_early_trap_3
+    .balign 0x80
+    b _hyp_early_trap_4
+    .balign 0x80
+    b _hyp_early_trap_5
+    .balign 0x80
+    b _hyp_early_trap_6
+    .balign 0x80
+    b _hyp_early_trap_7
+    .balign 0x80
+    b _hyp_early_trap_8
+    .balign 0x80
+    b _hyp_early_trap_9
+    .balign 0x80
+    b _hyp_early_trap_10
+    .balign 0x80
+    b _hyp_early_trap_11
+    .balign 0x80
+    b _hyp_early_trap_12
+    .balign 0x80
+    b _hyp_early_trap_13
+    .balign 0x80
+    b _hyp_early_trap_14
+    .balign 0x80
+    b _hyp_early_trap_15
+    .balign 0x80
+_hyp_early_trap_0:
+    mov x0, #0
+    b _hyp_early_report
+_hyp_early_trap_1:
+    mov x0, #1
+    b _hyp_early_report
+_hyp_early_trap_2:
+    mov x0, #2
+    b _hyp_early_report
+_hyp_early_trap_3:
+    mov x0, #3
+    b _hyp_early_report
+_hyp_early_trap_4:
+    mov x0, #4
+    b _hyp_early_report
+_hyp_early_trap_5:
+    mov x0, #5
+    b _hyp_early_report
+_hyp_early_trap_6:
+    mov x0, #6
+    b _hyp_early_report
+_hyp_early_trap_7:
+    mov x0, #7
+    b _hyp_early_report
+_hyp_early_trap_8:
+    mov x0, #8
+    b _hyp_early_report
+_hyp_early_trap_9:
+    mov x0, #9
+    b _hyp_early_report
+_hyp_early_trap_10:
+    mov x0, #10
+    b _hyp_early_report
+_hyp_early_trap_11:
+    mov x0, #11
+    b _hyp_early_report
+_hyp_early_trap_12:
+    mov x0, #12
+    b _hyp_early_report
+_hyp_early_trap_13:
+    mov x0, #13
+    b _hyp_early_report
+_hyp_early_trap_14:
+    mov x0, #14
+    b _hyp_early_report
+_hyp_early_trap_15:
+    mov x0, #15
+    b _hyp_early_report
+
+_hyp_early_report:
+    ldr x1, =_hyp_trap_halt_vector
+    msr vbar_el2, x1
+    isb
+    bl early_internal_exception_handler
+_hyp_early_halt:
+    wfi
+    b _hyp_early_halt

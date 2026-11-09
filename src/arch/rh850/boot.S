@@ -51,7 +51,7 @@ _reset_handler:
     ldsr r20, 5, 0
 
     /* configure EBASE with exception vector */
-    LOAD_ADDR _hyp_vector_table, r20
+    LOAD_ADDR _hyp_trap_halt_vector, r20
     ori 0x2, r20, r20   /* direct vector method */
     ldsr r20, 3, 1
 
@@ -131,6 +131,10 @@ _clear_cpu:
     /* Set init arguments */
     mov r10, r6     /* copy CPU ID to r6 */
 
+    LOAD_ADDR _hyp_early_trap_vector, r20
+    ori 0x2, r20, r20
+    ldsr r20, 3, 1
+    syncp
     jr init
 
 /**

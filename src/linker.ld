@@ -6,6 +6,7 @@
 #include <bao.h>
 #include <platform_defs.h>
 #include <config_defs.h>
+#include <earlycon.h>
 
 ENTRY(_image_start)
 
@@ -124,6 +125,10 @@ SECTIONS
 
 	. = ALIGN(PAGE_SIZE);
 	_image_end = ABSOLUTE(.);
+#if defined(EARLY_CONSOLE_UART) && defined(MEM_PROT_MMU)
+    ASSERT(_image_end <= EARLY_CONSOLE_VA, "image overlaps reserved early UART VA")
+    ASSERT((EARLY_CONSOLE_BASE & (PAGE_SIZE - 1)) == 0, "early UART base must be page aligned")
+#endif
 
 #ifdef MEM_PROT_MMU
 	_dmem_phys_beg = ABSOLUTE(.) + extra_allocated_phys_mem;

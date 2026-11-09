@@ -4,15 +4,18 @@
  */
 
 #include <drivers/linflexd_uart.h>
-#include <cpu.h>
-#include <platform.h>
+#include <plat/platform.h>
 
 void uart_enable(volatile struct linflexd_uart* uart)
 {
     uart->lincr1 &= ~(LINFLEXD_LINCR1_SLEEP | LINFLEXD_LINCR1_INIT);
 }
 
+#ifdef EARLY_CONSOLE_DRIVER
+static inline void uart_init_common(volatile struct linflexd_uart* uart, bool early)
+#else
 void uart_init(volatile struct linflexd_uart* uart)
+#endif
 {
     /* Request init mode */
     uart->lincr1 = (uart->lincr1 & ~(LINFLEXD_LINCR1_SLEEP)) | LINFLEXD_LINCR1_INIT;
@@ -35,7 +38,14 @@ void uart_init(volatile struct linflexd_uart* uart)
 
     /* Enable TX and RX */
     uart->uartcr |= (LINFLEXD_UARTCR_TXEN | LINFLEXD_UARTCR_RXEN);
-    uart->linier |= LINFLEXD_LINIER_DRIE;
+
+#ifdef EARLY_CONSOLE_DRIVER
+    if (!early) {
+#endif
+        uart->linier |= LINFLEXD_LINIER_DRIE;
+#ifdef EARLY_CONSOLE_DRIVER
+    }
+#endif
 
     /* Sanitize tx empty flag */
     uart->uartsr |= LINFLEXD_UARTSR_DTFTFF;
@@ -65,3 +75,29 @@ void uart_puts(volatile struct linflexd_uart* uart, const char* s)
         uart_putc(uart, (int8_t)*s++);
     }
 }
+
+#ifdef EARLY_CONSOLE_DRIVER
+void uart_init(volatile struct linflexd_uart* uart)
+{
+    uart_init_common(uart, false);
+}
+
+#include <earlycon.h>
+
+void earlycon_uart_init(void* base)
+{
+    volatile bao_uart_t* uart = base;
+    uart->linier = 0;
+    /* Reuse normal setup without its receive-interrupt enable. */
+    uart_init_common(uart, true);
+    uart_enable(uart);
+}
+#ifdef MEM_PROT_MMU
+_Static_assert(sizeof(bao_uart_t) <= PAGE_SIZE, "early UART must fit in its boot mapping");
+#endif
+
+void earlycon_uart_putc(void* base, char c)
+{
+    uart_putc(base, (int8_t)c);
+}
+#endif

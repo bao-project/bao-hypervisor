@@ -56,7 +56,7 @@ _reset_handler:
 	 * Install vector table physical address early, in case exception occurs during this
 	 * initialization.
 	 */
-	adr	x3, _hyp_vector_table
+	adr	x3, _hyp_trap_halt_vector
 	msr	VBAR_EL2, x3
 
 	/**
@@ -178,7 +178,10 @@ _set_master_cpu:
 
 	isb
 
-	b init
+	    ldr x3, =_hyp_early_trap_vector
+    msr vbar_el2, x3
+    isb
+    b init
 
 	/* This point should never be reached */
 	b	.

@@ -2,3 +2,7 @@
 ## Copyright (c) Bao Project and Contributors. All rights reserved.
 
 drivers-objs-y+=8250_uart/8250_uart.o
+
+ifeq ($(earlycon_uart),y)
+earlycon_uart_driver += 8250_uart
+endif

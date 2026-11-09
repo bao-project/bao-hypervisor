@@ -21,6 +21,8 @@
 #define SBI_GET_MARCHID_FID             (5)
 #define SBI_GET_MIMPID_FID              (6)
 
+#define SBI_DEBUG_CONSOLE_WRITE_BYTE_FID (2)
+
 #define SBI_EXTID_TIME                  (0x54494D45)
 #define SBI_SET_TIMER_FID               (0x0)
 
@@ -71,6 +73,11 @@ static inline struct sbiret sbi_ecall(unsigned long eid, unsigned long fid, unsi
 void sbi_console_putchar(int ch)
 {
     (void)sbi_ecall(0x1, 0, (unsigned long)ch, 0, 0, 0, 0, 0);
+}
+
+struct sbiret sbi_debug_console_write_byte(uint8_t byte)
+{
+    return sbi_ecall(SBI_EXTID_DBCN, SBI_DEBUG_CONSOLE_WRITE_BYTE_FID, byte, 0, 0, 0, 0, 0);
 }
 
 struct sbiret sbi_get_spec_version(void)

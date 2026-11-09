@@ -29,7 +29,7 @@ void sys_bus_errors_handler(void)
     unsigned long ret = 0;
 
     if (vmid >= config.vmlist_size) {
-        ERROR("Trying to access config.vmlist out-of-bounds\n")
+        ERROR("Trying to access config.vmlist out-of-bounds\n");
     }
 
     for (unsigned long i = 0; i < config.vmlist[vmid].platform.dev_num; i++) {
@@ -165,4 +165,16 @@ void hyp_csfr_access_handler(unsigned long* instr_addr, unsigned long hvtin)
         ERROR("CSFR emulation failed at 0x%lx\n", (unsigned long)instr_addr);
     }
     vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + 4);
+}
+
+/* PCXI is captured before the C call allocates another upper context. */
+__attribute__((noreturn)) void early_internal_exception_handler(unsigned long trap_class,
+    unsigned long tin, unsigned long pc, unsigned long pcxi);
+void early_internal_exception_handler(unsigned long trap_class, unsigned long tin,
+    unsigned long pc, unsigned long pcxi)
+{
+    uintptr_t csa_addr = ((pcxi & 0xf0000UL) << 12) | ((pcxi & 0xffffUL) << 6);
+    const unsigned long* context = (const unsigned long*)csa_addr;
+    ERROR("internal hypervisor abort: class=0x%lx TIN=0x%lx pc=0x%lx PSW=0x%lx\n",
+        trap_class, tin, pc, context[1]);
 }

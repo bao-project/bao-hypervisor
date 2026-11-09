@@ -98,3 +98,25 @@ void uart_putc(volatile struct Pl011_Uart_hw* ptr_uart, int8_t c)
 
     ptr_uart->data = (uint32_t)c;
 }
+
+#ifdef EARLY_CONSOLE_DRIVER
+#include <earlycon.h>
+
+void earlycon_uart_init(void* base)
+{
+    volatile bao_uart_t* uart = base;
+    uart->control = 0;
+    uart->isr_mask = 0;
+    uart_set_baud_rate(uart, UART_BAUD_RATE);
+    uart->line_control = UART_LCR_WLEN_8 | UART_LCR_FEN;
+    uart->control = UART_CR_UARTEN | UART_CR_TXE;
+}
+#ifdef MEM_PROT_MMU
+_Static_assert(sizeof(bao_uart_t) <= PAGE_SIZE, "early UART must fit in its boot mapping");
+#endif
+
+void earlycon_uart_putc(void* base, char c)
+{
+    uart_putc(base, (int8_t)c);
+}
+#endif

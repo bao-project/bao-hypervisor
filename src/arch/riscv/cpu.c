@@ -45,3 +45,10 @@ void cpu_arch_powerdown(void)
                      "j cpu_powerdown_wakeup\n\r" ::"r"(&cpu()->stack[STACK_SIZE]));
     ERROR("returned from powerdown wake up\n");
 }
+
+void cpu_arch_halt(void)
+{
+    while (true) {
+        __asm__ volatile("wfi\n\t" ::: "memory");
+    }
+}

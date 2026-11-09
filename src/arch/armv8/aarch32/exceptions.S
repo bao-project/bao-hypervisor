@@ -152,3 +152,65 @@ hyp_fiq_handler:
 .global vcpu_arch_entry
 vcpu_arch_entry:
     VM_ENTRY
+
+/* Before a C runtime is available, traps must not touch the stack. */
+.balign 0x20
+.global _hyp_trap_halt_vector
+_hyp_trap_halt_vector:
+    .rept 8
+    b _hyp_early_halt
+    .balign 4
+    .endr
+
+.balign 0x20
+.global _hyp_early_trap_vector
+_hyp_early_trap_vector:
+    b _hyp_early_trap_0
+    .balign 4
+    b _hyp_early_trap_1
+    .balign 4
+    b _hyp_early_trap_2
+    .balign 4
+    b _hyp_early_trap_3
+    .balign 4
+    b _hyp_early_trap_4
+    .balign 4
+    b _hyp_early_trap_5
+    .balign 4
+    b _hyp_early_trap_6
+    .balign 4
+    b _hyp_early_trap_7
+    .balign 4
+_hyp_early_trap_0:
+    mov r0, #0
+    b _hyp_early_report
+_hyp_early_trap_1:
+    mov r0, #1
+    b _hyp_early_report
+_hyp_early_trap_2:
+    mov r0, #2
+    b _hyp_early_report
+_hyp_early_trap_3:
+    mov r0, #3
+    b _hyp_early_report
+_hyp_early_trap_4:
+    mov r0, #4
+    b _hyp_early_report
+_hyp_early_trap_5:
+    mov r0, #5
+    b _hyp_early_report
+_hyp_early_trap_6:
+    mov r0, #6
+    b _hyp_early_report
+_hyp_early_trap_7:
+    mov r0, #7
+    b _hyp_early_report
+
+_hyp_early_report:
+    ldr r1, =_hyp_trap_halt_vector
+    mcr p15, 4, r1, c12, c0, 0
+    isb
+    bl early_internal_exception_handler
+_hyp_early_halt:
+    wfi
+    b _hyp_early_halt

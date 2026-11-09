@@ -156,15 +156,15 @@ hyp_csfr_access_supp:
 /* Internal */
 .global mmu_trap_handler
 mmu_trap_handler:
-    j mmu_trap_handler
+    j _hyp_early_class_0
 
 .global internal_protection_trap_handler
 internal_protection_trap_handler:
-    j internal_protection_trap_handler
+    j _hyp_early_class_1
 
 .global instruction_error_handler
 instruction_error_handler:
-    j instruction_error_handler
+    j _hyp_early_class_2
 
 .global ctx_mgnt_handler
 ctx_mgnt_handler:
@@ -172,15 +172,15 @@ ctx_mgnt_handler:
 
 .global assertion_trap_handler
 assertion_trap_handler:
-    j assertion_trap_handler
+    j _hyp_early_class_5
 
 .global system_call_handler
 system_call_handler:
-    j system_call_handler
+    j _hyp_early_class_6
 
 .global non_mskbl_interrupt_handler
 non_mskbl_interrupt_handler:
-    j non_mskbl_interrupt_handler
+    j _hyp_early_class_7
 
 .global _irq_handler
 _irq_handler:
@@ -196,7 +196,7 @@ _sys_bus_errors_handler:
     call	sys_bus_errors_handler
     VM_ENTRY
 hyp_sys_bus_errors_handler:
-    j hyp_sys_bus_errors_handler
+    j _hyp_early_class_4
     rfe
 
 /* Virtualization Related */
@@ -291,3 +291,66 @@ vcpu_arch_entry:
     isync
 
     VM_ENTRY
+
+/* A full interrupt-sized table also covers BTV and BHV offsets. */
+.balign 0x2000
+.global _hyp_trap_halt_vector
+_hyp_trap_halt_vector:
+    .rept 256
+    j _hyp_early_halt
+    .balign 0x20
+    .endr
+
+.balign 0x100
+.global _hyp_early_trap_vector
+_hyp_early_trap_vector:
+    j _hyp_early_class_0
+    .balign 0x20
+    j _hyp_early_class_1
+    .balign 0x20
+    j _hyp_early_class_2
+    .balign 0x20
+    j _hyp_early_halt
+    .balign 0x20
+    j _hyp_early_class_4
+    .balign 0x20
+    j _hyp_early_class_5
+    .balign 0x20
+    j _hyp_early_class_6
+    .balign 0x20
+    j _hyp_early_class_7
+    .balign 0x20
+_hyp_early_class_0:
+    mov %d4, 0
+    j _hyp_early_report
+_hyp_early_class_1:
+    mov %d4, 1
+    j _hyp_early_report
+_hyp_early_class_2:
+    mov %d4, 2
+    j _hyp_early_report
+_hyp_early_class_4:
+    mov %d4, 4
+    j _hyp_early_report
+_hyp_early_class_5:
+    mov %d4, 5
+    j _hyp_early_report
+_hyp_early_class_6:
+    mov %d4, 6
+    j _hyp_early_report
+_hyp_early_class_7:
+    mov %d4, 7
+    j _hyp_early_report
+_hyp_early_report:
+    mov %d5, %d15
+    mov.d %d6, %a11
+    mfcr %d7, CSFR_PCXI
+    load_32bit_val_d %d0, _hyp_trap_halt_vector
+    mtcr $btv,%d0
+    mtcr CSFR_BHV,%d0
+    mtcr $biv,%d0
+    isync
+    call early_internal_exception_handler
+_hyp_early_halt:
+    wait
+    j _hyp_early_halt

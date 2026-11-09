@@ -121,3 +121,9 @@ void cpu_powerdown_wakeup(void)
         cpu_powerdown();
     }
 }
+
+/* Permanently stop the current CPU. Never resumes normal execution. */
+void cpu_halt(void)
+{
+    cpu_arch_halt();
+}

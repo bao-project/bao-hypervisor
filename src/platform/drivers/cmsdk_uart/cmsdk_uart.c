@@ -32,3 +32,23 @@ void uart_putc(volatile struct cmsdk_uart_hw* ptr_uart, int8_t c)
     while (ptr_uart->state & CMSDK_UART_STATE_TX_BUF_FULL) { }
     ptr_uart->data = (uint32_t)c;
 }
+
+#ifdef EARLY_CONSOLE_DRIVER
+#include <earlycon.h>
+
+void earlycon_uart_init(void* base)
+{
+    volatile bao_uart_t* uart = base;
+    uart->ctrl = 0;
+    uart_init(uart);
+    uart_enable(uart);
+}
+#ifdef MEM_PROT_MMU
+_Static_assert(sizeof(bao_uart_t) <= PAGE_SIZE, "early UART must fit in its boot mapping");
+#endif
+
+void earlycon_uart_putc(void* base, char c)
+{
+    uart_putc(base, (int8_t)c);
+}
+#endif

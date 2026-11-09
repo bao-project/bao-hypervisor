@@ -8,6 +8,7 @@
 #include <arch/page_table.h>
 #include <asm_defs.h>
 #include <platform_defs.h>
+#include <earlycon.h>
 
 #define PT_SIZE PAGE_SIZE
 #if defined(RV64)
@@ -118,7 +119,7 @@ _reset_handler:
      * Setup stvec early. In case of we cause an exception in this boot code we end up at a known
      * place.
      */
-    la      t0, _hyp_trap_vector
+    la      t0, _hyp_trap_halt_vector
     and     t0, t0, ~STVEC_MODE_MSK
     or      t0, t0, STVEC_MODE_DIRECT
     csrw    stvec, t0
@@ -210,6 +211,21 @@ _boot_lock:
     PTE_FILL    t0, t0, PTE_HYP_FLAGS | PTE_PAGE
     j 1b
 3:
+#ifdef EARLY_CONSOLE_UART
+    /* Reuse the image's leaf table for the reserved early UART page. */
+#if defined(RV64)
+    la          t0, root_l2_pt
+#else
+    la          t0, root_l1_pt
+#endif
+    add         t0, t0, s6
+    li          t2, EARLY_CONSOLE_VA
+    PTE_PTR     t0, t0, (PT_LVLS - 1), t2
+    li          t2, EARLY_CONSOLE_BASE
+    li          t3, (PTE_HYP_DEV_FLAGS | PTE_PAGE)
+    PTE_FILL    t2, t2, t3
+    STORE       t2, 0(t0)
+#endif
     fence   w, w
     la      t0, _barrier
     li      t1, 1
@@ -301,7 +317,7 @@ _enter_vas:
 	/* TODO: clear TLB entries for this mapping */
 
     /* now set stvec in virtual address space */
-    la      t0, _hyp_trap_vector
+    la      t0, _hyp_trap_halt_vector
     and     t0, t0, ~STVEC_MODE_MSK
     or      t0, t0, STVEC_MODE_DIRECT
     csrw   stvec, t0
@@ -335,6 +351,12 @@ wait_for_bsp_2:
 1:
     LOAD  t2, 0(t0)
     blt t2, t1, 1b
+
+    /* Stack, gp and BSS are ready; early traps can now print diagnostics. */
+    la      t0, _hyp_early_trap_vector
+    and     t0, t0, ~STVEC_MODE_MSK
+    or      t0, t0, STVEC_MODE_DIRECT
+    csrw   stvec, t0
 
     j   init
 

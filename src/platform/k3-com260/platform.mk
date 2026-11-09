@@ -25,6 +25,14 @@ IPIC:=IPIC_SBI
 # so during early boot the two briefly share the line, which is fine for bring-up.
 drivers := 8250_uart
 
+CONFIG_EARLYCON ?= n
+CONFIG_RISCV_EARLYCON_SBI ?= y
+ifeq ($(CONFIG_EARLYCON),y)
+ifeq ($(CONFIG_RISCV_EARLYCON_SBI),y)
+drivers += sbi_earlycon
+endif
+endif
+
 platform_description:=k3_com260_desc.c
 
 platform-cppflags =-DIPIC=$(IPIC)

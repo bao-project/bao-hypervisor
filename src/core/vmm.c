@@ -147,6 +147,7 @@ void vmm_init()
         struct vm_config* vm_config = &config.vmlist[vm_id];
         struct vm* vm = vm_init(vm_alloc, &vm_assign[vm_id].root_sync, vm_config, master, vm_id);
         cpu_sync_barrier(&vm->sync);
+        vmm_arch_install_trap_vector();
         vcpu_run(cpu()->vcpu);
     } else {
         cpu_powerdown();

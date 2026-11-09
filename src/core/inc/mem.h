@@ -76,6 +76,22 @@ vaddr_t mem_map_cpy(struct addr_space* ass, struct addr_space* asd, as_sec_t asd
     vaddr_t vas, vaddr_t vad, size_t num_pages);
 bool pp_alloc(struct page_pool* pool, size_t num_pages, bool aligned, struct ppages* ppages);
 
+#ifdef EARLY_CONSOLE_UART
+/*
+ * Preserve early-device access when constructing hypervisor protection state.
+ * MMU: master CPU, after mapping the replacement image and before sharing it.
+ * MPU: each CPU, before enabling protection; no allocation or broadcasts allowed.
+ * These hooks and their call sites are excluded without early MMIO output.
+ */
+void mem_map_early_devices(struct addr_space* as);
+#ifdef MEM_PROT_MPU
+/* Adopt compatible early protection for the normal console. */
+bool mem_reuse_early_mapping(paddr_t base, size_t size);
+#endif
+/* Every CPU, after normal-console publication and synchronization. */
+void mem_unmap_early_devices(void);
+#endif
+
 void mem_prot_init(void);
 size_t mem_cpu_boot_alloc_size(void);
 

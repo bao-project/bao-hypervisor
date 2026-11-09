@@ -18,9 +18,7 @@
 
 #define WARNING(...) console_printk("BAO WARNING: " __VA_ARGS__);
 
-#define ERROR(...)                             \
-    console_printk("BAO ERROR: " __VA_ARGS__); \
-    while (true) { };
+#define ERROR(...) console_panic("BAO ERROR: " __VA_ARGS__)
 
 void init(cpuid_t cpu_id);
 
