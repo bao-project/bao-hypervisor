@@ -69,6 +69,7 @@ platforms is presented below:
 **RISC-V RV64**
 - [x] QEMU virt
 - [x] SpacemiT K3 CoM260 Kit (Banana Pi BPI-SM10)
+- [x] Milk-V Megrez (ESWIN EIC7700X)
 - [ ] SiFive HiFive Premier P550
 
 **RISC-V RV32**
