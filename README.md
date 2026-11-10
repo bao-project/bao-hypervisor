@@ -149,3 +149,9 @@ In IEEE Access, 2024. https://ieeexplore.ieee.org/document/10781314
 
 10. Hidemasa Kawasaki and Soramichi Akiyama. "**Running Bao Hypervisor on gem5**"
 In gem5 blog, 2024. https://www.gem5.org/2024/11/12/bao-on-gem5.html
+
+11. Afonso Santos, José Martins, João Sousa, Manuel Rodríguez, and Sandro Pinto. "**Let's Get Physical: Rethinking the Static Partitioning Hypervisor Architecture for an MMU-Less Memory Model**". In IEEE Access, vol. 13, 2025. https://ieeexplore.ieee.org/document/11264820
+
+12. OSYX Technologies and Infineon Technologies. "**HW/SW Co-Design of a Multi-Guest Virtualized System with Bao and CVA6**". Developer Workshop, RISC-V Summit Europe, 2026. https://github.com/osyxtechnologies/riscv-summit-eu-2026-workshop
+
+13. OSYX Technologies. "**Zephyr, SPMP and Bao on QEMU**". SPMP Workshop, RISC-V Summit China, 2026. https://github.com/osyxtechnologies/riscv-summit-china-2026-spmptg-workshop
