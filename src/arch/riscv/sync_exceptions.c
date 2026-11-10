@@ -16,6 +16,7 @@ static void internal_exception_handler(unsigned long gprs[])
         console_printk("x%d:\t\t0x%0lx\n", i, gprs[i]);
     }
     console_printk("sstatus:\t0x%0lx\n", csrs_sstatus_read());
+    console_printk("scause:\t\t0x%0lx\n", csrs_scause_read());
     console_printk("stval:\t\t0x%0lx\n", csrs_stval_read());
     console_printk("sepc:\t\t0x%0lx\n", csrs_sepc_read());
     ERROR("cpu%lu internal hypervisor abort - PANIC\n", cpu()->id);
