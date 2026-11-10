@@ -219,6 +219,10 @@ static irqid_t vplic_claim(struct vcpu* vcpu, size_t vcntxt)
 
 static void vplic_complete(struct vcpu* vcpu, size_t vcntxt, irqid_t int_id)
 {
+    if (int_id == 0 || int_id >= PLIC_MAX_INTERRUPTS) {
+        return;
+    }
+
     if (vplic_get_hw(vcpu, int_id)) {
         plic_hart[cpu()->arch.plic_cntxt].complete = int_id;
     }
