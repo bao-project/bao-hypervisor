@@ -143,6 +143,8 @@ void sync_exception_handler(void)
     size_t pc_step = 0;
     bool handled = false;
     unsigned long _scause = csrs_scause_read();
+    /* Handlers may clobber stval. */
+    unsigned long _stval = csrs_stval_read();
 
     if (!(csrs_hstatus_read() & HSTATUS_SPV)) {
         internal_exception_handler(&cpu()->vcpu->regs.x[0]);
@@ -154,11 +156,12 @@ void sync_exception_handler(void)
         handled = sync_handler_table[_scause](&pc_step);
     }
 
-    if (!handled) {
+    if (handled) {
+        vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + pc_step);
+    } else if (!vcpu_arch_inject_exception(cpu()->vcpu, _scause, _stval)) {
         ERROR("unknown synchronous exception (%lu)\n", _scause);
     }
 
-    vcpu_writepc(cpu()->vcpu, vcpu_readpc(cpu()->vcpu) + pc_step);
     if (vcpu_arch_is_on(cpu()->vcpu) && !cpu()->vcpu->active) {
         cpu_standby();
     }

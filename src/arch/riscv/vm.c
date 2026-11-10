@@ -118,3 +118,70 @@ bool vcpu_arch_is_on(struct vcpu* vcpu)
 {
     return vcpu->arch.sbi_ctx.state == STARTED;
 }
+
+/* Map a cause taken from the guest to the one it would see on bare metal. */
+static bool guest_exception_cause(unsigned long cause, unsigned long* vscause)
+{
+    *vscause = cause;
+    switch (cause) {
+        case SCAUSE_CODE_IGPF:
+            *vscause = SCAUSE_CODE_IAF;
+            break;
+        case SCAUSE_CODE_LGPF:
+            *vscause = SCAUSE_CODE_LAF;
+            break;
+        case SCAUSE_CODE_SGPF:
+            *vscause = SCAUSE_CODE_SAF;
+            break;
+        case SCAUSE_CODE_VRTI:
+            *vscause = SCAUSE_CODE_ILI;
+            break;
+        case SCAUSE_CODE_IAM:
+        case SCAUSE_CODE_IAF:
+        case SCAUSE_CODE_ILI:
+        case SCAUSE_CODE_BKP:
+        case SCAUSE_CODE_LAM:
+        case SCAUSE_CODE_LAF:
+        case SCAUSE_CODE_SAM:
+        case SCAUSE_CODE_SAF:
+        case SCAUSE_CODE_ECU:
+        case SCAUSE_CODE_IPF:
+        case SCAUSE_CODE_LPF:
+        case SCAUSE_CODE_SPF:
+            break;
+        default:
+            return false;
+    }
+
+    return true;
+}
+
+/**
+ * Inject an exception taken from the guest, as it would see it on bare metal. Must be called on
+ * the vcpu's cpu while handling a trap taken from it.
+ */
+bool vcpu_arch_inject_exception(struct vcpu* vcpu, unsigned long cause, unsigned long tval)
+{
+    unsigned long vscause;
+    if (!guest_exception_cause(cause, &vscause)) {
+        return false;
+    }
+
+    /* Save SIE in SPIE and the trapping privilege in SPP, then disable guest interrupts. */
+    unsigned long vsstatus = csrs_vsstatus_read();
+    unsigned long spie = (vsstatus & SSTATUS_SIE_BIT) ? SSTATUS_SPIE_BIT : 0;
+    unsigned long spp = vcpu->regs.sstatus & SSTATUS_SPP_BIT;
+    vsstatus &= ~(SSTATUS_SPP_BIT | SSTATUS_SPIE_BIT | SSTATUS_SIE_BIT);
+    vsstatus |= spie | spp;
+    csrs_vsstatus_write(vsstatus);
+
+    csrs_vsepc_write(vcpu->regs.sepc);
+    csrs_vscause_write(vscause);
+    csrs_vstval_write(tval);
+
+    /* Resume at the guest trap vector in VS-mode. */
+    vcpu->regs.sepc = csrs_vstvec_read() & ~STVEC_MODE_MSK;
+    vcpu->regs.sstatus |= SSTATUS_SPP_BIT;
+
+    return true;
+}
