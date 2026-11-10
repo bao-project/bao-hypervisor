@@ -1149,6 +1149,16 @@ static inline bool vgic_state_matches(unsigned state, unsigned flags, bool exact
 }
 
 /**
+ * The VM wide spilled list is shared by all vcpus, so a vcpu may only take
+ * from it the interrupts it owns or the unowned ones that target it.
+ */
+static inline bool vgic_spilled_claimable(struct vcpu* vcpu, struct vgic_int* interrupt)
+{
+    return (interrupt->owner == vcpu) ||
+        ((interrupt->owner == NULL) && vgic_int_vcpu_is_target(vcpu, interrupt));
+}
+
+/**
  * Must be called holding the vgic_spilled_lock
  */
 static inline struct vgic_int* vgic_highest_prio_spilled(struct vcpu* vcpu, unsigned flags,
@@ -1163,7 +1173,8 @@ static inline struct vgic_int* vgic_highest_prio_spilled(struct vcpu* vcpu, unsi
     for (size_t i = 0; i < spilled_list_size; i++) {
         struct list* list = spilled_lists[i];
         list_foreach ((*list), struct vgic_int, temp_irq) {
-            if (!vgic_state_matches(vgic_get_state(temp_irq), flags, exact)) {
+            if (!vgic_state_matches(vgic_get_state(temp_irq), flags, exact) ||
+                !vgic_spilled_claimable(vcpu, temp_irq)) {
                 continue;
             }
             bool irq_is_null = irq == NULL;
@@ -1266,7 +1277,7 @@ static void vgic_refill_lrs(struct vcpu* vcpu, bool npie)
         spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
         bool eligible = irq->in_spilled &&
             vgic_state_matches(vgic_get_state(irq), flags, pend_only) &&
-            vgic_get_ownership(vcpu, irq);
+            vgic_spilled_claimable(vcpu, irq) && vgic_get_ownership(vcpu, irq);
         if (eligible) {
             vgic_remove_spilled(vcpu, irq);
         }
@@ -1299,12 +1310,12 @@ static void vgic_eoir_highest_spilled_active(struct vcpu* vcpu)
             /**
              * As in vgic_refill_lrs, the candidate was picked without holding
              * its lock; revalidate it under both locks in the canonical order
-             * and rescan if it raced off the list.
+             * and rescan if it is no longer an eligible candidate.
              */
             spin_lock(&interrupt->lock);
             spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
-            bool listed = interrupt->in_spilled && ((vgic_get_state(interrupt) & ACT) != 0);
-            bool eligible = listed && vgic_get_ownership(vcpu, interrupt);
+            bool eligible = interrupt->in_spilled && ((vgic_get_state(interrupt) & ACT) != 0) &&
+                vgic_spilled_claimable(vcpu, interrupt) && vgic_get_ownership(vcpu, interrupt);
             if (eligible) {
                 vgic_remove_spilled(vcpu, interrupt);
             }
@@ -1320,7 +1331,7 @@ static void vgic_eoir_highest_spilled_active(struct vcpu* vcpu)
                 }
             }
             spin_unlock(&interrupt->lock);
-            done = listed;
+            done = eligible;
         }
     }
 }
