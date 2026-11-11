@@ -33,6 +33,9 @@ struct platform platform = {
             .gicr_addr = 0x1d060000,
             .maintenance_id = 25,
         },
+        .smmu = {
+            .base = 0x16000000,
+        },
         .generic_timer = {
             .base_addr = 0x10d02000,
         },
