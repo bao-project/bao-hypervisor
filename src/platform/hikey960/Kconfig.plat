@@ -1,0 +1,6 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config PLAT_HIKEY960
+	bool "hikey960"
+	select ARCH_ARMV8
