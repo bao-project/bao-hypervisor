@@ -96,8 +96,7 @@ static bool guest_page_fault_handler(size_t* pc_step)
             }
             ins_size = INS_SIZE(ins);
         } else if (is_pseudo_ins((uint32_t)ins)) {
-            // TODO: we should reinject this in the guest as a fault access
-            ERROR("fault on 1st stage page table walk\n");
+            return false;
         } else {
             /**
              * If htinst is valid and is not a pseudo isntruction make sure the opcode is valid
@@ -109,7 +108,7 @@ static bool guest_page_fault_handler(size_t* pc_step)
 
         struct emul_access emul;
         if (!ins_ldst_decode(ins, &emul)) {
-            ERROR("cant decode ld/st instruction\n");
+            return false;
         }
         emul.addr = addr;
 
@@ -121,12 +120,10 @@ static bool guest_page_fault_handler(size_t* pc_step)
             *pc_step = ins_size;
             return true;
         } else {
-            ERROR("emulation handler failed (0x%lx at 0x%lx)\n", (unsigned long)addr,
-                csrs_sepc_read());
+            return false;
         }
     } else {
-        ERROR("no emulation handler for abort(0x%lx at 0x%lx)\n", (unsigned long)addr,
-            csrs_sepc_read());
+        return false;
     }
 }
 
