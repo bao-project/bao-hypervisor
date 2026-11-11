@@ -21,6 +21,11 @@ struct vaplic {
     uint32_t active[APLIC_MAX_INTERRUPTS / 32];
     uint32_t ip[APLIC_MAX_INTERRUPTS / 32];
     uint32_t ie[APLIC_MAX_INTERRUPTS / 32];
+#if (IRQC == APLIC)
+    /* Hardware level sources emulated through physical edges, and their tracked level. */
+    uint32_t hw_level[APLIC_MAX_INTERRUPTS / 32];
+    uint32_t level_asserted[APLIC_MAX_INTERRUPTS / 32];
+#endif /* IRQC == APLIC */
     uint32_t target[APLIC_MAX_INTERRUPTS];
     BITMAP_ALLOC(idelivery, APLIC_DOMAIN_NUM_HARTS);
     BITMAP_ALLOC(iforce, APLIC_DOMAIN_NUM_HARTS);
