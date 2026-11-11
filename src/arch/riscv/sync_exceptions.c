@@ -42,9 +42,8 @@ static uint32_t read_ins(uintptr_t ins_addr)
     return ins;
 }
 
-typedef size_t (*sync_handler_t)(void);
-
-extern size_t sbi_vs_handler(void);
+/* Returns whether the exception was handled, and stores the guest pc increment in pc_step. */
+typedef bool (*sync_handler_t)(size_t* pc_step);
 
 static inline bool ins_ldst_decode(vaddr_t ins, struct emul_access* emul)
 {
@@ -79,7 +78,7 @@ static inline bool is_pseudo_ins(uint32_t ins)
     return ins == TINST_PSEUDO_STORE || ins == TINST_PSEUDO_LOAD;
 }
 
-static size_t guest_page_fault_handler(void)
+static bool guest_page_fault_handler(size_t* pc_step)
 {
     vaddr_t addr = (csrs_htval_read() << 2) | (csrs_stval_read() & 0x3);
 
@@ -118,7 +117,8 @@ static size_t guest_page_fault_handler(void)
          */
 
         if (handler(&emul)) {
-            return ins_size;
+            *pc_step = ins_size;
+            return true;
         } else {
             ERROR("emulation handler failed (0x%lx at 0x%lx)\n", (unsigned long)addr,
                 csrs_sepc_read());
@@ -141,6 +141,7 @@ void sync_exception_handler(void);
 void sync_exception_handler(void)
 {
     size_t pc_step = 0;
+    bool handled = false;
     unsigned long _scause = csrs_scause_read();
 
     if (!(csrs_hstatus_read() & HSTATUS_SPV)) {
@@ -150,8 +151,10 @@ void sync_exception_handler(void)
     // TODO: Do we need to check call comes from VS-mode and not VU-mode or U-mode ?
 
     if (_scause < sync_handler_table_size && sync_handler_table[_scause]) {
-        pc_step = sync_handler_table[_scause]();
-    } else {
+        handled = sync_handler_table[_scause](&pc_step);
+    }
+
+    if (!handled) {
         ERROR("unknown synchronous exception (%lu)\n", _scause);
     }
 

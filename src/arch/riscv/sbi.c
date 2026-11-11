@@ -453,7 +453,7 @@ static struct sbiret sbi_bao_handler(unsigned long fid)
     return ret;
 }
 
-size_t sbi_vs_handler()
+bool sbi_vs_handler(size_t* pc_step)
 {
     unsigned long extid = vcpu_readreg(cpu()->vcpu, REG_A7);
     unsigned long fid = vcpu_readreg(cpu()->vcpu, REG_A6);
@@ -486,7 +486,8 @@ size_t sbi_vs_handler()
     vcpu_writereg(cpu()->vcpu, REG_A0, (unsigned long)ret.error);
     vcpu_writereg(cpu()->vcpu, REG_A1, (unsigned long)ret.value);
 
-    return 4;
+    *pc_step = 4;
+    return true;
 }
 
 void sbi_init()
