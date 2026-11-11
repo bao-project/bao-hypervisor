@@ -163,6 +163,16 @@ static void vgic_add_spilled(struct vcpu* vcpu, struct vgic_int* interrupt)
         }
         list_push(spilled_list, (node_t*)interrupt);
         interrupt->in_spilled = true;
+    }
+
+    /**
+     * NPIE exists to wake the LR refill when a spilled interrupt that an LR
+     * can hold as pending is waiting for a slot, so it is armed based on the
+     * interrupt's state rather than on the insertion. A pending and active
+     * interrupt does not count: it is not a pending LR for NP purposes and
+     * it is delivered once its active state is dropped.
+     */
+    if (interrupt->in_spilled && (vgic_get_state(interrupt) == PEND)) {
         gich_set_hcr(gich_get_hcr() | GICH_HCR_NPIE_BIT);
     }
     spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
@@ -325,7 +335,7 @@ bool vgic_remove_lr(struct vcpu* vcpu, struct vgic_int* interrupt)
         }
 #endif
         uint32_t hcr = gich_get_hcr();
-        if ((interrupt->state & PEND) && interrupt->enabled) {
+        if ((interrupt->state == PEND) && interrupt->enabled) {
             hcr |= GICH_HCR_NPIE_BIT;
         }
         gich_set_hcr(hcr | GICH_HCR_UIE_BIT);
@@ -1133,10 +1143,26 @@ void vgic_ipi_handler(uint32_t event, uint64_t data)
     }
 }
 
+static inline bool vgic_state_matches(unsigned state, unsigned flags, bool exact)
+{
+    return exact ? (state == flags) : ((state & flags) != 0U);
+}
+
+/**
+ * The VM wide spilled list is shared by all vcpus, so a vcpu may only take
+ * from it the interrupts it owns or the unowned ones that target it.
+ */
+static inline bool vgic_spilled_claimable(struct vcpu* vcpu, struct vgic_int* interrupt)
+{
+    return (interrupt->owner == vcpu) ||
+        ((interrupt->owner == NULL) && vgic_int_vcpu_is_target(vcpu, interrupt));
+}
+
 /**
  * Must be called holding the vgic_spilled_lock
  */
-static inline struct vgic_int* vgic_highest_prio_spilled(struct vcpu* vcpu, unsigned flags)
+static inline struct vgic_int* vgic_highest_prio_spilled(struct vcpu* vcpu, unsigned flags,
+    bool exact)
 {
     struct vgic_int* irq = NULL;
     struct list* spilled_lists[] = {
@@ -1147,7 +1173,8 @@ static inline struct vgic_int* vgic_highest_prio_spilled(struct vcpu* vcpu, unsi
     for (size_t i = 0; i < spilled_list_size; i++) {
         struct list* list = spilled_lists[i];
         list_foreach ((*list), struct vgic_int, temp_irq) {
-            if (!(vgic_get_state(temp_irq) & flags)) {
+            if (!vgic_state_matches(vgic_get_state(temp_irq), flags, exact) ||
+                !vgic_spilled_claimable(vcpu, temp_irq)) {
                 continue;
             }
             bool irq_is_null = irq == NULL;
@@ -1164,21 +1191,80 @@ static inline struct vgic_int* vgic_highest_prio_spilled(struct vcpu* vcpu, unsi
     return irq;
 }
 
+/**
+ * Spills the active LR with the lowest priority (highest ID on a tie) to free
+ * a slot, returning its index, or -1 if no LR holds an active entry. A pending
+ * and active LR counts as active, as it does for the NP condition.
+ */
+static ssize_t vgic_spill_lowest_prio_active_lr(struct vcpu* vcpu)
+{
+    ssize_t lr_ind = -1;
+    unsigned max_prio = 0;
+    irqid_t max_id = 0;
+
+    for (size_t i = 0; i < NUM_LRS; i++) {
+        gic_lr_t lr = (gic_lr_t)gich_read_lr(i);
+        gic_lr_t lr_state = lr & GICH_LR_STATE_MSK;
+        unsigned lr_prio = (unsigned)((lr & GICH_LR_PRIO_MSK) >> GICH_LR_PRIO_OFF);
+        irqid_t lr_id = (irqid_t)GICH_LR_VID(lr);
+        if (((lr_state & GICH_LR_STATE_ACT) != 0U) &&
+            ((lr_ind < 0) || (lr_prio > max_prio) || ((lr_prio == max_prio) && (lr_id > max_id)))) {
+            lr_ind = (ssize_t)i;
+            max_prio = lr_prio;
+            max_id = lr_id;
+        }
+    }
+
+    if (lr_ind >= 0) {
+        vgic_spill_lr(vcpu, (size_t)lr_ind);
+    }
+
+    return lr_ind;
+}
+
 static void vgic_refill_lrs(struct vcpu* vcpu, bool npie)
 {
-    uint64_t elrsr = gich_get_elrsr();
-    ssize_t lr_ind = bit64_ffs(elrsr & BIT64_MASK(0, NUM_LRS));
-    unsigned flags = npie ? PEND : ACT | PEND;
-    while (lr_ind >= 0) {
+    /**
+     * The NP condition is only lifted by an LR in the pending only state, so
+     * the first interrupt this refill delivers on its behalf must be pending
+     * only. A pending and active one is treated as active.
+     */
+    bool pend_only = npie;
+    bool done = false;
+    while (!done) {
+        unsigned flags = pend_only ? (unsigned)PEND : (unsigned)(ACT | PEND);
         spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
-        struct vgic_int* irq = vgic_highest_prio_spilled(vcpu, flags);
+        struct vgic_int* irq = vgic_highest_prio_spilled(vcpu, flags, pend_only);
         if (irq == NULL) {
             uint32_t hcr = gich_get_hcr();
             gich_set_hcr(hcr & ~(GICH_HCR_NPIE_BIT | GICH_HCR_UIE_BIT));
             spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
-            break;
+            done = true;
+            continue;
         }
         spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
+
+        uint64_t elrsr = gich_get_elrsr();
+        ssize_t lr_ind = bit64_ffs(elrsr & BIT64_MASK(0, NUM_LRS));
+        if (lr_ind < 0) {
+            /**
+             * No free LR. If this refill is here to deliver a pending
+             * interrupt (the NP condition means none is resident), a slot
+             * must be freed by spilling an active LR: leaving no pending
+             * resident would keep the level sensitive NP maintenance
+             * asserted forever, never letting the guest run to EOI. The
+             * spilled active's EOI is served by the EOICount/LRENP
+             * machinery, and the guest's preemption level is unaffected
+             * as it is tracked by GICH_APR, not by the LR.
+             */
+            if (pend_only) {
+                lr_ind = vgic_spill_lowest_prio_active_lr(vcpu);
+            }
+            if (lr_ind < 0) {
+                done = true;
+                continue;
+            }
+        }
 
         /**
          * The candidate was picked without holding its lock, so between the
@@ -1189,8 +1275,9 @@ static void vgic_refill_lrs(struct vcpu* vcpu, bool npie)
          */
         spin_lock(&irq->lock);
         spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
-        bool eligible = irq->in_spilled && ((vgic_get_state(irq) & flags) != 0) &&
-            vgic_get_ownership(vcpu, irq);
+        bool eligible = irq->in_spilled &&
+            vgic_state_matches(vgic_get_state(irq), flags, pend_only) &&
+            vgic_spilled_claimable(vcpu, irq) && vgic_get_ownership(vcpu, irq);
         if (eligible) {
             vgic_remove_spilled(vcpu, irq);
         }
@@ -1202,9 +1289,7 @@ static void vgic_refill_lrs(struct vcpu* vcpu, bool npie)
          */
         if (eligible) {
             vgic_write_lr(vcpu, irq, (size_t)lr_ind);
-            flags = ACT | PEND;
-            elrsr = gich_get_elrsr();
-            lr_ind = bit64_ffs(elrsr & BIT64_MASK(0, NUM_LRS));
+            pend_only = false;
         }
         spin_unlock(&irq->lock);
     }
@@ -1216,7 +1301,7 @@ static void vgic_eoir_highest_spilled_active(struct vcpu* vcpu)
 
     while (!done) {
         spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
-        struct vgic_int* interrupt = vgic_highest_prio_spilled(vcpu, ACT);
+        struct vgic_int* interrupt = vgic_highest_prio_spilled(vcpu, ACT, false);
         spin_unlock(&vcpu->vm->arch.vgic_spilled_lock);
 
         if (interrupt == NULL) {
@@ -1225,12 +1310,12 @@ static void vgic_eoir_highest_spilled_active(struct vcpu* vcpu)
             /**
              * As in vgic_refill_lrs, the candidate was picked without holding
              * its lock; revalidate it under both locks in the canonical order
-             * and rescan if it raced off the list.
+             * and rescan if it is no longer an eligible candidate.
              */
             spin_lock(&interrupt->lock);
             spin_lock(&vcpu->vm->arch.vgic_spilled_lock);
-            bool listed = interrupt->in_spilled && ((vgic_get_state(interrupt) & ACT) != 0);
-            bool eligible = listed && vgic_get_ownership(vcpu, interrupt);
+            bool eligible = interrupt->in_spilled && ((vgic_get_state(interrupt) & ACT) != 0) &&
+                vgic_spilled_claimable(vcpu, interrupt) && vgic_get_ownership(vcpu, interrupt);
             if (eligible) {
                 vgic_remove_spilled(vcpu, interrupt);
             }
@@ -1246,7 +1331,7 @@ static void vgic_eoir_highest_spilled_active(struct vcpu* vcpu)
                 }
             }
             spin_unlock(&interrupt->lock);
-            done = listed;
+            done = eligible;
         }
     }
 }
