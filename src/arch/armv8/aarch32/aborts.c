@@ -17,3 +17,9 @@ void internal_abort_handler(unsigned long gprs[])
     console_printk("FAR:\t0x%0lx\n", sysreg_far_el2_read());
     ERROR("cpu%lu internal hypervisor abort - PANIC\n", cpu()->id);
 }
+
+unsigned long aborts_subarch_far(unsigned long ec)
+{
+    /* Instruction aborts report the faulting address in HIFAR, not in HDFAR */
+    return (ec == ESR_EC_IALEL) ? sysreg_hifar_read() : sysreg_far_el2_read();
+}
