@@ -48,6 +48,7 @@
 #define SPSR_EL2h                 (0x9)
 #define SPSR_EL3t                 (0xc)
 #define SPSR_EL3h                 (0xd)
+#define SPSR_AARCH32              (0x10)
 
 #define SPSR_F                    (1 << 6)
 #define SPSR_I                    (1 << 7)
@@ -55,6 +56,11 @@
 #define SPSR_D                    (1 << 9)
 #define SPSR_IL                   (1 << 20)
 #define SPSR_SS                   (1 << 21)
+
+#define SPSR_T                    (1UL << 5)
+#define SPSR_E                    (1UL << 9)
+#define SPSR_J                    (1UL << 24)
+#define SPSR_IT_MSK               (BIT_MASK(10, 6) | BIT_MASK(25, 2))
 
 #define SPSR_M_MSK                (0x1f)
 #define SPSR_USR                  (0x10)
@@ -233,9 +239,11 @@
 #define SCTLR_C                    (1 << 2)
 #define SCTLR_SA                   (1 << 3)
 #define SCTLR_I                    (1 << 12)
+#define SCTLR_V                    (1 << 13)
 #define SCTLR_BR                   (1 << 17)
 #define SCTLR_WXN                  (1 << 19)
 #define SCTLR_EE                   (1 << 25)
+#define SCTLR_TE                   (1UL << 30)
 
 /* CLIDR - Cache Level ID Register */
 
@@ -344,6 +352,7 @@
 #define ESR_ISS_LEN                (25)
 #define ESR_IL_OFF                 (25)
 #define ESR_IL_LEN                 (1)
+#define ESR_IL_BIT                 (1UL << 25)
 #define ESR_EC_OFF                 (26)
 #define ESR_EC_LEN                 (6)
 
@@ -372,6 +381,7 @@
 #define ESR_ISS_DA_WnR_BIT         (1 << 6)
 #define ESR_ISS_DA_S1PTW_OFF       (7)
 #define ESR_ISS_DA_S1PTW_LEN       (1)
+#define ESR_ISS_DA_S1PTW_BIT       (1UL << 7)
 #define ESR_ISS_DA_CM_OFF          (8)
 #define ESR_ISS_DA_CM_LEN          (1)
 #define ESR_ISS_DA_EA_OFF          (9)
@@ -400,6 +410,9 @@
 #define ESR_ISS_DA_DSFC_TRNSLT     (0x4)
 #define ESR_ISS_DA_DSFC_ACCESS     (0x8)
 #define ESR_ISS_DA_DSFC_PERMIS     (0xC)
+#define ESR_ISS_DA_DSFC_SEA        (0x10)
+#define ESR_ISS_DA_DSFC_SEA_PTW_L0 (0x14)
+#define ESR_ISS_DA_DSFC_SEA_PTW_L1 (0x15)
 
 #define ESR_ISS_SYSREG_ADDR        ((0xfff << 10) | (0xf << 1))
 #define ESR_ISS_SYSREG_ADDR_32     (0xFFC1E)
@@ -413,6 +426,18 @@
 #define OP0_MRS_CP15               ((0x3) << 20)
 
 #define UNDEFINED_REG_ADDR         (0xFFFFFFFFUL)
+
+/* IFSR/DFSR, Instruction/Data Fault Status Register */
+
+#define FSR_LPAE_BIT               (1UL << 9)
+#define FSR_WnR_BIT                (1UL << 11)
+#define FSR_FnV_BIT                (1UL << 16)
+#define FSR_SEA                    (0x08)
+#define FSR_SEA_PTW_L1             (0x0c)
+
+/* TTBCR, Translation Table Base Control Register */
+
+#define TTBCR_EAE                  (1UL << 31)
 
 /* VTTBR_EL2, Virtualization Translation Table Base Register */
 
@@ -522,6 +547,23 @@
 #define PRLAR_LIMIT_MSK          (~PRBAR_FLAGS_MSK)
 #define PRLAR_LIMIT(LIMIT)       (((LIMIT) & PRLAR_LIMIT_MSK) | 0x3FUL)
 #define PRLAR_MEM_ATTR_FLAGS_MSK (0x0EUL)
+
+/* Exception entry to EL1 */
+#define SPSR_BTYPE_MSK           (0x3UL << 10)
+#define SPSR_SSBS                (1UL << 12)
+#define SPSR_ALLINT              (1UL << 13)
+#define SPSR_PAN                 (1UL << 22)
+#define SPSR_UAO                 (1UL << 23)
+#define SPSR_TCO                 (1UL << 25)
+#define SPSR_SSBS_AARCH32        (1UL << 23)
+#define SCTLR_SPAN               (1UL << 23)
+#define SCTLR_DSSBS              (1ULL << 44)
+#define SCTLR_DSSBS_AARCH32      (1UL << 31)
+#define SCTLR_SPINTMASK          (1ULL << 62)
+#define ID_AA64PFR1_MTE_OFF      8
+#define ID_AA64PFR1_MTE_LEN      4
+#define ID_AA64PFR1_NMI_OFF      36
+#define ID_AA64PFR1_NMI_LEN      4
 
 #ifndef __ASSEMBLER__
 
