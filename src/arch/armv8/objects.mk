@@ -12,6 +12,11 @@ cpu-objs-y+=vgic.o
 cpu-objs-y+=vmm.o
 cpu-objs-y+=psci.o
 
+ifeq ($(ARCH_SUB),aarch64)
+cpu-objs-y+=generic_timer.o
+cpu-objs-y+=pmu.o
+endif
+
 ifeq ($(GIC_VERSION), GICV2)
 	cpu-objs-y+=vgicv2.o
 	cpu-objs-y+=gicv2.o

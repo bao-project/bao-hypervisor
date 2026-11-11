@@ -11,6 +11,20 @@
 #include <shmem.h>
 #include <objpool.h>
 #include <list.h>
+#include <mem_throt.h>
+#include <events.h>
+
+
+static inline bool vm_mem_throt_enabled(const struct vm_config* vm_config)
+{
+    return (vm_config->mem_throth.budget > 0U) && (vm_config->mem_throth.period_us > 0U);
+}
+
+static inline void vm_configure_pmu_counter_partition(const struct vm_config* vm_config)
+{
+    size_t mem_throt_reserved = vm_mem_throt_enabled(vm_config) ? MEM_THROT_PMU_COUNTERS : 0U;
+    events_configure_counter_partition(mem_throt_reserved);
+}
 
 static void vm_master_init(struct vm* vm, const struct vm_config* vm_config, vmid_t vm_id)
 {
@@ -343,6 +357,11 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, struct cpu_synctoken* vm_init
         vm_init_dev(vm, vm_config);
         vm_init_ipc(vm, vm_config);
         vm_init_remio(vm, vm_config);
+    }
+
+    vm_configure_pmu_counter_partition(vm_config);
+    if (vm_mem_throt_enabled(vm_config)) {
+        mem_throt_init(vm_config->mem_throth.budget, vm_config->mem_throth.period_us);
     }
 
     cpu_sync_and_clear_msgs(&vm->sync);
