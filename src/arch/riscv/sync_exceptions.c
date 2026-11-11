@@ -22,24 +22,21 @@ static void internal_exception_handler(unsigned long gprs[])
     ERROR("cpu%lu internal hypervisor abort - PANIC\n", cpu()->id);
 }
 
-static uint32_t read_ins(uintptr_t ins_addr)
+static bool read_ins(uintptr_t ins_addr, unsigned long* ins)
 {
-    uint32_t ins = 0;
-
-    if (ins_addr & 0x1) {
-        ERROR("trying to read guest unaligned instruction\n");
-    }
+    uint16_t lo;
+    uint16_t hi = 0;
 
     /**
      * Read 16 bits at a time to make sure the access is aligned. If the instruction is not
      * compressed, read the following 16-bits.
      */
-    ins = (uint32_t)hlvxhu(ins_addr);
-    if ((ins & 0x3) == 3) {
-        ins |= ((uint32_t)hlvxhu(ins_addr + 2)) << 16;
+    if (!hlvxhu(ins_addr, &lo) || (!INS_COMPRESSED(lo) && !hlvxhu(ins_addr + 2, &hi))) {
+        return false;
     }
 
-    return ins;
+    *ins = ((unsigned long)hi << 16) | lo;
+    return true;
 }
 
 /* Returns whether the exception was handled, and stores the guest pc increment in pc_step. */
@@ -91,8 +88,12 @@ static bool guest_page_fault_handler(size_t* pc_step)
              * If htinst does not provide information about the trap, we must read the instruction
              * from the guest's memory manually.
              */
-            vaddr_t ins_addr = csrs_sepc_read();
-            ins = read_ins(ins_addr);
+            vaddr_t ins_addr = vcpu_readpc(cpu()->vcpu);
+            if (!read_ins(ins_addr, &ins)) {
+                /* The read faulted, let the guest retry the access. */
+                *pc_step = 0;
+                return true;
+            }
             ins_size = INS_SIZE(ins);
         } else if (is_pseudo_ins((uint32_t)ins)) {
             // TODO: we should reinject this in the guest as a fault access
