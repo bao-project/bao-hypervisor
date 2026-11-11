@@ -12,7 +12,7 @@ static bool vbootctrl_emul_handler(struct emul_access* acc)
     unsigned long notify = 0;
     struct vcpu* waking_vcpu = NULL;
 
-    if (acc->addr != platform.arch.bootctrl_addr && acc->width != 4) {
+    if ((acc->addr != platform.arch.bootctrl_addr) || (acc->width != 4)) {
         /* ignore access */
         if (!acc->write && !emul_arch_is_bwop(&acc->arch)) {
             vcpu_writereg(vcpu, acc->reg, 0);
