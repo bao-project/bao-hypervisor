@@ -806,7 +806,7 @@ static void vaplic_set_in_clrip(struct vcpu* vcpu, size_t reg, uint32_t new_val)
         vaplic->ip[reg] &= ~(new_val);
         new_val &= vaplic->hw[reg];
         aplic_clr_pend_reg(reg, new_val);
-        vaplic->ip[reg] |= aplic_get_pend_reg(reg);
+        vaplic->ip[reg] |= aplic_get_pend_reg(reg) & vaplic->hw[reg];
         update_intps &= ~(vaplic->ip[reg]);
         for (size_t i = (reg * APLIC_NUM_INTP_PER_REG);
              i < (reg * APLIC_NUM_INTP_PER_REG) + APLIC_NUM_INTP_PER_REG; i++) {
