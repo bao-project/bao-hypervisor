@@ -36,6 +36,8 @@ typedef cpuid_t idcid_t;
 #define APLIC_SOURCECFG_SM_EDGE_FALL  (0x5U)
 #define APLIC_SOURCECFG_SM_LEVEL_HIGH (0x6U)
 #define APLIC_SOURCECFG_SM_LEVEL_LOW  (0x7U)
+/* Set in the "falling" and "low" modes, which invert the line into the rectified input. */
+#define APLIC_SOURCECFG_SM_INVERT     (1U << 0)
 
 /** APLIC fields and masks defines */
 #define APLIC_DOMAINCFG_DM            (1U << 2)

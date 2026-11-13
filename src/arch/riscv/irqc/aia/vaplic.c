@@ -9,6 +9,7 @@
 #include <emul.h>
 #include <mem.h>
 #include <interrupts.h>
+#include <fences.h>
 #include <arch/csrs.h>
 #if (IRQC == AIA)
 #include <imsic.h>
@@ -150,6 +151,243 @@ static bool vaplic_set_pend(struct vcpu* vcpu, irqid_t intp_id)
     }
     return ret;
 }
+
+#if (IRQC == APLIC)
+
+/*
+ * Level-sensitive emulation for direct delivery (APLIC-only). A physical source in a level mode
+ * stays pending while its line is asserted, so it would retrigger in Bao until the guest services
+ * the device. Hardware level sources are instead programmed in the edge mode that detects the next
+ * change of the line: rising while deasserted, falling while asserted. Each edge traps to Bao,
+ * which resamples the line and makes the virtual pending bit follow it, as the guest expects from a
+ * level source in direct mode. With AIA the guest handles level sources through the MSI path, so
+ * none of this is needed there.
+ *
+ * Invariant for a source set in vaplic->hw_level: the physical source mode is
+ * vaplic_level_edge_mode(srccfg, level_asserted).
+ */
+
+static inline bool vaplic_mode_is_level(uint32_t mode)
+{
+    return mode == APLIC_SOURCECFG_SM_LEVEL_HIGH || mode == APLIC_SOURCECFG_SM_LEVEL_LOW;
+}
+
+/* Edge mode that detects the next change away from the given level. */
+static uint32_t vaplic_level_edge_mode(uint32_t level_mode, bool asserted)
+{
+    bool active_high = level_mode == APLIC_SOURCECFG_SM_LEVEL_HIGH;
+
+    return (active_high != asserted) ? APLIC_SOURCECFG_SM_EDGE_RISE : APLIC_SOURCECFG_SM_EDGE_FALL;
+}
+
+/*
+ * in_clrip returns the rectified input, which is the raw line inverted for the "low" and "falling"
+ * modes. Undo the physical edge-mode inversion and apply the guest's level-mode one.
+ */
+static bool vaplic_level_read_asserted(irqid_t intp_id, uint32_t level_mode, uint32_t edge_mode)
+{
+    size_t reg = intp_id / APLIC_NUM_INTP_PER_REG;
+    uint32_t mask = 1U << (intp_id % APLIC_NUM_INTP_PER_REG);
+    bool rectified = (aplic_get_inclrip_reg(reg) & mask) != 0U;
+    bool inv_edge = (edge_mode & APLIC_SOURCECFG_SM_INVERT) != 0U;
+    bool inv_level = (level_mode & APLIC_SOURCECFG_SM_INVERT) != 0U;
+
+    return rectified != (inv_edge != inv_level);
+}
+
+static void vaplic_level_arm(irqid_t intp_id, uint32_t edge_mode)
+{
+    aplic_set_sourcecfg(intp_id, edge_mode);
+    /* The next in_clrip read must sample the line under the new mode. */
+    fence_sync_write();
+}
+
+static inline bool vaplic_level_emulated(struct vcpu* vcpu, irqid_t intp_id)
+{
+    return vaplic_intp_valid(intp_id) && GET_INTP_REG(vcpu->vm->arch.vaplic.hw_level, intp_id);
+}
+
+static inline uint32_t vaplic_level_emulated_reg(struct vcpu* vcpu, size_t reg)
+{
+    return vcpu->vm->arch.vaplic.hw_level[reg];
+}
+
+/* Tracked level of an emulated level source; false for any other source. */
+static inline bool vaplic_level_asserted(struct vcpu* vcpu, irqid_t intp_id)
+{
+    return vaplic_level_emulated(vcpu, intp_id) &&
+        GET_INTP_REG(vcpu->vm->arch.vaplic.level_asserted, intp_id);
+}
+
+/**
+ * @brief Resample the line of an emulated level source
+ *
+ * @pre The caller holds vaplic->lock and intp_id is set in vaplic->hw_level.
+ *
+ * Updates the tracked level and the virtual pending bit, and re-arms the physical edge when the
+ * level changed. If the line changes again before the new edge is armed, that change has no edge
+ * left to detect it, so the source is set pending to force another trap and resample.
+ *
+ * @param vcpu virtual cpu
+ * @param intp_id interrupt ID
+ * @return true if the line is asserted
+ */
+static bool vaplic_level_resample(struct vcpu* vcpu, irqid_t intp_id)
+{
+    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
+    uint32_t level_mode = vaplic->srccfg[intp_id];
+    bool tracked = GET_INTP_REG(vaplic->level_asserted, intp_id) != 0U;
+    uint32_t edge_mode = vaplic_level_edge_mode(level_mode, tracked);
+    bool asserted = vaplic_level_read_asserted(intp_id, level_mode, edge_mode);
+
+    if (asserted != tracked) {
+        edge_mode = vaplic_level_edge_mode(level_mode, asserted);
+        vaplic_level_arm(intp_id, edge_mode);
+        if (vaplic_level_read_asserted(intp_id, level_mode, edge_mode) != asserted) {
+            aplic_set_pend(intp_id);
+        }
+    }
+
+    if (asserted) {
+        SET_INTP_REG(vaplic->level_asserted, intp_id);
+        SET_INTP_REG(vaplic->ip, intp_id);
+    } else {
+        CLR_INTP_REG(vaplic->level_asserted, intp_id);
+        CLR_INTP_REG(vaplic->ip, intp_id);
+    }
+    return asserted;
+}
+
+/**
+ * @brief Resample every emulated level source in one 32-source register
+ *
+ * @pre The caller holds vaplic->lock.
+ *
+ * @return uint32_t the asserted levels of the emulated sources in the register
+ */
+static uint32_t vaplic_level_resample_reg(struct vcpu* vcpu, size_t reg)
+{
+    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
+    uint32_t emulated = vaplic->hw_level[reg];
+
+    for (size_t bit = 0; bit < APLIC_NUM_INTP_PER_REG; bit++) {
+        if ((emulated & (1U << bit)) != 0U) {
+            vaplic_level_resample(vcpu, (irqid_t)((reg * APLIC_NUM_INTP_PER_REG) + bit));
+        }
+    }
+    return vaplic->level_asserted[reg] & emulated;
+}
+
+/*
+ * Discard edges latched while the source was disabled and resample before it is enabled again.
+ * Caller holds vaplic->lock.
+ */
+static void vaplic_level_prepare_enable(struct vcpu* vcpu, irqid_t intp_id)
+{
+    if (vaplic_level_emulated(vcpu, intp_id)) {
+        aplic_clr_pend(intp_id);
+        vaplic_level_resample(vcpu, intp_id);
+    }
+}
+
+/**
+ * @brief Program the physical source mode of a hardware source
+ *
+ * @pre The caller holds vaplic->lock.
+ *
+ * A level mode is emulated through edges when the source supports both edge modes, which
+ * sourcecfg is allowed not to (WARL). Otherwise the level mode is passed through as before.
+ *
+ * @return uint32_t the source mode the guest reads back
+ */
+static uint32_t vaplic_hw_set_sourcecfg(struct vcpu* vcpu, irqid_t intp_id, uint32_t mode)
+{
+    struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
+    bool enabled = vaplic_get_enbl(vcpu, intp_id);
+    uint32_t ret = mode;
+
+    /*
+     * The probe and the edge-mode switches below must not deliver an interrupt before the level
+     * is resampled, so the physical source stays disabled while its mode changes.
+     */
+    if (enabled) {
+        aplic_clr_enbl(intp_id);
+    }
+
+    CLR_INTP_REG(vaplic->hw_level, intp_id);
+    CLR_INTP_REG(vaplic->level_asserted, intp_id);
+
+    if (vaplic_mode_is_level(mode)) {
+        vaplic_level_arm(intp_id, APLIC_SOURCECFG_SM_EDGE_RISE);
+        bool rise = aplic_get_sourcecfg(intp_id) == APLIC_SOURCECFG_SM_EDGE_RISE;
+        vaplic_level_arm(intp_id, APLIC_SOURCECFG_SM_EDGE_FALL);
+        bool fall = aplic_get_sourcecfg(intp_id) == APLIC_SOURCECFG_SM_EDGE_FALL;
+
+        if (rise && fall) {
+            /* Arm for the deasserted level, so the resample below picks up the current one. */
+            vaplic_level_arm(intp_id, vaplic_level_edge_mode(mode, false));
+            SET_INTP_REG(vaplic->hw_level, intp_id);
+            vaplic->srccfg[intp_id] = mode;
+            aplic_clr_pend(intp_id);
+            vaplic_level_resample(vcpu, intp_id);
+        }
+    }
+
+    if (!vaplic_level_emulated(vcpu, intp_id)) {
+        aplic_set_sourcecfg(intp_id, mode);
+        ret = aplic_get_sourcecfg(intp_id);
+    }
+
+    if (enabled && ret != APLIC_SOURCECFG_SM_INACTIVE) {
+        aplic_set_enbl(intp_id);
+    }
+    return ret;
+}
+
+#else
+
+static inline bool vaplic_level_emulated(struct vcpu* vcpu, irqid_t intp_id)
+{
+    UNUSED_ARG(vcpu);
+    UNUSED_ARG(intp_id);
+    return false;
+}
+
+static inline uint32_t vaplic_level_emulated_reg(struct vcpu* vcpu, size_t reg)
+{
+    UNUSED_ARG(vcpu);
+    UNUSED_ARG(reg);
+    return 0;
+}
+
+static inline bool vaplic_level_resample(struct vcpu* vcpu, irqid_t intp_id)
+{
+    UNUSED_ARG(vcpu);
+    UNUSED_ARG(intp_id);
+    return false;
+}
+
+static inline uint32_t vaplic_level_resample_reg(struct vcpu* vcpu, size_t reg)
+{
+    UNUSED_ARG(vcpu);
+    UNUSED_ARG(reg);
+    return 0;
+}
+
+static inline void vaplic_level_prepare_enable(struct vcpu* vcpu, irqid_t intp_id)
+{
+    UNUSED_ARG(vcpu);
+    UNUSED_ARG(intp_id);
+}
+
+static uint32_t vaplic_hw_set_sourcecfg(struct vcpu* vcpu, irqid_t intp_id, uint32_t mode)
+{
+    UNUSED_ARG(vcpu);
+    aplic_set_sourcecfg(intp_id, mode);
+    return aplic_get_sourcecfg(intp_id);
+}
+
+#endif
 
 #if (IRQC == APLIC)
 
@@ -414,7 +652,11 @@ static uint32_t vaplic_get_claimi(struct vcpu* vcpu, idcid_t idc_id)
     spin_lock(&vaplic->lock);
     if (idc_id < vaplic->idc_num) {
         ret = vaplic->topi_claimi[idc_id];
-        CLR_INTP_REG(vaplic->ip, (ret >> IDC_CLAIMI_INTP_ID_SHIFT));
+        irqid_t claimed_id = (irqid_t)(ret >> IDC_CLAIMI_INTP_ID_SHIFT);
+        /* A claimed level source stays pending while its line is asserted. */
+        if (!vaplic_level_asserted(vcpu, claimed_id)) {
+            CLR_INTP_REG(vaplic->ip, claimed_id);
+        }
         /** Spurious intp*/
         if (ret == 0) {
             bitmap_clear(vaplic->iforce, idc_id);
@@ -704,8 +946,7 @@ static void vaplic_set_sourcecfg(struct vcpu* vcpu, irqid_t intp_id, uint32_t ne
         }
 
         if (vaplic_get_hw(vcpu, intp_id)) {
-            aplic_set_sourcecfg(intp_id, new_val);
-            new_val = aplic_get_sourcecfg(intp_id);
+            new_val = vaplic_hw_set_sourcecfg(vcpu, intp_id, new_val);
         }
         vaplic->srccfg[intp_id] = new_val;
 
@@ -736,8 +977,12 @@ static uint32_t vaplic_get_setip(struct vcpu* vcpu, size_t reg)
     uint32_t ret = 0;
 
     if (reg < APLIC_NUM_SETIx_REGS) {
+        spin_lock(&vaplic->lock);
+        /* The physical pending bit of an emulated level source only latches edges. */
+        (void)vaplic_level_resample_reg(vcpu, reg);
         ret = vaplic->ip[reg];
-        ret |= (aplic_get_pend_reg(reg) & vaplic->hw[reg]);
+        ret |= (aplic_get_pend_reg(reg) & vaplic->hw[reg] & ~vaplic_level_emulated_reg(vcpu, reg));
+        spin_unlock(&vaplic->lock);
     }
     return ret;
 }
@@ -756,7 +1001,8 @@ static void vaplic_set_setip(struct vcpu* vcpu, size_t reg, uint32_t new_val)
 
     spin_lock(&vaplic->lock);
     if (reg < APLIC_NUM_SETIx_REGS) {
-        new_val &= vaplic->active[reg];
+        /* In direct mode, the pending bit of a level source follows its line, not writes. */
+        new_val &= vaplic->active[reg] & ~vaplic_level_emulated_reg(vcpu, reg);
         update_intps = (~vaplic->ip[reg]) & new_val;
         vaplic->ip[reg] |= new_val;
         for (size_t i = (reg * APLIC_NUM_INTP_PER_REG);
@@ -781,7 +1027,8 @@ static void vaplic_set_setipnum(struct vcpu* vcpu, uint32_t new_val)
     struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
 
     spin_lock(&vaplic->lock);
-    if (vaplic_set_pend(vcpu, new_val)) {
+    /* In direct mode, the pending bit of a level source follows its line, not writes. */
+    if (!vaplic_level_emulated(vcpu, new_val) && vaplic_set_pend(vcpu, new_val)) {
         vaplic_update_hart(vcpu, vaplic_get_hart_index(vcpu, new_val), new_val);
     }
     spin_unlock(&vaplic->lock);
@@ -801,12 +1048,15 @@ static void vaplic_set_in_clrip(struct vcpu* vcpu, size_t reg, uint32_t new_val)
 
     spin_lock(&vaplic->lock);
     if (reg < APLIC_NUM_CLRIx_REGS) {
-        new_val &= vaplic->active[reg];
+        uint32_t level_intps = vaplic_level_emulated_reg(vcpu, reg);
+
+        /* In direct mode, the pending bit of a level source follows its line, not writes. */
+        new_val &= vaplic->active[reg] & ~level_intps;
         update_intps = vaplic->ip[reg];
         vaplic->ip[reg] &= ~(new_val);
         new_val &= vaplic->hw[reg];
         aplic_clr_pend_reg(reg, new_val);
-        vaplic->ip[reg] |= aplic_get_pend_reg(reg);
+        vaplic->ip[reg] |= aplic_get_pend_reg(reg) & vaplic->hw[reg] & ~level_intps;
         update_intps &= ~(vaplic->ip[reg]);
         for (size_t i = (reg * APLIC_NUM_INTP_PER_REG);
              i < (reg * APLIC_NUM_INTP_PER_REG) + APLIC_NUM_INTP_PER_REG; i++) {
@@ -831,7 +1081,12 @@ static uint32_t vaplic_get_in_clrip(struct vcpu* vcpu, size_t reg)
     struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
     uint32_t ret = 0;
     if (reg < APLIC_NUM_CLRIx_REGS) {
-        ret = (aplic_get_inclrip_reg(reg) & vaplic->hw[reg]);
+        spin_lock(&vaplic->lock);
+        /* The physical rectified input of an emulated level source is in an edge mode. */
+        ret =
+            (aplic_get_inclrip_reg(reg) & vaplic->hw[reg] & ~vaplic_level_emulated_reg(vcpu, reg));
+        ret |= vaplic_level_resample_reg(vcpu, reg);
+        spin_unlock(&vaplic->lock);
     }
     return ret;
 }
@@ -846,7 +1101,9 @@ static void vaplic_set_clripnum(struct vcpu* vcpu, uint32_t new_val)
 {
     struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
     spin_lock(&vaplic->lock);
-    if (vaplic_get_active(vcpu, new_val) && vaplic_get_pend(vcpu, new_val)) {
+    /* In direct mode, the pending bit of a level source follows its line, not writes. */
+    if (vaplic_get_active(vcpu, new_val) && vaplic_get_pend(vcpu, new_val) &&
+        !vaplic_level_emulated(vcpu, new_val)) {
         if (vaplic_get_hw(vcpu, new_val)) {
             aplic_clr_pend(new_val);
             if (!aplic_get_pend(new_val)) {
@@ -895,6 +1152,12 @@ static void vaplic_set_setie(struct vcpu* vcpu, size_t reg, uint32_t new_val)
         new_val &= vaplic->active[reg];
         update_intps = ~(vaplic->ie[reg]) & new_val;
         vaplic->ie[reg] |= new_val;
+        uint32_t level_intps = update_intps & vaplic_level_emulated_reg(vcpu, reg);
+        for (size_t bit = 0; bit < APLIC_NUM_INTP_PER_REG; bit++) {
+            if ((level_intps & (1U << bit)) != 0U) {
+                vaplic_level_prepare_enable(vcpu, (irqid_t)((reg * APLIC_NUM_INTP_PER_REG) + bit));
+            }
+        }
         new_val &= vaplic->hw[reg];
         aplic_set_enbl_reg(reg, new_val);
         for (size_t i = (reg * APLIC_NUM_INTP_PER_REG);
@@ -921,6 +1184,7 @@ static void vaplic_set_setienum(struct vcpu* vcpu, uint32_t new_val)
     spin_lock(&vaplic->lock);
     if (vaplic_get_active(vcpu, new_val) && !vaplic_get_enbl(vcpu, new_val)) {
         if (vaplic_get_hw(vcpu, new_val)) {
+            vaplic_level_prepare_enable(vcpu, new_val);
             aplic_set_enbl(new_val);
         }
         SET_INTP_REG(vaplic->ie, new_val);
@@ -1248,8 +1512,12 @@ void vaplic_inject(struct vcpu* vcpu, irqid_t intp_id)
     struct vaplic* vaplic = &vcpu->vm->arch.vaplic;
 
     spin_lock(&vaplic->lock);
-    /** If the intp was successfully injected, update the heart line. */
-    if (vaplic_set_pend(vcpu, intp_id)) {
+    if (vaplic_level_emulated(vcpu, intp_id)) {
+        /* The trap is an edge of the line, so resample it instead of latching a pulse. */
+        vaplic_level_resample(vcpu, intp_id);
+        vaplic_update_hart(vcpu, vaplic_get_hart_index(vcpu, intp_id), intp_id);
+    } else if (vaplic_set_pend(vcpu, intp_id)) {
+        /** If the intp was successfully injected, update the heart line. */
         vaplic_update_hart(vcpu, vaplic_get_hart_index(vcpu, intp_id), intp_id);
     }
     spin_unlock(&vaplic->lock);
