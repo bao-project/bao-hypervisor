@@ -11,6 +11,9 @@
 #include <arch/spinlock.h>
 #include <bitmap.h>
 #include <emul.h>
+#if (IRQC == APLIC)
+#include <vaplic_selector.h>
+#endif
 
 struct vaplic {
     spinlock_t lock;

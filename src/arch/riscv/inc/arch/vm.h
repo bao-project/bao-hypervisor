@@ -71,6 +71,10 @@ struct vm_arch {
 struct vcpu_arch {
     vcpuid_t hart_id;
     struct sbi_hsm sbi_ctx;
+#if (IRQC == APLIC)
+    /* Allocated with this vCPU, rather than for every possible platform hart. */
+    struct vaplic_selector aplic_selector;
+#endif
 };
 
 struct arch_regs {
