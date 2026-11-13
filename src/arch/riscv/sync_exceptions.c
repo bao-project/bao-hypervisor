@@ -10,10 +10,14 @@
 #include <arch/csrs.h>
 #include <arch/instructions.h>
 
+/* VM_EXIT stores x1 to x31 and not x0: gprs[n - HYP_GPRS_X1] is x<n>. */
+#define HYP_GPRS_X1    (1)
+#define HYP_GPRS_X_NUM (31)
+
 static void internal_exception_handler(unsigned long gprs[])
 {
-    for (int i = 0; i < 31; i++) {
-        console_printk("x%d:\t\t0x%0lx\n", i, gprs[i]);
+    for (size_t i = 0; i < HYP_GPRS_X_NUM; i++) {
+        console_printk("x%zu:\t\t0x%0lx\n", i + HYP_GPRS_X1, gprs[i]);
     }
     console_printk("sstatus:\t0x%0lx\n", csrs_sstatus_read());
     console_printk("scause:\t\t0x%0lx\n", csrs_scause_read());
