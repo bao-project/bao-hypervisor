@@ -29,4 +29,16 @@ static inline void snooze(void)
     __asm__ volatile("snooze");
 }
 
+/**
+ * @brief Stop this CPU for good
+ * @note SNOOZE pauses the CPU for the period cpu_arch_init() programs in SNZCFG, so the loop
+ *       snoozes again.
+ */
+static inline _Noreturn void cpu_arch_halt(void)
+{
+    while (true) {
+        snooze();
+    }
+}
+
 #endif /* __ARCH_CPU_H__ */
