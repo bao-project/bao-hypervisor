@@ -98,5 +98,5 @@ int strcmp(char* str0, char* str1)
         tmp1++;
     }
 
-    return (int)(tmp0 - tmp1);
+    return (int)(unsigned char)*tmp0 - (int)(unsigned char)*tmp1;
 }
