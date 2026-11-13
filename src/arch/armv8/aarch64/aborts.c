@@ -18,3 +18,10 @@ void internal_abort_handler(unsigned long gprs[])
     console_printk("FAR:\t0x%0lx\n", sysreg_far_el2_read());
     ERROR("cpu%lu internal hypervisor abort - PANIC\n", cpu()->id);
 }
+
+unsigned long aborts_subarch_far(unsigned long ec)
+{
+    UNUSED_ARG(ec);
+
+    return sysreg_far_el2_read();
+}

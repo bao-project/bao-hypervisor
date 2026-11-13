@@ -62,6 +62,7 @@ void vcpu_arch_entry(void);
 
 bool vcpu_arch_profile_on(struct vcpu* vcpu);
 void vcpu_subarch_reset(struct vcpu* vcpu);
+bool vcpu_arch_inject_exception(struct vcpu* vcpu, unsigned long esr, unsigned long far);
 
 void vm_arch_profile_init(struct vm* vm);
 
