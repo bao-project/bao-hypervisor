@@ -100,6 +100,14 @@ void cpu_arch_powerdown(void);
  * ends with it.
  */
 
+/**
+ * Walks the frame-pointer chain that starts at fp, stores up to BACKTRACE_MAX_DEPTH return
+ * addresses in pcs and returns how many it stored. Debug builds only: the walkers are debug-only
+ * objects and release builds never call it.
+ */
+#define BACKTRACE_MAX_DEPTH (32)
+size_t cpu_arch_backtrace(uintptr_t fp, uintptr_t pcs[BACKTRACE_MAX_DEPTH]);
+
 extern struct cpuif cpu_interfaces[];
 static inline struct cpuif* cpu_if(cpuid_t cpu_id)
 {
