@@ -25,4 +25,16 @@ static inline struct cpu* cpu(void)
     return (struct cpu*)BAO_CPU_BASE;
 }
 
+/**
+ * @brief Stop this CPU for good in the WFI low-power state
+ * @note Interrupts stay disabled in the hypervisor, but an interrupt pending and enabled in sie
+ *       still ends WFI, and WFI may also complete for no reason, so the loop waits again.
+ */
+static inline _Noreturn void cpu_arch_halt(void)
+{
+    while (true) {
+        __asm__ volatile("wfi" ::: "memory");
+    }
+}
+
 #endif /* __ARCH_CPU_H__ */
