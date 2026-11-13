@@ -23,4 +23,16 @@ void cpu_arch_profile_powerdown(void);
 
 extern cpuid_t CPU_MASTER;
 
+/**
+ * @brief Stop this CPU for good in the WFI low-power state
+ * @note Interrupts stay masked in the hypervisor, but a pending interrupt still ends WFI, so the
+ *       loop waits again.
+ */
+static inline _Noreturn void cpu_arch_halt(void)
+{
+    while (true) {
+        __asm__ volatile("wfi" ::: "memory");
+    }
+}
+
 #endif /* __ARCH_CPU_H__ */
