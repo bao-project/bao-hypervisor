@@ -20,7 +20,7 @@ static void aborts_internal_print_regs(unsigned long gprs[])
     console_printk("ELR:\t0x%0lx\n", sysreg_elr_el2_read());
 }
 
-void internal_abort_handler(unsigned long gprs[])
+void aborts_internal_handler(unsigned long gprs[])
 {
     aborts_internal_print_regs(gprs);
     console_printk("ESR:\t0x%0lx\n", sysreg_esr_el2_read());

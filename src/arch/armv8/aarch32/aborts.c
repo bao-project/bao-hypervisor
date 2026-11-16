@@ -14,7 +14,7 @@
 #define HYP_GPRS_R0    (2)
 #define HYP_GPRS_R_NUM (13)
 
-void internal_abort_handler(unsigned long gprs[])
+void aborts_internal_handler(unsigned long gprs[])
 {
     for (size_t i = 0; i < HYP_GPRS_R_NUM; i++) {
         console_printk("r%zu:\t\t0x%0lx\n", i, gprs[HYP_GPRS_R0 + i]);
