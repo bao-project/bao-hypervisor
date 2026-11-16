@@ -20,8 +20,44 @@ struct cpuif cpu_interfaces[PLAT_CPU_NUM];
 
 _Static_assert(PLAT_CPU_NUM <= sizeof(cpumap_t) * 8, "PLAT_CPU_NUM exceeds the bits of cpumap_t");
 
+#ifdef BACKTRACE
+/**
+ * Frame-pointer builds keep a frame record per call: the caller's frame pointer followed by the
+ * return address, ARCH_FRAME_RECORD_OFFSET bytes below the frame pointer. Print the return address
+ * of each record as it is found, up to BACKTRACE_MAX_DEPTH, one line each tagged with the CPU so
+ * that several CPUs failing together stay readable. The walk stops at a misaligned frame
+ * pointer, at a record outside this CPU's stack or at a zero return address, so a corrupted chain
+ * ends it instead of faulting. Weak, so that an architecture whose frames do not form such records
+ * can walk them its own way.
+ */
+__attribute__((weak)) void cpu_arch_backtrace(uintptr_t fp)
+{
+    uintptr_t stack_base = (uintptr_t)cpu()->stack;
+    uintptr_t stack_top = stack_base + STACK_SIZE;
+
+    for (size_t depth = 0; depth < BACKTRACE_MAX_DEPTH; depth++) {
+        uintptr_t record = fp - ARCH_FRAME_RECORD_OFFSET;
+        if (!IS_ALIGNED(fp, ARCH_FRAME_RECORD_ALIGN) || (record < stack_base) ||
+            (record > (stack_top - (2 * sizeof(uintptr_t))))) {
+            break;
+        }
+        const uintptr_t* frame = (const uintptr_t*)record;
+        if (frame[1] == 0) {
+            break;
+        }
+        console_printk("BAO BACKTRACE cpu%lu #%zu: [<%lx>]\n", cpu()->id, depth,
+            (unsigned long)frame[1]);
+        fp = frame[0];
+    }
+}
+#endif /* BACKTRACE */
+
 _Noreturn void cpu_panic(void)
 {
+    if (DEFINED(BACKTRACE)) {
+        cpu_arch_backtrace((uintptr_t)__builtin_frame_address(0));
+    }
+
     while (true) { }
 }
 

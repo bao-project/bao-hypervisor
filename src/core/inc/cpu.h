@@ -94,6 +94,11 @@ void cpu_powerdown_wakeup(void);
 void cpu_arch_init(cpuid_t cpu_id, paddr_t load_addr);
 void cpu_arch_standby(void);
 void cpu_arch_powerdown(void);
+/**
+ * Prints the return addresses of the frame-pointer chain that starts at fp. Built only with
+ * BACKTRACE=y; cpu_panic() calls it.
+ */
+void cpu_arch_backtrace(uintptr_t fp);
 
 extern struct cpuif cpu_interfaces[];
 static inline struct cpuif* cpu_if(cpuid_t cpu_id)
