@@ -133,6 +133,12 @@ _reset_handler:
     csrw   sip, zero
     csrw   satp, zero 
 
+    /**
+     * sscratch has no reset value. Clear it so that a trap taken before the first vcpu is set up
+     * finds 0 there (see VM_EXIT).
+     */
+    csrw   sscratch, zero
+
 
 #if defined(CPU_MASTER_FIXED)
 /**
