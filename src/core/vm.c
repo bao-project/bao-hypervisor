@@ -48,6 +48,11 @@ static void vm_vcpu_init(struct vm* vm, const struct vm_config* vm_config)
     vcpuid_t vcpu_id = vm_calc_vcpu_id(vm);
     struct vcpu* vcpu = vm_get_vcpu(vm, vcpu_id);
 
+    if (vcpu == NULL) {
+        ERROR("cpu %lu has no vcpu in vm %lu: more cpus assigned than the vm was given\n",
+            cpu()->id, vm->id);
+    }
+
     vcpu->id = vcpu_id;
     vcpu->phys_id = cpu()->id;
     vcpu->vm = vm;
