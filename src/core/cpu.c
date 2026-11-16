@@ -22,7 +22,7 @@ _Static_assert(PLAT_CPU_NUM <= sizeof(cpumap_t) * 8, "PLAT_CPU_NUM exceeds the b
 
 _Noreturn void cpu_panic(void)
 {
-    while (true) { }
+    cpu_arch_halt();
 }
 
 void cpu_init(cpuid_t cpu_id)
