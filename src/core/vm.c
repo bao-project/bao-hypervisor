@@ -400,9 +400,8 @@ emul_handler_t vm_emul_get_reg(struct vm* vm, vaddr_t addr)
 
 void vm_msg_broadcast(struct vm* vm, struct cpu_msg* msg)
 {
-    for (size_t i = 0, n = 0; n < vm->cpu_num - 1; i++) {
-        if (((1U << i) & vm->cpus) && (i != cpu()->id)) {
-            n++;
+    for (size_t i = 0; i < PLAT_CPU_NUM; i++) {
+        if (((1UL << i) & vm->cpus) && (i != cpu()->id)) {
             cpu_send_msg(i, msg);
         }
     }
