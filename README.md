@@ -82,6 +82,25 @@ platforms is presented below:
 - [x] RH850 U2A16
 
 
+Backtraces
+----------
+
+`make BACKTRACE=y ...` keeps frame pointers and, when a CPU stops on a fatal error, prints the
+return addresses of the calls that led to it, up to `BACKTRACE_MAX_DEPTH` frames (32 by default).
+It is supported on AArch64 and RISC-V. To resolve them, pass each address minus one to the
+`addr2line` of the toolchain used for the build, with an ELF that keeps its symbols (`DEBUG=y`
+leaves it unstripped):
+
+    aarch64-none-elf-addr2line -f -p -e bin/<platform>/<config>/bao.elf <address - 1>...
+
+Minus one, because a call that never returns, such as the one to `cpu_panic()`, can be the last
+instruction of its function, and its return address then belongs to the next function.
+
+On RISC-V every trap restarts at the top of the CPU stack, so after an internal abort the frames of
+the code that faulted can be overwritten and the backtrace may end at the trap vector; `sepc` and
+`ra` in the register dump still point at the faulting function and its caller.
+
+
 Community Resources
 -------------------
 
