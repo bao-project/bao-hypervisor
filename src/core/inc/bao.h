@@ -24,6 +24,18 @@
         cpu_panic();                               \
     } while (0)
 
+/**
+ * Checks an invariant of the hypervisor itself, never a condition that a guest or the
+ * configuration can cause. It compiles to nothing unless ASSERTS is defined (ASSERTS=y, the default
+ * in debug builds), but the condition is always parsed, so it must not have side effects.
+ */
+#define ASSERT(cond)                                                           \
+    do {                                                                       \
+        if (DEFINED(ASSERTS) && !(cond)) {                                     \
+            ERROR("assertion failed: %s:%d: %s\n", __func__, __LINE__, #cond); \
+        }                                                                      \
+    } while (0)
+
 void init(cpuid_t cpu_id);
 
 /* Stops the calling CPU after a fatal error. Every ERROR() ends here. Defined in cpu.c. */
