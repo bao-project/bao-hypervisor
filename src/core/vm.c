@@ -114,6 +114,10 @@ static void vm_map_img_rgn_inplace(struct vm* vm, const struct vm_config* vm_con
 
 static void vm_install_image(struct vm* vm, struct vm_mem_region* reg)
 {
+    if (vm->config->image.size == 0) {
+        return;
+    }
+
     if (reg->place_phys) {
         paddr_t img_base = (paddr_t)vm->config->image.base_addr;
         paddr_t img_load_pa = vm->config->image.load_addr;
@@ -158,15 +162,23 @@ static void vm_map_img_rgn(struct vm* vm, const struct vm_config* vm_config,
 
 static void vm_init_mem_regions(struct vm* vm, const struct vm_config* vm_config)
 {
+    bool img_mapped = false;
+
     for (size_t i = 0; i < vm_config->platform.region_num; i++) {
         struct vm_mem_region* reg = &vm_config->platform.regions[i];
         bool img_is_in_rgn =
             range_in_range(vm_config->image.base_addr, vm_config->image.size, reg->base, reg->size);
         if (img_is_in_rgn) {
             vm_map_img_rgn(vm, vm_config, reg);
+            img_mapped = true;
         } else {
             vm_map_mem_region(vm, reg);
         }
+    }
+
+    if (!img_mapped && (vm_config->image.size > 0)) {
+        ERROR("vm %lu image at 0x%lx lies outside every memory region of the vm\n", vm->id,
+            (unsigned long)vm_config->image.base_addr);
     }
 }
 
