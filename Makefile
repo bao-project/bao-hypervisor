@@ -49,6 +49,8 @@ HOST_CC:=gcc
 #Makefile arguments and default values
 DEBUG:=n
 OPTIMIZATIONS:=2
+BACKTRACE:=n
+BACKTRACE_MAX_DEPTH:=32
 CONFIG=
 PLATFORM=
 
@@ -250,6 +252,16 @@ else ifeq ($(CC_IS_CLANG),y)
 	build_macros+=-DCC_IS_CLANG
 endif
 
+# BACKTRACE=y prints the return addresses of up to BACKTRACE_MAX_DEPTH frames when a CPU stops on a
+# fatal error. It keeps the frame pointer in every function, so the architecture must say how to
+# walk its frame records (arch_backtrace).
+ifeq ($(BACKTRACE),y)
+	ifneq ($(arch_backtrace),y)
+        $(error BACKTRACE=y is not supported on $(strip $(ARCH) $(ARCH_SUB)))
+	endif
+	build_macros+=-DBACKTRACE -DBACKTRACE_MAX_DEPTH=$(BACKTRACE_MAX_DEPTH)
+endif
+
 override CPPFLAGS+=$(addprefix -I, $(inc_dirs)) $(arch-cppflags) \
 	$(platform-cppflags) $(build_macros) -DBAO_VERSION=\"$(version_str)\"
 vpath:.=CPPFLAGS
@@ -260,6 +272,10 @@ HOST_CPPFLAGS+=$(addprefix -I, $(inc_dirs)) $(arch-cppflags) \
 ifeq ($(DEBUG), y)
 	debug_flags:=-g
 	OPTIMIZATIONS:=g
+endif
+
+ifeq ($(BACKTRACE),y)
+	debug_flags+=-fno-omit-frame-pointer
 endif
 
 
