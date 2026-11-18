@@ -14,7 +14,12 @@
 .macro VM_EXIT
 
     csrrw   x31, sscratch, x31
-    
+    /**
+     * Before the first vcpu is set up sscratch is 0, as boot.S leaves it. Park here with scause,
+     * sepc and stval intact instead of storing through a null pointer and trapping again.
+     */
+    beqz    x31, .
+
     STORE   x1,   VCPU_XREG_OFFSET(1)(x31)
     STORE   x2,   VCPU_XREG_OFFSET(2)(x31)
     STORE   x3,   VCPU_XREG_OFFSET(3)(x31)
