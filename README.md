@@ -82,6 +82,16 @@ platforms is presented below:
 - [x] RH850 U2A16
 
 
+Building
+--------
+
+Building Bao requires a cross-compilation toolchain for the target, and
+python3 with [kconfiglib](https://pypi.org/project/kconfiglib/14.1.0/) 14.1.0
+(`pip install kconfiglib==14.1.0`):
+
+    make PLATFORM=<platform> CONFIG=<config> CROSS_COMPILE=<toolchain-prefix>
+
+
 Community Resources
 -------------------
 

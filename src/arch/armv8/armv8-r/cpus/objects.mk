@@ -3,5 +3,4 @@
 
 cpu-objs-y+=$(ARCH_PROFILE)/cpus/core_impl.o
 
-# CPU-specific implementations based on platform configuration
-cpu-objs-y+=$(foreach cpu, $(PLAT_CPUS), $(ARCH_PROFILE)/cpus/$(cpu).o)
+cpu-objs-$(CONFIG_CPU_CORTEX_R52)+=$(ARCH_PROFILE)/cpus/cortex_r52.o

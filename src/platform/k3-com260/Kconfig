@@ -1,0 +1,14 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config PLATFORM
+	default "k3-com260" if PLAT_K3_COM260
+
+config ARCH_SUB
+	default "riscv64" if PLAT_K3_COM260
+
+config IRQC
+	default "AIA" if PLAT_K3_COM260
+
+config IPIC
+	default "IPIC_SBI" if PLAT_K3_COM260

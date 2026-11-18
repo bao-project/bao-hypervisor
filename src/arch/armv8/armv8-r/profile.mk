@@ -6,5 +6,4 @@ arch-cflags+=-march=armv8-r
 arch-asflags+=
 arch-ldflags+=
 
-arch_mem_prot:=mpu
 PAGE_SIZE:=64

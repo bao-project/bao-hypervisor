@@ -1,0 +1,62 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+# Platform registry. Each platform defines its own choice entry in its
+# Kconfig.plat (sourced inside the choice, which the syntax requires to
+# be a separate file) and everything else in its Kconfig.
+
+menu "Platform"
+
+choice PLATFORM_SEL
+	prompt "Target platform"
+
+source "src/platform/*/Kconfig.plat"
+
+endchoice
+
+config PLATFORM
+	string
+
+config MEM_NON_UNIFIED
+	bool
+	help
+	  Split instruction and data memory buses with separate hypervisor
+	  images per memory - fixed by the platform.
+
+config PLAT_HAS_MMIO_SLAVE_SIDE_PROT
+	bool
+
+source "src/platform/*/Kconfig"
+
+# Written once for all platforms: @SYM@ placeholders are expanded to
+# the resolved values by the menuconfig frontend at display time
+comment ""
+
+comment "Architecture: @ARCH@"
+	depends on ARCH != ""
+
+comment "Sub-architecture: @ARCH_SUB@"
+	depends on ARCH_SUB != ""
+
+comment "Architecture profile: @ARCH_PROFILE@"
+	depends on ARCH_PROFILE != ""
+
+comment "CPU: @CPU@"
+	depends on CPU != ""
+
+comment "GIC version: @GIC_VERSION@"
+	depends on GIC_VERSION != ""
+
+comment "Interrupt controller: @IRQC@"
+	depends on IRQC != ""
+
+comment "IPI controller: @IPIC@"
+	depends on IPIC != ""
+
+comment "Memory model: non-unified"
+	depends on MEM_NON_UNIFIED
+
+comment "Physical interrupts only"
+	depends on PHYS_IRQS_ONLY
+
+endmenu

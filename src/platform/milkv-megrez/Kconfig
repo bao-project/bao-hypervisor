@@ -1,0 +1,15 @@
+## SPDX-License-Identifier: Apache-2.0
+## Copyright (c) Bao Project and Contributors. All rights reserved.
+
+config PLATFORM
+	default "milkv-megrez" if PLAT_MILKV_MEGREZ
+
+config ARCH_SUB
+	default "riscv64" if PLAT_MILKV_MEGREZ
+
+config IRQC
+	default "PLIC" if PLAT_MILKV_MEGREZ
+
+# The EIC7700X exposes no ACLINT SSWI node, so IPIs go through SBI
+config IPIC
+	default "IPIC_SBI" if PLAT_MILKV_MEGREZ
