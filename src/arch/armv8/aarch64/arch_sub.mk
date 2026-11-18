@@ -9,3 +9,5 @@ arch-asflags+=
 arch-ldflags+=
 
 clang_arch_target:=aarch64
+
+arch_backtrace:=y
