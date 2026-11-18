@@ -1259,7 +1259,7 @@ static void vgic_handle_trapped_eoir(struct vcpu* vcpu)
         gic_lr_t lr_val = (gic_lr_t)gich_read_lr((size_t)lr_ind);
         gich_write_lr((size_t)lr_ind, 0);
 
-        struct vgic_int* interrupt = vgic_get_int(vcpu, (irqid_t)(lr_val), vcpu->id);
+        struct vgic_int* interrupt = vgic_get_int(vcpu, (irqid_t)GICH_LR_VID(lr_val), vcpu->id);
         if (interrupt == NULL) {
             continue;
         }
