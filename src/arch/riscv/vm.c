@@ -28,6 +28,10 @@ void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm)
 {
     UNUSED_ARG(vm);
 
+#if (IRQC == APLIC)
+    memset(&vcpu->arch.aplic_selector, 0, sizeof(vcpu->arch.aplic_selector));
+#endif
+
     vcpu->arch.sbi_ctx.lock = SPINLOCK_INITVAL;
     vcpu->arch.sbi_ctx.state = vcpu->id == 0 ? STARTED : STOPPED;
 }
