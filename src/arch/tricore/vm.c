@@ -56,13 +56,8 @@ void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm)
 {
     memset(&vcpu->regs, 0, sizeof(struct arch_regs));
 
-    unsigned long pcxo =
-        bit32_extract((uint32_t) & (vcpu->regs.upper_ctx), ADDR_PCXO_OFF, ADDR_PCXO_LEN);
-    unsigned long pcxs =
-        bit32_extract((uint32_t) & (vcpu->regs.upper_ctx), ADDR_PCXS_OFF, ADDR_PCXS_LEN);
-
     vcpu->regs.lower_ctx.pcxi =
-        (1 << PCXI_PIE_OFF) | (1 << PCXI_UL_OFF) | (pcxs << PCXI_PCXS_OFF) | pcxo;
+        (1 << PCXI_PIE_OFF) | (1 << PCXI_UL_OFF) | CSA_LINK(&vcpu->regs.upper_ctx);
     vcpu->regs.lower_ctx.a11 = vm->config->entry;
 
     vcpu->regs.upper_ctx.csa_psw = PSW_IO_SUPERVISOR << PSW_IO_OFF;

@@ -24,6 +24,11 @@
 #define PSW_IO_OFF        10
 #define PSW_IO_SUPERVISOR 2
 
+/* Link word (PCXI/FCX format: segment and offset) of a CSA */
+#define CSA_LINK(csa)                                                                              \
+    (((((unsigned long)(csa)) >> ADDR_PCXS_OFF) & ((1UL << ADDR_PCXS_LEN) - 1)) << PCXI_PCXS_OFF | \
+        ((((unsigned long)(csa)) >> ADDR_PCXO_OFF) & ((1UL << ADDR_PCXO_LEN) - 1)))
+
 #ifndef __ASSEMBLER__
 
 struct lower_context {

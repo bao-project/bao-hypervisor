@@ -89,6 +89,10 @@ void l2_dmem_prot_trap_handler(unsigned long* instr_addr, unsigned long is_write
                 ERROR("register access emulation failed (0x%lx)\n", addr);
             }
         }
+
+        if (vcpu_arch_is_on(cpu()->vcpu) && !cpu()->vcpu->active) {
+            cpu_standby();
+        }
     } else {
         ERROR("No emulation handler for access to 0x%lx, at 0x%lx\n", addr,
             vcpu_readpc(cpu()->vcpu));

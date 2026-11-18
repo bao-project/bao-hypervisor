@@ -193,6 +193,9 @@
 #define CSFR_VM6_ICR  0xB118
 #define CSFR_VM7_ICR  0xB11C
 
+/* ICR.CCPN: current CPU priority number */
+#define ICR_CCPN_MASK (0xFFUL)
+
 #define CSFR_BASE     0xF8830000
 #define CSFR_BOOTCON  0xFE60
 #define CSFR_PC       0xFE08
