@@ -48,6 +48,7 @@ HOST_CC:=gcc
 
 #Makefile arguments and default values
 DEBUG:=n
+ASSERTS:=$(DEBUG)
 OPTIMIZATIONS:=2
 BACKTRACE:=n
 BACKTRACE_MAX_DEPTH:=32
@@ -260,6 +261,12 @@ ifeq ($(BACKTRACE),y)
         $(error BACKTRACE=y is not supported on $(strip $(ARCH) $(ARCH_SUB)))
 	endif
 	build_macros+=-DBACKTRACE -DBACKTRACE_MAX_DEPTH=$(BACKTRACE_MAX_DEPTH)
+endif
+
+# ASSERTS=y enables the ASSERT() checks. It follows DEBUG unless given on the command line, so a
+# release build can keep the checks and a debug build can drop them.
+ifeq ($(ASSERTS),y)
+	build_macros+=-DASSERTS
 endif
 
 override CPPFLAGS+=$(addprefix -I, $(inc_dirs)) $(arch-cppflags) \
