@@ -68,11 +68,13 @@ configs_dir=$(cur_dir)/configs
 CONFIG_REPO?=$(configs_dir)
 scripts_dir:=$(cur_dir)/scripts
 ci_dir:=$(cur_dir)/ci
+tests_dir:=$(cur_dir)/tests
 src_dirs:=
 
 all:
 
 -include $(ci_dir)/ci.mk
+-include $(tests_dir)/tests.mk
 
 targets:=$(MAKECMDGOALS)
 ifeq ($(targets),)
@@ -446,9 +448,16 @@ all_files= $(realpath \
 	$(call list_dir_files_recursive, $(src_dir), *) \
 	$(call list_dir_files_recursive, $(scripts_dir), *) \
 	$(call list_dir_files_recursive, $(config_dir)/example, *) \
+	$(call list_dir_files_recursive, $(tests_dir)/tests, *) \
 )
-all_c_src_files=$(realpath $(call list_dir_files_recursive, src, *.c))
-all_c_hdr_files=$(realpath $(call list_dir_files_recursive, src, *.h))
+all_c_src_files=$(realpath \
+	$(call list_dir_files_recursive, src, *.c) \
+	$(call list_dir_files_recursive, $(tests_dir)/tests, *.c) \
+)
+all_c_hdr_files=$(realpath \
+	$(call list_dir_files_recursive, src, *.h) \
+	$(call list_dir_files_recursive, $(tests_dir)/tests, *.h) \
+)
 all_c_files=$(all_c_src_files) $(all_c_hdr_files)
 
 $(call ci, license, "Apache-2.0", $(all_files))
