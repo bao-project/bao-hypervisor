@@ -47,6 +47,17 @@ static bool vipir_emul_handler(struct emul_access* acc)
         pe_idx = vm_translate_to_pcpuid(vm, virt_peid);
     }
 
+    /* no such channel or vcpu: a load reads 0, a bit operation finds the bit clear */
+    if ((chan_idx >= IPIR_NUM_CHANNELS) || (pe_idx >= PLAT_CPU_NUM)) {
+        if (emul_arch_is_bwop(&acc->arch)) {
+            uint8_t zero = 0;
+            emul_arch_bwop_emul_acc(&acc->arch, &zero);
+        } else if (!acc->write) {
+            vcpu_writereg(vcpu, acc->reg, 0);
+        }
+        return true;
+    }
+
     spin_lock(&ipir_lock[pe_idx][chan_idx]);
 
     switch (acc_offset & IPIR_REG_OFFSET_MASK) {
@@ -71,8 +82,15 @@ static bool vipir_emul_handler(struct emul_access* acc)
 
     if ((chan_idx != IPI_HYP_IRQ_ID) && (tgt_reg != NULL)) {
         if (emul_arch_is_bwop(&acc->arch)) {
-            acc->arch.bit = (uint8_t)vm_translate_to_pcpuid(vm, acc->arch.bit);
-            *tgt_reg = emul_arch_bwop_emul_acc(&acc->arch, *tgt_reg);
+            cpuid_t pcpu = vm_translate_to_pcpuid(vm, acc->arch.bit);
+            if (pcpu == INVALID_CPUID) {
+                /* a bit for a vcpu the vm does not have reads as clear */
+                uint8_t zero = 0;
+                emul_arch_bwop_emul_acc(&acc->arch, &zero);
+            } else {
+                acc->arch.bit = (uint8_t)pcpu;
+                emul_arch_bwop_emul_acc(&acc->arch, tgt_reg);
+            }
         } else if (acc->write) {
             unsigned long val = (uint8_t)vcpu_readreg(vcpu, acc->reg);
             val = (uint8_t)vm_translate_to_pcpu_mask(vm, val, PLAT_CPU_NUM);
