@@ -20,6 +20,11 @@ struct cpuif cpu_interfaces[PLAT_CPU_NUM];
 
 _Static_assert(PLAT_CPU_NUM <= sizeof(cpumap_t) * 8, "PLAT_CPU_NUM exceeds the bits of cpumap_t");
 
+_Noreturn void cpu_panic(void)
+{
+    while (true) { }
+}
+
 void cpu_init(cpuid_t cpu_id)
 {
     cpu()->id = cpu_id;

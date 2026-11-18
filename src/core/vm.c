@@ -444,6 +444,6 @@ __attribute__((weak)) void vm_arch_allow_mmio_access(struct vm* vm, struct vm_de
 {
     UNUSED_ARG(dev);
     UNUSED_ARG(vm);
-    ERROR("vm_arch_allow_mmio_access must be implemented by the arch!\n")
+    ERROR("vm_arch_allow_mmio_access must be implemented by the arch!\n");
     return;
 }
