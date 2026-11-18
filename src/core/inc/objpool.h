@@ -37,7 +37,7 @@ void objpool_free(struct objpool* objpool, void* obj);
 
 static inline void* objpool_get_by_id(struct objpool* objpool, objpool_id_t id)
 {
-    if (id < objpool->num) {
+    if ((id < objpool->num) && (bitmap_get(objpool->bitmap, id) != 0U)) {
         return (void*)((uintptr_t)objpool->pool + (objpool->objsize * id));
     }
     return NULL;
