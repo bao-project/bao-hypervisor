@@ -25,6 +25,9 @@ void config_mem_prot_init(void)
              * 1-1 mapping.
              */
             size_t shmem_id = config.vmlist[i].platform.ipcs[j].shmem_id;
+            if (shmem_id >= config.shmemlist_size) {
+                ERROR("IPC %zu of vm %zu refers to the unknown shared memory %zu\n", j, i, shmem_id);
+            }
             vaddr_t ipc_base_addr = config.vmlist[i].platform.ipcs[j].base;
             vaddr_t shmem_base_addr = config.shmemlist[shmem_id].base;
             if (ipc_base_addr != shmem_base_addr) {
