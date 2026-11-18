@@ -128,6 +128,7 @@ struct arch_regs {
 } __attribute__((__packed__, aligned(sizeof(unsigned long))));
 
 void vcpu_arch_entry(void);
+bool vcpu_arch_inject_exception(struct vcpu* vcpu, unsigned long cause, unsigned long tval);
 
 static inline void vcpu_arch_inject_hw_irq(struct vcpu* vcpu, irqid_t id)
 {

@@ -17,10 +17,14 @@ void vmm_arch_init()
 
     /**
      * Delegate all interrupts and exceptions not meant to be dealt by the hypervisor
+     *
+     * Note: firmware that does not honor hedeleg (e.g. OpenSBI < v1.1) may still forward these to
+     * HS-mode, where sync_exception_handler() reflects them back to the guest.
      */
 
     csrs_hideleg_write(HIDELEG_VSSI | HIDELEG_VSTI | HIDELEG_VSEI);
-    csrs_hedeleg_write(HEDELEG_BKP | HEDELEG_ECU | HEDELEG_IPF | HEDELEG_LPF | HEDELEG_SPF);
+    csrs_hedeleg_write(HEDELEG_ILI | HEDELEG_BKP | HEDELEG_ECU | HEDELEG_IPF | HEDELEG_LPF |
+        HEDELEG_SPF);
 
     /*
      * Clean-slate the whole HENVCFG CSR (avoid stale default bits). It is a

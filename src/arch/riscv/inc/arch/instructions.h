@@ -6,12 +6,31 @@
 #ifndef ARCH_INSTRUCTIONS_H
 #define ARCH_INSTRUCTIONS_H
 
-static inline uint64_t hlvxhu(uintptr_t addr)
+#include <bao.h>
+
+/**
+ * Read a guest halfword with hlvx.hu, returning false if it faults. A fault
+ * clobbers the trap CSRs.
+ */
+static inline bool hlvxhu(uintptr_t addr, uint16_t* value)
 {
-    uint64_t value;
-    __asm__ volatile(".insn r 0x73, 0x4, 0x32, %0, %1, x3\n\t" : "=r"(value) : "r"(addr)
+    unsigned long val;
+    unsigned long ok = 0;
+    unsigned long stvec;
+
+    /* A fault traps to label 1, skipping the update of ok. */
+    __asm__ volatile("la    %[stvec], 1f\n\t"
+                     "csrrw %[stvec], stvec, %[stvec]\n\t"
+                     ".insn r 0x73, 0x4, 0x32, %[val], %[addr], x3\n\t"
+                     "li    %[ok], 1\n\t"
+                     ".balign 4\n"
+                     "1:\n\t"
+                     "csrw  stvec, %[stvec]\n\t"
+                     : [val] "=r"(val), [ok] "+r"(ok), [stvec] "=&r"(stvec) : [addr] "r"(addr)
                      : "memory");
-    return value;
+
+    *value = (uint16_t)val;
+    return ok != 0;
 }
 
 #endif /* ARCH_INSTRUCTIONS_H */
