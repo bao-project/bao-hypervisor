@@ -185,7 +185,7 @@ static void vm_init_ipc(struct vm* vm, const struct vm_config* vm_config)
         if (DEFINED(PHYS_IRQS_ONLY)) {
             for (size_t j = 0; j < ipc->interrupt_num; j++) {
                 if (!interrupts_vm_assign(vm, ipc->interrupts[j])) {
-                    ERROR("Failed to assign interrupt id %d\n", ipc->interrupts[j]);
+                    ERROR("Failed to assign interrupt id %u\n", ipc->interrupts[j]);
                 }
             }
         }
@@ -220,7 +220,7 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* vm_config)
 
         for (size_t j = 0; j < dev->interrupt_num; j++) {
             if (!interrupts_vm_assign(vm, dev->interrupts[j])) {
-                ERROR("Failed to assign interrupt id %d\n", dev->interrupts[j]);
+                ERROR("Failed to assign interrupt id %u\n", dev->interrupts[j]);
             }
         }
     }
@@ -252,7 +252,7 @@ static void vm_init_remio_dev(struct vm* vm, struct remio_dev* remio_dev)
 
     if (DEFINED(PHYS_IRQS_ONLY)) {
         if (!interrupts_vm_assign(vm, remio_dev->interrupt)) {
-            ERROR("Failed to assign interrupt id %d\n", remio_dev->interrupt);
+            ERROR("Failed to assign interrupt id %u\n", remio_dev->interrupt);
         }
     }
 

@@ -104,13 +104,17 @@ enum irq_res interrupts_handle(irqid_t int_id)
         return HANDLED_BY_HYP;
 
     } else {
-        ERROR("received unknown interrupt id = %d\n", int_id);
+        ERROR("received unknown interrupt id = %u\n", int_id);
     }
 }
 
 bool interrupts_vm_assign(struct vm* vm, irqid_t id)
 {
     bool ret = false;
+
+    if (id >= MAX_GUEST_INTERRUPTS) {
+        return false;
+    }
 
     spin_lock(&irq_reserve_lock);
     if (!interrupts_arch_conflict(global_interrupt_bitmap, id)) {
@@ -131,10 +135,9 @@ irqid_t interrupts_reserve(irqid_t pint_id, irq_handler_t handler)
 
     spin_lock(&irq_reserve_lock);
     if ((pint_id < MAX_INTERRUPT_LINES) && !interrupt_assigned(pint_id)) {
-        bitmap_set(global_interrupt_bitmap, pint_id);
-
         irqid_t tmp_id = interrupts_arch_reserve(pint_id);
         if ((tmp_id != INVALID_IRQID) && (tmp_id < MAX_INTERRUPT_HANDLERS)) {
+            bitmap_set(global_interrupt_bitmap, pint_id);
             int_id = tmp_id;
             interrupt_handlers[int_id] = handler;
         }
