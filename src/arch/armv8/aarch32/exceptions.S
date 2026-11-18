@@ -104,19 +104,25 @@ _hyp_vector_table:
 
 .global hyp_und_handler
 hyp_und_handler:
-    b	.  
+    SAVE_HYP_GPRS
+    mov r0, sp
+    bl aborts_internal_handler
+    b .
 
 
 .global hyp_hvc_handler
 hyp_hvc_handler:
-    b	. 
+    SAVE_HYP_GPRS
+    mov r0, sp
+    bl aborts_internal_handler
+    b .
 
 
 .global hyp_fetch_abt_handler
 hyp_fetch_abt_handler:
     SAVE_HYP_GPRS
     mov r0, sp
-    bl internal_abort_handler
+    bl aborts_internal_handler
     b .
 
 
@@ -124,7 +130,7 @@ hyp_fetch_abt_handler:
 hyp_data_abt_handler:
     SAVE_HYP_GPRS
     mov r0, sp
-    bl internal_abort_handler
+    bl aborts_internal_handler
     b .
 
 
