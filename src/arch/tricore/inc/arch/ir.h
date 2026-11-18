@@ -151,7 +151,7 @@
 #define ICU_VMx_ID_MASK                0x7FFUL
 #define ICU_VMx_ID_OFFSET              16UL
 #define IR_SWCACCEN_VM_OFFSET          16UL
-#define IR_SWCACCEN_VM0_MASK           16UL
+#define IR_SWCACCEN_VM0_MASK           (1UL)
 #define IR_SWCACCEN_CPUx_MASK          3UL
 #define IR_SWCACCEN_VM_CTRL_MASK       0UL
 #define IR_SWCACCEN_VM_PRS_CTRL_OFFSET 31UL
