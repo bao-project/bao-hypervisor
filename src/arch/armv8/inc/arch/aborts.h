@@ -10,5 +10,6 @@
 
 void aborts_sync_handler(void);
 void internal_abort_handler(unsigned long gprs[]);
+unsigned long aborts_subarch_far(unsigned long ec);
 
 #endif /* __ABORTS_H__ */
