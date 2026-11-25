@@ -237,6 +237,28 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* vm_config)
     }
 }
 
+/**
+ * Remote I/O devices of a VM may use the same shared memory region, e.g. when the frontend
+ * allocates the virtqueues and buffers of all of its devices from a single pool. The region is
+ * mapped only once, along with the first device that names it.
+ */
+static bool vm_remio_shmem_is_mapped(struct vm* vm, struct remio_dev* remio_dev)
+{
+    for (struct remio_dev* dev = vm->remio_devs; dev < remio_dev; dev++) {
+        if (dev->shmem.shmem_id == remio_dev->shmem.shmem_id &&
+            dev->shmem.base == remio_dev->shmem.base) {
+            if (dev->shmem.size != remio_dev->shmem.size) {
+                ERROR("Remote I/O devices %zu and %zu map the shared memory %zu at the same "
+                      "address with different sizes\n",
+                    dev->bind_key, remio_dev->bind_key, remio_dev->shmem.shmem_id);
+            }
+            return true;
+        }
+    }
+
+    return false;
+}
+
 static void vm_init_remio_dev(struct vm* vm, struct remio_dev* remio_dev)
 {
     struct shmem* shmem = shmem_get(remio_dev->shmem.shmem_id);
@@ -260,15 +282,17 @@ static void vm_init_remio_dev(struct vm* vm, struct remio_dev* remio_dev)
     shmem->cpu_masters |= (1UL << cpu()->id);
     spin_unlock(&shmem->lock);
 
-    struct vm_mem_region reg = {
-        .base = remio_dev->shmem.base,
-        .size = shmem_size,
-        .place_phys = true,
-        .phys = shmem->phys,
-        .colors = shmem->colors,
-    };
+    if (!vm_remio_shmem_is_mapped(vm, remio_dev)) {
+        struct vm_mem_region reg = {
+            .base = remio_dev->shmem.base,
+            .size = shmem_size,
+            .place_phys = true,
+            .phys = shmem->phys,
+            .colors = shmem->colors,
+        };
 
-    vm_map_mem_region(vm, &reg);
+        vm_map_mem_region(vm, &reg);
+    }
 
     if (remio_dev->type == REMIO_DEV_FRONTEND) {
         struct emul_mem* emu = &remio_dev->emul;
