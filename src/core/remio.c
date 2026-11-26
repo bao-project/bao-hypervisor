@@ -478,6 +478,10 @@ static long int remio_handle_ask(unsigned long addr, unsigned long value,
 static bool remio_handle_rw(unsigned long value, unsigned long request_id,
     struct remio_device* device)
 {
+    /* Only ids of the request pool are acceptable here: never the next-pending sentinel */
+    if (request_id >= REMIO_VCPU_NUM) {
+        return false;
+    }
     struct remio_request* request = remio_get_request(device, (long int)request_id);
     if (request == NULL) {
         return false;
