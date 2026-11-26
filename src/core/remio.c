@@ -240,8 +240,8 @@ static struct remio_device* remio_find_vm_dev_by_bind_key(struct vm* vm, unsigne
 
     /** Find the Remote I/O device VM configuration based on the Remote I/O bind key */
     for (size_t i = 0; i < vm->remio_dev_num; i++) {
-        dev = &vm->remio_devs[i];
-        if (dev->bind_key == bind_key) {
+        if (vm->remio_devs[i].bind_key == bind_key) {
+            dev = &vm->remio_devs[i];
             break;
         }
     }
