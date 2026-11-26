@@ -555,6 +555,11 @@ long int remio_hypercall(void)
         return -HC_E_FAILURE;
     }
 
+    /* Only the backend VM drives a device through hypercalls */
+    if (device->config.backend.vm_id != vm->id) {
+        return -HC_E_FAILURE;
+    }
+
     switch (op) {
         case REMIO_HYP_WRITE:
         case REMIO_HYP_READ:
