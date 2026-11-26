@@ -9,6 +9,9 @@ kao_check_ids:=$(kao_tests)/check_ids.py
 KAO_TESTS?=all
 KAO_EXCLUDE_TAGS?=nightly,manual
 KAO_ARGS?=
+# y: run on a board of the labgrid lab set up on this machine, not on one
+# connected to it
+KAO_REMOTE?=
 
 # Test sources that apply to the target: the generic ones, the arch subtree
 # matching ARCH with the nested ARCH_SUB and ARCH_PROFILE directories, and the
@@ -51,4 +54,5 @@ tests: check-test-ids
 		--hyp-srcs $(cur_dir) --wrkdir $(tests_dir)/wrkdir \
 		--tests-root $(kao_tests) --envs $(kao_tests)/envs \
 		$(if $(KAO_EXCLUDE_TAGS),--exclude-tags $(KAO_EXCLUDE_TAGS)) \
-		$(addprefix --tests-src , $(kao_src_dirs)) $(KAO_ARGS)
+		$(addprefix --tests-src , $(kao_src_dirs)) \
+		$(if $(filter y yes 1,$(KAO_REMOTE)),--remote) $(KAO_ARGS)
