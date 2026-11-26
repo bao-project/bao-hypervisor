@@ -48,6 +48,10 @@ static void vm_vcpu_init(struct vm* vm, const struct vm_config* vm_config)
     vcpuid_t vcpu_id = vm_calc_vcpu_id(vm);
     struct vcpu* vcpu = vm_get_vcpu(vm, vcpu_id);
 
+    if (vcpu == NULL) {
+        ERROR("Failed to instantiate vm %lu vcpu %lu in cpu %lu\n", vm->id, vcpu_id, cpu()->id);
+    }
+
     vcpu->id = vcpu_id;
     vcpu->phys_id = cpu()->id;
     vcpu->vm = vm;
@@ -395,9 +399,8 @@ emul_handler_t vm_emul_get_reg(struct vm* vm, vaddr_t addr)
 
 void vm_msg_broadcast(struct vm* vm, struct cpu_msg* msg)
 {
-    for (size_t i = 0, n = 0; n < vm->cpu_num - 1; i++) {
-        if (((1U << i) & vm->cpus) && (i != cpu()->id)) {
-            n++;
+    for (size_t i = 0; i < PLAT_CPU_NUM; i++) {
+        if (((1UL << i) & vm->cpus) && (i != cpu()->id)) {
             cpu_send_msg(i, msg);
         }
     }
