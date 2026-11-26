@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) Bao Project and Contributors. All rights reserved.
+
+# Bao Hypervisor VM Configuration
+# This YAML describes the fields needed to generate a C config file (config.c)
+
+vms:
+  - vm1:
+    name: "baremetal"
+    build_options: "IRQC=AIA"
+    config:
+      image:
+        base_addr: 0x102000000
+      entry: 0x102000000
+      platform:
+        cpu_num: 8
+        regions:
+          - base: 0x102000000
+            size: 0x4000000
+        devs:
+          - pa: 0xd4017000
+            va: 0xd4017000
+            size: 0x1000
+            interrupts:
+              - 42
+        arch:
+          irqc:
+            aia:
+              aplic:
+                base: 0xe0804000
+              imsic:
+                base: 0xe0400000
