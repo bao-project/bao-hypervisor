@@ -214,8 +214,16 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* vm_config)
         if (DEFINED(MMIO_SLAVE_SIDE_PROT)) {
             vm_arch_allow_mmio_access(vm, dev);
         } else if (dev->va != INVALID_VA) {
-            size_t n = ALIGN(dev->size, PAGE_SIZE) / PAGE_SIZE;
-            mem_alloc_map_dev(&vm->as, SEC_VM_ANY, (vaddr_t)dev->va, dev->pa, n);
+            /**
+             * Map every page the device touches: when its base is not page aligned, the size
+             * alone can leave its last page out.
+             */
+            size_t offset = (size_t)(dev->pa & PAGE_OFFSET_MASK);
+            if ((size_t)(dev->va & PAGE_OFFSET_MASK) != offset) {
+                ERROR("vm %lu device %zu: va and pa differ in their page offset\n", vm->id, i);
+            }
+            size_t n = NUM_PAGES(offset + dev->size);
+            mem_alloc_map_dev(&vm->as, SEC_VM_ANY, (vaddr_t)dev->va - offset, dev->pa - offset, n);
         }
 
         for (size_t j = 0; j < dev->interrupt_num; j++) {
