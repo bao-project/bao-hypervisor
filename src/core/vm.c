@@ -48,6 +48,10 @@ static void vm_vcpu_init(struct vm* vm, const struct vm_config* vm_config)
     vcpuid_t vcpu_id = vm_calc_vcpu_id(vm);
     struct vcpu* vcpu = vm_get_vcpu(vm, vcpu_id);
 
+    if (vcpu == NULL) {
+        ERROR("Failed to instantiate vm %lu vcpu %lu in cpu %lu\n", vm->id, vcpu_id, cpu()->id);
+    }
+
     vcpu->id = vcpu_id;
     vcpu->phys_id = cpu()->id;
     vcpu->vm = vm;
