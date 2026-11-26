@@ -74,7 +74,8 @@ struct psci_ctx {
     spinlock_t lock;
     paddr_t entrypoint;
     unsigned long context_id;
-    enum { ON, OFF, ON_PENDING } state;
+    /* The values are the ones PSCI AFFINITY_INFO returns for each state. */
+    enum { PSCI_ON = 0, PSCI_OFF = 1, PSCI_ON_PENDING = 2 } state;
 };
 
 struct psci_off_state {
