@@ -441,14 +441,14 @@ static long int remio_handle_ask(unsigned long addr, unsigned long value,
 
     /** By convention, the addr and value fields must be zero */
     if (addr != 0 || value != 0) {
-        return HC_E_FAILURE;
+        return -HC_E_FAILURE;
     }
 
     /** Get the next pending I/O request */
     request = remio_get_request(device, REMIO_NEXT_PENDING_REQUEST);
 
     if (request == NULL || request->state != REMIO_STATE_PENDING) {
-        return HC_E_FAILURE;
+        return -HC_E_FAILURE;
     }
 
     /** Check if the Remote I/O device has other pending I/O requests */
