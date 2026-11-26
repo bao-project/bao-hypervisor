@@ -22,7 +22,7 @@ static const bitmap_granule_t ONE = 1;
 #define BITMAP_SIZE(NUM_BITS, BITS_PER_UNIT) \
     (((NUM_BITS) / (BITS_PER_UNIT)) + (((NUM_BITS) % (BITS_PER_UNIT)) ? 1 : 0))
 #define BITMAP_SIZE_IN_GRANULE(NUM_BITS)    (BITMAP_SIZE((NUM_BITS), (BITMAP_GRANULE_LEN)))
-#define BITMAP_SIZE_IN_BYTES(NUM_BITS)      (BITMAP_SIZE((NUM_BITS), 8))
+#define BITMAP_SIZE_IN_BYTES(NUM_BITS)      (BITMAP_SIZE_IN_GRANULE(NUM_BITS) * sizeof(bitmap_granule_t))
 #define BITMAP_ALLOC(NAME, SIZE)            bitmap_granule_t NAME[BITMAP_SIZE_IN_GRANULE(SIZE)]
 
 #define BITMAP_ALLOC_ARRAY(NAME, SIZE, NUM) bitmap_granule_t NAME[NUM][BITMAP_SIZE_IN_GRANULE(SIZE)]
