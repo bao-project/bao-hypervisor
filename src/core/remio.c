@@ -352,6 +352,10 @@ void remio_init(void)
                 list_init(&device->pending_requests_list);
                 list_push(&remio_device_list, (node_t*)device);
             }
+            if (dev->bind_key > UINT8_MAX) {
+                ERROR("Remote I/O device bind key %zu does not fit the cpu message\n",
+                    dev->bind_key);
+            }
             if (dev->type == REMIO_DEV_BACKEND) {
                 device->config.backend.bind_key = dev->bind_key;
                 device->config.backend.shmem = dev->shmem;
