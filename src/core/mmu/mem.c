@@ -607,7 +607,7 @@ bool mem_map_reclr(struct addr_space* as, vaddr_t va, struct ppages* ppages, siz
      * pages. Mapped onto hypervisor address space.
      */
     size_t reclrd_num = num_pages / (COLOR_NUM * COLOR_SIZE) * COLOR_SIZE *
-        bit_count(~(as->colors & BIT_MASK(0, COLOR_NUM)));
+        bit_count(~as->colors & BIT_MASK(0, COLOR_NUM));
     size_t clr_offset = (ppages->base / PAGE_SIZE) % (COLOR_NUM * COLOR_SIZE);
     for (size_t i = 0; i < (num_pages % (COLOR_NUM * COLOR_SIZE)); i++) {
         if (!bit_get(as->colors, (i + clr_offset) / COLOR_SIZE % COLOR_NUM)) {
