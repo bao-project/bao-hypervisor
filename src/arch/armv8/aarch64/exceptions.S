@@ -30,9 +30,8 @@
     stp x24, x25, [sp, #(8*24)]
     stp x26, x27, [sp, #(8*26)]
     stp x28, x29, [sp, #(8*28)]
-    mov x29, sp 
-    add x29, x29, 32*8
-    stp x30, x29, [sp, #(8*30)]
+    add x0, sp, #(32*8)
+    stp x30, x0,  [sp, #(8*30)]
 
 .endm
 
@@ -145,19 +144,25 @@ curr_el_sp0_serror:
 curr_el_spx_sync:
     SAVE_HYP_GPRS
     mov x0, sp
-    bl	internal_abort_handler        
+    bl	aborts_internal_handler        
     b	.
 .balign ENTRY_SIZE
-curr_el_spx_irq:         
+curr_el_spx_irq:
+    SAVE_HYP_GPRS
+    mov x0, sp
+    bl	aborts_internal_irq_handler
     b	.
 .balign ENTRY_SIZE
-curr_el_spx_fiq:         
+curr_el_spx_fiq:
+    SAVE_HYP_GPRS
+    mov x0, sp
+    bl	aborts_internal_irq_handler
     b	.
 .balign ENTRY_SIZE
 curr_el_spx_serror:
     SAVE_HYP_GPRS
     mov x0, sp
-    bl	internal_abort_handler       
+    bl	aborts_internal_handler       
     b	.         
 
 /* 
