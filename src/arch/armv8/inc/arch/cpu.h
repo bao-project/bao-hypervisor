@@ -23,4 +23,13 @@ void cpu_arch_profile_powerdown(void);
 
 extern cpuid_t CPU_MASTER;
 
+#ifdef AARCH64
+/**
+ * The AArch64 procedure call standard keeps the frame record {caller's x29, x30} where x29 points,
+ * 16-byte aligned like the stack.
+ */
+#define ARCH_FRAME_RECORD_OFFSET (0)
+#define ARCH_FRAME_RECORD_ALIGN  (16)
+#endif
+
 #endif /* __ARCH_CPU_H__ */

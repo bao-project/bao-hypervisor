@@ -12,6 +12,13 @@
 
 extern cpuid_t CPU_MASTER;
 
+/**
+ * With a frame pointer, s0 points just above the frame record {caller's s0, ra}, which the
+ * prologue stores in the two words below it.
+ */
+#define ARCH_FRAME_RECORD_OFFSET (2 * REGLEN)
+#define ARCH_FRAME_RECORD_ALIGN  (REGLEN)
+
 struct cpu_arch {
 #if (IRQC == PLIC)
     unsigned plic_cntxt;
