@@ -8,6 +8,9 @@ CPU:=cortex-a55
 
 GIC_VERSION:=GICV3
 
+# Non-secure SMMUv3. Bound streams use stage-2; every other stream aborts.
+SMMU_VERSION:=3
+
 # Board DDR capacity in GiB; selects mem_regions in agilex5_desc.c.
 # Override via configs/<CONFIG>/config.mk or the make command line.
 AGX5_MEM_GB ?= 2
